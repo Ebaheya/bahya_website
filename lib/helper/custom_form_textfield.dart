@@ -1,0 +1,163 @@
+import 'package:flutter/material.dart';
+
+enum CustomTextFieldType { email, name, password, number, phone, text }
+
+class CustomFormTextField extends StatefulWidget {
+  final String labelText;
+  final String hintText;
+  final AutovalidateMode autovalidateMode;
+  final bool obscureText;
+  final CustomTextFieldType keyboardType;
+  final TextEditingController? controller;
+  final TextDirection textDirection;
+
+  const CustomFormTextField({
+    super.key,
+    required this.labelText,
+    required this.hintText,
+    required this.autovalidateMode,
+    required this.keyboardType,
+    this.obscureText = false,
+    this.controller,
+    this.textDirection = TextDirection.rtl,
+  });
+
+  @override
+  State<CustomFormTextField> createState() => _CustomFormTextFieldState();
+}
+
+class _CustomFormTextFieldState extends State<CustomFormTextField> {
+  late bool _obscureText;
+
+  @override
+  void initState() {
+    super.initState();
+    _obscureText = widget.obscureText;
+  }
+
+  TextInputType _mapKeyboardType(CustomTextFieldType type) {
+    switch (type) {
+      case CustomTextFieldType.email:
+        return TextInputType.emailAddress;
+      case CustomTextFieldType.name:
+        return TextInputType.name;
+      case CustomTextFieldType.number:
+        return TextInputType.number;
+      case CustomTextFieldType.phone:
+        return TextInputType.phone;
+      case CustomTextFieldType.password:
+        return TextInputType.visiblePassword;
+      case CustomTextFieldType.text:
+        return TextInputType.text;
+    }
+  }
+
+  String? _validate(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'هذا الحقل مطلوب';
+    }
+
+    switch (widget.keyboardType) {
+      case CustomTextFieldType.email:
+        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+        if (!emailRegex.hasMatch(value)) {
+          return 'أدخل بريدًا إلكترونيًا صالحًا';
+        }
+        break;
+
+      case CustomTextFieldType.name:
+        if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+          return 'أدخل اسمًا صالحًا';
+        }
+        break;
+
+      case CustomTextFieldType.number:
+        if (!RegExp(r'^\d+$').hasMatch(value)) {
+          return 'أدخل أرقامًا فقط';
+        }
+        break;
+
+      case CustomTextFieldType.phone:
+        if (!RegExp(r'^\d{10,}$').hasMatch(value)) {
+          return 'أدخل رقم هاتف صالحًا';
+        }
+        break;
+
+      case CustomTextFieldType.password:
+        if (value.length < 6) {
+          return 'يجب أن تكون كلمة المرور مكونة من 6 أحرف على الأقل';
+        }
+        break;
+
+      case CustomTextFieldType.text:
+        if (value.trim().isEmpty) {
+          return 'يجب ألا يكون هذا الحقل فارغًا';
+        }
+    }
+
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      keyboardType: _mapKeyboardType(widget.keyboardType),
+      controller: widget.controller,
+      obscureText: _obscureText,
+      validator: _validate,
+      autovalidateMode: widget.autovalidateMode,
+      textDirection: widget.textDirection,
+      style: const TextStyle(
+        color: Colors.black,
+        fontSize: 16,
+        fontFamily: 'ArabicCustomFont',
+      ),
+      decoration: InputDecoration(
+        suffixIcon: widget.obscureText
+            ? IconButton(
+                onPressed: () {
+                  setState(() {
+                    _obscureText = !_obscureText;
+                  });
+                },
+                icon: Icon(
+                  _obscureText ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.grey,
+                ),
+              )
+            : null,
+        hintText: widget.hintText,
+        labelText: widget.labelText,
+        hintTextDirection: widget.textDirection,
+
+        labelStyle: const TextStyle(
+          color: Colors.black,
+          fontSize: 16,
+          fontFamily: 'ArabicCustomFont',
+        ),
+        hintStyle: const TextStyle(
+          color: Colors.grey,
+          fontSize: 14,
+          fontFamily: 'ArabicCustomFont',
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 14,
+          horizontal: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: const BorderSide(color: Colors.grey, width: 1.2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: const BorderSide(color: Colors.grey, width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: Color(0xFFFF7BB0), width: 1.5),
+        ),
+        errorStyle: TextStyle(fontFamily: 'ArabicCustomFont', fontSize: 12),
+      ),
+    );
+  }
+}
