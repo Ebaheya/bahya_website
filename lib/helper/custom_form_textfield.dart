@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 enum CustomTextFieldType { email, name, password, number, phone, text }
 
@@ -10,7 +11,7 @@ class CustomFormTextField extends StatefulWidget {
   final CustomTextFieldType keyboardType;
   final TextEditingController? controller;
   final TextDirection textDirection;
-
+  final Icon? suffixIcon;
   const CustomFormTextField({
     super.key,
     required this.labelText,
@@ -20,6 +21,7 @@ class CustomFormTextField extends StatefulWidget {
     this.obscureText = false,
     this.controller,
     this.textDirection = TextDirection.rtl,
+    this.suffixIcon,
   });
 
   @override
@@ -78,8 +80,8 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         break;
 
       case CustomTextFieldType.phone:
-        if (!RegExp(r'^\d{10,}$').hasMatch(value)) {
-          return 'أدخل رقم هاتف صالحًا';
+        if (!RegExp(r'^\d{11}$').hasMatch(value)) {
+          return 'أدخل رقم هاتف مكون من 11 رقمًا';
         }
         break;
 
@@ -105,6 +107,20 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
       controller: widget.controller,
       obscureText: _obscureText,
       validator: _validate,
+      inputFormatters: [
+        if (widget.keyboardType == CustomTextFieldType.phone) ...[
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(11),
+        ] else if (widget.keyboardType == CustomTextFieldType.number) ...[
+          FilteringTextInputFormatter.digitsOnly,
+        ] else if (widget.keyboardType == CustomTextFieldType.email) ...[
+          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._-]')),
+        ] else if (widget.keyboardType == CustomTextFieldType.password) ...[
+          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9#@&%$]')),
+        ],
+      ],
+
+      obscuringCharacter: '•',
       autovalidateMode: widget.autovalidateMode,
       textDirection: widget.textDirection,
       style: const TextStyle(
@@ -125,7 +141,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                   color: Colors.grey,
                 ),
               )
-            : null,
+            : widget.suffixIcon,
         hintText: widget.hintText,
         labelText: widget.labelText,
         hintTextDirection: widget.textDirection,

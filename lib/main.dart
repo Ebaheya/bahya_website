@@ -1,4 +1,4 @@
-import 'package:bahya_website/screens/login.dart';
+import 'package:bahya_website/route.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -6,10 +6,12 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+   MyApp({super.key});
+  final AppRoute _appRoute = AppRoute();
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: LoginPage());
+    return MaterialApp(debugShowCheckedModeBanner: false,
+          onGenerateRoute: _appRoute.generateRoute, );
   }
 }

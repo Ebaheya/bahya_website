@@ -4,18 +4,22 @@ import 'package:flutter/material.dart';
 class CustomGlowButton extends StatelessWidget {
   final String title;
   final VoidCallback onPressed;
-
+  final Color? backgroundColor;
+  final Color? foregroundColor;
   const CustomGlowButton({
     super.key,
     required this.title,
     required this.onPressed,
+    this.backgroundColor,
+    this.foregroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: getScreenWidth(context) * 0.6,
+        width: getScreenWidth(context) * 0.13,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
@@ -28,8 +32,8 @@ class CustomGlowButton extends StatelessWidget {
         ),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Color(0xFFFF7BB0),
+            backgroundColor: backgroundColor ?? Colors.white,
+            foregroundColor: foregroundColor ?? Color(0xFFFF7BB0),
             shape: const StadiumBorder(),
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),

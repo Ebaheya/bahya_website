@@ -1,5 +1,6 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
+import 'package:bahya_website/helper/forget_password_dialog.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:flutter/material.dart';
 
@@ -7,28 +8,6 @@ class LoginPage extends StatelessWidget {
   LoginPage({super.key});
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
-  Widget _buildTextField({
-    required CustomTextFieldType keyboardType,
-    required String hintText,
-    required String labelText,
-
-    bool obscureText = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: CustomFormTextField(
-        keyboardType: keyboardType,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        hintText: hintText,
-        labelText: labelText,
-        obscureText: obscureText,
-        textDirection: TextDirection.ltr,
-      ),
-    );
-  }
-
-  @override
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -76,7 +55,6 @@ class LoginPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // لوجو دائري بتدرج
                           Align(
                             alignment: Alignment.center,
                             child: Container(
@@ -114,21 +92,18 @@ class LoginPage extends StatelessWidget {
                             bold: false,
                           ),
                           const SizedBox(height: 24),
-                          // الحقول
-                          _buildTextField(
+                          buildTextField(
                             keyboardType: CustomTextFieldType.email,
-                            hintText: 'أدخل اسم المستخدم',
-                            labelText: 'اسم المستخدم',
+                            hintText: 'البريد الالكترونى',
+                            labelText: 'البريد الالكترونى ',
                           ),
-                          _buildTextField(
+                          buildTextField(
                             keyboardType: CustomTextFieldType.password,
                             obscureText: true,
                             hintText: 'أدخل كلمة المرور',
                             labelText: 'كلمة المرور',
                           ),
                           const SizedBox(height: 16),
-
-                          // الزر
                           SizedBox(
                             height: 48,
                             child: ElevatedButton(
@@ -168,10 +143,15 @@ class LoginPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          arabicText(
-                            text: 'نسيت كلمة المرور؟',
-                            color: Color(0xFFE91E63),
-                            size: 14,
+                          GestureDetector(
+                            onTap: () {
+                              showForgetPasswordDialog(context);
+                            },
+                            child: arabicText(
+                              text: 'نسيت كلمة المرور؟',
+                              color: Color(0xFFE91E63),
+                              size: 14,
+                            ),
                           ),
                           Align(
                             alignment: Alignment.bottomLeft,
