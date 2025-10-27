@@ -15,7 +15,7 @@ Widget arabicText({
       text,
       style: TextStyle(
         fontSize: size,
-        fontFamily: 'CustomArabic',
+        fontFamily: 'ArabicCustomFont',
         color: color,
         fontWeight: bold ? FontWeight.bold : FontWeight.normal,
       ),

@@ -16,9 +16,14 @@ void showForgetPasswordDialog(BuildContext context) {
       ContactMethod method = ContactMethod.email;
       return Center(
         child: Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: StatefulBuilder(
@@ -35,22 +40,28 @@ void showForgetPasswordDialog(BuildContext context) {
                           const SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Text('استرجاع كلمة المرور',
-                                  style: TextStyle(
-                                    color: Color(0xFF7A104F),
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.bold,
-                                  )),
+                            children: [
+                              arabicText(
+                                text: 'استرجاع كلمة المرور',
+                                size: 26,
+                                color: Color(0xFF7A104F),
+                                bold: true,
+                              ),
                               SizedBox(width: 8),
-                              Icon(Icons.favorite_border,
-                                  color: Color(0xFFE91E63), size: 28),
+                              Icon(
+                                Icons.favorite_border,
+                                color: Color(0xFFE91E63),
+                                size: 28,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'من فضلك املأ البيانات التالية وسنتواصل معك قريباً',
-                            style: TextStyle(color: Color(0xFFE91E63), fontSize: 15),
+                          arabicText(
+                            text:
+                                'من فضلك املأ البيانات التالية وسنتواصل معك قريباً',
+                            size: 15,
+                            color: Color(0xFFE91E63),
+                            bold: false,
                           ),
                           const SizedBox(height: 24),
 
@@ -58,23 +69,37 @@ void showForgetPasswordDialog(BuildContext context) {
                             keyboardType: CustomTextFieldType.text,
                             hintText: 'أدخل اسمك الكامل',
                             labelText: 'اسم الشخص',
-                            suffixIcon: const Icon(Icons.person_outline, color: Color(0xFFE91E63)),
+                            suffixIcon: const Icon(
+                              Icons.person_outline,
+                              color: Color(0xFFE91E63),
+                            ),
                           ),
                           buildTextField(
                             keyboardType: CustomTextFieldType.email,
                             hintText: 'example@email.com',
                             labelText: 'البريد الإلكتروني',
-                            suffixIcon: const Icon(Icons.email_outlined, color: Color(0xFFE91E63)),
+                            suffixIcon: const Icon(
+                              Icons.email_outlined,
+                              color: Color(0xFFE91E63),
+                            ),
                           ),
                           buildTextField(
                             keyboardType: CustomTextFieldType.phone,
                             hintText: '05xxxxxxxx',
                             labelText: 'رقم الهاتف',
-                            suffixIcon: const Icon(Icons.phone, color: Color(0xFFE91E63)),
+                            suffixIcon: const Icon(
+                              Icons.phone,
+                              color: Color(0xFFE91E63),
+                            ),
                           ),
 
                           const SizedBox(height: 12),
-                          arabicText(text: 'طريقة التواصل المفضلة:', size: 14, isCenter: false, bold: true),
+                          arabicText(
+                            text: 'طريقة التواصل المفضلة:',
+                            size: 14,
+                            isCenter: false,
+                            bold: true,
+                          ),
                           const SizedBox(height: 8),
 
                           _contactOption(
@@ -101,27 +126,37 @@ void showForgetPasswordDialog(BuildContext context) {
                                   title: 'تأكيد',
                                   backgroundColor: const Color(0xFFFF7BB0),
                                   foregroundColor: Colors.white,
-                                  onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+                                  onPressed: () => Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).pop(),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: CustomGlowButton(
                                   title: 'إلغاء',
-                                  onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+                                  onPressed: () => Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).pop(),
                                 ),
                               ),
                             ],
                           ),
                           Align(
                             alignment: Alignment.bottomLeft,
-                            child: Image.asset('assets/icons/breastCancerIcon.png', height: 30),
+                            child: Image.asset(
+                              'assets/icons/breastCancerIcon.png',
+                              height: 30,
+                            ),
                           ),
                         ],
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Color(0xFF7A104F)),
-                        onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+                        onPressed: () =>
+                            Navigator.of(context, rootNavigator: true).pop(),
                       ),
                     ],
                   ),
@@ -136,7 +171,7 @@ void showForgetPasswordDialog(BuildContext context) {
       final curved = CurvedAnimation(
         parent: anim,
         curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic, // يُفعّل أنيميشن الرجوع
+        reverseCurve: Curves.easeInCubic, 
       );
       return FadeTransition(
         opacity: curved,
@@ -148,7 +183,6 @@ void showForgetPasswordDialog(BuildContext context) {
     },
   );
 }
-
 
 Widget _contactOption({
   required String title,
