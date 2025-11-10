@@ -85,9 +85,9 @@ Widget heartSign({
   );
 }
 
-PreferredSizeWidget? homePageAppBar() {
+PreferredSizeWidget? homePageAppBar({required BuildContext context}) {
   return PreferredSize(
-    preferredSize: const Size.fromHeight(80),
+    preferredSize: Size.fromHeight(MediaQuery.of(context).size.height * 0.1),
     child: Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -98,46 +98,55 @@ PreferredSizeWidget? homePageAppBar() {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
                   CircleAvatar(
-                    radius: 20,
+                    radius: MediaQuery.of(context).size.height * 0.023,
                     backgroundColor: Colors.white,
                     child: Icon(Icons.person, color: Colors.pinkAccent),
                   ),
-                  const SizedBox(width: 20),
-                  Row(
-                    children: [
-                      arabicText(
-                        text: 'تسجيل الخروج',
-                        size: 14,
-                        bold: true,
+                  SizedBox(width: MediaQuery.of(context).size.width * 0.02),
+                  GestureDetector(
+                    onTap: () {
+                      print('Logout tapped');
+                    },
+                    child: Container(
+                      height: MediaQuery.of(context).size.height * 0.04,
+                      width: MediaQuery.of(context).size.width * 0.25,
+                      decoration: BoxDecoration(
                         color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.exit_to_app, color: Colors.white),
-                    ],
+                      child: arabicText(
+                        text: 'تسجيل الخروج',
+                        size: MediaQuery.of(context).size.height * 0.017,
+                        bold: true,
+                        color: Color(0xFF831843),
+                      ),
+                    ),
                   ),
                 ],
               ),
               Row(
                 children: [
                   arabicText(
-                    text: 'نظام فريق الدعم النفسي',
-                    size: 30,
+                    text: ' فريق الدعم النفسي',
+                    size: MediaQuery.of(context).size.height * 0.02,
                     bold: true,
-                    color: Color(0xFF7A004C),
+                    color: Color(0xFF831843),
                   ),
-                  const SizedBox(width: 15),
-                  heartSign(
-                    colorSign: Color(0xFFFF7BB0),
-                    gradientColors: const [Colors.white, Colors.white],
-                    containerSize: 40,
-                    iconSize: 30,
+                  SizedBox(width: MediaQuery.of(context).size.width * 0.015),
+                  CircleAvatar(
+                    radius: MediaQuery.of(context).size.height * 0.02,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.favorite_border,
+                      color: Colors.pinkAccent,
+                    ),
                   ),
                 ],
               ),
