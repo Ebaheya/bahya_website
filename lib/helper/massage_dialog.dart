@@ -1,7 +1,7 @@
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:flutter/material.dart';
 
-void showCustomDialog({
+void customDialog({
   required BuildContext context,
   required String title,
   required String message,

@@ -62,3 +62,84 @@ Widget buildTextField({
     ),
   );
 }
+
+Widget heartSign({
+  Color colorSign = Colors.white,
+  List<Color> gradientColors = const [Color(0xFFFF7BB0), Color(0xFFE6B3FF)],
+  double containerSize = 90,
+  double iconSize = 40,
+}) {
+  return Container(
+    alignment: Alignment.center,
+    width: containerSize,
+    height: containerSize,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: LinearGradient(
+        colors: gradientColors,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+    ),
+    child: Icon(Icons.favorite_border, color: colorSign, size: iconSize),
+  );
+}
+
+PreferredSizeWidget? homePageAppBar() {
+  return PreferredSize(
+    preferredSize: const Size.fromHeight(80),
+    child: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFfca5d6), Color(0xFFDBB1FF), Color(0xFFfca5d6)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, color: Colors.pinkAccent),
+                  ),
+                  const SizedBox(width: 20),
+                  arabicText(
+                    text: 'تسجيل الخروج',
+                    size: 14,
+                    bold: true,
+                    color: Colors.white,
+                  ),
+                  const Icon(Icons.exit_to_app, color: Colors.white),
+                ],
+              ),
+              Row(
+                children: [
+                  arabicText(
+                    text: 'نظام فريق الدعم النفسي',
+                    size: 30,
+                    bold: true,
+                    color: Color(0xFF7A004C),
+                  ),
+                  const SizedBox(width: 15),
+                  heartSign(
+                    colorSign: Color(0xFFFF7BB0),
+                    gradientColors: const [Colors.white, Colors.white],
+                    containerSize: 40,
+                    iconSize: 30,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}

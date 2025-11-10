@@ -26,7 +26,6 @@ class LoginPage extends StatelessWidget {
               ),
             ),
 
-            // الكارت المتمركز
             Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
@@ -34,9 +33,7 @@ class LoginPage extends StatelessWidget {
                   horizontal: 16,
                 ),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 640,
-                  ), // أقصى عرض للكارت
+                  constraints: const BoxConstraints(maxWidth: 640),
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(32, 28, 32, 24),
                     decoration: BoxDecoration(
@@ -55,29 +52,7 @@ class LoginPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Align(
-                            alignment: Alignment.center,
-                            child: Container(
-                              width: 90,
-                              height: 90,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Color(0xFFFF7BB0),
-                                    Color(0xFFE6B3FF),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.favorite_border,
-                                color: Colors.white,
-                                size: 40,
-                              ),
-                            ),
-                          ),
+                          heartSign(),
                           const SizedBox(height: 16),
                           arabicText(
                             text: 'نظام فريق الدعم النفسي',
@@ -116,7 +91,7 @@ class LoginPage extends StatelessWidget {
                               onPressed: () async {
                                 if (_formKey.currentState?.validate() ??
                                     false) {
-                                  showCustomDialog(
+                                  customDialog(
                                     context: context,
                                     title: 'نجاح',
                                     message: 'تم تسجيل الدخول بنجاح!',
@@ -127,7 +102,7 @@ class LoginPage extends StatelessWidget {
                                         ),
                                   );
                                 } else {
-                                  showCustomDialog(
+                                  customDialog(
                                     context: context,
                                     title: 'خطأ',
                                     message: 'يرجى تصحيح الأخطاء في الحقول.',
@@ -145,7 +120,7 @@ class LoginPage extends StatelessWidget {
                           const SizedBox(height: 16),
                           GestureDetector(
                             onTap: () {
-                              showForgetPasswordDialog(context);
+                              forgetPasswordDialog(context);
                             },
                             child: arabicText(
                               text: 'نسيت كلمة المرور؟',

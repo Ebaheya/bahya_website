@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 enum ContactMethod { email, phone }
 
-void showForgetPasswordDialog(BuildContext context) {
+void forgetPasswordDialog(BuildContext context) {
   showGeneralDialog(
     context: context,
     barrierDismissible: true,
@@ -144,13 +144,6 @@ void showForgetPasswordDialog(BuildContext context) {
                               ),
                             ],
                           ),
-                          Align(
-                            alignment: Alignment.bottomLeft,
-                            child: Image.asset(
-                              'assets/icons/breastCancerIcon.png',
-                              height: 30,
-                            ),
-                          ),
                         ],
                       ),
                       IconButton(
@@ -171,7 +164,7 @@ void showForgetPasswordDialog(BuildContext context) {
       final curved = CurvedAnimation(
         parent: anim,
         curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic, 
+        reverseCurve: Curves.easeInCubic,
       );
       return FadeTransition(
         opacity: curved,
