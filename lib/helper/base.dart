@@ -110,13 +110,18 @@ PreferredSizeWidget? homePageAppBar() {
                     child: Icon(Icons.person, color: Colors.pinkAccent),
                   ),
                   const SizedBox(width: 20),
-                  arabicText(
-                    text: 'تسجيل الخروج',
-                    size: 14,
-                    bold: true,
-                    color: Colors.white,
+                  Row(
+                    children: [
+                      arabicText(
+                        text: 'تسجيل الخروج',
+                        size: 14,
+                        bold: true,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.exit_to_app, color: Colors.white),
+                    ],
                   ),
-                  const Icon(Icons.exit_to_app, color: Colors.white),
                 ],
               ),
               Row(

@@ -1,3 +1,4 @@
+import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 
@@ -38,14 +39,7 @@ class CustomGlowButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),
           onPressed: onPressed,
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontFamily: 'ArabicCustomFont',
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          child: arabicText(text: title, size: 16 , bold: true),
         ),
       ),
     );
