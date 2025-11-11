@@ -55,7 +55,7 @@ class LoginPage extends StatelessWidget {
                           heartSign(),
                           const SizedBox(height: 16),
                           arabicText(
-                            text: 'نظام فريق الدعم النفسي',
+                            text: 'فريق الدعم النفسي',
                             size: 36,
                             color: Color(0xFF7A104F),
                           ),

@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:bahya_website/helper/custom_form_textfield.dart';
+import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -8,10 +11,12 @@ Widget arabicText({
   bool isCenter = true,
   Color? color,
   bool bold = true,
+  TextAlign? align,
 }) {
   return Align(
     alignment: isCenter ? Alignment.center : Alignment.topRight,
     child: Text(
+      textAlign:  align ?? TextAlign.center,
       text,
       style: TextStyle(
         fontSize: size,
@@ -110,24 +115,14 @@ PreferredSizeWidget? homePageAppBar({required BuildContext context}) {
                     child: Icon(Icons.person, color: Colors.pinkAccent),
                   ),
                   SizedBox(width: MediaQuery.of(context).size.width * 0.02),
-                  GestureDetector(
-                    onTap: () {
-                      print('Logout tapped');
+                  CustomGlowButton(
+                    title: 'تسجيل الخروج',
+                    onPressed: () {
+                      Navigator.pop(context);
                     },
-                    child: Container(
-                      height: MediaQuery.of(context).size.height * 0.04,
-                      width: MediaQuery.of(context).size.width * 0.25,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: arabicText(
-                        text: 'تسجيل الخروج',
-                        size: MediaQuery.of(context).size.height * 0.017,
-                        bold: true,
-                        color: Color(0xFF831843),
-                      ),
-                    ),
+                    glowColor: Colors.white,
+                    backgroundColor: Colors.white,
+                    foregroundColor: Color(0xFF831843),
                   ),
                 ],
               ),

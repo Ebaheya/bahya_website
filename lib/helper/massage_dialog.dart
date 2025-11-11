@@ -1,3 +1,4 @@
+import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:flutter/material.dart';
 
@@ -17,7 +18,7 @@ void customDialog({
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           width: 420,
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(18.0),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFFFFB3D9), Color(0xFFFF7BB0)],
@@ -26,46 +27,28 @@ void customDialog({
             ),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Stack(
-            alignment: Alignment.topRight,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 12),
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'ArabicCustomFont',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      message,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'ArabicCustomFont',
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    CustomGlowButton(
-                      title: 'حسناً',
-                      onPressed: onClose ?? () => Navigator.of(context).pop(),
-                    ),
-                  ],
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  arabicText(text: title, size: 24, bold: true, color: Colors.white),
+                  const SizedBox(height: 12),
+                  arabicText(text: message, size: 16 , color: Colors.white ),
+                  const SizedBox(height: 24),
+                  CustomGlowButton(
+                    title: 'حسناً',
+                    onPressed: onClose ?? () => Navigator.of(context).pop(),
+                  ),
+                ],
               ),
             ],
           ),
