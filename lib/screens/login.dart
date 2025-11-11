@@ -1,7 +1,9 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
+import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/forget_password_dialog.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
+import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatelessWidget {
@@ -13,6 +15,7 @@ class LoginPage extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
             Positioned.fill(
@@ -35,7 +38,7 @@ class LoginPage extends StatelessWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 640),
                   child: Container(
-                    padding: const EdgeInsets.fromLTRB(32, 28, 32, 24),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.90),
                       borderRadius: BorderRadius.circular(20),
@@ -56,13 +59,13 @@ class LoginPage extends StatelessWidget {
                           const SizedBox(height: 16),
                           arabicText(
                             text: 'فريق الدعم النفسي',
-                            size: 36,
+                            size: getScreenHeight(context) * 0.035,
                             color: Color(0xFF7A104F),
                           ),
                           const SizedBox(height: 8),
                           arabicText(
                             text: 'مرحباً بك في منصة الدعم والرعاية',
-                            size: 16,
+                            size: getScreenHeight(context) * 0.02,
                             color: Color(0xFFE91E63),
                             bold: false,
                           ),
@@ -79,43 +82,30 @@ class LoginPage extends StatelessWidget {
                             labelText: 'كلمة المرور',
                           ),
                           const SizedBox(height: 16),
-                          SizedBox(
-                            height: 48,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFF7BB0),
-                                shape: const StadiumBorder(),
-                                elevation: 14,
-                                shadowColor: const Color(0xFFFF7BB0),
-                              ),
-                              onPressed: () async {
-                                if (_formKey.currentState?.validate() ??
-                                    false) {
-                                  customDialog(
-                                    context: context,
-                                    title: 'نجاح',
-                                    message: 'تم تسجيل الدخول بنجاح!',
-                                    onClose: () =>
-                                        Navigator.pushReplacementNamed(
-                                          context,
-                                          '/home',
-                                        ),
-                                  );
-                                } else {
-                                  customDialog(
-                                    context: context,
-                                    title: 'خطأ',
-                                    message: 'يرجى تصحيح الأخطاء في الحقول.',
-                                  );
-                                }
-                              },
-                              child: arabicText(
-                                text: "تسجيل الدخول",
-                                size: 18,
-                                bold: true,
-                                color: Colors.white,
-                              ),
-                            ),
+                          CustomGlowButton(
+                            title: "تسجيل الدخول",
+                            backgroundColor: Color(0xFFFF7BB0),
+                            textColor: Colors.white,
+                            onPressed: () async {
+                              if (_formKey.currentState?.validate() ?? false) {
+                                customDialog(
+                                  context: context,
+                                  title: 'نجاح',
+                                  message: 'تم تسجيل الدخول بنجاح!',
+                                  onClose: () => Navigator.pushReplacementNamed(
+                                    context,
+                                    '/home',
+                                  ),
+                                );
+                              } else {
+                                customDialog(
+                                  context: context,
+                                  title: 'خطأ',
+                                  message: 'يرجى تصحيح الأخطاء في الحقول.',
+                                );
+                              }
+                            },
+                            glowColor: Color(0xFFFF7BB0),
                           ),
                           const SizedBox(height: 16),
                           GestureDetector(

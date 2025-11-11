@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
+import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -16,7 +17,7 @@ Widget arabicText({
   return Align(
     alignment: isCenter ? Alignment.center : Alignment.topRight,
     child: Text(
-      textAlign:  align ?? TextAlign.center,
+      textAlign: align ?? TextAlign.center,
       text,
       style: TextStyle(
         fontSize: size,
@@ -55,7 +56,7 @@ Widget buildTextField({
   bool obscureText = false,
 }) {
   return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+    padding: const EdgeInsets.symmetric(vertical: 6.0),
     child: CustomFormTextField(
       keyboardType: keyboardType,
       autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -92,7 +93,7 @@ Widget heartSign({
 
 PreferredSizeWidget? homePageAppBar({required BuildContext context}) {
   return PreferredSize(
-    preferredSize: Size.fromHeight(MediaQuery.of(context).size.height * 0.1),
+    preferredSize: Size.fromHeight(getScreenHeight(context) * 0.1),
     child: Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -110,19 +111,21 @@ PreferredSizeWidget? homePageAppBar({required BuildContext context}) {
               Row(
                 children: [
                   CircleAvatar(
-                    radius: MediaQuery.of(context).size.height * 0.023,
+                    radius: getScreenHeight(context) * 0.023,
                     backgroundColor: Colors.white,
                     child: Icon(Icons.person, color: Colors.pinkAccent),
                   ),
-                  SizedBox(width: MediaQuery.of(context).size.width * 0.02),
+                  SizedBox(width: getScreenWidth(context) * 0.02),
                   CustomGlowButton(
                     title: 'تسجيل الخروج',
                     onPressed: () {
                       Navigator.pop(context);
                     },
+                    textSize: getScreenHeight(context) * 0.015,
                     glowColor: Colors.white,
+                    width: getScreenWidth(context) * 0.25,
                     backgroundColor: Colors.white,
-                    foregroundColor: Color(0xFF831843),
+                    textColor: Color(0xFF831843),
                   ),
                 ],
               ),
@@ -130,13 +133,13 @@ PreferredSizeWidget? homePageAppBar({required BuildContext context}) {
                 children: [
                   arabicText(
                     text: ' فريق الدعم النفسي',
-                    size: MediaQuery.of(context).size.height * 0.02,
+                    size: getScreenHeight(context) * 0.02,
                     bold: true,
                     color: Color(0xFF831843),
                   ),
-                  SizedBox(width: MediaQuery.of(context).size.width * 0.015),
+                  SizedBox(width: getScreenWidth(context) * 0.015),
                   CircleAvatar(
-                    radius: MediaQuery.of(context).size.height * 0.02,
+                    radius: getScreenHeight(context) * 0.02,
                     backgroundColor: Colors.white,
                     child: Icon(
                       Icons.favorite_border,
