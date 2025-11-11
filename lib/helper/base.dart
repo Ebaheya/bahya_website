@@ -155,3 +155,92 @@ PreferredSizeWidget? homePageAppBar({required BuildContext context}) {
     ),
   );
 }
+
+
+Widget sectionCard({
+  required BuildContext context,
+  required String title,
+  required Widget child,
+  IconData? trailingIcon,
+  Gradient? gradient,
+}) {
+  return Container(
+    width: getScreenWidth(context) * 0.95,
+    margin: const EdgeInsets.only(bottom: 16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          spreadRadius: 1,
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: Column(
+      children: [
+        Container(
+          height: getScreenHeight(context) * 0.10,
+          decoration: BoxDecoration(
+            gradient:
+                gradient ??
+                const LinearGradient(
+                  colors: [Color(0xFFfca5d6), Color(0xFFDBB1FF)],
+                  begin: Alignment.centerRight,
+                  end: Alignment.centerLeft,
+                ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              arabicText(
+                text: title,
+                size: getScreenHeight(context) * 0.02,
+                bold: true,
+                color: const Color(0xFF831843),
+              ),
+              const SizedBox(width: 10),
+              if (trailingIcon != null)
+                Icon(
+                  trailingIcon,
+                  color: Colors.white,
+                  size: getScreenHeight(context) * 0.04,
+                ),
+            ],
+          ),
+        ),
+        // المحتوى
+        child,
+      ],
+    ),
+  );
+}
+
+class LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+  const LegendDot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        arabicText(
+          text: label,
+          size: getScreenHeight(context) * 0.015,
+          color: const Color(0xFF313131),
+        ),
+      ],
+    );
+  }
+}

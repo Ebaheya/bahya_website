@@ -10,7 +10,7 @@ class AppRoute {
       case '/home':
         return MaterialPageRoute(builder: (_) => HomePage());
       default:
-        return MaterialPageRoute(builder: (_) => LoginPage());
+        return MaterialPageRoute(builder: (_) => HomePage());
     }
   }
 }

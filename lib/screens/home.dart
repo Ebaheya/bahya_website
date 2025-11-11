@@ -1,4 +1,5 @@
 import 'package:bahya_website/helper/base.dart';
+import 'package:bahya_website/helper/diagnosis_chart.dart';
 import 'package:bahya_website/helper/state_card.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
@@ -98,6 +99,34 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: StatsHorizontalGrid(items: getStatCards(context)),
+                  ),
+                  const SizedBox(height: 20),
+
+                  sectionCard(
+                    context: context,
+                    title: "مخطط مقارنة التشخيصات",
+                    trailingIcon: Icons.stacked_bar_chart,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFE1EC), Color(0xFFEBD9FF)],
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                    ),
+                    child: Column(
+                      children: [
+                        DiagnosisComparisonChart(data: chartData, height: 340),
+                        const SizedBox(height: 6),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            LegendDot(color: Color(0xFFFF5C9A), label: 'عدد'),
+                            SizedBox(width: 18),
+                            LegendDot(color: Color(0xFFB36BFF), label: 'نسبة'),
+                          ],
+                        ),
+                        SizedBox(height: getScreenHeight(context) * 0.02),
+                      ],
+                    ),
                   ),
                 ],
               ),
