@@ -1,5 +1,6 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/diagnosis_chart.dart';
+import 'package:bahya_website/helper/home_feature_grid.dart';
 import 'package:bahya_website/helper/state_card.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
@@ -119,9 +120,9 @@ class _HomePageState extends State<HomePage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
-                            LegendDot(color: Color(0xFFFF5C9A), label: 'عدد'),
+                            LegendDot(color: Color(0xFFB36BFF), label: 'عدد'),
                             SizedBox(width: 18),
-                            LegendDot(color: Color(0xFFB36BFF), label: 'نسبة'),
+                            LegendDot(color: Color(0xFFFF5C9A), label: 'نسبة'),
                           ],
                         ),
                         SizedBox(height: getScreenHeight(context) * 0.02),
@@ -129,6 +130,23 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            SizedBox(height: getScreenHeight(context) * 0.1),
+
+           sectionCard(
+              context: context,
+              title: "الخدمات",
+              trailingIcon: Icons.dashboard_customize,
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFE1EC), Color(0xFFEBD9FF)],
+                begin: Alignment.centerRight,
+                end: Alignment.centerLeft,
+              ),
+              child: const Padding(
+                padding: EdgeInsets.fromLTRB(16, 24, 16, 24),
+                child: HomeFeaturesGrid(),
               ),
             ),
           ],

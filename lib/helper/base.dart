@@ -156,7 +156,6 @@ PreferredSizeWidget? homePageAppBar({required BuildContext context}) {
   );
 }
 
-
 Widget sectionCard({
   required BuildContext context,
   required String title,
@@ -167,12 +166,13 @@ Widget sectionCard({
   return Container(
     width: getScreenWidth(context) * 0.95,
     margin: const EdgeInsets.only(bottom: 16),
+
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.06),
+          color: Colors.black26,
           spreadRadius: 1,
           blurRadius: 12,
           offset: const Offset(0, 6),

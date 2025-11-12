@@ -122,13 +122,13 @@ class DiagnosisComparisonChart extends StatelessWidget {
                       barRods: [
                         BarChartRodData(
                           toY: item.count,
-                          width: 26,
+                          width: getScreenWidth(context) * 0.03,
                           borderRadius: BorderRadius.circular(6),
                           color: _colorCount,
                         ),
                         BarChartRodData(
                           toY: item.percent,
-                          width: 26,
+                          width: getScreenWidth(context) * 0.03,
                           borderRadius: BorderRadius.circular(6),
                           color: _colorPercent,
                         ),
