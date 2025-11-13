@@ -43,7 +43,7 @@ class _FeatureCardState extends State<FeatureCard> {
         offset: Offset(0, _hover ? 14 : 10),
       ),
     ];
-
+    
     return MouseRegion(
       onEnter: (_) => _setHover(true),
       onExit: (_) => _setHover(false),

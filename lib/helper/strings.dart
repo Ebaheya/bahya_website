@@ -1,5 +1,6 @@
 import 'package:bahya_website/helper/diagnosis_chart.dart';
 import 'package:bahya_website/helper/home_feature_grid.dart';
+import 'package:bahya_website/helper/state_card.dart';
 import 'package:flutter/material.dart';
 
 get getScreenWidth =>
@@ -73,3 +74,57 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     onTap: () {},
   ),
 ];
+
+
+List<StatCard> getStatCards(BuildContext context) {
+  return const [
+    StatCard(
+      title: "حالات طبيعية",
+      percent: .27,
+      color: Colors.green,
+      icon: Icons.emoji_emotions,
+    ),
+    StatCard(
+      title: "اضطراب نفسي عام",
+      percent: .20,
+      color: Colors.blue,
+      icon: Icons.monitor_heart,
+    ),
+    StatCard(
+      title: "القلق",
+      percent: .27,
+      color: Colors.purple,
+      icon: Icons.psychology,
+    ),
+    StatCard(
+      title: "الاكتئاب",
+      percent: .27,
+      color: Colors.pink,
+      icon: Icons.favorite,
+    ),
+    StatCard(
+      title: "حالات طبيعية",
+      percent: .27,
+      color: Colors.green,
+      icon: Icons.emoji_emotions,
+    ),
+    StatCard(
+      title: "اضطراب نفسي عام",
+      percent: .20,
+      color: Colors.blue,
+      icon: Icons.monitor_heart,
+    ),
+    StatCard(
+      title: "القلق",
+      percent: .27,
+      color: Colors.purple,
+      icon: Icons.psychology,
+    ),
+    StatCard(
+      title: "الاكتئاب",
+      percent: .27,
+      color: Colors.pink,
+      icon: Icons.favorite,
+    ),
+  ];
+}

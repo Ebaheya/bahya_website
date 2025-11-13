@@ -1,10 +1,10 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
-class StatCard extends StatelessWidget {
+class StatCard extends StatefulWidget {
   final String title;
   final double percent;
   final Color color;
@@ -21,61 +21,180 @@ class StatCard extends StatelessWidget {
   });
 
   @override
+  State<StatCard> createState() => _StatCardState();
+}
+
+class _StatCardState extends State<StatCard>
+    with SingleTickerProviderStateMixin {
+  bool _hover = false;
+  bool _pressed = false;
+
+  late final AnimationController _badgeController;
+  late final Animation<Offset> _badgeOffset;
+
+  @override
+  void initState() {
+    super.initState();
+    _badgeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _badgeOffset = Tween<Offset>(
+      begin: const Offset(0, -0.25),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _badgeController, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _badgeController.dispose();
+    super.dispose();
+  }
+
+  void _setHover(bool v) {
+    setState(() => _hover = v);
+    if (v) {
+      _badgeController.forward();
+    } else {
+      _badgeController.reverse();
+    }
+  }
+
+  void _setPressed(bool v) => setState(() => _pressed = v);
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: 100,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
+    final scale = _pressed ? 0.98 : (_hover ? 1.04 : 1.0);
+    final iconScale = _hover ? 1.15 : 1.0;
+
+    final shadow = [
+      BoxShadow(
+        color: Colors.black.withOpacity(_hover ? 0.12 : 0.06),
+        blurRadius: _hover ? 28 : 18,
+        offset: Offset(0, _hover ? 14 : 10),
+      ),
+    ];
+
+    return MouseRegion(
+      onEnter: (_) => _setHover(true),
+      onExit: (_) => _setHover(false),
+      child: GestureDetector(
+        onTapDown: (_) => _setPressed(true),
+        onTapUp: (_) => _setPressed(false),
+        onTapCancel: () => _setPressed(false),
+        child: InkWell(
+          onTap: widget.onTap,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(color: Colors.black26, blurRadius: 12, spreadRadius: 1),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundColor: color.withOpacity(.15),
-              child: Icon(icon, color: color, size: 26),
-            ),
-            CircularPercentIndicator(
-              radius: 50,
-              lineWidth: 8,
-              animation: true,
-              percent: percent,
-              center: arabicText(
-                text: "${percent * 100}%",
-                size: 18,
-                bold: true,
-              ),
-              circularStrokeCap: CircularStrokeCap.round,
-              animateFromLastPercent: true,
-              animateToInitialPercent: true,
-              backgroundColor: Colors.grey.shade200,
-              progressColor: color,
-            ),
-            Column(
+          hoverColor: Colors.transparent,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: AnimatedScale(
+            scale: scale,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                arabicText(
-                  text: title,
-                  size: 18,
-                  bold: true,
-                  color: Color(0xFF7A004C),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: shadow,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(height: 8),
+
+                      AnimatedScale(
+                        scale: iconScale,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                        child: CircleAvatar(
+                          radius: 26,
+                          backgroundColor: widget.color.withOpacity(.15),
+                          child: Icon(
+                            widget.icon,
+                            color: widget.color,
+                            size: 26,
+                          ),
+                        ),
+                      ),
+                      CircularPercentIndicator(
+                        radius: 50,
+                        lineWidth: 8,
+                        animation: true,
+                        percent: widget.percent,
+                        center: arabicText(
+                          text: "${(widget.percent * 100).toStringAsFixed(0)}%",
+                          size: 18,
+                          bold: true,
+                        ),
+                        circularStrokeCap: CircularStrokeCap.round,
+                        animateFromLastPercent: true,
+                        animateToInitialPercent: true,
+                        backgroundColor: Colors.grey.shade200,
+                        progressColor: widget.color,
+                      ),
+                      Column(
+                        children: [
+                          arabicText(
+                            text: widget.title,
+                            size: 18,
+                            bold: true,
+                            color: const Color(0xFF7A004C),
+                          ),
+                          const SizedBox(height: 4),
+                          arabicText(
+                            text: "من إجمالي المرضى",
+                            size: 13,
+                            color: Colors.black45,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 4),
-                arabicText(
-                  text: "من إجمالي المرضى",
-                  size: 13,
-                  color: Colors.black45,
+
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: FadeTransition(
+                    opacity: _badgeController,
+                    child: SlideTransition(
+                      position: _badgeOffset,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF1F7),
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.06),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: arabicText(
+                          text: "انقر للتفاصيل",
+                          size: 10,
+                          color: const Color(0xFFE91E63),
+                          bold: true,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -108,8 +227,6 @@ class StatsHorizontalGrid extends StatelessWidget {
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 1,
             mainAxisSpacing: 20,
-
-            // mainAxisExtent: ,
             childAspectRatio: 1,
           ),
           itemCount: items.length,
@@ -118,57 +235,4 @@ class StatsHorizontalGrid extends StatelessWidget {
       ),
     );
   }
-}
-
-List<StatCard> getStatCards(BuildContext context) {
-  return [
-    StatCard(
-      title: "حالات طبيعية",
-      percent: .27,
-      color: Colors.green,
-      icon: Icons.emoji_emotions,
-    ),
-    StatCard(
-      title: "اضطراب نفسي عام",
-      percent: .20,
-      color: Colors.blue,
-      icon: Icons.monitor_heart,
-    ),
-    StatCard(
-      title: "القلق",
-      percent: .27,
-      color: Colors.purple,
-      icon: Icons.psychology,
-    ),
-    StatCard(
-      title: "الاكتئاب",
-      percent: .27,
-      color: Colors.pink,
-      icon: Icons.favorite,
-    ),
-    StatCard(
-      title: "حالات طبيعية",
-      percent: .27,
-      color: Colors.green,
-      icon: Icons.emoji_emotions,
-    ),
-    StatCard(
-      title: "اضطراب نفسي عام",
-      percent: .20,
-      color: Colors.blue,
-      icon: Icons.monitor_heart,
-    ),
-    StatCard(
-      title: "القلق",
-      percent: .27,
-      color: Colors.purple,
-      icon: Icons.psychology,
-    ),
-    StatCard(
-      title: "الاكتئاب",
-      percent: .27,
-      color: Colors.pink,
-      icon: Icons.favorite,
-    ),
-  ];
 }
