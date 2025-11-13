@@ -4,15 +4,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-/// موديل بيانات كل عمود
+
 class DiagnosisPoint {
   final String label;
-  final double percent; // النسبة
-  final double count; // العدد
+  final double percent;
+  final double count; 
   DiagnosisPoint(this.label, this.percent, this.count);
 }
 
-/// مخطط أعمدة مزدوج (عدد + نسبة)
 class DiagnosisComparisonChart extends StatelessWidget {
   final List<DiagnosisPoint> data;
   final double height;
@@ -32,7 +31,7 @@ class DiagnosisComparisonChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
-      child: ScrollConfiguration(
+      child: ScrollConfiguration( 
         behavior: const MaterialScrollBehavior().copyWith(
           dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
         ),

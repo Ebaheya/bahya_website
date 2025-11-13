@@ -1,7 +1,7 @@
 import 'package:bahya_website/helper/base.dart';
-import 'package:bahya_website/helper/diagnosis_chart.dart';
-import 'package:bahya_website/helper/home_feature_grid.dart';
-import 'package:bahya_website/helper/state_card.dart';
+import 'package:bahya_website/helper/widgets/diagnosis_chart.dart';
+import 'package:bahya_website/helper/widgets/home_feature_grid.dart';
+import 'package:bahya_website/helper/widgets/state_card.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 

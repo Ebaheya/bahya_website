@@ -1,5 +1,6 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/helper/widgets/diagnosis_patients_dialog.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -9,15 +10,14 @@ class StatCard extends StatefulWidget {
   final double percent;
   final Color color;
   final IconData icon;
-  final VoidCallback? onTap;
-
+  final List<PatientDiagnosisItem> demoPatients;
   const StatCard({
     super.key,
     required this.title,
     required this.percent,
     required this.color,
     required this.icon,
-    this.onTap,
+    required this.demoPatients,
   });
 
   @override
@@ -83,7 +83,12 @@ class _StatCardState extends State<StatCard>
         onTapUp: (_) => _setPressed(false),
         onTapCancel: () => _setPressed(false),
         child: InkWell(
-          onTap: widget.onTap,
+          onTap: () => showDiagnosisPatientsDialog(
+            context: context,
+            diagnosisTitle: "المريضات المصابات بحالات طبيعية",
+            patients: widget.demoPatients,
+            averageAge: 31,
+          ),
           borderRadius: BorderRadius.circular(20),
           hoverColor: Colors.transparent,
           splashColor: Colors.transparent,
@@ -107,8 +112,6 @@ class _StatCardState extends State<StatCard>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(height: 8),
-
                       AnimatedScale(
                         scale: iconScale,
                         duration: const Duration(milliseconds: 300),

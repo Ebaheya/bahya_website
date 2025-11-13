@@ -1,6 +1,7 @@
-import 'package:bahya_website/helper/diagnosis_chart.dart';
-import 'package:bahya_website/helper/home_feature_grid.dart';
-import 'package:bahya_website/helper/state_card.dart';
+import 'package:bahya_website/helper/widgets/diagnosis_chart.dart';
+import 'package:bahya_website/helper/widgets/diagnosis_patients_dialog.dart';
+import 'package:bahya_website/helper/widgets/home_feature_grid.dart';
+import 'package:bahya_website/helper/widgets/state_card.dart';
 import 'package:flutter/material.dart';
 
 get getScreenWidth =>
@@ -75,56 +76,41 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
   ),
 ];
 
-
 List<StatCard> getStatCards(BuildContext context) {
-  return const [
+  final demoPatients = <PatientDiagnosisItem>[
+    PatientDiagnosisItem(name: "آمنة سالم", age: 27, phq9: 10, phq4: 8),
+    PatientDiagnosisItem(name: "حليمة يوسف", age: 36, phq9: 11, phq4: 9),
+    PatientDiagnosisItem(name: "رقية عمر", age: 30, phq9: 9, phq4: 7),
+  ];
+
+  return [
     StatCard(
       title: "حالات طبيعية",
       percent: .27,
       color: Colors.green,
       icon: Icons.emoji_emotions,
+      demoPatients: demoPatients,
     ),
     StatCard(
       title: "اضطراب نفسي عام",
       percent: .20,
       color: Colors.blue,
       icon: Icons.monitor_heart,
+      demoPatients: demoPatients,
     ),
     StatCard(
       title: "القلق",
       percent: .27,
       color: Colors.purple,
       icon: Icons.psychology,
+      demoPatients: demoPatients,
     ),
     StatCard(
       title: "الاكتئاب",
       percent: .27,
       color: Colors.pink,
       icon: Icons.favorite,
-    ),
-    StatCard(
-      title: "حالات طبيعية",
-      percent: .27,
-      color: Colors.green,
-      icon: Icons.emoji_emotions,
-    ),
-    StatCard(
-      title: "اضطراب نفسي عام",
-      percent: .20,
-      color: Colors.blue,
-      icon: Icons.monitor_heart,
-    ),
-    StatCard(
-      title: "القلق",
-      percent: .27,
-      color: Colors.purple,
-      icon: Icons.psychology,
-    ),
-    StatCard(
-      title: "الاكتئاب",
-      percent: .27,
-      color: Colors.pink,
-      icon: Icons.favorite,
+      demoPatients: demoPatients,
     ),
   ];
 }
