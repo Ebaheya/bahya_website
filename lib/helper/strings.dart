@@ -60,7 +60,9 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     title: 'بيانات المرضى',
     subtitle: 'عرض وإدارة بيانات',
     icon: Icons.people_alt,
-    onTap: () {},
+    onTap: () {
+      Navigator.pushNamed(context, '/patient_info');
+    },
   ),
   FeatureItem(
     title: 'نتائج تخزين الأسئلة',

@@ -16,7 +16,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: homePageAppBar(context: context),
+      appBar: customAppBar(context: context , title: ' فريق الدعم النفسي'),
       backgroundColor: const Color(0xFFFDF7FB),
       body: SingleChildScrollView(
         child: Column(
@@ -135,7 +135,7 @@ class _HomePageState extends State<HomePage> {
 
             SizedBox(height: getScreenHeight(context) * 0.1),
 
-           sectionCard(
+            sectionCard(
               context: context,
               title: "الخدمات",
               trailingIcon: Icons.dashboard_customize,

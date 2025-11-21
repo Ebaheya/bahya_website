@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/strings.dart';
@@ -91,9 +89,16 @@ Widget heartSign({
   );
 }
 
-PreferredSizeWidget? homePageAppBar({required BuildContext context}) {
+PreferredSizeWidget? customAppBar({
+  required BuildContext context,
+  bool isHomebar = true,
+  required String title,
+}) {
+  final h = getScreenHeight(context);
+  final w = getScreenWidth(context);
+
   return PreferredSize(
-    preferredSize: Size.fromHeight(getScreenHeight(context) * 0.1),
+    preferredSize: Size.fromHeight(h * 0.1),
     child: Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -108,44 +113,59 @@ PreferredSizeWidget? homePageAppBar({required BuildContext context}) {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: getScreenHeight(context) * 0.023,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, color: Colors.pinkAccent),
-                  ),
-                  SizedBox(width: getScreenWidth(context) * 0.02),
-                  CustomGlowButton(
-                    title: 'تسجيل الخروج',
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    textSize: getScreenHeight(context) * 0.015,
-                    glowColor: Colors.white,
-                    width: getScreenWidth(context) * 0.25,
-                    backgroundColor: Colors.white,
-                    textColor: Color(0xFF831843),
-                  ),
-                ],
-              ),
+              isHomebar
+                  ? Row(
+                      children: [
+                        CircleAvatar(
+                          radius: h * 0.023,
+                          backgroundColor: Colors.white,
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.pinkAccent,
+                          ),
+                        ),
+                        SizedBox(width: w * 0.02),
+                        CustomGlowButton(
+                          title: 'تسجيل الخروج',
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          textSize: h * 0.015,
+                          glowColor: Colors.white,
+                          width: w * 0.25,
+                          backgroundColor: Colors.white,
+                          textColor: const Color(0xFF831843),
+                        ),
+                      ],
+                    )
+                  : SizedBox.shrink(),
               Row(
                 children: [
                   arabicText(
-                    text: ' فريق الدعم النفسي',
-                    size: getScreenHeight(context) * 0.02,
+                    text: title,
+                    size: h * 0.02,
                     bold: true,
-                    color: Color(0xFF831843),
+                    color: const Color(0xFF831843),
                   ),
-                  SizedBox(width: getScreenWidth(context) * 0.015),
+                  SizedBox(width: w * 0.015),
                   CircleAvatar(
-                    radius: getScreenHeight(context) * 0.02,
+                    radius: h * 0.02,
                     backgroundColor: Colors.white,
-                    child: Icon(
+                    child: const Icon(
                       Icons.favorite_border,
                       color: Colors.pinkAccent,
                     ),
                   ),
+                  isHomebar
+                      ? SizedBox.shrink()
+                      : IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(
+                            Icons.arrow_forward_ios,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
                 ],
               ),
             ],
