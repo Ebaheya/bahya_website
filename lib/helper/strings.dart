@@ -78,13 +78,12 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
   ),
 ];
 
+final demoPatients = <PatientDiagnosisItem>[
+  PatientDiagnosisItem(name: "آمنة سالم", age: 27, phq9: 10, phq4: 8),
+  PatientDiagnosisItem(name: "حليمة يوسف", age: 36, phq9: 11, phq4: 9),
+  PatientDiagnosisItem(name: "رقية عمر", age: 30, phq9: 9, phq4: 7),
+];
 List<StatCard> getStatCards(BuildContext context) {
-  final demoPatients = <PatientDiagnosisItem>[
-    PatientDiagnosisItem(name: "آمنة سالم", age: 27, phq9: 10, phq4: 8),
-    PatientDiagnosisItem(name: "حليمة يوسف", age: 36, phq9: 11, phq4: 9),
-    PatientDiagnosisItem(name: "رقية عمر", age: 30, phq9: 9, phq4: 7),
-  ];
-
   return [
     StatCard(
       title: "حالات طبيعية",
@@ -116,3 +115,118 @@ List<StatCard> getStatCards(BuildContext context) {
     ),
   ];
 }
+
+final List<Map<String, dynamic>> patients = [
+  {
+    "name": "مريم أحمد",
+    "age": 28,
+    "address": "الرياض، حي الياسمين",
+    "phq9": 12,
+    "phq4": 8,
+    "diag": "قلق متوسط مع أعراض اكتئاب خفيفة جدا جدا جدا",
+  },
+  {
+    "name": "فاطمة علي",
+    "age": 35,
+    "address": "جدة، حي الروضة",
+    "phq9": 7,
+    "phq4": 5,
+    "diag": "حالة طبيعية مع قلق خفيف",
+  },
+  {
+    "name": "سارة خالد",
+    "age": 42,
+    "address": "الدمام، حي الفيصلية",
+    "phq9": 18,
+    "phq4": 11,
+    "diag": "اكتئاب متوسط الشدة",
+  },
+  {
+    "name": "هند عبدالله",
+    "age": 31,
+    "address": "مكة المكرمة، العزيزية",
+    "phq9": 4,
+    "phq4": 3,
+    "diag": "حالة طبيعية",
+  },
+  {
+    "name": "نورة سعيد",
+    "age": 26,
+    "address": "المدينة المنورة، العيون",
+    "phq9": 14,
+    "phq4": 9,
+    "diag": "قلق متوسط مع اكتئاب متوسط",
+  },
+  {
+    "name": "سارة خالد",
+    "age": 42,
+    "address": "الدمام، حي الفيصلية",
+    "phq9": 18,
+    "phq4": 11,
+    "diag": "اكتئاب متوسط الشدة",
+  },
+  {
+    "name": "هند عبدالله",
+    "age": 31,
+    "address": "مكة المكرمة، العزيزية",
+    "phq9": 4,
+    "phq4": 3,
+    "diag": "حالة طبيعية",
+  },
+  {
+    "name": "نورة سعيد",
+    "age": 26,
+    "address": "المدينة المنورة، العيون",
+    "phq9": 14,
+    "phq4": 9,
+    "diag": "قلق متوسط مع اكتئاب متوسط",
+  },
+  {
+    "name": "سارة خالد",
+    "age": 42,
+    "address": "الدمام، حي الفيصلية",
+    "phq9": 18,
+    "phq4": 11,
+    "diag": "اكتئاب متوسط الشدة",
+  },
+  {
+    "name": "هند عبدالله",
+    "age": 31,
+    "address": "مكة المكرمة، العزيزية",
+    "phq9": 4,
+    "phq4": 3,
+    "diag": "حالة طبيعية",
+  },
+  {
+    "name": "نورة سعيد",
+    "age": 26,
+    "address": "المدينة المنورة، العيون",
+    "phq9": 14,
+    "phq4": 9,
+    "diag": "قلق متوسط مع اكتئاب متوسط",
+  },
+  {
+    "name": "سارة خالد",
+    "age": 42,
+    "address": "الدمام، حي الفيصلية",
+    "phq9": 18,
+    "phq4": 11,
+    "diag": "اكتئاب متوسط الشدة",
+  },
+  {
+    "name": "هند عبدالله",
+    "age": 31,
+    "address": "مكة المكرمة، العزيزية",
+    "phq9": 4,
+    "phq4": 3,
+    "diag": "حالة طبيعية",
+  },
+  {
+    "name": "نورة سعيد",
+    "age": 26,
+    "address": "المدينة المنورة، العيون",
+    "phq9": 14,
+    "phq4": 9,
+    "diag": "قلق متوسط مع اكتئاب متوسط",
+  },
+];

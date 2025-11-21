@@ -101,7 +101,7 @@ class _PatientRowState extends State<PatientRow> {
                       Future.microtask(() {
                         showPatientProgressDialog(
                           context: context,
-                          patient: widget.item,
+                          patient: widget.item, 
                         );
                       });
                     },
