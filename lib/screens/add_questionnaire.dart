@@ -3,6 +3,7 @@ import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/helper/widgets/DiagnosisRangeWidget.dart';
 import 'package:bahya_website/helper/widgets/questionnaire_body.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,11 +21,14 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
   final FocusNode _keyboardFocusNode = FocusNode();
   late List<TextEditingController> _scoreControllers;
 
+  String? _selectedDiagnosis;
+
   @override
   void initState() {
     super.initState();
 
     _scoreControllers = [TextEditingController(text: "0")];
+    _selectedDiagnosis = diagnosisCategories.first;
   }
 
   @override
@@ -133,7 +137,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                         arabicText(
                           text: "قم بإضافة الأسئلة والإجابات",
                           size: h * 0.02,
-                          color: const Color(0xFF831843),
+                          color: const Color(0xFFED4EA1),
                           bold: true,
                           isCenter: false,
                         ),
@@ -166,7 +170,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                     SizedBox(height: h * 0.03),
 
                     ...List.generate(_scoreControllers.length, (index) {
-                      return AnimatedQuestion(
+                      return AnimatedAdd(
                         key: ValueKey(_scoreControllers[index]),
                         h: h,
                         child: Padding(
@@ -190,6 +194,22 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                       width: w * 0.7,
                       title: 'إنشاء سؤال جديد',
                       onPressed: _addQuestion,
+                    ),
+
+                    SizedBox(height: h * 0.04),
+
+                    DiagnosisRangeWidget(h: h, w: w, onDelete: () {}),
+                    SizedBox(height: h * 0.04),
+                    CustomGlowButton(
+                      width: w,
+                      title: 'حفظ الاستبيان',
+                      onPressed: () {
+                        customDialog(
+                          context: context,
+                          title: 'تم الحفظ',
+                          message: 'تم حفظ الاستبيان بنجاح.',
+                        );
+                      },
                     ),
                   ],
                 ),

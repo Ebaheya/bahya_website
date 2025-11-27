@@ -78,7 +78,7 @@ class _QuestionnaireBodyState extends State<QuestionnaireBody> {
     return Container(
       padding: EdgeInsets.all(h * 0.02),
       decoration: BoxDecoration(
-        color: const Color(0xFFFDF3FA),
+        color: const Color(0xFFF8E7F8),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -140,7 +140,7 @@ class _QuestionnaireBodyState extends State<QuestionnaireBody> {
                 SizedBox(height: h * 0.01),
 
                 ...List.generate(_scoreControllers.length, (index) {
-                  return AnimatedAnswer(
+                  return AnimatedAdd(
                     key: ValueKey(_scoreControllers[index]),
                     h: h,
                     child: Padding(
@@ -164,24 +164,28 @@ class _QuestionnaireBodyState extends State<QuestionnaireBody> {
 
           SizedBox(height: h * 0.01),
 
-          CustomGlowButton(title: 'إضافة إجابة أخرى', onPressed: _addAnswer),
+          CustomGlowButton(
+            title: 'إضافة إجابة جديدة',
+            onPressed: _addAnswer,
+            width: w * 0.4,
+          ),
         ],
       ),
     );
   }
 }
 
-class AnimatedAnswer extends StatelessWidget {
+class AnimatedAdd extends StatelessWidget {
   final double h;
   final Widget child;
 
-  const AnimatedAnswer({super.key, required this.h, required this.child});
+  const AnimatedAdd({super.key, required this.h, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 700),
       curve: Curves.easeOut,
       builder: (context, value, child) {
         return Opacity(
@@ -220,49 +224,11 @@ class ScoreRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        Container(
-          width: w * 0.13,
+        scoreCounter(
           height: h * 0.06,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: TextField(
-            controller: controller,
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: (value) {
-              if (value.isEmpty) {
-                controller.text = "0";
-              }
-              if (int.tryParse(controller.text) != null &&
-                  int.parse(controller.text) < 0) {
-                controller.text = "0";
-              }
-              controller.selection = TextSelection.fromPosition(
-                TextPosition(offset: controller.text.length),
-              );
-            },
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-            ),
-            style: TextStyle(
-              fontFamily: 'ArabicCustomFont',
-              fontWeight: FontWeight.bold,
-              fontSize: h * 0.02,
-            ),
-          ),
+          width: w * 0.13,
+          controller: controller,
+          h: h,
         ),
         SizedBox(width: w * 0.01),
         arabicText(
@@ -299,7 +265,7 @@ Widget answer({
               hintText: "جيد جدا",
               labelText: "الإجابة",
               textDirection: TextDirection.rtl,
-              maxLines: 2
+              maxLines: 2,
             ),
           ),
         ],
@@ -310,28 +276,55 @@ Widget answer({
   );
 }
 
-class AnimatedQuestion extends StatelessWidget {
-  final double h;
-  final Widget child;
 
-  const AnimatedQuestion({super.key, required this.h, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, (1 - value) * h * 0.03),
-            child: child,
-          ),
+Widget scoreCounter({
+  required double width,
+  required double h,
+  required double height,
+  required TextEditingController controller,
+}) {
+  return Container(
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    alignment: Alignment.center,
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    child: TextField(
+      controller: controller,
+      textAlign: TextAlign.center,
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      onChanged: (value) {
+        if (value.isEmpty) {
+          controller.text = "0";
+        }
+        if (int.tryParse(controller.text) != null &&
+            int.parse(controller.text) < 0) {
+          controller.text = "0";
+        }
+        controller.selection = TextSelection.fromPosition(
+          TextPosition(offset: controller.text.length),
         );
       },
-      child: child,
-    );
-  }
+      decoration: const InputDecoration(
+        border: InputBorder.none,
+        contentPadding: EdgeInsets.zero,
+      ),
+      style: TextStyle(
+        fontFamily: 'ArabicCustomFont',
+        fontWeight: FontWeight.bold,
+        fontSize: h * 0.02,
+      ),
+    ),
+  );
 }
