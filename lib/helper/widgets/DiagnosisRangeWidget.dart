@@ -130,7 +130,7 @@ class _DiagnosisRangeWidgetState extends State<DiagnosisRangeWidget> {
           SizedBox(height: h * 0.02),
 
           CustomGlowButton(
-            width: w * 0.5,
+            width: w * 0.6,
             title: 'إنشاء تشخيص جديد',
             onPressed: _addDiagnosis,
           ),
@@ -163,26 +163,64 @@ class DiagnosisScoreRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Column(
+              children: [
+                arabicText(text: "إلى", size: h * 0.018, bold: true),
+                SizedBox(height: h * 0.01),
+                scoreCounter(
+                  height: h * 0.06,
+                  width: w * 0.13,
+                  h: h,
+                  controller: item.to,
+                ),
+              ],
+            ),
+
+            SizedBox(width: w * 0.02),
+
+            Column(
+              children: [
+                arabicText(text: "من", size: h * 0.018, bold: true),
+                SizedBox(height: h * 0.01),
+                scoreCounter(
+                  height: h * 0.06,
+                  width: w * 0.13,
+                  h: h,
+                  controller: item.from,
+                ),
+              ],
+            ),
+
+            SizedBox(width: w * 0.02),
+
+            IconButton(
+              onPressed: onDelete,
+              icon: const Icon(Icons.delete, color: Colors.red),
+            ),
+          ],
+        ),
+        SizedBox(height: h * 0.03),
         Column(
           children: [
             arabicText(
               text: "التشخيص",
-              size: h * 0.014,
+              size: h * 0.018,
               bold: true,
               color: const Color(0xFFEA298C),
             ),
-            SizedBox(height: h * 0.01),
-
+            SizedBox(height: h * 0.02),
             SizedBox(
-              width: w * 0.135,
+              width: w * 0.54,
               child: DropdownButtonFormField<String>(
                 value: item.diagnosis,
                 dropdownColor: Colors.white,
                 style: TextStyle(
-                  fontSize: h * 0.0135,
+                  fontSize: h * 0.016,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFFEA298C),
                   fontFamily: 'ArabicCustomFont',
@@ -202,13 +240,11 @@ class DiagnosisScoreRow extends StatelessWidget {
                     .map(
                       (d) => DropdownMenuItem(
                         value: d,
-                        child: Text(
-                          d,
-                          style: TextStyle(
-                            color: const Color(0xFF831843),
-                            fontSize: h * 0.018,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: arabicText(
+                          text: d,
+                          size: h * 0.016,
+                          color: const Color(0xFF831843),
+                          isCenter: false,
                         ),
                       ),
                     )
@@ -219,43 +255,6 @@ class DiagnosisScoreRow extends StatelessWidget {
               ),
             ),
           ],
-        ),
-
-        SizedBox(width: w * 0.02),
-
-        Column(
-          children: [
-            arabicText(text: "إلى", size: h * 0.014, bold: true),
-            SizedBox(height: h * 0.01),
-            scoreCounter(
-              height: h * 0.06,
-              width: w * 0.13,
-              h: h,
-              controller: item.to,
-            ),
-          ],
-        ),
-
-        SizedBox(width: w * 0.02),
-
-        Column(
-          children: [
-            arabicText(text: "من", size: h * 0.014, bold: true),
-            SizedBox(height: h * 0.01),
-            scoreCounter(
-              height: h * 0.06,
-              width: w * 0.13,
-              h: h,
-              controller: item.from,
-            ),
-          ],
-        ),
-
-        SizedBox(width: w * 0.02),
-
-        IconButton(
-          onPressed: onDelete,
-          icon: const Icon(Icons.delete, color: Colors.red),
         ),
       ],
     );

@@ -276,13 +276,22 @@ Widget answer({
   );
 }
 
-
 Widget scoreCounter({
   required double width,
   required double h,
   required double height,
   required TextEditingController controller,
 }) {
+  final FocusNode focusNode = FocusNode();
+
+  focusNode.addListener(() {
+    if (!focusNode.hasFocus) {
+      if (controller.text.trim().isEmpty) {
+        controller.text = "0";
+      }
+    }
+  });
+
   return Container(
     width: width,
     height: height,
@@ -301,21 +310,10 @@ Widget scoreCounter({
     padding: const EdgeInsets.symmetric(horizontal: 8),
     child: TextField(
       controller: controller,
+      focusNode: focusNode,
       textAlign: TextAlign.center,
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      onChanged: (value) {
-        if (value.isEmpty) {
-          controller.text = "0";
-        }
-        if (int.tryParse(controller.text) != null &&
-            int.parse(controller.text) < 0) {
-          controller.text = "0";
-        }
-        controller.selection = TextSelection.fromPosition(
-          TextPosition(offset: controller.text.length),
-        );
-      },
       decoration: const InputDecoration(
         border: InputBorder.none,
         contentPadding: EdgeInsets.zero,

@@ -14,7 +14,7 @@ class AppRoute {
       case '/patient_info':
         return MaterialPageRoute(builder: (_) => PatientInfo());
       case '/add_questionnaire':
-        return MaterialPageRoute(builder: (_) => const AddQuestionnaire());
+        return MaterialPageRoute(builder: (_) =>  AddQuestionnaire());
       default:
         return MaterialPageRoute(builder: (_) => AddQuestionnaire());
     }
