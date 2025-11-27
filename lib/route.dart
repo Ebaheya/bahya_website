@@ -16,7 +16,7 @@ class AppRoute {
       case '/add_questionnaire':
         return MaterialPageRoute(builder: (_) =>  AddQuestionnaire());
       default:
-        return MaterialPageRoute(builder: (_) => AddQuestionnaire());
+        return MaterialPageRoute(builder: (_) => HomePage());
     }
   }
 }
