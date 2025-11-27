@@ -23,7 +23,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
   @override
   void initState() {
     super.initState();
-    
+
     _scoreControllers = [TextEditingController(text: "0")];
   }
 
@@ -53,7 +53,6 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
   }
 
   void _removeQuestion(int index) {
-
     if (_scoreControllers.length == 1) {
       customDialog(
         context: context,
@@ -118,7 +117,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                     ),
                   ],
                 ),
-                width: w * 0.7,
+                width: w * 0.95,
                 child: Column(
                   children: [
                     Column(
@@ -166,7 +165,6 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
 
                     SizedBox(height: h * 0.03),
 
-                    // الأسئلة + أنيميشن
                     ...List.generate(_scoreControllers.length, (index) {
                       return AnimatedQuestion(
                         key: ValueKey(_scoreControllers[index]),
@@ -200,32 +198,6 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class AnimatedQuestion extends StatelessWidget {
-  final double h;
-  final Widget child;
-
-  const AnimatedQuestion({super.key, required this.h, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, (1 - value) * h * 0.03),
-            child: child,
-          ),
-        );
-      },
-      child: child,
     );
   }
 }

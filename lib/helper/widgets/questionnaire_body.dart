@@ -221,7 +221,7 @@ class ScoreRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Container(
-          width: w * 0.08,
+          width: w * 0.13,
           height: h * 0.06,
           decoration: BoxDecoration(
             color: Colors.white,
@@ -299,6 +299,7 @@ Widget answer({
               hintText: "جيد جدا",
               labelText: "الإجابة",
               textDirection: TextDirection.rtl,
+              maxLines: 2
             ),
           ),
         ],
@@ -307,4 +308,30 @@ Widget answer({
       ScoreRow(h: h, w: w, controller: controller),
     ],
   );
+}
+
+class AnimatedQuestion extends StatelessWidget {
+  final double h;
+  final Widget child;
+
+  const AnimatedQuestion({super.key, required this.h, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * h * 0.03),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
 }
