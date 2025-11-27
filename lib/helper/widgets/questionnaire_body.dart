@@ -1,0 +1,310 @@
+import 'package:bahya_website/helper/base.dart';
+import 'package:bahya_website/helper/custom_form_textfield.dart';
+import 'package:bahya_website/helper/custom_glow_buttom.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class QuestionnaireBody extends StatefulWidget {
+  const QuestionnaireBody({
+    super.key,
+    required this.h,
+    required this.w,
+    required this.scoreController,
+    required this.questionIndex,
+    required this.onDeleteQuestion,
+  });
+
+  final double h;
+  final double w;
+  final TextEditingController scoreController;
+  final int questionIndex;
+  final VoidCallback onDeleteQuestion;
+
+  @override
+  State<QuestionnaireBody> createState() => _QuestionnaireBodyState();
+}
+
+class _QuestionnaireBodyState extends State<QuestionnaireBody> {
+  static const int _maxAnswers = 10;
+
+  late List<TextEditingController> _scoreControllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _scoreControllers = [widget.scoreController];
+
+    if (widget.scoreController.text.isEmpty) {
+      widget.scoreController.text = '0';
+    }
+  }
+
+  @override
+  void dispose() {
+    for (int i = 1; i < _scoreControllers.length; i++) {
+      _scoreControllers[i].dispose();
+    }
+    super.dispose();
+  }
+
+  void _addAnswer() {
+    if (_scoreControllers.length >= _maxAnswers) {
+      return;
+    }
+
+    setState(() {
+      _scoreControllers.add(TextEditingController(text: '0'));
+    });
+  }
+
+  void _removeAnswer(int index) {
+    if (_scoreControllers.length == 1) return;
+
+    setState(() {
+      if (index == 0) {
+        _scoreControllers.removeAt(index);
+      } else {
+        _scoreControllers[index].dispose();
+        _scoreControllers.removeAt(index);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final h = widget.h;
+    final w = widget.w;
+
+    return Container(
+      padding: EdgeInsets.all(h * 0.02),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFDF3FA),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.10),
+            spreadRadius: 1,
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: widget.onDeleteQuestion,
+                icon: const Icon(Icons.delete, color: Colors.red),
+              ),
+              arabicText(
+                text: "سؤال ${widget.questionIndex}",
+                size: h * 0.02,
+                color: const Color(0xFF831843),
+                bold: true,
+                isCenter: false,
+              ),
+            ],
+          ),
+          SizedBox(height: h * 0.02),
+
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                arabicText(
+                  text: "نص السؤال",
+                  size: h * 0.018,
+                  color: Colors.black,
+                  bold: true,
+                  isCenter: false,
+                ),
+                SizedBox(height: h * 0.01),
+                buildTextField(
+                  keyboardType: CustomTextFieldType.text,
+                  hintText: "ما هو شعورك اليوم؟",
+                  labelText: "السؤال",
+                  textDirection: TextDirection.rtl,
+                  maxLines: 3,
+                ),
+                SizedBox(height: h * 0.02),
+                arabicText(
+                  text: "الاجابات مع السكور",
+                  size: h * 0.018,
+                  color: Colors.black,
+                  bold: true,
+                  isCenter: false,
+                ),
+                SizedBox(height: h * 0.01),
+
+                ...List.generate(_scoreControllers.length, (index) {
+                  return AnimatedAnswer(
+                    key: ValueKey(_scoreControllers[index]),
+                    h: h,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == _scoreControllers.length - 1
+                            ? 0
+                            : h * 0.02,
+                      ),
+                      child: answer(
+                        h: h,
+                        w: w,
+                        controller: _scoreControllers[index],
+                        onDelete: () => _removeAnswer(index),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+
+          SizedBox(height: h * 0.01),
+
+          CustomGlowButton(title: 'إضافة إجابة أخرى', onPressed: _addAnswer),
+        ],
+      ),
+    );
+  }
+}
+
+class AnimatedAnswer extends StatelessWidget {
+  final double h;
+  final Widget child;
+
+  const AnimatedAnswer({super.key, required this.h, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * h * 0.02),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+class ScoreRow extends StatelessWidget {
+  final double h;
+  final double w;
+  final TextEditingController controller;
+
+  const ScoreRow({
+    super.key,
+    required this.h,
+    required this.w,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.text.isEmpty ||
+        int.tryParse(controller.text) == null ||
+        int.parse(controller.text) < 0) {
+      controller.text = "0";
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Container(
+          width: w * 0.08,
+          height: h * 0.06,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: TextField(
+            controller: controller,
+            textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onChanged: (value) {
+              if (value.isEmpty) {
+                controller.text = "0";
+              }
+              if (int.tryParse(controller.text) != null &&
+                  int.parse(controller.text) < 0) {
+                controller.text = "0";
+              }
+              controller.selection = TextSelection.fromPosition(
+                TextPosition(offset: controller.text.length),
+              );
+            },
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+            style: TextStyle(
+              fontFamily: 'ArabicCustomFont',
+              fontWeight: FontWeight.bold,
+              fontSize: h * 0.02,
+            ),
+          ),
+        ),
+        SizedBox(width: w * 0.01),
+        arabicText(
+          text: "السكور",
+          size: h * 0.02,
+          color: Colors.black,
+          bold: true,
+          isCenter: false,
+        ),
+      ],
+    );
+  }
+}
+
+Widget answer({
+  required double h,
+  required double w,
+  required TextEditingController controller,
+  required VoidCallback onDelete,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          IconButton(
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete, color: Colors.red),
+          ),
+          SizedBox(width: w * 0.01),
+          Expanded(
+            child: buildTextField(
+              keyboardType: CustomTextFieldType.text,
+              hintText: "جيد جدا",
+              labelText: "الإجابة",
+              textDirection: TextDirection.rtl,
+            ),
+          ),
+        ],
+      ),
+      SizedBox(height: h * 0.015),
+      ScoreRow(h: h, w: w, controller: controller),
+    ],
+  );
+}

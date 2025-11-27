@@ -54,7 +54,9 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     title: 'إضافة أسئلة',
     subtitle: 'إنشاء نماذج أسئلة',
     icon: Icons.edit_note,
-    onTap: () {},
+    onTap: () {
+      Navigator.pushNamed(context, '/add_questionnaire');
+    },
   ),
   FeatureItem(
     title: 'بيانات المرضى',

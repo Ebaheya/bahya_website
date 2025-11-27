@@ -1,3 +1,4 @@
+import 'package:bahya_website/screens/add_questionnaire.dart';
 import 'package:bahya_website/screens/home.dart';
 import 'package:bahya_website/screens/login.dart';
 import 'package:bahya_website/screens/patient_info.dart';
@@ -12,8 +13,10 @@ class AppRoute {
         return MaterialPageRoute(builder: (_) => HomePage());
       case '/patient_info':
         return MaterialPageRoute(builder: (_) => PatientInfo());
+      case '/add_questionnaire':
+        return MaterialPageRoute(builder: (_) => const AddQuestionnaire());
       default:
-        return MaterialPageRoute(builder: (_) => HomePage());
+        return MaterialPageRoute(builder: (_) => AddQuestionnaire());
     }
   }
 }

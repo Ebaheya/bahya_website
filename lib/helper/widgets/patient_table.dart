@@ -1,4 +1,3 @@
-// helper/widgets/patient_table.dart
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';

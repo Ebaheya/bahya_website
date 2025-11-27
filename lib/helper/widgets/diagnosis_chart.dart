@@ -142,7 +142,6 @@ class DiagnosisComparisonChart extends StatelessWidget {
       ),
     );
   }
-
   double _calcMaxY() {
     final maxCount = data.fold<double>(0, (p, e) => e.count > p ? e.count : p);
     final maxPercent = data.fold<double>(

@@ -1,4 +1,3 @@
-// screens/patient_info.dart
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/patient_progress_dialog.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +46,7 @@ class _PatientInfoState extends State<PatientInfo> {
               child: Column(
                 children: [
                   Container(
-                    //height: h * 0.10,
+                  
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                     ),

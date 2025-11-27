@@ -12,6 +12,7 @@ class CustomFormTextField extends StatefulWidget {
   final TextEditingController? controller;
   final TextDirection textDirection;
   final Icon? suffixIcon;
+  final int maxLines;
   const CustomFormTextField({
     super.key,
     required this.labelText,
@@ -22,6 +23,7 @@ class CustomFormTextField extends StatefulWidget {
     this.controller,
     this.textDirection = TextDirection.rtl,
     this.suffixIcon,
+    this.maxLines = 1,
   });
 
   @override
@@ -123,6 +125,9 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
       obscuringCharacter: '•',
       autovalidateMode: widget.autovalidateMode,
       textDirection: widget.textDirection,
+      maxLines: widget.maxLines,
+      minLines: 1,
+      expands: false,
       style: const TextStyle(
         color: Colors.black,
         fontSize: 16,

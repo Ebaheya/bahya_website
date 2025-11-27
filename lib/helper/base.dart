@@ -50,18 +50,23 @@ Widget buildTextField({
   required CustomTextFieldType keyboardType,
   required String hintText,
   required String labelText,
+  int maxLines = 1,
   Icon? suffixIcon,
   bool obscureText = false,
+  TextDirection textDirection = TextDirection.ltr,
+  TextEditingController? controller,
 }) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 6.0),
     child: CustomFormTextField(
+      controller: controller,
       keyboardType: keyboardType,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       hintText: hintText,
       labelText: labelText,
       obscureText: obscureText,
-      textDirection: TextDirection.ltr,
+      textDirection: textDirection,
+      maxLines: maxLines,
       suffixIcon: suffixIcon,
     ),
   );
