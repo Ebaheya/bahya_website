@@ -67,12 +67,6 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     },
   ),
   FeatureItem(
-    title: 'نتائج تخزين الأسئلة',
-    subtitle: 'عرض النتائج المحفوظة',
-    icon: Icons.assignment,
-    onTap: () {},
-  ),
-  FeatureItem(
     title: 'تخزين الأسئلة',
     subtitle: 'الوصول للنماذج المحفوظة',
     icon: Icons.folder_open,
@@ -220,4 +214,12 @@ final List<String> diagnosisCategories = const [
   'قلق متوسط',
   'قلق شديد',
   'حالة تحتاج تقييم متخصص',
+];
+
+
+final formsList = [
+  "استبيان PHQ-9",
+  "استبيان GAD-7",
+  "استبيان النوم",
+  "استبيان القلق",
 ];

@@ -29,7 +29,6 @@ Widget answersDetails({required BuildContext context}) {
 
           SizedBox(height: h * 0.03),
 
-
           ConstrainedBox(
             constraints: BoxConstraints(maxWidth: 400),
             child: Container(
@@ -107,7 +106,8 @@ Widget answersDetails({required BuildContext context}) {
           ),
 
           SizedBox(height: h * 0.03),
-
+          FormSelector(h: h, w: w, forms: formsList, onSelect: (form) {}),
+          SizedBox(height: h * 0.03),
           arabicText(
             text: "الإجابات التفصيلية",
             size: h * 0.025,
@@ -129,7 +129,15 @@ Widget answersDetails({required BuildContext context}) {
               ),
             ),
           ),
-
+          SizedBox(height: h * 0.03),
+          arabicText(
+            text: "التشخيص:  قلق متوسط",
+            size: h * 0.02,
+            bold: true,
+            color: Colors.black,
+            isCenter: false,
+          ),
+          SizedBox(height: h * 0.03),
           CustomGlowButton(
             title: "حذف الاجابات",
             onPressed: () {},
@@ -209,3 +217,79 @@ Widget answerOfQuestion(double h) {
   );
 }
 
+class FormSelector extends StatefulWidget {
+  final double h;
+  final double w;
+  final List<String> forms;
+  final Function(String) onSelect;
+
+  const FormSelector({
+    super.key,
+    required this.h,
+    required this.w,
+    required this.forms,
+    required this.onSelect,
+  });
+
+  @override
+  State<FormSelector> createState() => _FormSelectorState();
+}
+
+class _FormSelectorState extends State<FormSelector> {
+  String? selectedForm;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedForm = widget.forms.first;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: widget.w * 0.55,
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFE4F4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEFA0C9)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selectedForm,
+          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF7A004C)),
+          style: TextStyle(
+            fontFamily: 'ArabicCustomFont',
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF7A004C),
+            fontSize: widget.h * 0.018,
+          ),
+          items: widget.forms.map((form) {
+            return DropdownMenuItem(
+              value: form,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.list_alt,
+                    color: Color(0xFFE40070),
+                    size: widget.h * 0.02,
+                  ),
+                  SizedBox(width: 8),
+                  arabicText(
+                    text: form,
+                    size: widget.h * 0.018,
+                    color: const Color(0xFF7A004C),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() => selectedForm = value);
+            widget.onSelect(value!);
+          },
+        ),
+      ),
+    );
+  }
+}
