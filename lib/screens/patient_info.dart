@@ -113,7 +113,7 @@ class _PatientInfoState extends State<PatientInfo> {
                 context: context,
                 patient: demoPatients[0],
               );
-            },
+            }, hasAnswers: p["hasAnswers"] as bool,
           ),
         )
         .toList();

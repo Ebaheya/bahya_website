@@ -59,12 +59,11 @@ class _DiagnosisRangeWidgetState extends State<DiagnosisRangeWidget> {
     }
 
     setState(() {
-      item.isRemoving = true; // نبدأ أنيميشن الحذف
+      item.isRemoving = true;
     });
   }
 
   void _finishRemoveDiagnosis(_DiagnosisItem item) {
-    // يتم استدعاؤها بعد انتهاء الأنيميشن
     if (!mounted) return;
     setState(() {
       diagnosisList.remove(item);

@@ -125,7 +125,8 @@ final List<Map<String, dynamic>> patients = [
     "address": "الرياض، حي الياسمين",
     "phq9": 12,
     "phq4": 8,
-    "diag": "قلق متوسط مع أعراض اكتئاب خفيفة جدا جدا جدا",
+    "diag": "قلق متوسط مع أعراض اكتئاب خفيفة",
+    "hasAnswers": true,
   },
   {
     "name": "فاطمة علي",
@@ -134,6 +135,7 @@ final List<Map<String, dynamic>> patients = [
     "phq9": 7,
     "phq4": 5,
     "diag": "حالة طبيعية مع قلق خفيف",
+    "hasAnswers": false,
   },
   {
     "name": "سارة خالد",
@@ -142,6 +144,7 @@ final List<Map<String, dynamic>> patients = [
     "phq9": 18,
     "phq4": 11,
     "diag": "اكتئاب متوسط الشدة",
+    "hasAnswers": true,
   },
   {
     "name": "هند عبدالله",
@@ -150,6 +153,7 @@ final List<Map<String, dynamic>> patients = [
     "phq9": 4,
     "phq4": 3,
     "diag": "حالة طبيعية",
+    "hasAnswers": false, // مثال: لم تُجب على أي استبيان
   },
   {
     "name": "نورة سعيد",
@@ -158,6 +162,25 @@ final List<Map<String, dynamic>> patients = [
     "phq9": 14,
     "phq4": 9,
     "diag": "قلق متوسط مع اكتئاب متوسط",
+    "hasAnswers": true,
+  },
+  {
+    "name": "مريم أحمد",
+    "age": 28,
+    "address": "الرياض، حي الياسمين",
+    "phq9": 12,
+    "phq4": 8,
+    "diag": "قلق متوسط مع أعراض اكتئاب خفيفة",
+    "hasAnswers": true,
+  },
+  {
+    "name": "فاطمة علي",
+    "age": 35,
+    "address": "جدة، حي الروضة",
+    "phq9": 7,
+    "phq4": 5,
+    "diag": "حالة طبيعية مع قلق خفيف",
+    "hasAnswers": false,
   },
   {
     "name": "سارة خالد",
@@ -166,6 +189,7 @@ final List<Map<String, dynamic>> patients = [
     "phq9": 18,
     "phq4": 11,
     "diag": "اكتئاب متوسط الشدة",
+    "hasAnswers": true,
   },
   {
     "name": "هند عبدالله",
@@ -174,6 +198,7 @@ final List<Map<String, dynamic>> patients = [
     "phq9": 4,
     "phq4": 3,
     "diag": "حالة طبيعية",
+    "hasAnswers": false, // مثال: لم تُجب على أي استبيان
   },
   {
     "name": "نورة سعيد",
@@ -182,57 +207,9 @@ final List<Map<String, dynamic>> patients = [
     "phq9": 14,
     "phq4": 9,
     "diag": "قلق متوسط مع اكتئاب متوسط",
-  },
-  {
-    "name": "سارة خالد",
-    "age": 42,
-    "address": "الدمام، حي الفيصلية",
-    "phq9": 18,
-    "phq4": 11,
-    "diag": "اكتئاب متوسط الشدة",
-  },
-  {
-    "name": "هند عبدالله",
-    "age": 31,
-    "address": "مكة المكرمة، العزيزية",
-    "phq9": 4,
-    "phq4": 3,
-    "diag": "حالة طبيعية",
-  },
-  {
-    "name": "نورة سعيد",
-    "age": 26,
-    "address": "المدينة المنورة، العيون",
-    "phq9": 14,
-    "phq4": 9,
-    "diag": "قلق متوسط مع اكتئاب متوسط",
-  },
-  {
-    "name": "سارة خالد",
-    "age": 42,
-    "address": "الدمام، حي الفيصلية",
-    "phq9": 18,
-    "phq4": 11,
-    "diag": "اكتئاب متوسط الشدة",
-  },
-  {
-    "name": "هند عبدالله",
-    "age": 31,
-    "address": "مكة المكرمة، العزيزية",
-    "phq9": 4,
-    "phq4": 3,
-    "diag": "حالة طبيعية",
-  },
-  {
-    "name": "نورة سعيد",
-    "age": 26,
-    "address": "المدينة المنورة، العيون",
-    "phq9": 14,
-    "phq4": 9,
-    "diag": "قلق متوسط مع اكتئاب متوسط",
+    "hasAnswers": true,
   },
 ];
-
 
 final List<String> diagnosisCategories = const [
   'حالة طبيعية',

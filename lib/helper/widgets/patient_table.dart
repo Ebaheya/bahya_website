@@ -1,8 +1,10 @@
 import 'package:bahya_website/helper/base.dart';
+import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/helper/widgets/answers_details.dart';
 import 'package:flutter/material.dart';
 
-class PatientTableRowItem extends StatelessWidget {
+class PatientTableRowItem extends StatefulWidget {
   final String name;
   final int age;
   final String address;
@@ -10,6 +12,7 @@ class PatientTableRowItem extends StatelessWidget {
   final int phq4;
   final String diagnosis;
   final VoidCallback onView;
+  final bool hasAnswers;
 
   const PatientTableRowItem({
     super.key,
@@ -20,7 +23,15 @@ class PatientTableRowItem extends StatelessWidget {
     required this.phq4,
     required this.diagnosis,
     required this.onView,
+    required this.hasAnswers,
   });
+
+  @override
+  State<PatientTableRowItem> createState() => _PatientTableRowItemState();
+}
+
+class _PatientTableRowItemState extends State<PatientTableRowItem> {
+  bool isHover = false;
 
   Color getColor(int value) {
     if (value <= 4) return Colors.green.shade300;
@@ -32,124 +43,172 @@ class PatientTableRowItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final h = getScreenHeight(context);
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: h * 0.012, horizontal: 12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFFFE4F2), width: 1)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // progress
-          Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.center,
-              child: TextButton(
-                onPressed: onView,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size(h * 0.08, h * 0.03),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    arabicText(
-                      text: "عرض التطور",
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHover = true),
+      onExit: (_) => setState(() => isHover = false),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          transform: Matrix4.identity()..scale(isHover ? 1.015 : 1.0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: isHover ? Colors.pink.withOpacity(0.4) : Colors.white,
+            boxShadow: isHover
+                ? [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.10),
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ]
+                : [],
+            border: Border(
+              bottom: BorderSide(color: Color(0xFFFFE4F2), width: 1),
+            ),
+          ),
+          child: InkWell(
+            onTap: () {
+              if (widget.hasAnswers) {
+                showDialog(
+                  context: context,
+                  builder: (_) => Dialog(
+                    insetPadding: EdgeInsets.all(20),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: answersDetails(context: context),
+                  ),
+                );
+              } else {
+                customDialog(
+                  context: context,
+                  title: "لا توجد إجابات",
+                  message: "لم تقم هذه المريضة بملء أي استبيان بعد.",
+                );
+              }
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                vertical: h * 0.012,
+                horizontal: 12,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // progress
+                  Expanded(
+                    flex: 2,
+                    child: Center(
+                      child: TextButton(
+                        onPressed: widget.onView,
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size(h * 0.08, h * 0.03),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            arabicText(
+                              text: "عرض التطور",
+                              size: h * 0.015,
+                              bold: true,
+                              color: const Color(0xFFE40070),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.trending_up,
+                              color: Color(0xFFE40070),
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  Expanded(
+                    flex: 4,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: arabicText(
+                        text: widget.diagnosis,
+                        size: h * 0.015,
+                        color: const Color(0xFF4B2142),
+                      ),
+                    ),
+                  ),
+
+                  Expanded(
+                    flex: 2,
+                    child: Center(
+                      child: CircleAvatar(
+                        radius: h * 0.016,
+                        backgroundColor: getColor(widget.phq9),
+                        child: arabicText(
+                          text: widget.phq9.toString(),
+                          size: h * 0.015,
+                          bold: true,
+                          color: const Color(0xFF831843),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  Expanded(
+                    flex: 2,
+                    child: Center(
+                      child: CircleAvatar(
+                        radius: h * 0.016,
+                        backgroundColor: getColor(widget.phq4),
+                        child: arabicText(
+                          text: widget.phq4.toString(),
+                          size: h * 0.015,
+                          bold: true,
+                          color: const Color(0xFF831843),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  Expanded(
+                    flex: 4,
+                    child: arabicText(
+                      text: widget.address,
                       size: h * 0.015,
-                      bold: true,
-                      color: const Color(0xFFE40070),
+                      color: const Color(0xFF4B2142),
                     ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.trending_up,
-                      color: Color(0xFFE40070),
-                      size: 16,
+                  ),
+
+                  Expanded(
+                    flex: 1,
+                    child: arabicText(
+                      text: widget.age.toString(),
+                      size: h * 0.015,
                     ),
-                  ],
-                ),
+                  ),
+
+                  Expanded(
+                    flex: 3,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: arabicText(
+                        text: widget.name,
+                        size: h * 0.015,
+                        bold: true,
+                        color: const Color(0xFF7A004C),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-
-          // diagnosis
-          Expanded(
-            flex: 4,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: arabicText(
-                text: diagnosis,
-                size: h * 0.015,
-                color: const Color(0xFF4B2142),
-              ),
-            ),
-          ),
-
-          // PHQ-9
-          Expanded(
-            flex: 2,
-            child: Center(
-              child: CircleAvatar(
-                radius: h * 0.016,
-                backgroundColor: getColor(phq9),
-                child: arabicText(
-                  text: phq9.toString(),
-                  size: h * 0.015,
-                  bold: true,
-                  color: const Color(0xFF831843),
-                ),
-              ),
-            ),
-          ),
-
-          // PHQ-4
-          Expanded(
-            flex: 2,
-            child: Center(
-              child: CircleAvatar(
-                radius: h * 0.016,
-                backgroundColor: getColor(phq4),
-                child: arabicText(
-                  text: phq4.toString(),
-                  size: h * 0.015,
-                  bold: true,
-                  color: const Color(0xFF831843),
-                ),
-              ),
-            ),
-          ),
-
-         //address
-          Expanded(
-            flex: 4,
-            child: arabicText(
-              text: address,
-              size: h * 0.015,
-              color: const Color(0xFF4B2142),
-            ),
-          ),
-
-         //age
-          Expanded(
-            flex: 1,
-            child: arabicText(text: age.toString(), size: h * 0.015),
-          ),
-
-         //name
-          Expanded(
-            flex: 3,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: arabicText(
-                text: name,
-                size: h * 0.015,
-                bold: true,
-                color: const Color(0xFF7A004C),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
