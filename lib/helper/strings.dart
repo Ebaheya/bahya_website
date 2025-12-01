@@ -72,7 +72,9 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     title: 'تخزين الأسئلة',
     subtitle: 'الوصول للنماذج المحفوظة',
     icon: Icons.folder_open,
-    onTap: () {},
+    onTap: () {
+      Navigator.pushNamed(context, '/questionnaire_filler');
+    },
   ),
 ];
 

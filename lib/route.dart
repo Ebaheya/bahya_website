@@ -22,7 +22,7 @@ class AppRoute {
       case '/questionnaire_filler':
         return MaterialPageRoute(builder: (_) =>  FormsScreen());
       default:
-        return MaterialPageRoute(builder: (_) => FormsScreen());
+        return MaterialPageRoute(builder: (_) => LoginPage());
     }
   }
 }
