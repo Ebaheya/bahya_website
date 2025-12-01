@@ -28,6 +28,7 @@ class PublishScheduleScreen extends StatelessWidget {
                 ScheduleFormWidget(),
                 SizedBox(height: h * 0.04),
                 ScheduledListWidget(),
+                SizedBox(height: h * 0.04),
               ],
             ),
           ),

@@ -225,3 +225,50 @@ final formsList = [
   "استبيان النوم",
   "استبيان القلق",
 ];
+
+
+final List<Map<String, String>> scheduled = const [
+  {"form": "PHQ-9", "date": "2025-10-25", "repeat": "يومي", "hour": "10:00 AM"},
+  {
+    "form": "GAD-7",
+    "date": "2025-11-01",
+    "repeat": "أسبوعي",
+    "hour": "02:00 PM",
+  },
+  {
+    "form": "BDI-II",
+    "date": "2025-12-15",
+    "repeat": "شهري",
+    "hour": "09:00 AM",
+  },
+];
+
+
+final Map<String, dynamic> anxietyForm = {
+  "title": "تقييم القلق العام",
+  "subtitle": "قم بتعبئة النموذج للمريض",
+
+  "fields": [
+    {"label": "اسم المريضة", "hint": "أدخل اسم المريضة", "type": "text"},
+  ],
+
+  "questions": [
+    {
+      "q": "هل تجد صعوبة في السيطرة على القلق؟",
+      "options": [
+        {"text": "لا", "points": 0},
+        {"text": "أحياناً", "points": 2},
+        {"text": "نعم", "points": 3},
+      ],
+    },
+    {
+      "q": "هل تشعر بالتوتر أو العصبية؟",
+      "options": [
+        {"text": "أبداً", "points": 0},
+        {"text": "أحياناً", "points": 1},
+        {"text": "مراراً", "points": 2},
+        {"text": "دائماً", "points": 3},
+      ],
+    },
+  ],
+};

@@ -134,6 +134,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         fontFamily: 'ArabicCustomFont',
       ),
       decoration: InputDecoration(
+        alignLabelWithHint: true,
         suffixIcon: widget.obscureText
             ? IconButton(
                 onPressed: () {
