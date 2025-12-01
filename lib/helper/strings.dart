@@ -48,7 +48,9 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     title: 'نشر الأسئلة',
     subtitle: 'جدولة ونشر النماذج',
     icon: Icons.event_note,
-    onTap: () {},
+    onTap: () {
+      Navigator.pushNamed(context, '/publish_schedule');
+    },
   ),
   FeatureItem(
     title: 'إضافة أسئلة',

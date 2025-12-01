@@ -96,7 +96,7 @@ Widget heartSign({
 
 PreferredSizeWidget? customAppBar({
   required BuildContext context,
-  bool isHomebar = true,
+  bool isHomeBar = true,
   required String title,
 }) {
   final h = getScreenHeight(context);
@@ -118,7 +118,7 @@ PreferredSizeWidget? customAppBar({
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              isHomebar
+              isHomeBar
                   ? Row(
                       children: [
                         CircleAvatar(
@@ -161,7 +161,7 @@ PreferredSizeWidget? customAppBar({
                       color: Colors.pinkAccent,
                     ),
                   ),
-                  isHomebar
+                  isHomeBar
                       ? SizedBox.shrink()
                       : IconButton(
                           onPressed: () => Navigator.pop(context),

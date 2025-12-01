@@ -9,10 +9,17 @@ Widget answersDetails({required BuildContext context}) {
 
   return SingleChildScrollView(
     child: Container(
-      width: w * 0.7,
+      width: w * 0.9,
       padding: EdgeInsets.all(h * 0.02),
       child: Column(
         children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Color(0xFF7A004C)),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -30,7 +37,7 @@ Widget answersDetails({required BuildContext context}) {
           SizedBox(height: h * 0.03),
 
           ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 400),
+            constraints: BoxConstraints(maxWidth: 500),
             child: Container(
               padding: EdgeInsets.all(h * 0.02),
               decoration: BoxDecoration(
@@ -139,16 +146,11 @@ Widget answersDetails({required BuildContext context}) {
           ),
           SizedBox(height: h * 0.03),
           CustomGlowButton(
-            title: "حذف الاجابات",
-            onPressed: () {},
-            width: w * 0.4,
-          ),
-          SizedBox(height: h * 0.02),
-          CustomGlowButton(
             title: "الاجابه مره اخرى",
             onPressed: () {},
             width: w * 0.4,
           ),
+          SizedBox(height: h * 0.02),
         ],
       ),
     ),

@@ -39,7 +39,7 @@ Future<void> showDiagnosisPatientsDialog({
           child: Material(
             color: Colors.transparent,
             child: Container(
-              width: w > 800 ? 720 : w * 0.92, // ويب / موبايل
+              width: w > 800 ? 720 : w * 0.92,
               padding: EdgeInsets.all(h * 0.02),
               decoration: BoxDecoration(
                 color: Colors.white,

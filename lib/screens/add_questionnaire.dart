@@ -81,7 +81,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
       appBar: customAppBar(
         context: context,
         title: 'إضافة استبيان جديد',
-        isHomebar: false,
+        isHomeBar: false,
       ),
 
       body: RawKeyboardListener(

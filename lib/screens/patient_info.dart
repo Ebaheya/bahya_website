@@ -21,7 +21,7 @@ class _PatientInfoState extends State<PatientInfo> {
       appBar: customAppBar(
         context: context,
         title: 'معلومات المرضى',
-        isHomebar: false,
+        isHomeBar: false,
       ),
       backgroundColor: const Color(0xFFFDF7FB),
       body: SingleChildScrollView(
@@ -46,7 +46,6 @@ class _PatientInfoState extends State<PatientInfo> {
               child: Column(
                 children: [
                   Container(
-                  
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -113,7 +112,8 @@ class _PatientInfoState extends State<PatientInfo> {
                 context: context,
                 patient: demoPatients[0],
               );
-            }, hasAnswers: p["hasAnswers"] as bool,
+            },
+            hasAnswers: p["hasAnswers"] as bool,
           ),
         )
         .toList();
