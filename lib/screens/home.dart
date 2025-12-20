@@ -1,8 +1,9 @@
 import 'package:bahya_website/helper/base.dart';
+import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/diagnosis_chart.dart';
+import 'package:bahya_website/helper/widgets/home_drawer.dart';
 import 'package:bahya_website/helper/widgets/home_feature_grid.dart';
 import 'package:bahya_website/helper/widgets/state_card.dart';
-import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
@@ -13,40 +14,44 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(context: context, title: ' فريق الدعم النفسي'),
+      key: _scaffoldKey,
+      drawer: HomeDrawer(),
+      appBar: customAppBar(
+        context: context,
+        title: ' فريق الدعم النفسي',
+        isHomeBar: true,
+        scaffoldKey: _scaffoldKey,
+      ),
       backgroundColor: const Color(0xFFFDF7FB),
       body: SingleChildScrollView(
         child: Column(
           children: [
             SizedBox(height: getScreenHeight(context) * 0.05),
-            Column(
-              children: [
-                arabicText(
-                  text: "لوحة التحكم الرئيسية",
-                  size: getScreenHeight(context) * 0.02,
-                  color: const Color(0xFF831843),
-                  bold: true,
-                ),
-                const SizedBox(height: 10),
-                arabicText(
-                  text: "اختر الخدمة المناسبة من القائمة التالية",
-                  size: getScreenHeight(context) * 0.015,
-                  color: const Color(0xFFEB48A0),
-                  bold: true,
-                ),
-              ],
+
+            arabicText(
+              text: "لوحة التحكم الرئيسية",
+              size: getScreenHeight(context) * 0.02,
+              color: const Color(0xFF831843),
+              bold: true,
+            ),
+            const SizedBox(height: 10),
+            arabicText(
+              text: "اختر الخدمة المناسبة من القائمة التالية",
+              size: getScreenHeight(context) * 0.015,
+              color: const Color(0xFFEB48A0),
+              bold: true,
             ),
             SizedBox(height: getScreenHeight(context) * 0.1),
-
             Container(
               width: getScreenWidth(context) * 0.95,
               padding: EdgeInsets.all(getScreenHeight(context) * 0.02),
               decoration: BoxDecoration(
                 color: Colors.white,
-
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -102,7 +107,6 @@ class _HomePageState extends State<HomePage> {
                     child: StatsHorizontalGrid(items: getStatCards(context)),
                   ),
                   const SizedBox(height: 20),
-
                   sectionCard(
                     context: context,
                     title: "مخطط مقارنة التشخيصات",
@@ -116,7 +120,6 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         DiagnosisComparisonChart(data: chartData, height: 340),
                         const SizedBox(height: 6),
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
@@ -132,9 +135,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-
             SizedBox(height: getScreenHeight(context) * 0.1),
-
             sectionCard(
               context: context,
               title: "الخدمات",
@@ -155,3 +156,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+

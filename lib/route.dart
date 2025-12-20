@@ -4,6 +4,7 @@ import 'package:bahya_website/screens/login.dart';
 import 'package:bahya_website/screens/patient_info.dart';
 import 'package:bahya_website/screens/publish_schedule_screen.dart';
 import 'package:bahya_website/screens/questionnaire_filler.dart';
+import 'package:bahya_website/screens/volunteer_survey_screen.dart';
 import 'package:flutter/material.dart';
 
 class AppRoute {
@@ -21,6 +22,8 @@ class AppRoute {
         return MaterialPageRoute(builder: (_) =>  PublishScheduleScreen());
       case '/questionnaire_filler':
         return MaterialPageRoute(builder: (_) =>  FormsScreen());
+      case '/volunteer_survey':
+        return MaterialPageRoute(builder: (_) =>  VolunteerPatientsScreen());
       default:
         return MaterialPageRoute(builder: (_) => LoginPage());
     }

@@ -94,10 +94,11 @@ Widget heartSign({
   );
 }
 
-PreferredSizeWidget? customAppBar({
+PreferredSizeWidget customAppBar({
   required BuildContext context,
-  bool isHomeBar = true,
   required String title,
+  bool isHomeBar = true,
+  GlobalKey<ScaffoldState>? scaffoldKey,
 }) {
   final h = getScreenHeight(context);
   final w = getScreenWidth(context);
@@ -121,12 +122,17 @@ PreferredSizeWidget? customAppBar({
               isHomeBar
                   ? Row(
                       children: [
-                        CircleAvatar(
-                          radius: h * 0.023,
-                          backgroundColor: Colors.white,
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.pinkAccent,
+                        GestureDetector(
+                          onTap: () {
+                            scaffoldKey?.currentState?.openDrawer();
+                          },
+                          child: CircleAvatar(
+                            radius: h * 0.023,
+                            backgroundColor: Colors.white,
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.pinkAccent,
+                            ),
                           ),
                         ),
                         SizedBox(width: w * 0.02),
@@ -143,7 +149,8 @@ PreferredSizeWidget? customAppBar({
                         ),
                       ],
                     )
-                  : SizedBox.shrink(),
+                  : const SizedBox.shrink(),
+
               Row(
                 children: [
                   arabicText(
@@ -161,16 +168,15 @@ PreferredSizeWidget? customAppBar({
                       color: Colors.pinkAccent,
                     ),
                   ),
-                  isHomeBar
-                      ? SizedBox.shrink()
-                      : IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.arrow_forward_ios,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
+                  if (!isHomeBar)
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
                 ],
               ),
             ],
@@ -180,6 +186,7 @@ PreferredSizeWidget? customAppBar({
     ),
   );
 }
+
 
 Widget sectionCard({
   required BuildContext context,
