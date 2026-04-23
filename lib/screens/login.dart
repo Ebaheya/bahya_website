@@ -5,6 +5,7 @@ import 'package:bahya_website/helper/widgets/forget_password_dialog.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginPage extends StatelessWidget {
   LoginPage({super.key});
@@ -92,10 +93,10 @@ class LoginPage extends StatelessWidget {
                                   context: context,
                                   title: 'نجاح',
                                   message: 'تم تسجيل الدخول بنجاح!',
-                                  onClose: () => Navigator.pushReplacementNamed(
-                                    context,
-                                    '/home',
-                                  ),
+                                  onClose: () {
+                                      Navigator.of(context).pop();
+                                    context.go('/home');
+                                  },
                                 );
                               } else {
                                 customDialog(

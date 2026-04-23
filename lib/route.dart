@@ -1,31 +1,40 @@
-import 'package:bahya_website/screens/add_questionnaire.dart';
-import 'package:bahya_website/screens/home.dart';
-import 'package:bahya_website/screens/login.dart';
-import 'package:bahya_website/screens/patient_info.dart';
-import 'package:bahya_website/screens/publish_schedule_screen.dart';
-import 'package:bahya_website/screens/questionnaire_filler.dart';
-import 'package:bahya_website/screens/volunteer_survey_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-class AppRoute {
-  Route generateRoute(RouteSettings settings) {
-    switch (settings.name) {
-      case '/login':
-        return MaterialPageRoute(builder: (_) => LoginPage());
-      case '/home':
-        return MaterialPageRoute(builder: (_) => HomePage());
-      case '/patient_info':
-        return MaterialPageRoute(builder: (_) => PatientInfo());
-      case '/add_questionnaire':
-        return MaterialPageRoute(builder: (_) =>  AddQuestionnaire());
-      case '/publish_schedule':
-        return MaterialPageRoute(builder: (_) =>  PublishScheduleScreen());
-      case '/questionnaire_filler':
-        return MaterialPageRoute(builder: (_) =>  FormsScreen());
-      case '/volunteer_survey':
-        return MaterialPageRoute(builder: (_) =>  VolunteerPatientsScreen());
-      default:
-        return MaterialPageRoute(builder: (_) => LoginPage());
-    }
-  }
+import 'screens/login.dart';
+import 'screens/home.dart';
+import 'screens/patient_info.dart';
+import 'screens/add_questionnaire.dart';
+import 'screens/publish_schedule_screen.dart';
+import 'screens/questionnaire_filler.dart';
+import 'screens/volunteer_survey_screen.dart';
+
+class AppRouter {
+  static final GoRouter router = GoRouter(
+    initialLocation: '/login',
+    routes: [
+      GoRoute(path: '/login', builder: (context, state) => LoginPage()),
+      GoRoute(path: '/home', builder: (context, state) => HomePage()),
+      GoRoute(
+        path: '/patient_info',
+        builder: (context, state) => PatientInfo(),
+      ),
+      GoRoute(
+        path: '/add_questionnaire',
+        builder: (context, state) => AddQuestionnaire(),
+      ),
+      GoRoute(
+        path: '/publish_schedule',
+        builder: (context, state) => PublishScheduleScreen(),
+      ),
+      GoRoute(
+        path: '/questionnaire_filler',
+        builder: (context, state) => FormsScreen(),
+      ),
+      GoRoute(
+        path: '/volunteer_survey',
+        builder: (context, state) => VolunteerPatientsScreen(),
+      ),
+    ],
+  );
 }

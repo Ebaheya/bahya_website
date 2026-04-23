@@ -3,6 +3,7 @@ import 'package:bahya_website/helper/widgets/diagnosis_patients_dialog.dart';
 import 'package:bahya_website/helper/widgets/home_feature_grid.dart';
 import 'package:bahya_website/helper/widgets/state_card.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 get getScreenWidth =>
     (BuildContext context) => MediaQuery.of(context).size.width;
@@ -49,7 +50,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'جدولة ونشر النماذج',
     icon: Icons.event_note,
     onTap: () {
-      Navigator.pushNamed(context, '/publish_schedule');
+      context.go('/publish_schedule') ;
     },
   ),
   FeatureItem(
@@ -57,7 +58,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'إنشاء نماذج أسئلة',
     icon: Icons.edit_note,
     onTap: () {
-      Navigator.pushNamed(context, '/add_questionnaire');
+      context.go('/add_questionnaire');
     },
   ),
   FeatureItem(
@@ -65,7 +66,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'عرض وإدارة بيانات',
     icon: Icons.people_alt,
     onTap: () {
-      Navigator.pushNamed(context, '/patient_info');
+      context.go('/patient_info');
     },
   ),
   FeatureItem(
@@ -73,7 +74,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'الوصول للنماذج المحفوظة',
     icon: Icons.folder_open,
     onTap: () {
-      Navigator.pushNamed(context, '/questionnaire_filler');
+      context.go('/questionnaire_filler');
     },
   ),
 ];
