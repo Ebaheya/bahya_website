@@ -5,6 +5,7 @@ import 'package:bahya_website/helper/widgets/state_card.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+const String baseUrl = "http://127.0.0.1:3000/api/v1";
 get getScreenWidth =>
     (BuildContext context) => MediaQuery.of(context).size.width;
 
@@ -50,7 +51,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'جدولة ونشر النماذج',
     icon: Icons.event_note,
     onTap: () {
-      context.go('/publish_schedule') ;
+      context.go('/publish_schedule');
     },
   ),
   FeatureItem(
@@ -221,14 +222,12 @@ final List<String> diagnosisCategories = const [
   'حالة تحتاج تقييم متخصص',
 ];
 
-
 final formsList = [
   "استبيان PHQ-9",
   "استبيان GAD-7",
   "استبيان النوم",
   "استبيان القلق",
 ];
-
 
 final List<Map<String, String>> scheduled = const [
   {"form": "PHQ-9", "date": "2025-10-25", "repeat": "يومي", "hour": "10:00 AM"},
@@ -245,7 +244,6 @@ final List<Map<String, String>> scheduled = const [
     "hour": "09:00 AM",
   },
 ];
-
 
 final Map<String, dynamic> anxietyForm = {
   "title": "تقييم القلق العام",

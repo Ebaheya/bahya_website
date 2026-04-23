@@ -4,13 +4,24 @@ import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/widgets/forget_password_dialog.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   LoginPage({super.key});
 
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController emailController = TextEditingController();
+
+  final TextEditingController passwordController = TextEditingController();
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -72,11 +83,13 @@ class LoginPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 24),
                           buildTextField(
+                            controller: emailController,
                             keyboardType: CustomTextFieldType.email,
                             hintText: 'البريد الالكترونى',
                             labelText: 'البريد الالكترونى ',
                           ),
                           buildTextField(
+                            controller: passwordController,
                             keyboardType: CustomTextFieldType.password,
                             obscureText: true,
                             hintText: 'أدخل كلمة المرور',
@@ -89,15 +102,27 @@ class LoginPage extends StatelessWidget {
                             textColor: Colors.white,
                             onPressed: () async {
                               if (_formKey.currentState?.validate() ?? false) {
-                                customDialog(
-                                  context: context,
-                                  title: 'نجاح',
-                                  message: 'تم تسجيل الدخول بنجاح!',
-                                  onClose: () {
+                                String email = emailController.text.trim();
+                                String password = passwordController.text
+                                    .trim();
+                                try {
+                                  await login(email: email, password: password);
+                                  customDialog(
+                                    context: context,
+                                    title: 'نجاح',
+                                    message: 'تم تسجيل الدخول بنجاح!',
+                                    onClose: () {
                                       Navigator.of(context).pop();
-                                    context.go('/home');
-                                  },
-                                );
+                                      context.go('/home');
+                                    },
+                                  );
+                                } catch (e) {
+                                  customDialog(
+                                    context: context,
+                                    title: 'خطأ',
+                                    message: 'البريد أو كلمة المرور غير صحيحة',
+                                  );
+                                }
                               } else {
                                 customDialog(
                                   context: context,

@@ -63,7 +63,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
     switch (widget.keyboardType) {
       case CustomTextFieldType.email:
-        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$');
         if (!emailRegex.hasMatch(value)) {
           return 'أدخل بريدًا إلكترونيًا صالحًا';
         }
@@ -118,7 +118,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         ] else if (widget.keyboardType == CustomTextFieldType.email) ...[
           FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._-]')),
         ] else if (widget.keyboardType == CustomTextFieldType.password) ...[
-          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9#@&%$]')),
+          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9#@&%$!]')),
         ],
       ],
 

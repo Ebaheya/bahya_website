@@ -1,6 +1,8 @@
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
+import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -138,8 +140,18 @@ PreferredSizeWidget customAppBar({
                         SizedBox(width: w * 0.02),
                         CustomGlowButton(
                           title: 'تسجيل الخروج',
-                          onPressed: () {
+                          onPressed: () async{
                             Navigator.pop(context);
+                            try {
+                              await logout(refreshToken: 'c433f3b3282088a913d3281df978c801b9105268fb339fcfee640b45f9e61c71430a07bca0dcb403644ad5810abdd860307f753039253fa15c5de5da01871e79');
+                            } catch (e) {
+                              // ❌ لو حصل error
+                              customDialog(
+                                context: context,
+                                title: 'خطأ',
+                                message: 'حدث خطأ أثناء تسجيل الخروج. حاول مرة أخرى.'
+                              );
+                            }
                           },
                           textSize: h * 0.015,
                           glowColor: Colors.white,
