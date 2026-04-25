@@ -130,15 +130,14 @@ export async function login(input: LoginInput, req?: Request) {
 
 export async function refresh(rawRefreshToken: string, req?: Request) {
   const tokenHash = hashRefreshToken(rawRefreshToken);
+
+  // Load the existing token first (outside the tx) for validation.
   const existing = await prisma.refreshToken.findUnique({
     where: { tokenHash },
     include: { user: true },
   });
 
   if (!existing) throw AppError.unauthorized('Invalid refresh token');
-  if (existing.revokedAt) {
-    throw AppError.unauthorized('Refresh token has been revoked');
-  }
   if (existing.expiresAt.getTime() < Date.now()) {
     throw AppError.unauthorized('Refresh token expired');
   }
@@ -146,17 +145,39 @@ export async function refresh(rawRefreshToken: string, req?: Request) {
     throw AppError.unauthorized('User is inactive');
   }
 
-  const newTokens = await issueTokens(existing.user.id, existing.user.role, req);
-  const replacement = await prisma.refreshToken.findUnique({
-    where: { tokenHash: hashRefreshToken(newTokens.refreshToken) },
-  });
+  // Atomically revoke the old token and create the replacement in one transaction.
+  // updateMany with revokedAt: null as a guard ensures only the first concurrent
+  // caller wins; a duplicate request gets count=0 and is rejected as token reuse.
+  const newTokens = await prisma.$transaction(async (tx) => {
+    const revoked = await tx.refreshToken.updateMany({
+      where: { id: existing.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
 
-  await prisma.refreshToken.update({
-    where: { id: existing.id },
-    data: {
-      revokedAt: new Date(),
-      replacedBy: replacement?.id ?? null,
-    },
+    if (revoked.count !== 1) {
+      throw AppError.unauthorized('Refresh token has already been used or revoked');
+    }
+
+    const accessToken = signAccessToken({ sub: existing.user.id, role: existing.user.role });
+    const { raw, hash, expiresAt } = generateRefreshToken();
+
+    const newRow = await tx.refreshToken.create({
+      data: {
+        userId: existing.user.id,
+        tokenHash: hash,
+        expiresAt,
+        userAgent: req?.get('user-agent') ?? null,
+        ip: req ? getClientIp(req) : null,
+      },
+    });
+
+    // Link old token to its replacement for audit trail.
+    await tx.refreshToken.update({
+      where: { id: existing.id },
+      data: { replacedBy: newRow.id },
+    });
+
+    return { accessToken, refreshToken: raw };
   });
 
   await writeAudit({
