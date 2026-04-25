@@ -125,18 +125,7 @@ export async function login(input: LoginInput, req?: Request) {
     req,
   });
 
-  return {
-    ...tokens,
-    user: {
-      id: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    },
-  };
+  return tokens;
 }
 
 export async function refresh(rawRefreshToken: string, req?: Request) {

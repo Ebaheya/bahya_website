@@ -139,8 +139,7 @@ Response:
 ```json
 {
   "accessToken": "eyJhbGciOi...",
-  "refreshToken": "af39...",
-  "user": { "id": "...", "email": "...", "role": "ADMIN", "..." }
+  "refreshToken": "af39..."
 }
 ```
 
