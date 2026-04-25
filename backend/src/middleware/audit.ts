@@ -40,10 +40,10 @@ export async function writeAudit(payload: AuditPayload): Promise<void> {
   }
 }
 
+// Use Express's req.ip which respects the `trust proxy` setting in app.ts.
+// Manual X-Forwarded-For parsing is removed: it can be spoofed by clients
+// and produces a different value than what express-rate-limit uses, making
+// audit logs and rate-limit identities inconsistent.
 export function getClientIp(req: Request): string | null {
-  const xff = req.headers['x-forwarded-for'];
-  if (typeof xff === 'string' && xff.length > 0) {
-    return xff.split(',')[0].trim();
-  }
-  return req.ip ?? req.socket?.remoteAddress ?? null;
+  return req.ip ?? null;
 }
