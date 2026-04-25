@@ -193,3 +193,33 @@ export async function adminExists(): Promise<boolean> {
   const count = await users.countByRole('ADMIN');
   return count > 0;
 }
+
+// Creates the very first ADMIN under a Postgres advisory lock so that two
+// simultaneous bootstrap requests cannot both observe "no admin" and both succeed.
+// pg_advisory_xact_lock is released automatically at transaction end.
+export async function bootstrapFirstAdmin(input: RegisterStaffInput) {
+  return prisma.$transaction(async (tx) => {
+    // Lock key: arbitrary stable bigint scoped to this operation.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(9876543210)`;
+
+    const existingCount = await tx.user.count({ where: { role: 'ADMIN' } });
+    if (existingCount > 0) {
+      throw AppError.forbidden(
+        'Bootstrap path is disabled: an admin already exists. Use an ADMIN access token.'
+      );
+    }
+
+    const passwordHash = await hashPassword(input.password);
+    const user = await tx.user.create({
+      data: {
+        email: input.email.toLowerCase(),
+        fullName: input.fullName,
+        passwordHash,
+        role: 'ADMIN',
+      },
+      select: users.publicUserSelect,
+    });
+
+    return user;
+  });
+}

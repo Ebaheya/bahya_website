@@ -32,16 +32,13 @@ export async function registerStaff(
     if (bootstrapHeader !== env.BOOTSTRAP_SECRET) {
       throw AppError.forbidden('Invalid bootstrap secret');
     }
-    if (await authService.adminExists()) {
-      throw AppError.forbidden(
-        'Bootstrap path is disabled: an admin already exists. Use an ADMIN access token.'
-      );
-    }
     if (input.role !== 'ADMIN') {
       throw AppError.badRequest('Bootstrap registration must create an ADMIN user');
     }
 
-    const user = await authService.registerStaff(input);
+    // bootstrapFirstAdmin acquires a pg advisory lock before checking admin existence,
+    // preventing two simultaneous requests from both creating an admin.
+    const user = await authService.bootstrapFirstAdmin(input);
     res.status(201).json({ user, bootstrap: true });
   } catch (err) {
     next(err);
