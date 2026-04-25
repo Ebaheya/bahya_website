@@ -5,6 +5,7 @@ import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:go_router/go_router.dart';
 
 Widget arabicText({
   required String text,
@@ -141,11 +142,15 @@ PreferredSizeWidget customAppBar({
                         CustomGlowButton(
                           title: 'تسجيل الخروج',
                           onPressed: () async{
-                            Navigator.pop(context);
+                            context.go('/login');
                             try {
                               await logout(refreshToken: 'c433f3b3282088a913d3281df978c801b9105268fb339fcfee640b45f9e61c71430a07bca0dcb403644ad5810abdd860307f753039253fa15c5de5da01871e79');
+                              customDialog(
+                                context: context,
+                                title: 'تم',
+                                message: 'تم تسجيل الخروج بنجاح.'
+                              );
                             } catch (e) {
-                              // ❌ لو حصل error
                               customDialog(
                                 context: context,
                                 title: 'خطأ',
