@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { JsonWebTokenError, NotBeforeError, TokenExpiredError } from 'jsonwebtoken';
 import { AppError } from '../utils/httpError';
 import { verifyAccessToken } from '../utils/tokens';
 import * as users from '../modules/users/user.service';
@@ -6,6 +7,8 @@ import * as users from '../modules/users/user.service';
 // Loads the user from the DB on every request so that demoted, disabled,
 // or deleted users are rejected immediately without waiting for JWT expiry.
 export async function authenticate(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  let payload: { sub: string; role: unknown };
+
   try {
     const header = req.headers.authorization;
     if (!header || !header.startsWith('Bearer ')) {
@@ -14,8 +17,17 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     const token = header.slice('Bearer '.length).trim();
     if (!token) throw AppError.unauthorized('Missing bearer token');
 
-    const payload = verifyAccessToken(token);
+    try {
+      payload = verifyAccessToken(token);
+    } catch {
+      return next(AppError.unauthorized('Invalid or expired access token'));
+    }
+  } catch (err) {
+    if (err instanceof AppError) return next(err);
+    return next(err);
+  }
 
+  try {
     const user = await users.findById(payload.sub);
     if (!user || !user.isActive) {
       throw AppError.unauthorized('User is inactive or no longer exists');
@@ -26,6 +38,13 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
     next();
   } catch (err) {
     if (err instanceof AppError) return next(err);
-    return next(AppError.unauthorized('Invalid or expired access token'));
+    if (
+      err instanceof JsonWebTokenError ||
+      err instanceof TokenExpiredError ||
+      err instanceof NotBeforeError
+    ) {
+      return next(AppError.unauthorized('Invalid or expired access token'));
+    }
+    return next(err);
   }
 }
