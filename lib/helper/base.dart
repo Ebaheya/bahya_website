@@ -33,6 +33,7 @@ Widget arabicText({
 
 String webProxy(String url) =>
     'https://images.weserv.nl/?url=${Uri.encodeComponent(url)}'; // CORS OK
+
 Widget netImg(String url) {
   final proxied = kIsWeb ? webProxy(url) : url;
   return Image.network(
@@ -203,7 +204,6 @@ PreferredSizeWidget customAppBar({
     ),
   );
 }
-
 
 Widget sectionCard({
   required BuildContext context,

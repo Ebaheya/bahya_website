@@ -1,3 +1,8 @@
+
+
+import 'dart:developer';
+
+import 'package:bahya_website/data/repo/repo.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/diagnosis_chart.dart';
@@ -5,6 +10,7 @@ import 'package:bahya_website/helper/widgets/home_drawer.dart';
 import 'package:bahya_website/helper/widgets/home_feature_grid.dart';
 import 'package:bahya_website/helper/widgets/state_card.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,11 +22,38 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  String userName = "Loading...";
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  Future<void> loadUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+
+      if (token != null) {
+        final repo = AppRepository();
+        final user = await repo.getUserProfile(accessToken: token);
+
+        setState(() {
+          userName = user.name;
+        });
+        log("name: $userName");
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      drawer: HomeDrawer(),
+      drawer: HomeDrawer(userName: userName),
       appBar: customAppBar(
         context: context,
         title: ' فريق الدعم النفسي',
@@ -47,6 +80,7 @@ class _HomePageState extends State<HomePage> {
               bold: true,
             ),
             SizedBox(height: getScreenHeight(context) * 0.1),
+
             Container(
               width: getScreenWidth(context) * 0.95,
               padding: EdgeInsets.all(getScreenHeight(context) * 0.02),
@@ -98,6 +132,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 20),
+
                   Container(
                     clipBehavior: Clip.antiAlias,
                     padding: EdgeInsets.all(12),
@@ -106,7 +141,9 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: StatsHorizontalGrid(items: getStatCards(context)),
                   ),
+
                   const SizedBox(height: 20),
+
                   sectionCard(
                     context: context,
                     title: "مخطط مقارنة التشخيصات",
@@ -135,7 +172,9 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
+
             SizedBox(height: getScreenHeight(context) * 0.1),
+
             sectionCard(
               context: context,
               title: "الخدمات",
@@ -156,4 +195,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-

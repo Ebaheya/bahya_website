@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:bahya_website/helper/strings.dart';
+
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -70,6 +71,7 @@ Future<void> clearTokens() async {
     log('Error clearing tokens: $e');
   }
 }
+
 Future<Response> safeRequest(
   Future<Response> Function(String? token) request,
 ) async {
@@ -119,4 +121,3 @@ Future<Response> safeRequest(
 //     ),
 //   );
 // });
-

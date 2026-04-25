@@ -1,11 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:flutter/material.dart';
 
 class HomeDrawer extends StatelessWidget {
   final String userName;
 
-  const HomeDrawer({super.key, this.userName = "عمرو حموده"});
+  const HomeDrawer({
+    super.key,
+    required this.userName,
+  });
 
   @override
   Widget build(BuildContext context) {
