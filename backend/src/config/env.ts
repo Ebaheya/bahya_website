@@ -35,9 +35,24 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 
+// Wildcard CORS is rejected in production: browsers block credentialed requests
+// to wildcard origins, and it exposes the API to arbitrary browser origins.
+if (env.NODE_ENV === 'production' && env.CORS_ORIGINS === '*') {
+  console.error(
+    'CORS_ORIGINS must be set to an explicit comma-separated allow-list in production. ' +
+    'Wildcard (*) is not permitted.'
+  );
+  process.exit(1);
+}
+
 export const corsOrigins =
   env.CORS_ORIGINS === '*'
     ? '*'
     : env.CORS_ORIGINS.split(',')
         .map((s) => s.trim())
         .filter(Boolean);
+
+// Enable credentials only when an explicit origin allow-list is configured.
+// The API uses Authorization: Bearer tokens, so credentials (cookies) are not
+// needed by default — turn this on when a cookie-based flow is added.
+export const corsCredentials = corsOrigins !== '*';
