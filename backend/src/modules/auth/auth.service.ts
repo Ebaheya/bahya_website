@@ -211,6 +211,15 @@ export async function bootstrapFirstAdmin(input: RegisterStaffInput, req?: Reque
       );
     }
 
+    // Guard against an existing patient/staff row that already owns this email.
+    // Without this check, tx.user.create would throw a Prisma unique-constraint
+    // error (P2002) that the error middleware cannot map, producing a 500.
+    const emailTaken = await tx.user.findUnique({
+      where: { email: input.email.toLowerCase() },
+      select: { id: true },
+    });
+    if (emailTaken) throw AppError.conflict('Email already registered');
+
     const passwordHash = await hashPassword(input.password);
     return tx.user.create({
       data: {
