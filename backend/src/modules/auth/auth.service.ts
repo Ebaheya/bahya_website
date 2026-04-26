@@ -214,3 +214,53 @@ export async function adminExists(): Promise<boolean> {
   const count = await users.countByRole('ADMIN');
   return count > 0;
 }
+
+// Creates the very first ADMIN under a Postgres advisory lock so that two
+// simultaneous bootstrap requests cannot both observe "no admin" and both succeed.
+// pg_advisory_xact_lock is released automatically at transaction end.
+// writeAudit is intentionally called after the transaction so that an audit
+// write failure does not roll back the user creation.
+export async function bootstrapFirstAdmin(input: RegisterStaffInput, req?: Request) {
+  const user = await prisma.$transaction(async (tx) => {
+    // Lock key: arbitrary stable bigint scoped to this operation.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(9876543210)`;
+
+    const existingCount = await tx.user.count({ where: { role: 'ADMIN' } });
+    if (existingCount > 0) {
+      throw AppError.forbidden(
+        'Bootstrap path is disabled: an admin already exists. Use an ADMIN access token.'
+      );
+    }
+
+    // Guard against an existing patient/staff row that already owns this email.
+    // Without this check, tx.user.create would throw a Prisma unique-constraint
+    // error (P2002) that the error middleware cannot map, producing a 500.
+    const emailTaken = await tx.user.findUnique({
+      where: { email: input.email.toLowerCase() },
+      select: { id: true },
+    });
+    if (emailTaken) throw AppError.conflict('Email already registered');
+
+    const passwordHash = await hashPassword(input.password);
+    return tx.user.create({
+      data: {
+        email: input.email.toLowerCase(),
+        fullName: input.fullName,
+        passwordHash,
+        role: 'ADMIN',
+      },
+      select: users.publicUserSelect,
+    });
+  });
+
+  await writeAudit({
+    userId: null,
+    actionType: 'CREATE',
+    entity: 'User',
+    entityId: user.id,
+    newValues: { email: user.email, role: user.role, fullName: user.fullName, bootstrap: true },
+    req,
+  });
+
+  return user;
+}
