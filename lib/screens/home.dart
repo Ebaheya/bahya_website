@@ -1,8 +1,6 @@
-
-
 import 'dart:developer';
-
-import 'package:bahya_website/data/repo/repo.dart';
+import 'package:bahya_website/data/api/repo/repo.dart';
+import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/diagnosis_chart.dart';
@@ -10,7 +8,6 @@ import 'package:bahya_website/helper/widgets/home_drawer.dart';
 import 'package:bahya_website/helper/widgets/home_feature_grid.dart';
 import 'package:bahya_website/helper/widgets/state_card.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,10 +27,10 @@ class _HomePageState extends State<HomePage> {
     loadUser();
   }
 
-  Future<void> loadUser() async {
+Future<void> loadUser() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('accessToken');
+      final storage = SecureStorageService();
+      final token = await storage.getAccessToken();
 
       if (token != null) {
         final repo = AppRepository();
@@ -42,10 +39,11 @@ class _HomePageState extends State<HomePage> {
         setState(() {
           userName = user.name;
         });
+
         log("name: $userName");
       }
     } catch (e) {
-      print(e);
+      log("loadUser error: $e");
     }
   }
 

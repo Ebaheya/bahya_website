@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:bahya_website/screens/admin_panal.dart';
 import 'package:go_router/go_router.dart';
 
 import 'screens/login.dart';
@@ -14,6 +14,7 @@ class AppRouter {
     initialLocation: '/login',
     routes: [
       GoRoute(path: '/login', builder: (context, state) => LoginPage()),
+      GoRoute(path: '/admin', builder: (context, state) => AdminPanelPage()),
       GoRoute(path: '/home', builder: (context, state) => HomePage()),
       GoRoute(
         path: '/patient_info',

@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:bahya_website/helper/strings.dart';
-
+import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-final Dio dio = Dio();
+final dio = Dio(BaseOptions(baseUrl: baseUrl));
+
+void initDio() {
+  setupInterceptors(dio);
+}
+
 Future<void> login({required String email, required String password}) async {
   try {
     final response = await dio.post(
@@ -16,11 +20,10 @@ Future<void> login({required String email, required String password}) async {
       options: Options(contentType: 'application/json'),
     );
     log('Login successful: ${response.data}');
-    saveTokens(
+    await SecureStorageService().saveTokens(
       accessToken: response.data['accessToken'],
       refreshToken: response.data['refreshToken'],
     );
-    log('Refresh Token : ${response.data['refreshToken']}');
   } on DioException catch (e) {
     throw Exception(e.response?.data ?? "Login failed");
   } catch (e) {
@@ -36,7 +39,7 @@ Future<void> logout({required String refreshToken}) async {
       data: {"refreshToken": refreshToken},
     );
     if (response.statusCode == 204 || response.statusCode == 200) {
-      await clearTokens();
+      await SecureStorageService().clearTokens();
     } else {
       throw Exception("Logout failed");
     }
@@ -48,67 +51,104 @@ Future<void> logout({required String refreshToken}) async {
   }
 }
 
-Future<void> saveTokens({
-  required String accessToken,
-  required String refreshToken,
-}) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('accessToken', accessToken);
-    await prefs.setString('refreshToken', refreshToken);
-    log('Tokens saved successfully');
-  } catch (e) {
-    log('Error saving tokens: $e');
-  }
-}
-
-Future<void> clearTokens() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('accessToken');
-    await prefs.remove('refreshToken');
-  } catch (e) {
-    log('Error clearing tokens: $e');
-  }
-}
-
 Future<Response> safeRequest(
   Future<Response> Function(String? token) request,
 ) async {
-  final prefs = await SharedPreferences.getInstance();
-  String? accessToken = prefs.getString('accessToken');
+  final storage = SecureStorageService();
+  String? accessToken = await storage.getAccessToken();
 
   try {
     return await request(accessToken);
   } on DioException catch (e) {
     if (e.response?.statusCode == 401) {
       try {
-        final refreshToken = prefs.getString('refreshToken');
+        final refreshToken = await storage.getRefreshToken();
 
-        final refreshResponse = await dio.post(
+        final refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
+
+        final refreshResponse = await refreshDio.post(
           '$baseUrl/auth/refresh',
           data: {"refreshToken": refreshToken},
         );
 
         if (refreshResponse.statusCode == 200) {
-          accessToken = refreshResponse.data['accessToken'];
-          final newRefreshToken = refreshResponse.data['refreshToken'];
+          final newAccess = refreshResponse.data['accessToken'];
+          final newRefresh = refreshResponse.data['refreshToken'];
 
-          await prefs.setString('accessToken', accessToken!);
-          await prefs.setString('refreshToken', newRefreshToken);
+          await storage.saveTokens(
+            accessToken: newAccess,
+            refreshToken: newRefresh,
+          );
 
-          return await request(accessToken);
+          return await request(newAccess);
         } else {
           throw Exception("Refresh failed");
         }
       } catch (_) {
-        await prefs.remove('accessToken');
-        await prefs.remove('refreshToken');
+        await storage.clearTokens();
         rethrow;
       }
     }
     rethrow;
   }
+}
+
+void setupInterceptors(Dio dio) {
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final storage = SecureStorageService();
+        final token = await storage.getAccessToken();
+
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+
+        handler.next(options);
+      },
+
+      onError: (DioException e, handler) async {
+        final storage = SecureStorageService();
+
+        if (e.response?.statusCode == 401 &&
+            e.requestOptions.extra['retried'] != true) {
+          try {
+            final refreshToken = await storage.getRefreshToken();
+
+            // مهم: Dio جديد عشان ميعملش loop
+            final refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
+
+            final refreshResponse = await refreshDio.post(
+              '$baseUrl/auth/refresh',
+              data: {"refreshToken": refreshToken},
+            );
+
+            if (refreshResponse.statusCode == 200) {
+              final newAccess = refreshResponse.data['accessToken'];
+              final newRefresh = refreshResponse.data['refreshToken'];
+
+              await storage.saveTokens(
+                accessToken: newAccess,
+                refreshToken: newRefresh,
+              );
+
+              final request = e.requestOptions;
+
+              request.headers['Authorization'] = 'Bearer $newAccess';
+              request.extra['retried'] = true;
+
+              final response = await dio.fetch(request);
+              return handler.resolve(response);
+            }
+          } catch (_) {
+            await storage.clearTokens();
+          }
+        }
+
+        handler.next(e);
+      },
+    ),
+  );
 }
 
 // final response = await safeRequest((token) {
