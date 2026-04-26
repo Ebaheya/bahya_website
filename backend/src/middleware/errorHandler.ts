@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 import { AppError } from '../utils/httpError';
 import { logger } from '../config/logger';
 
@@ -29,6 +30,22 @@ export function errorHandler(
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
       error: { code: err.code, message: err.message, details: err.details },
+    });
+    return;
+  }
+
+  // P2002: unique constraint violation (e.g. duplicate email from a concurrent request
+  // that slipped past the application-level pre-check).
+  if (
+    err instanceof Prisma.PrismaClientKnownRequestError &&
+    err.code === 'P2002'
+  ) {
+    res.status(409).json({
+      error: {
+        code: 'CONFLICT',
+        message: 'A record with those values already exists',
+        details: { target: (err.meta as { target?: unknown } | undefined)?.target },
+      },
     });
     return;
   }
