@@ -197,8 +197,10 @@ export async function adminExists(): Promise<boolean> {
 // Creates the very first ADMIN under a Postgres advisory lock so that two
 // simultaneous bootstrap requests cannot both observe "no admin" and both succeed.
 // pg_advisory_xact_lock is released automatically at transaction end.
-export async function bootstrapFirstAdmin(input: RegisterStaffInput) {
-  return prisma.$transaction(async (tx) => {
+// writeAudit is intentionally called after the transaction so that an audit
+// write failure does not roll back the user creation.
+export async function bootstrapFirstAdmin(input: RegisterStaffInput, req?: Request) {
+  const user = await prisma.$transaction(async (tx) => {
     // Lock key: arbitrary stable bigint scoped to this operation.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(9876543210)`;
 
@@ -210,7 +212,7 @@ export async function bootstrapFirstAdmin(input: RegisterStaffInput) {
     }
 
     const passwordHash = await hashPassword(input.password);
-    const user = await tx.user.create({
+    return tx.user.create({
       data: {
         email: input.email.toLowerCase(),
         fullName: input.fullName,
@@ -219,7 +221,16 @@ export async function bootstrapFirstAdmin(input: RegisterStaffInput) {
       },
       select: users.publicUserSelect,
     });
-
-    return user;
   });
+
+  await writeAudit({
+    userId: null,
+    actionType: 'CREATE',
+    entity: 'User',
+    entityId: user.id,
+    newValues: { email: user.email, role: user.role, fullName: user.fullName, bootstrap: true },
+    req,
+  });
+
+  return user;
 }

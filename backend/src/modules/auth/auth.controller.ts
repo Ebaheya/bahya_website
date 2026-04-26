@@ -38,7 +38,7 @@ export async function registerStaff(
 
     // bootstrapFirstAdmin acquires a pg advisory lock before checking admin existence,
     // preventing two simultaneous requests from both creating an admin.
-    const user = await authService.bootstrapFirstAdmin(input);
+    const user = await authService.bootstrapFirstAdmin(input, req);
     res.status(201).json({ user, bootstrap: true });
   } catch (err) {
     next(err);
