@@ -57,10 +57,11 @@ class DashboardCard extends StatelessWidget {
               /// Percentage
               customText(
                 text:
-                    "${percentage.toStringAsFixed(1)}% ${isPositive ? "+" : ""}",
+                    "${isPositive ? "+" : ""} ${percentage.toStringAsFixed(1)}%",
                 size: getScreenWidth(context) * 0.01,
                 color: isPositive ? Colors.green : Colors.red,
                 bold: true,
+                isEnglish: true,
               ),
             ],
           ),
@@ -72,6 +73,7 @@ class DashboardCard extends StatelessWidget {
             text: title,
             size: getScreenWidth(context) * 0.01,
             color: Colors.grey,
+            isEnglish: true,
           ),
           SizedBox(height: getScreenHeight(context) * 0.01),
 
@@ -81,6 +83,7 @@ class DashboardCard extends StatelessWidget {
             size: getScreenWidth(context) * 0.01,
             color: const Color(0xFF8B2C00),
             bold: true,
+            isEnglish: true,
           ),
         ],
       ),
