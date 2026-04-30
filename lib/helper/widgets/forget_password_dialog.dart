@@ -52,7 +52,7 @@ void forgetPasswordDialog(BuildContext context) {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          arabicText(
+                          customText(
                             text: 'استرجاع كلمة المرور',
                             size: getScreenHeight(context) * 0.025,
                             color: const Color(0xFF7A104F),
@@ -68,7 +68,7 @@ void forgetPasswordDialog(BuildContext context) {
                       ),
 
                       const SizedBox(height: 8),
-                      arabicText(
+                      customText(
                         text:
                             'من فضلك املأ البيانات التالية وسنتواصل معك قريباً',
                         size: getScreenHeight(context) * 0.018,
@@ -106,7 +106,7 @@ void forgetPasswordDialog(BuildContext context) {
                       ),
 
                       const SizedBox(height: 12),
-                      arabicText(
+                      customText(
                         text: 'طريقة التواصل المفضلة:',
                         size: 14,
                         isCenter: false,
@@ -211,7 +211,7 @@ Widget _contactOption({
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: arabicText(
+          child: customText(
             isCenter: false,
             text: title,
             size: getScreenHeight(context) * 0.015,

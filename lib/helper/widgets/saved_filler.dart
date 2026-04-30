@@ -42,7 +42,7 @@ class SavedFormsWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              arabicText(
+              customText(
                 text: "النماذج المحفوظة",
                 size: h * 0.025,
                 bold: true,
@@ -80,7 +80,7 @@ class SavedFormsWidget extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        arabicText(
+                        customText(
                           text: f,
                           size: h * 0.02,
                           bold: true,
@@ -125,7 +125,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // TITLE
-          arabicText(
+          customText(
             text: widget.formData["title"],
             size: h * 0.035,
             bold: true,
@@ -135,7 +135,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
           const SizedBox(height: 10),
 
           // SUBTITLE
-          arabicText(
+          customText(
             text: widget.formData["subtitle"],
             size: h * 0.02,
             color: const Color(0xFFE40070),
@@ -208,7 +208,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            arabicText(
+            customText(
               text: "السؤال ${index + 1}: ${question["q"]}",
               size: h * 0.02,
               bold: true,
@@ -222,7 +222,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
                   children: [
-                    arabicText(
+                    customText(
                       text: "(${opt["points"]} نقطة)",
                       size: h * 0.015,
                       bold: true,
@@ -242,7 +242,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
 
                     const SizedBox(width: 6),
 
-                    arabicText(
+                    customText(
                       text: opt["text"],
                       size: h * 0.018,
                       color: const Color(0xFF7A004C),

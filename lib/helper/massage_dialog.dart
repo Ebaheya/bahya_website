@@ -40,9 +40,14 @@ void customDialog({
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  arabicText(text: title, size: 24, bold: true, color: Colors.white),
+                  customText(
+                    text: title,
+                    size: 24,
+                    bold: true,
+                    color: Colors.white,
+                  ),
                   const SizedBox(height: 12),
-                  arabicText(text: message, size: 16 , color: Colors.white ),
+                  customText(text: message, size: 16, color: Colors.white),
                   const SizedBox(height: 24),
                   CustomGlowButton(
                     title: 'حسناً',

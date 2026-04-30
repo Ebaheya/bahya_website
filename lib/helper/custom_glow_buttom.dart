@@ -17,7 +17,7 @@ class CustomGlowButton extends StatelessWidget {
     this.backgroundColor,
     this.textColor,
     this.glowColor,
-     this.textSize,
+    this.textSize,
     this.width,
   });
 
@@ -44,7 +44,7 @@ class CustomGlowButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
         onPressed: onPressed,
-        child: arabicText(
+        child: customText(
           text: title,
           size: textSize ?? getScreenHeight(context) * 0.02,
           bold: true,

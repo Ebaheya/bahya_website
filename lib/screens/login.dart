@@ -69,13 +69,13 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           heartSign(),
                           const SizedBox(height: 16),
-                          arabicText(
+                          customText(
                             text: 'فريق الدعم النفسي',
                             size: getScreenHeight(context) * 0.035,
                             color: Color(0xFF7A104F),
                           ),
                           const SizedBox(height: 8),
-                          arabicText(
+                          customText(
                             text: 'مرحباً بك في منصة الدعم والرعاية',
                             size: getScreenHeight(context) * 0.02,
                             color: Color(0xFFE91E63),
@@ -138,7 +138,7 @@ class _LoginPageState extends State<LoginPage> {
                             onTap: () {
                               forgetPasswordDialog(context);
                             },
-                            child: arabicText(
+                            child: customText(
                               text: 'نسيت كلمة المرور؟',
                               color: Color(0xFFE91E63),
                               size: 14,

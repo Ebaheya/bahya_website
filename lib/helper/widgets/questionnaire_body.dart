@@ -98,7 +98,7 @@ class _QuestionnaireBodyState extends State<QuestionnaireBody> {
                 onPressed: widget.onDeleteQuestion,
                 icon: const Icon(Icons.delete, color: Colors.red),
               ),
-              arabicText(
+              customText(
                 text: "سؤال ${widget.questionIndex}",
                 size: h * 0.02,
                 color: const Color(0xFF831843),
@@ -114,7 +114,7 @@ class _QuestionnaireBodyState extends State<QuestionnaireBody> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                arabicText(
+                customText(
                   text: "نص السؤال",
                   size: h * 0.018,
                   color: Colors.black,
@@ -130,7 +130,7 @@ class _QuestionnaireBodyState extends State<QuestionnaireBody> {
                   maxLines: 3,
                 ),
                 SizedBox(height: h * 0.02),
-                arabicText(
+                customText(
                   text: "الاجابات مع السكور",
                   size: h * 0.018,
                   color: Colors.black,
@@ -231,7 +231,7 @@ class ScoreRow extends StatelessWidget {
           h: h,
         ),
         SizedBox(width: w * 0.01),
-        arabicText(
+        customText(
           text: "السكور",
           size: h * 0.02,
           color: Colors.black,

@@ -80,11 +80,7 @@ class ProgressLineChart extends StatelessWidget {
                   if (touchedSpots.isEmpty) return [];
 
                   final xIndex = touchedSpots.first.x.toInt();
-                  final weekLabel =
-                      labels[xIndex.clamp(
-                        0,
-                        labels.length - 1,
-                      )]; 
+                  final weekLabel = labels[xIndex.clamp(0, labels.length - 1)];
 
                   final children = <TextSpan>[];
 
@@ -180,7 +176,7 @@ class ProgressLineChart extends StatelessWidget {
                 sideTitles: SideTitles(
                   showTitles: true,
                   interval: 5,
-                  getTitlesWidget: (v, _) => arabicText(
+                  getTitlesWidget: (v, _) => customText(
                     text: v.toInt().toString(),
                     size: 10,
                     color: const Color(0xffDD59F1),
@@ -198,7 +194,7 @@ class ProgressLineChart extends StatelessWidget {
                     }
                     return Padding(
                       padding: const EdgeInsets.all(5),
-                      child: arabicText(
+                      child: customText(
                         text: labels[i],
                         size: 8,
                         color: const Color(0xffDD59F1),

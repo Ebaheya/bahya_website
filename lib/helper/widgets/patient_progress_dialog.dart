@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/diagnosis_patients_dialog.dart'
-    show PatientDiagnosisItem; 
-
+    show PatientDiagnosisItem;
 
 Future<void> showPatientProgressDialog({
   required BuildContext context,
@@ -93,7 +92,7 @@ class _PatientProgressContentState extends State<_PatientProgressContent> {
           child: Row(
             children: [
               const SizedBox(width: 10),
-              arabicText(
+              customText(
                 text: widget.patient.name,
                 size: h * 0.02,
                 color: const Color(0xFF7A004C),
@@ -160,7 +159,7 @@ class _PatientProgressContentState extends State<_PatientProgressContent> {
                             color: Color(0xFF7A004C),
                           ),
                           const SizedBox(width: 8),
-                          arabicText(
+                          customText(
                             text: "رسم بياني لتطور الحالة",
                             size: h * 0.02,
                             bold: true,
@@ -170,7 +169,7 @@ class _PatientProgressContentState extends State<_PatientProgressContent> {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      arabicText(
+                      customText(
                         text:
                             "يوضح هذا الرسم التحسن في مستويات الاكتئاب والقلق خلال فترة العلاج",
                         size: h * 0.014,
@@ -255,7 +254,7 @@ class _PeriodButton extends StatelessWidget {
               color: Color(0xFFE91E63),
             ),
             const SizedBox(width: 4),
-            arabicText(
+            customText(
               text: title,
               size: h * 0.014,
               color: const Color(0xFFE91E63),
@@ -295,7 +294,7 @@ class _StatSmallCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            arabicText(
+            customText(
               text: title,
               size: h * 0.017,
               bold: true,
@@ -303,7 +302,7 @@ class _StatSmallCard extends StatelessWidget {
               isCenter: false,
             ),
             const SizedBox(height: 8),
-            arabicText(
+            customText(
               text: value,
               size: h * 0.02,
               bold: true,

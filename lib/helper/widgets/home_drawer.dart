@@ -5,10 +5,7 @@ import 'package:bahya_website/helper/strings.dart';
 class HomeDrawer extends StatelessWidget {
   final String userName;
 
-  const HomeDrawer({
-    super.key,
-    required this.userName,
-  });
+  const HomeDrawer({super.key, required this.userName});
 
   @override
   Widget build(BuildContext context) {
@@ -44,13 +41,13 @@ class HomeDrawer extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      arabicText(
+                      customText(
                         text: "اهلا،",
                         size: h * 0.07,
                         bold: true,
                         color: Colors.white,
                       ),
-                      arabicText(
+                      customText(
                         text: userName,
                         size: h * 0.05,
                         bold: true,
@@ -68,7 +65,7 @@ class HomeDrawer extends StatelessWidget {
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  child: arabicText(
+                  child: customText(
                     text: 'تعيين DT Questionnaire',
                     size: h * 0.018,
                     bold: true,
@@ -175,7 +172,7 @@ class HomeDrawer extends StatelessWidget {
           ),
           child: ListTile(
             leading: Icon(icon, color: Colors.white),
-            title: arabicText(
+            title: customText(
               text: title,
               size: h * 0.016,
               color: Colors.white,

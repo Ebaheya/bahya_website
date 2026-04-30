@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
     loadUser();
   }
 
-Future<void> loadUser() async {
+  Future<void> loadUser() async {
     try {
       final storage = SecureStorageService();
       final token = await storage.getAccessToken();
@@ -64,14 +64,14 @@ Future<void> loadUser() async {
           children: [
             SizedBox(height: getScreenHeight(context) * 0.05),
 
-            arabicText(
+            customText(
               text: "لوحة التحكم الرئيسية",
               size: getScreenHeight(context) * 0.02,
               color: const Color(0xFF831843),
               bold: true,
             ),
             const SizedBox(height: 10),
-            arabicText(
+            customText(
               text: "اختر الخدمة المناسبة من القائمة التالية",
               size: getScreenHeight(context) * 0.015,
               color: const Color(0xFFEB48A0),
@@ -114,7 +114,7 @@ Future<void> loadUser() async {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        arabicText(
+                        customText(
                           text: "لوحة الإحصائيات العامة",
                           size: getScreenHeight(context) * 0.02,
                           bold: true,

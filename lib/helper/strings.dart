@@ -273,3 +273,6 @@ final Map<String, dynamic> anxietyForm = {
     },
   ],
 };
+
+Color textColor = const Color(0xFF831843);
+List<Color> gradientColors = const [Color(0xFF8A2BE2), Color(0xFFFF69B4)];

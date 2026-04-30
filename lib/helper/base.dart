@@ -7,26 +7,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 
-Widget arabicText({
+Widget customText({
   required String text,
   required double size,
+  bool isGradient = false,
+  bool isEnglish = false,
   bool isCenter = true,
   Color? color,
   bool bold = true,
   TextAlign? align,
 }) {
-  return Align(
-    alignment: isCenter ? Alignment.center : Alignment.topRight,
-    child: Text(
-      textAlign: align ?? TextAlign.center,
-      text,
-      style: TextStyle(
-        fontSize: size,
-        fontFamily: 'ArabicCustomFont',
-        color: color,
-        fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-      ),
-      textDirection: TextDirection.rtl,
+  return Text(
+    text,
+    textAlign: align ?? TextAlign.start,
+    textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+    style: TextStyle(
+      fontSize: size,
+      fontFamily: 'ArabicCustomFont',
+      fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+      color: isGradient ? null : (color ?? Colors.black),
+      foreground: isGradient
+          ? (Paint()
+              ..shader = LinearGradient(
+                colors: [Color(0xFF8A2BE2), Color(0xFFFF69B4)],
+              ).createShader(Rect.fromLTWH(0, 0, 200, 70)))
+          : null,
     ),
   );
 }
@@ -142,20 +147,24 @@ PreferredSizeWidget customAppBar({
                         SizedBox(width: w * 0.02),
                         CustomGlowButton(
                           title: 'تسجيل الخروج',
-                          onPressed: () async{
+                          onPressed: () async {
                             context.go('/login');
                             try {
-                              await logout(refreshToken: 'c433f3b3282088a913d3281df978c801b9105268fb339fcfee640b45f9e61c71430a07bca0dcb403644ad5810abdd860307f753039253fa15c5de5da01871e79');
+                              await logout(
+                                refreshToken:
+                                    'c433f3b3282088a913d3281df978c801b9105268fb339fcfee640b45f9e61c71430a07bca0dcb403644ad5810abdd860307f753039253fa15c5de5da01871e79',
+                              );
                               customDialog(
                                 context: context,
                                 title: 'تم',
-                                message: 'تم تسجيل الخروج بنجاح.'
+                                message: 'تم تسجيل الخروج بنجاح.',
                               );
                             } catch (e) {
                               customDialog(
                                 context: context,
                                 title: 'خطأ',
-                                message: 'حدث خطأ أثناء تسجيل الخروج. حاول مرة أخرى.'
+                                message:
+                                    'حدث خطأ أثناء تسجيل الخروج. حاول مرة أخرى.',
                               );
                             }
                           },
@@ -171,7 +180,7 @@ PreferredSizeWidget customAppBar({
 
               Row(
                 children: [
-                  arabicText(
+                  customText(
                     text: title,
                     size: h * 0.02,
                     bold: true,
@@ -246,7 +255,7 @@ Widget sectionCard({
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              arabicText(
+              customText(
                 text: title,
                 size: getScreenHeight(context) * 0.02,
                 bold: true,
@@ -284,7 +293,7 @@ class LegendDot extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        arabicText(
+        customText(
           text: label,
           size: getScreenHeight(context) * 0.015,
           color: const Color(0xFF313131),

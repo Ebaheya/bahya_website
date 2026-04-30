@@ -43,7 +43,7 @@ class _FeatureCardState extends State<FeatureCard> {
         offset: Offset(0, _hover ? 14 : 10),
       ),
     ];
-    
+
     return MouseRegion(
       onEnter: (_) => _setHover(true),
       onExit: (_) => _setHover(false),
@@ -96,14 +96,14 @@ class _FeatureCardState extends State<FeatureCard> {
                     ),
                   ),
                   SizedBox(height: h * 0.015),
-                  arabicText(
+                  customText(
                     text: widget.item.title,
                     size: h * 0.016,
                     bold: true,
                     color: const Color(0xFF7A004C),
                   ),
                   SizedBox(height: h * 0.006),
-                  arabicText(
+                  customText(
                     text: widget.item.subtitle,
                     size: h * 0.012,
                     color: const Color(0xFFE91E63),

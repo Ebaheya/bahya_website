@@ -49,7 +49,7 @@ class ScheduledListWidget extends StatelessWidget {
 
       child: Column(
         children: [
-          arabicText(
+          customText(
             text: "النماذج المجدوَلة",
             size: h * 0.03,
             bold: true,
@@ -129,7 +129,7 @@ class ScheduledItemCard extends StatelessWidget {
             ),
             child: GestureDetector(
               onTap: onDelete,
-              child: arabicText(
+              child: customText(
                 text: "إلغاء",
                 size: h * 0.018,
                 color: Colors.red,
@@ -140,19 +140,19 @@ class ScheduledItemCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              arabicText(
+              customText(
                 text: formName,
                 size: h * 0.02,
                 color: const Color(0xFF7A004C),
                 bold: true,
               ),
-              arabicText(
+              customText(
                 text: "$date - $hour",
                 size: h * 0.017,
                 color: const Color(0xFF7A004C),
                 bold: true,
               ),
-              arabicText(
+              customText(
                 text: "($repeat)",
                 size: h * 0.017,
                 color: const Color(0xFF7A004C),

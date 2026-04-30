@@ -21,9 +21,7 @@ class _PatientRowState extends State<PatientRow> {
   Widget build(BuildContext context) {
     final h = getScreenHeight(context);
 
-    final Color bgColor = _hover
-        ? const Color(0xFFFFF5FB)
-        : Colors.white; 
+    final Color bgColor = _hover ? const Color(0xFFFFF5FB) : Colors.white;
 
     final List<BoxShadow> shadow = _hover
         ? const [
@@ -76,7 +74,7 @@ class _PatientRowState extends State<PatientRow> {
                   Expanded(
                     child: Column(
                       children: [
-                        arabicText(
+                        customText(
                           text: widget.item.name,
                           size: h * 0.015,
                           bold: true,
@@ -101,7 +99,7 @@ class _PatientRowState extends State<PatientRow> {
                       Future.microtask(() {
                         showPatientProgressDialog(
                           context: context,
-                          patient: widget.item, 
+                          patient: widget.item,
                         );
                       });
                     },
@@ -110,7 +108,7 @@ class _PatientRowState extends State<PatientRow> {
                       size: 18,
                       color: Color(0xFFE91E63),
                     ),
-                    label: arabicText(
+                    label: customText(
                       text: "عرض التفاصيل",
                       size: h * 0.015,
                       color: const Color(0xFFE91E63),
@@ -122,21 +120,21 @@ class _PatientRowState extends State<PatientRow> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  arabicText(
+                  customText(
                     text: "العمر: ${widget.item.age} سنة",
                     size: h * 0.012,
                     color: Colors.black54,
                     isCenter: false,
                   ),
                   const SizedBox(width: 16),
-                  arabicText(
+                  customText(
                     text: "PHQ-9: ${widget.item.phq9}",
                     size: h * 0.012,
                     color: Colors.black54,
                     isCenter: false,
                   ),
                   const SizedBox(width: 12),
-                  arabicText(
+                  customText(
                     text: "PHQ-4: ${widget.item.phq4}",
                     size: h * 0.012,
                     color: Colors.black54,

@@ -126,7 +126,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                   children: [
                     Column(
                       children: [
-                        arabicText(
+                        customText(
                           text: "إنشاء استبيان جديد",
                           size: h * 0.025,
                           color: const Color(0xFF831843),
@@ -134,7 +134,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                           isCenter: false,
                         ),
                         SizedBox(height: h * 0.03),
-                        arabicText(
+                        customText(
                           text: "قم بإضافة الأسئلة والإجابات",
                           size: h * 0.02,
                           color: const Color(0xFFED4EA1),
@@ -149,7 +149,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          arabicText(
+                          customText(
                             text: "عنوان الاستبيان",
                             size: h * 0.018,
                             color: Colors.black,
