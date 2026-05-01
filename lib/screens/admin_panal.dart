@@ -1,5 +1,6 @@
 import 'package:bahya_website/screens/dashboard_panel.dart';
 import 'package:bahya_website/helper/admin_widgets/sidebar_panel.dart';
+import 'package:bahya_website/screens/users_panel.dart';
 import 'package:flutter/material.dart';
 
 class AdminPanelPage extends StatefulWidget {
@@ -98,14 +99,7 @@ class TopBar extends StatelessWidget {
   }
 }
 
-class UsersPage extends StatelessWidget {
-  const UsersPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Users Page"));
-  }
-}
 
 class PatientsPage extends StatelessWidget {
   const PatientsPage({super.key});

@@ -10,7 +10,7 @@ class Dashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    double width = getScreenWidth(context);
 
     int crossAxisCount = 4;
     if (width < 1200) crossAxisCount = 3;
@@ -22,32 +22,11 @@ class Dashboard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(colors: gradientColors),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                customText(
-                  text: "Dashboard Overview",
-                  size: width * 0.013,
-                  color: Colors.white,
-                ),
-                const SizedBox(height: 10),
-                customText(
-                  text: "Welcome back, here's what's happening today",
-                  color: Colors.white54,
-                  size: width * 0.01,
-                ),
-              ],
-            ),
+          pageHeader(
+            width: width,
+            title: "Dashboard Overview",
+            subtitle: "Welcome back, here's what's happening today",
           ),
-
           const SizedBox(height: 20),
 
           /// Cards Grid
@@ -59,7 +38,7 @@ class Dashboard extends StatelessWidget {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              mainAxisExtent: width < 1000
+              mainAxisExtent: width < 1200
                   ? getScreenWidth(context) * 0.125
                   : getScreenWidth(context) * 0.095,
             ),
@@ -110,8 +89,5 @@ class Dashboard extends StatelessWidget {
     );
   }
 }
-
-
-
 
 

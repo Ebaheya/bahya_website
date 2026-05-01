@@ -19,7 +19,7 @@ Widget customText({
 }) {
   return Text(
     text,
-    textAlign: align ?? TextAlign.start,
+    textAlign: isCenter ? TextAlign.center : TextAlign.start,
     textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
     style: TextStyle(
       fontSize: size,
@@ -301,4 +301,38 @@ class LegendDot extends StatelessWidget {
       ],
     );
   }
+}
+
+Widget pageHeader({
+  required double width,
+  required String title,
+  required String subtitle,
+  List<Widget>? widgets,
+}) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(12),
+      gradient: LinearGradient(colors: gradientColors),
+    ),
+    child: Row(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            customText(text: title, size: width * 0.013, color: Colors.white),
+            const SizedBox(height: 10),
+            customText(
+              text: subtitle,
+              color: Colors.white54,
+              size: width * 0.01,
+            ),
+          ],
+        ),
+        const Spacer(),
+        if (widgets != null) ...widgets,
+      ],
+    ),
+  );
 }
