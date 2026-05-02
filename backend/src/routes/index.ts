@@ -5,26 +5,19 @@ import { authRouter } from '../modules/auth/auth.routes';
 
 export const apiRouter = Router();
 
-/** Resolve to `true` after the given ms — used to cap health probe duration. */
-function timeout(ms: number): Promise<false> {
-  return new Promise((resolve) => setTimeout(() => resolve(false), ms).unref());
-}
-
 // PostgreSQL probe budget: 900 ms (under the 1 s success criterion).
-// If Prisma's driver timeout or an unreachable host would take longer,
-// this cap ensures the health endpoint returns postgres: "down" within
-// the required window so load balancers get a timely response.
+// Using $transaction timeout so Prisma signals server-side cancellation when
+// the budget is exceeded, preventing orphaned queries from accumulating in the
+// connection pool during outages or load-balancer health storms.
 const PG_PROBE_TIMEOUT_MS = 900;
 
 apiRouter.get('/health', async (_req, res) => {
-  // Check PostgreSQL by running a trivial query, bounded by PG_PROBE_TIMEOUT_MS.
   let pgStatus: 'up' | 'down' = 'down';
   try {
-    const pgOk = await Promise.race([
-      prisma.$queryRaw`SELECT 1`.then(() => true as const),
-      timeout(PG_PROBE_TIMEOUT_MS),
-    ]);
-    if (pgOk) pgStatus = 'up';
+    await prisma.$transaction((tx) => tx.$queryRaw`SELECT 1`, {
+      timeout: PG_PROBE_TIMEOUT_MS,
+    });
+    pgStatus = 'up';
   } catch {
     // intentionally swallowed — reported in the response body
   }
