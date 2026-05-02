@@ -1,1 +1,15 @@
 PRD.md
+.agents/
+.cursor/
+.specify/
+AGENTS.md
+specs/
+docs/
+# Node.js
+node_modules/
+dist/
+build/
+*.log
+.env
+.env.*
+!.env.example

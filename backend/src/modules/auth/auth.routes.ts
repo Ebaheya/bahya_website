@@ -37,7 +37,7 @@ authRouter.post(
   '/register-patient',
   authLimiter,
   authenticate,
-  authorize('ADMIN', 'DOCTOR', 'VOLUNTEER'),
+  authorize('ADMIN', 'CALL_CENTER'),
   controller.registerPatient
 );
 

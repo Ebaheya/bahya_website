@@ -12,6 +12,17 @@ const envSchema = z.object({
 
   DATABASE_URL: z.string().url(),
 
+  // z.string().url() uses the WHATWG URL parser which rejects valid multi-host
+  // replica set URIs like mongodb://h1:27017,h2:27017/db (comma-separated hosts).
+  // We validate the scheme manually so all Mongoose-supported URI forms are accepted:
+  //   • mongodb://host/db           (single host)
+  //   • mongodb://h1,h2,h3/db       (replica set, no SRV)
+  //   • mongodb+srv://cluster/db    (SRV / Atlas)
+  MONGODB_URI: z.string().refine(
+    (v) => /^mongodb(?:\+srv)?:\/\/.+/.test(v),
+    { message: 'MONGODB_URI must start with mongodb:// or mongodb+srv://' }
+  ),
+
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 chars'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 chars'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),

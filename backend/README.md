@@ -7,7 +7,8 @@ role-based access control (ADMIN / DOCTOR / VOLUNTEER / CALL_CENTER / PATIENT), 
 ## Prerequisites
 
 - Node.js 20+
-- PostgreSQL 15+
+- PostgreSQL 16+
+- MongoDB 7+
 - npm
 
 ## Setup
@@ -16,7 +17,7 @@ role-based access control (ADMIN / DOCTOR / VOLUNTEER / CALL_CENTER / PATIENT), 
 cd backend
 npm install
 cp .env.example .env
-# edit .env: set DATABASE_URL, secrets, BOOTSTRAP_SECRET
+# edit .env: set DATABASE_URL, MONGODB_URI, secrets, BOOTSTRAP_SECRET
 npx prisma migrate dev --name init
 npm run dev
 ```
@@ -41,8 +42,8 @@ Health check: `GET /api/v1/health`.
 
 ```
 src/
-  config/      # env (zod), prisma singleton, pino logger
-  middleware/  # authenticate, authorize, audit, errorHandler, requestId
+  config/      # env (zod), prisma singleton, mongo connection, pino logger
+  middleware/  # authenticate (Constitution IV), authorize, audit, errorHandler, requestId
   modules/
     auth/      # routes, controller, service, schemas (zod)
     users/     # user.service
@@ -66,11 +67,11 @@ prisma/
 
 | Role | Capabilities |
 |---|---|
-| `ADMIN` | Full CRUD, registers staff and patients |
-| `DOCTOR` | View/edit own patients, analytics; can register patients |
-| `VOLUNTEER` | Intake only; can register patients |
-| `CALL_CENTER` | Escalation view only |
-| `PATIENT` | Self-service only (own profile, PHQ-9, chatbot) |
+| `ADMIN` | Full CRUD; registers staff and patients |
+| `DOCTOR` | View/edit patients; clinical assessments; interventions |
+| `VOLUNTEER` | Sends assessment forms; creates follow-up interventions |
+| `CALL_CENTER` | Registers patients; handles booking notifications |
+| `PATIENT` | Own profile, assessment forms, chatbot |
 
 ## Endpoints
 
@@ -112,7 +113,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register-staff \
 ### 2. `POST /auth/register-patient`
 
 Creates a PATIENT. Requires `Authorization: Bearer <token>` for a user with role
-`ADMIN`, `DOCTOR`, or `VOLUNTEER`. The `role` field, if any, is ignored; the server
+`ADMIN` or `CALL_CENTER`. The `role` field, if any, is ignored; the server
 always stores `PATIENT`.
 
 ```bash
