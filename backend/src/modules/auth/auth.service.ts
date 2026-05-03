@@ -1,6 +1,7 @@
 import type { Request } from 'express';
 import type { Role } from '@prisma/client';
 import { prisma } from '../../config/prisma';
+import { logger } from '../../config/logger';
 import { AppError } from '../../utils/httpError';
 import { hashPassword, verifyPassword } from '../../utils/passwords';
 import {
@@ -8,13 +9,33 @@ import {
   hashRefreshToken,
   signAccessToken,
 } from '../../utils/tokens';
-import { writeAudit, getClientIp } from '../../middleware/audit';
+import { writeAudit, getClientIp, type AuditInput } from '../../middleware/audit';
 import * as users from '../users/user.service';
 import type {
   LoginInput,
   RegisterPatientInput,
   RegisterStaffInput,
 } from './auth.schema';
+
+// LOGIN_FAIL is strict-tier (FR-007): when the Mongo write fails, the audit
+// service throws AppError(503, 'AUDIT_UNAVAILABLE'). For LOGIN_FAIL specifically
+// the contract (contracts/audit-service.md § 1.3) says the client MUST still
+// receive the standard 401, with the audit failure surfaced server-side only.
+// All other strict actions (LOGIN, USER_CREATED, ...) keep the 503 propagation.
+async function writeLoginFailAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        { err, action: input.action, actorId: input.actorId ?? null },
+        'login_fail audit failed; preserving 401 to client'
+      );
+      return;
+    }
+    throw err;
+  }
+}
 
 interface TokenBundle {
   accessToken: string;
@@ -55,9 +76,9 @@ export async function registerStaff(input: RegisterStaffInput, req?: Request) {
   });
 
   await writeAudit({
-    userId: req?.user?.id ?? null,
-    actionType: 'CREATE',
-    entity: 'User',
+    actorId: req?.user?.id ?? null,
+    action: 'USER_CREATED',
+    entityType: 'USER',
     entityId: user.id,
     newValues: { email: user.email, role: user.role, fullName: user.fullName },
     req,
@@ -79,9 +100,9 @@ export async function registerPatient(input: RegisterPatientInput, req?: Request
   });
 
   await writeAudit({
-    userId: req?.user?.id ?? null,
-    actionType: 'CREATE',
-    entity: 'User',
+    actorId: req?.user?.id ?? null,
+    action: 'USER_CREATED',
+    entityType: 'USER',
     entityId: user.id,
     newValues: { email: user.email, role: user.role, fullName: user.fullName },
     req,
@@ -93,9 +114,9 @@ export async function registerPatient(input: RegisterPatientInput, req?: Request
 export async function login(input: LoginInput, req?: Request) {
   const user = await users.findByEmail(input.email);
   if (!user || !user.isActive) {
-    await writeAudit({
-      actionType: 'LOGIN_FAIL',
-      entity: 'User',
+    await writeLoginFailAudit({
+      action: 'LOGIN_FAIL',
+      entityType: 'USER',
       newValues: { email: input.email, reason: 'not_found_or_inactive' },
       req,
     });
@@ -104,10 +125,10 @@ export async function login(input: LoginInput, req?: Request) {
 
   const ok = await verifyPassword(input.password, user.passwordHash);
   if (!ok) {
-    await writeAudit({
-      userId: user.id,
-      actionType: 'LOGIN_FAIL',
-      entity: 'User',
+    await writeLoginFailAudit({
+      actorId: user.id,
+      action: 'LOGIN_FAIL',
+      entityType: 'USER',
       entityId: user.id,
       newValues: { reason: 'bad_password' },
       req,
@@ -118,9 +139,9 @@ export async function login(input: LoginInput, req?: Request) {
   const tokens = await issueTokens(user.id, user.role, req);
 
   await writeAudit({
-    userId: user.id,
-    actionType: 'LOGIN',
-    entity: 'User',
+    actorId: user.id,
+    action: 'LOGIN',
+    entityType: 'USER',
     entityId: user.id,
     req,
   });
@@ -181,9 +202,9 @@ export async function refresh(rawRefreshToken: string, req?: Request) {
   });
 
   await writeAudit({
-    userId: existing.user.id,
-    actionType: 'REFRESH',
-    entity: 'RefreshToken',
+    actorId: existing.user.id,
+    action: 'REFRESH',
+    entityType: 'REFRESH_TOKEN',
     entityId: existing.id,
     req,
   });
@@ -202,9 +223,9 @@ export async function logout(rawRefreshToken: string, req?: Request) {
   });
 
   await writeAudit({
-    userId: existing.userId,
-    actionType: 'LOGOUT',
-    entity: 'RefreshToken',
+    actorId: existing.userId,
+    action: 'LOGOUT',
+    entityType: 'REFRESH_TOKEN',
     entityId: existing.id,
     req,
   });
@@ -254,9 +275,9 @@ export async function bootstrapFirstAdmin(input: RegisterStaffInput, req?: Reque
   });
 
   await writeAudit({
-    userId: null,
-    actionType: 'CREATE',
-    entity: 'User',
+    actorId: null,
+    action: 'USER_CREATED',
+    entityType: 'USER',
     entityId: user.id,
     newValues: { email: user.email, role: user.role, fullName: user.fullName, bootstrap: true },
     req,

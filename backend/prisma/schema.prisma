@@ -25,7 +25,6 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
 
   @@index([role])
 }
@@ -43,21 +42,4 @@ model RefreshToken {
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-}
-
-model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?
-  actionType String
-  entity     String?
-  entityId   String?
-  oldValues  Json?
-  newValues  Json?
-  ip         String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
-  user       User?    @relation(fields: [userId], references: [id])
-
-  @@index([userId, createdAt])
-  @@index([actionType, createdAt])
 }
