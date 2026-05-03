@@ -1,5 +1,20 @@
 /*
-Manual down migration for operator awareness:
+Intentionally no-op.
+
+The application no longer has a Prisma `AuditLog` model, but the physical
+PostgreSQL table must remain available until operators run:
+
+  npm run audit:migrate
+
+and verify parity in MongoDB. Dropping the table as part of the normal pending
+Prisma migration flow would delete the source rows before the backfill script
+can copy them.
+
+After parity is verified, operators may drop the legacy table manually:
+
+  DROP TABLE IF EXISTS "AuditLog";
+
+Manual rollback SQL, if the table has been dropped by mistake:
 
 CREATE TABLE "AuditLog" (
     "id" TEXT NOT NULL,
@@ -23,5 +38,3 @@ ADD CONSTRAINT "AuditLog_userId_fkey"
 FOREIGN KEY ("userId") REFERENCES "User"("id")
 ON DELETE SET NULL ON UPDATE CASCADE;
 */
-
-DROP TABLE IF EXISTS "AuditLog";

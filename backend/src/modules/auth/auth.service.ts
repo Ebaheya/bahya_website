@@ -136,8 +136,6 @@ export async function login(input: LoginInput, req?: Request) {
     throw AppError.unauthorized('Invalid email or password');
   }
 
-  const tokens = await issueTokens(user.id, user.role, req);
-
   await writeAudit({
     actorId: user.id,
     action: 'LOGIN',
@@ -145,6 +143,8 @@ export async function login(input: LoginInput, req?: Request) {
     entityId: user.id,
     req,
   });
+
+  const tokens = await issueTokens(user.id, user.role, req);
 
   return tokens;
 }

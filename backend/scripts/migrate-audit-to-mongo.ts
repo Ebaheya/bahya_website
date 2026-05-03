@@ -37,6 +37,25 @@ function mapAction(row: LegacyAuditRow): string {
   return row.actionType;
 }
 
+function mapEntityType(entity: string | null): string | null {
+  if (!entity) return null;
+
+  const knownEntities: Record<string, string> = {
+    User: 'USER',
+    USER: 'USER',
+    RefreshToken: 'REFRESH_TOKEN',
+    REFRESH_TOKEN: 'REFRESH_TOKEN',
+    Patient: 'PATIENT',
+    PATIENT: 'PATIENT',
+    Assessment: 'ASSESSMENT',
+    ASSESSMENT: 'ASSESSMENT',
+    Notification: 'NOTIFICATION',
+    NOTIFICATION: 'NOTIFICATION',
+  };
+
+  return knownEntities[entity] ?? entity;
+}
+
 async function readBatch(
   lastCreatedAt: Date | null,
   lastId: string | null
@@ -99,7 +118,7 @@ async function migrate(): Promise<Summary> {
           legacyPgId: row.id,
           actorId: row.userId,
           action,
-          entityType: row.entity ? row.entity.toUpperCase() : null,
+          entityType: mapEntityType(row.entity),
           entityId: row.entityId,
           oldValues: row.oldValues,
           newValues: row.newValues,
