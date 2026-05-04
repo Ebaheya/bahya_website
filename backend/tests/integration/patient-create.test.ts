@@ -141,7 +141,7 @@ describe('POST /api/v1/patients', () => {
     });
 
     const audit = await mongoose.connection.collection('audit_logs').findOne({
-      action: 'USER_CREATED',
+      action: 'PATIENT_CREATED',
       entityType: 'PATIENT',
       entityId: body.id,
     });

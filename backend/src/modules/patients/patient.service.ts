@@ -229,7 +229,7 @@ export async function createPatient(
 
   await writeAudit({
     actorId,
-    action: 'USER_CREATED',
+    action: 'PATIENT_CREATED',
     entityType: 'PATIENT',
     entityId: patient.id,
     newValues: {

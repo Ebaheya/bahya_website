@@ -140,23 +140,32 @@ export async function patchUserStatus(
     return existing;
   }
 
-  if (!isActive && existing.role === 'ADMIN') {
-    const activeAdmins = await prisma.user.count({
-      where: { role: 'ADMIN', isActive: true },
-    });
-    if (activeAdmins <= 1) {
-      throw new AppError(
-        409,
-        'LAST_ACTIVE_ADMIN',
-        'Cannot deactivate the last active admin'
-      );
-    }
-  }
+  // Serialize concurrent admin-deactivations through a Postgres advisory lock so
+  // two simultaneous requests cannot both observe activeAdmins > 1 and both win,
+  // leaving the system with zero active admins. Same lock key as bootstrap so
+  // bootstrap and deactivate cannot interleave either. The lock is released at
+  // transaction end.
+  const updated = await prisma.$transaction(async (tx) => {
+    if (!isActive && existing.role === 'ADMIN') {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(9876543210)`;
 
-  const updated = await prisma.user.update({
-    where: { id },
-    data: { isActive },
-    select: publicUserSelect,
+      const activeAdmins = await tx.user.count({
+        where: { role: 'ADMIN', isActive: true },
+      });
+      if (activeAdmins <= 1) {
+        throw new AppError(
+          409,
+          'LAST_ACTIVE_ADMIN',
+          'Cannot deactivate the last active admin'
+        );
+      }
+    }
+
+    return tx.user.update({
+      where: { id },
+      data: { isActive },
+      select: publicUserSelect,
+    });
   });
 
   if (!isActive) {
