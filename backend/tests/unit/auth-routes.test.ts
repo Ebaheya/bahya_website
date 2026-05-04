@@ -17,4 +17,12 @@ describe('rateLimitIpKey', () => {
     expect(rateLimitIpKey('192.0.2.10')).toBe('192.0.2.10');
     expect(rateLimitIpKey(undefined)).toBe('unknown');
   });
+
+  it('treats IPv4-mapped IPv6 addresses as their underlying IPv4', () => {
+    expect(rateLimitIpKey('::ffff:192.0.2.10')).toBe('192.0.2.10');
+    expect(rateLimitIpKey('::ffff:203.0.113.5')).toBe('203.0.113.5');
+    expect(rateLimitIpKey('::ffff:192.0.2.10')).not.toBe(
+      rateLimitIpKey('::ffff:203.0.113.5')
+    );
+  });
 });

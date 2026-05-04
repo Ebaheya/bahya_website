@@ -42,6 +42,24 @@ export function rateLimitIpKey(ip: string | undefined): string {
   const hextets = expandIpv6(ip);
   if (!hextets) return ip;
 
+  // IPv4-mapped IPv6 (::ffff:a.b.c.d): treat as the underlying IPv4 so dual-stack
+  // clients don't all collapse into the same /56 bucket.
+  if (
+    hextets[0] === 0 &&
+    hextets[1] === 0 &&
+    hextets[2] === 0 &&
+    hextets[3] === 0 &&
+    hextets[4] === 0 &&
+    hextets[5] === 0xffff
+  ) {
+    return [
+      (hextets[6] >> 8) & 0xff,
+      hextets[6] & 0xff,
+      (hextets[7] >> 8) & 0xff,
+      hextets[7] & 0xff,
+    ].join('.');
+  }
+
   const fullHextets = Math.floor(ipv6RateLimitSubnetBits / 16);
   const remainingBits = ipv6RateLimitSubnetBits % 16;
   const normalized = [...hextets];
