@@ -258,6 +258,60 @@ describe('POST /api/v1/auth/forgot-password and /reset-password', () => {
     expect(login.status).toBe(200);
   });
 
+  it('preserves success when the completion audit fails after reset commit', async () => {
+    const user = await createUser('PATIENT', 'patient.reset-audit-down@example.com');
+    const rawToken = 'audit-outage-reset-token';
+    const tokenHash = hashResetToken(rawToken);
+
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: 'active-refresh-for-audit-down-reset',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+
+    await mongoose.disconnect();
+    try {
+      const response = await request('/api/v1/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          token: rawToken,
+          newPassword,
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({
+        message: 'Password has been reset successfully',
+      });
+    } finally {
+      await mongoose.connect(process.env.MONGODB_URI as string, {
+        serverSelectionTimeoutMS: 5000,
+      });
+    }
+
+    const token = await prisma.passwordResetToken.findUnique({ where: { tokenHash } });
+    expect(token?.usedAt).toBeInstanceOf(Date);
+
+    const updatedUser = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(updatedUser).not.toBeNull();
+    await expect(verifyPassword(newPassword, updatedUser!.passwordHash)).resolves.toBe(true);
+
+    await expect(
+      prisma.refreshToken.findUnique({
+        where: { tokenHash: 'active-refresh-for-audit-down-reset' },
+      })
+    ).resolves.toMatchObject({ revokedAt: expect.any(Date) });
+  });
+
   it('rejects expired, used, invalid, and validation-failing reset requests', async () => {
     const user = await createUser('PATIENT', 'patient.bad-reset@example.com');
     const expiredRaw = 'expired-token';

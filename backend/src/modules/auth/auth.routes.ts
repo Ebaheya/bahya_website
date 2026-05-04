@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import * as controller from './auth.controller';
+import { rateLimitIpKey } from './rate-limit-keys';
 
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -25,7 +26,7 @@ const forgotPasswordLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     const email = (req.body as { email?: unknown } | undefined)?.email;
-    const ip = req.ip ?? 'unknown';
+    const ip = rateLimitIpKey(req.ip);
     return typeof email === 'string'
       ? `forgot-password:${email.toLowerCase()}:${ip}`
       : `forgot-password:${ip}`;

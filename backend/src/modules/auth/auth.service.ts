@@ -102,6 +102,32 @@ async function writeCommittedLoginAudit(input: AuditInput): Promise<void> {
   }
 }
 
+// PASSWORD_RESET_COMPLETED is strict-tier, but resetPassword writes it after the
+// password, refresh-token revocations, and one-time token consumption commit.
+// Preserve the successful reset response if Mongo audit is unavailable.
+async function writeCommittedPasswordResetAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit password-reset audit failed; preserving successful response'
+      );
+      return;
+    }
+    throw err;
+  }
+}
+
 interface TokenBundle {
   accessToken: string;
   refreshToken: string;
@@ -420,7 +446,7 @@ export async function resetPassword(
     });
   });
 
-  await writeAudit({
+  await writeCommittedPasswordResetAudit({
     actorId: token.userId,
     action: 'PASSWORD_RESET_COMPLETED',
     entityType: 'USER',
