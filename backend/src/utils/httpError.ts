@@ -20,6 +20,10 @@ export class AppError extends Error {
     return new AppError(401, 'UNAUTHORIZED', message);
   }
 
+  static invalidCredentials(message = 'Invalid credentials'): AppError {
+    return new AppError(401, 'INVALID_CREDENTIALS', message);
+  }
+
   static forbidden(message = 'Forbidden'): AppError {
     return new AppError(403, 'FORBIDDEN', message);
   }
@@ -30,6 +34,10 @@ export class AppError extends Error {
 
   static conflict(message = 'Conflict'): AppError {
     return new AppError(409, 'CONFLICT', message);
+  }
+
+  static invalidOrExpiredToken(message = 'Invalid or expired token'): AppError {
+    return new AppError(400, 'INVALID_OR_EXPIRED_TOKEN', message);
   }
 
   static internal(message = 'Internal server error'): AppError {

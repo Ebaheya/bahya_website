@@ -2,6 +2,8 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import { prisma } from '../config/prisma';
 import { authRouter } from '../modules/auth/auth.routes';
+import { patientRouter } from '../modules/patients/patient.routes';
+import { userRouter } from '../modules/users/user.routes';
 
 export const apiRouter = Router();
 
@@ -45,3 +47,5 @@ apiRouter.get('/health', async (_req, res) => {
 });
 
 apiRouter.use('/auth', authRouter);
+apiRouter.use('/patients', patientRouter);
+apiRouter.use('/users', userRouter);

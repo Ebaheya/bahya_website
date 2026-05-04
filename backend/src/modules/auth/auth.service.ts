@@ -1,7 +1,9 @@
+import crypto from 'node:crypto';
 import type { Request } from 'express';
 import type { Role } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { logger } from '../../config/logger';
+import { env } from '../../config/env';
 import { AppError } from '../../utils/httpError';
 import { hashPassword, verifyPassword } from '../../utils/passwords';
 import {
@@ -10,6 +12,8 @@ import {
   signAccessToken,
 } from '../../utils/tokens';
 import { writeAudit, getClientIp, type AuditInput } from '../../middleware/audit';
+import { sendEmail } from '../email/email.service';
+import { buildPasswordResetEmail } from '../email/templates/password-reset';
 import * as users from '../users/user.service';
 import type {
   LoginInput,
@@ -40,6 +44,19 @@ async function writeLoginFailAudit(input: AuditInput): Promise<void> {
 interface TokenBundle {
   accessToken: string;
   refreshToken: string;
+}
+
+const forgotPasswordMessage =
+  'If an account with that email exists, a password reset link has been sent';
+
+function hashResetToken(rawToken: string): string {
+  return crypto.createHash('sha256').update(rawToken).digest('hex');
+}
+
+function buildResetUrl(rawToken: string): string {
+  const resetUrl = new URL('/reset-password', env.APP_URL);
+  resetUrl.searchParams.set('token', rawToken);
+  return resetUrl.toString();
 }
 
 async function issueTokens(
@@ -227,6 +244,132 @@ export async function logout(rawRefreshToken: string, req?: Request) {
     action: 'LOGOUT',
     entityType: 'REFRESH_TOKEN',
     entityId: existing.id,
+    req,
+  });
+}
+
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+  req?: Request
+) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.isActive) throw AppError.unauthorized();
+
+  const ok = await verifyPassword(currentPassword, user.passwordHash);
+  if (!ok) throw AppError.invalidCredentials();
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    }),
+    prisma.refreshToken.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+  ]);
+
+  await writeAudit({
+    actorId: user.id,
+    action: 'PASSWORD_CHANGED',
+    entityType: 'USER',
+    entityId: user.id,
+    req,
+  });
+}
+
+export async function forgotPassword(email: string, req?: Request) {
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+    select: users.publicUserSelect,
+  });
+
+  if (!user || !user.isActive) return { message: forgotPasswordMessage };
+
+  const now = new Date();
+  const rawToken = crypto.randomBytes(64).toString('hex');
+  const tokenHash = hashResetToken(rawToken);
+  const expiresAt = new Date(
+    now.getTime() + env.RESET_TOKEN_TTL_MINUTES * 60 * 1000
+  );
+
+  await prisma.$transaction([
+    prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: now },
+    }),
+    prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    }),
+  ]);
+
+  const emailContent = buildPasswordResetEmail(buildResetUrl(rawToken), user.fullName);
+  await sendEmail(user.email, emailContent.subject, emailContent.html);
+
+  await writeAudit({
+    actorId: null,
+    action: 'PASSWORD_RESET_REQUESTED',
+    entityType: 'USER',
+    entityId: user.id,
+    newValues: { email: user.email },
+    req,
+  });
+
+  return { message: forgotPasswordMessage };
+}
+
+export async function resetPassword(
+  rawToken: string,
+  newPassword: string,
+  req?: Request
+) {
+  const tokenHash = hashResetToken(rawToken);
+  const token = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+    include: { user: true },
+  });
+
+  const now = new Date();
+  if (
+    !token ||
+    token.usedAt ||
+    token.expiresAt.getTime() <= now.getTime() ||
+    !token.user.isActive
+  ) {
+    throw AppError.invalidOrExpiredToken();
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.$transaction(async (tx) => {
+    const marked = await tx.passwordResetToken.updateMany({
+      where: { id: token.id, usedAt: null },
+      data: { usedAt: now },
+    });
+    if (marked.count !== 1) throw AppError.invalidOrExpiredToken();
+
+    await tx.user.update({
+      where: { id: token.userId },
+      data: { passwordHash },
+    });
+
+    await tx.refreshToken.updateMany({
+      where: { userId: token.userId, revokedAt: null },
+      data: { revokedAt: now },
+    });
+  });
+
+  await writeAudit({
+    actorId: token.userId,
+    action: 'PASSWORD_RESET_COMPLETED',
+    entityType: 'USER',
+    entityId: token.userId,
     req,
   });
 }

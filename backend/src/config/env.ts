@@ -18,10 +18,11 @@ const envSchema = z.object({
   //   • mongodb://host/db           (single host)
   //   • mongodb://h1,h2,h3/db       (replica set, no SRV)
   //   • mongodb+srv://cluster/db    (SRV / Atlas)
-  MONGODB_URI: z.string().refine(
-    (v) => /^mongodb(?:\+srv)?:\/\/.+/.test(v),
-    { message: 'MONGODB_URI must start with mongodb:// or mongodb+srv://' }
-  ),
+  MONGODB_URI: z
+    .string()
+    .refine((v) => /^mongodb(?:\+srv)?:\/\/.+/.test(v), {
+      message: 'MONGODB_URI must start with mongodb:// or mongodb+srv://',
+    }),
 
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 chars'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 chars'),
@@ -35,6 +36,22 @@ const envSchema = z.object({
   BOOTSTRAP_SECRET: z.string().min(16, 'BOOTSTRAP_SECRET must be at least 16 chars'),
 
   CORS_ORIGINS: z.string().default('*'),
+
+  SMTP_HOST: z.string().default('localhost'),
+  SMTP_PORT: z
+    .string()
+    .default('1025')
+    .transform((v) => parseInt(v, 10))
+    .pipe(z.number().int().positive()),
+  SMTP_USER: z.string().default(''),
+  SMTP_PASS: z.string().default(''),
+  SMTP_FROM: z.string().default('noreply@bahya.health'),
+  RESET_TOKEN_TTL_MINUTES: z
+    .string()
+    .default('30')
+    .transform((v) => parseInt(v, 10))
+    .pipe(z.number().int().positive()),
+  APP_URL: z.string().url().default('http://localhost:3000'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -51,7 +68,7 @@ export const env = parsed.data;
 if (env.NODE_ENV === 'production' && env.CORS_ORIGINS === '*') {
   console.error(
     'CORS_ORIGINS must be set to an explicit comma-separated allow-list in production. ' +
-    'Wildcard (*) is not permitted.'
+      'Wildcard (*) is not permitted.'
   );
   process.exit(1);
 }

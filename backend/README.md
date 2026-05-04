@@ -1,196 +1,217 @@
-# Mental Health Clinic — Backend (Phase 1: Auth)
+# Bahya Backend
 
-Node.js + Express + TypeScript + Prisma (PostgreSQL) API for the Mental Health Clinic platform.
-This phase implements the full authentication module: register, login, refresh, logout, `/me`,
-role-based access control (ADMIN / DOCTOR / VOLUNTEER / CALL_CENTER / PATIENT), and audit logging.
+Node.js + Express + TypeScript API for the Bahya platform. The backend uses
+Prisma with PostgreSQL for relational data, Mongoose with MongoDB for activity
+data, and Mailpit-compatible SMTP settings for local password-reset email.
+
+## Implemented Modules
+
+- Auth: staff bootstrap, staff registration, patient registration, login,
+  refresh, logout, `/me`, change password, forgot password, reset password.
+- Patients: create, list/search, self/staff profile read, demographic patch,
+  JSONB medical/social/financial blocks, and timeline scaffold.
+- Users: admin-only list, read, full-name patch, active status changes with
+  last-admin lockout protection, and admin-triggered password reset.
+- Audit logging: auth, patient, user, and password-reset events with sensitive
+  values kept out of logs and audit payloads.
 
 ## Prerequisites
 
 - Node.js 20+
-- PostgreSQL 16+
-- MongoDB 7+
 - npm
+- Docker + Docker Compose for local PostgreSQL 16, MongoDB 7, and Mailpit
 
-## Setup
+## Local Setup
 
 ```bash
 cd backend
+docker compose up -d
 npm install
 cp .env.example .env
-# edit .env: set DATABASE_URL, MONGODB_URI, secrets, BOOTSTRAP_SECRET
-npx prisma migrate dev --name init
+npx prisma migrate dev
+npx prisma generate
 npm run dev
 ```
 
-Server listens on `http://localhost:3000` (default).
+The API listens on `http://localhost:3000` by default.
 
-Health check: `GET /api/v1/health`.
+Health check:
+
+```bash
+curl http://localhost:3000/api/v1/health
+```
+
+Expected healthy response:
+
+```json
+{
+  "status": "ok",
+  "services": {
+    "postgres": "up",
+    "mongo": "up"
+  }
+}
+```
+
+Mailpit is exposed at `http://localhost:8025` for inspecting local reset emails.
+
+## Environment
+
+Start from `.env.example` and override values in `.env`.
+
+Required values:
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string used by Prisma |
+| `MONGODB_URI` | MongoDB connection string used by Mongoose |
+| `JWT_ACCESS_SECRET` | Access-token signing secret, at least 32 chars |
+| `JWT_REFRESH_SECRET` | Refresh-token signing secret, at least 32 chars |
+| `BOOTSTRAP_SECRET` | One-time first-admin bootstrap secret, at least 16 chars |
+| `CORS_ORIGINS` | Comma-separated browser origin allow-list, or `*` in development |
+
+Password reset and email values:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SMTP_HOST` | `localhost` | SMTP host, Mailpit in local development |
+| `SMTP_PORT` | `1025` | SMTP port |
+| `SMTP_USER` | empty | Optional SMTP username |
+| `SMTP_PASS` | empty | Optional SMTP password |
+| `SMTP_FROM` | `noreply@bahya.health` | Sender address |
+| `RESET_TOKEN_TTL_MINUTES` | `30` | Password reset token expiry |
+| `APP_URL` | `http://localhost:3000` | Base URL used in reset links |
 
 ## Scripts
 
 | Script | Description |
 |---|---|
-| `npm run dev` | Start dev server with ts-node-dev + hot reload |
+| `npm run dev` | Start the development server with `ts-node-dev` |
 | `npm run build` | Compile TypeScript to `dist/` |
-| `npm start` | Run compiled server from `dist/` |
+| `npm start` | Run the compiled server |
 | `npm run prisma:generate` | Regenerate Prisma Client |
-| `npm run prisma:migrate` | Create/apply a dev migration |
-| `npm run lint` | ESLint over `src/` |
-| `npm run format` | Prettier write over `src/` |
+| `npm run prisma:migrate` | Create and apply a development migration |
+| `npm run audit:migrate` | Migrate audit data to MongoDB |
+| `npm run lint` | Run ESLint over `src/` |
+| `npm run format` | Format backend source with Prettier |
+| `npm test` | Run Jest unit and integration tests |
+
+## API Summary
+
+Base path: `/api/v1`.
+
+### Health
+
+- `GET /health`
+
+### Auth
+
+- `POST /auth/register-staff`
+- `POST /auth/register-patient`
+- `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /auth/logout`
+- `GET /auth/me`
+- `PATCH /auth/change-password`
+- `POST /auth/forgot-password`
+- `POST /auth/reset-password`
+
+Notes:
+
+- First admin bootstrap uses `X-Bootstrap-Secret` and is only allowed while no
+  admin exists.
+- Normal staff registration requires an ADMIN access token.
+- Login is rate-limited at 10 requests per minute per IP.
+- Forgot password is rate-limited at 5 requests per email per 15-minute window.
+- Password changes and resets revoke existing refresh tokens.
+
+### Patients
+
+- `POST /patients` - ADMIN and CALL_CENTER create patient accounts.
+- `GET /patients` - ADMIN, DOCTOR, CALL_CENTER, and VOLUNTEER list/search.
+- `GET /patients/:id` - staff read profiles; PATIENT can read only self.
+- `PATCH /patients/:id` - ADMIN and CALL_CENTER update demographics/JSONB data.
+- `GET /patients/:id/timeline` - ADMIN and DOCTOR read timeline data.
+
+Patient JSONB blocks use strict schemas:
+
+- `medicalHistory`: `allergies`, `conditions`, `notes`
+- `socialStatus`: `maritalStatus`, `familySupport`, `notes`
+- `financials`: `incomeBracket`, `notes`
+
+Patch requests shallow-merge each JSONB block. Setting a sub-key to `null`
+removes that sub-key. Volunteers do not receive `financials` in patient
+responses.
+
+### Users
+
+All `/users` endpoints are ADMIN-only:
+
+- `GET /users`
+- `GET /users/:id`
+- `PATCH /users/:id`
+- `PATCH /users/:id/status`
+- `POST /users/:id/trigger-reset`
+
+User list supports `q`, `role`, `isActive`, `page`, and `pageSize` query
+parameters.
 
 ## Architecture
 
-```
+```text
 src/
-  config/      # env (zod), prisma singleton, mongo connection, pino logger
-  middleware/  # authenticate (Constitution IV), authorize, audit, errorHandler, requestId
+  config/        env, email config, Prisma, Mongo, logger
+  middleware/    auth, authorization, audit, errors, request IDs
   modules/
-    auth/      # routes, controller, service, schemas (zod)
-    users/     # user.service
-  routes/      # /api/v1 mount
-  utils/       # passwords (bcrypt), tokens (JWT + refresh), httpError
-  app.ts       # express wiring
-  server.ts    # bootstrap + graceful shutdown
+    auth/        auth routes, controller, service, schemas
+    email/       password-reset email service and templates
+    patients/    patient routes, controller, service, schemas, validators
+    users/       admin user-management routes, controller, service, schemas
+  routes/        /api/v1 router and health probe
+  utils/         passwords, tokens, http errors
+  app.ts         Express wiring
+  server.ts      startup and graceful shutdown
 prisma/
   schema.prisma
+  migrations/
+tests/
+  integration/
+  unit/
 ```
 
-## Authentication model
+## Database
 
-- **Access token**: JWT, 15 min, payload `{ sub, role }`, signed with `JWT_ACCESS_SECRET`.
-- **Refresh token**: opaque (64 random bytes, hex). Only its SHA-256 hash is stored in the
-  `RefreshToken` table. Every call to `/auth/refresh` rotates the token: the old row is marked
-  `revokedAt` and linked to the new row via `replacedBy`.
-- **Logout**: revokes the submitted refresh token.
+Relational models in Prisma:
 
-## Role matrix
+- `User`
+- `RefreshToken`
+- `Patient`
+- `PasswordResetToken`
 
-| Role | Capabilities |
-|---|---|
-| `ADMIN` | Full CRUD; registers staff and patients |
-| `DOCTOR` | View/edit patients; clinical assessments; interventions |
-| `VOLUNTEER` | Sends assessment forms; creates follow-up interventions |
-| `CALL_CENTER` | Registers patients; handles booking notifications |
-| `PATIENT` | Own profile, assessment forms, chatbot |
+MongoDB stores activity/audit data used by the timeline and audit modules.
 
-## Endpoints
+See `prisma/schema.prisma` for the current schema.
 
-Base path: `/api/v1/auth`.
+## Security Defaults
 
-### 1. `POST /auth/register-staff`
+- JWT access tokens with `{ sub, role }` payloads.
+- Opaque refresh tokens stored only as SHA-256 hashes.
+- bcrypt password hashing.
+- Helmet response headers.
+- CORS allow-list from `CORS_ORIGINS`.
+- Express rate limiting for auth endpoints.
+- Pino redaction for auth headers, bootstrap secret, passwords, and tokens.
+- Production refuses wildcard CORS.
 
-Creates an ADMIN/DOCTOR/VOLUNTEER/CALL_CENTER user. Access:
+## Validation
 
-- Normal path: requires `Authorization: Bearer <ADMIN access token>`.
-- One-time bootstrap: if **no** admin exists in the DB yet, a single request with
-  `X-Bootstrap-Secret: <BOOTSTRAP_SECRET>` creating an `ADMIN` is allowed. Subsequent
-  bootstrap calls are rejected.
+Run the same checks used during implementation:
 
 ```bash
-# BOOTSTRAP the first admin
-curl -X POST http://localhost:3000/api/v1/auth/register-staff \
-  -H 'Content-Type: application/json' \
-  -H "X-Bootstrap-Secret: $BOOTSTRAP_SECRET" \
-  -d '{
-    "email": "admin@clinic.local",
-    "password": "ChangeMe!123",
-    "fullName": "Clinic Admin",
-    "role": "ADMIN"
-  }'
-
-# As an existing ADMIN, create a doctor
-curl -X POST http://localhost:3000/api/v1/auth/register-staff \
-  -H 'Content-Type: application/json' \
-  -H "Authorization: Bearer $ADMIN_ACCESS_TOKEN" \
-  -d '{
-    "email": "dr.ahmed@clinic.local",
-    "password": "ChangeMe!123",
-    "fullName": "Dr. Ahmed",
-    "role": "DOCTOR"
-  }'
+npm run build
+npm run lint
+npm test -- --runInBand
+npx jest --testPathPatterns=validators --runInBand
 ```
 
-### 2. `POST /auth/register-patient`
-
-Creates a PATIENT. Requires `Authorization: Bearer <token>` for a user with role
-`ADMIN` or `CALL_CENTER`. The `role` field, if any, is ignored; the server
-always stores `PATIENT`.
-
-```bash
-curl -X POST http://localhost:3000/api/v1/auth/register-patient \
-  -H 'Content-Type: application/json' \
-  -H "Authorization: Bearer $STAFF_ACCESS_TOKEN" \
-  -d '{
-    "email": "patient01@example.com",
-    "password": "Patient!123",
-    "fullName": "Sara Patient"
-  }'
-```
-
-### 3. `POST /auth/login`
-
-```bash
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{ "email": "admin@clinic.local", "password": "ChangeMe!123" }'
-```
-
-Response:
-
-```json
-{
-  "accessToken": "eyJhbGciOi...",
-  "refreshToken": "af39..."
-}
-```
-
-### 4. `POST /auth/refresh`
-
-```bash
-curl -X POST http://localhost:3000/api/v1/auth/refresh \
-  -H 'Content-Type: application/json' \
-  -d '{ "refreshToken": "af39..." }'
-```
-
-Returns a new `{ accessToken, refreshToken }` pair. The old refresh token is revoked.
-
-### 5. `POST /auth/logout`
-
-```bash
-curl -X POST http://localhost:3000/api/v1/auth/logout \
-  -H 'Content-Type: application/json' \
-  -d '{ "refreshToken": "af39..." }'
-```
-
-Returns `204 No Content`. Revokes that refresh token.
-
-### 6. `GET /auth/me`
-
-```bash
-curl http://localhost:3000/api/v1/auth/me \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
-```
-
-## Security defaults
-
-- `helmet` for baseline response headers.
-- `cors` with allow-list from `CORS_ORIGINS`.
-- `express-rate-limit`: 10/min/IP on login, 20/min/IP on other `/auth/*`.
-- bcrypt cost 12.
-- Pino redacts `Authorization`, `X-Bootstrap-Secret`, passwords, and tokens.
-- Audit log written on LOGIN / LOGIN_FAIL / LOGOUT / REFRESH / CREATE, with IP + user-agent.
-- `.env` is gitignored; copy `.env.example` and fill it in.
-
-## Database schema (phase 1)
-
-- `User` — `id (uuid)`, `email (unique)`, `passwordHash`, `fullName`, `role (enum)`, `isActive`, timestamps.
-- `RefreshToken` — `tokenHash (sha256, unique)`, `expiresAt`, `revokedAt`, `replacedBy`, `userAgent`, `ip`.
-- `AuditLog` — `userId?`, `actionType`, `entity`, `entityId`, `oldValues`, `newValues`, `ip`, `userAgent`.
-
-See [prisma/schema.prisma](./prisma/schema.prisma).
-
-## Out of scope for phase 1
-
-- MFA / TOTP (scaffold to come later).
-- Patient, PHQ-9, intervention, analytics modules.
-- Chatbot service.
+For the full happy path, follow `../specs/003-patient-module/quickstart.md`.
