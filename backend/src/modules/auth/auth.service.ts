@@ -128,6 +128,32 @@ async function writeCommittedPasswordResetAudit(input: AuditInput): Promise<void
   }
 }
 
+// PASSWORD_CHANGED is strict-tier, but changePassword writes it after the new
+// password hash and refresh-token revocations have already committed. A 503
+// here would make the caller retry with a now-stale current password.
+async function writeCommittedPasswordChangedAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit password-changed audit failed; preserving successful response'
+      );
+      return;
+    }
+    throw err;
+  }
+}
+
 interface TokenBundle {
   accessToken: string;
   refreshToken: string;
@@ -349,7 +375,7 @@ export async function changePassword(
     }),
   ]);
 
-  await writeAudit({
+  await writeCommittedPasswordChangedAudit({
     actorId: user.id,
     action: 'PASSWORD_CHANGED',
     entityType: 'USER',

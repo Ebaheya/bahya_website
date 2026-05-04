@@ -2,7 +2,8 @@ import { Prisma, type Role } from '@prisma/client';
 import type { Request } from 'express';
 import mongoose from 'mongoose';
 import { prisma } from '../../config/prisma';
-import { writeAudit } from '../../middleware/audit';
+import { logger } from '../../config/logger';
+import { writeAudit, type AuditInput } from '../../middleware/audit';
 import { AppError } from '../../utils/httpError';
 import { hashPassword } from '../../utils/passwords';
 import type {
@@ -10,6 +11,33 @@ import type {
   PatchPatientInput,
   QueryPatientsInput,
 } from './patient.schema';
+
+// PATIENT_CREATED is strict-tier, but createPatient writes it after both the
+// User and Patient rows have committed. A 503 here would surface the create as
+// failed even though it succeeded; client retries would then trip the email
+// uniqueness constraint and report the patient as un-creatable.
+async function writeCommittedPatientCreatedAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit patient-created audit failed; preserving successful response'
+      );
+      return;
+    }
+    throw err;
+  }
+}
 
 const patientInclude = {
   user: {
@@ -257,7 +285,7 @@ export async function createPatient(
 
   const response = sanitizePatientResponse(patient);
 
-  await writeAudit({
+  await writeCommittedPatientCreatedAudit({
     actorId,
     action: 'PATIENT_CREATED',
     entityType: 'PATIENT',
