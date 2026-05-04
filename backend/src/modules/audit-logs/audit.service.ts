@@ -18,7 +18,7 @@ export interface AuditInput {
   req?: Request;
 }
 
-const DENY = /^(password|passwordHash|token|tokenHash|refreshToken|secret|jwt)/i;
+const DENY = /(password|token|secret|jwt)/i;
 const REDACTED = '[REDACTED]';
 const SANITIZER_MAX_DEPTH = 1;
 
