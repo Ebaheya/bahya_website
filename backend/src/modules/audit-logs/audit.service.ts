@@ -18,7 +18,7 @@ export interface AuditInput {
   req?: Request;
 }
 
-const DENY = /^(password|passwordHash|token|tokenHash|refreshToken|secret|jwt)/i;
+const DENY = /(password|token|secret|jwt)/i;
 const REDACTED = '[REDACTED]';
 const SANITIZER_MAX_DEPTH = 1;
 
@@ -150,8 +150,8 @@ function isDuplicateKeyError(err: unknown): boolean {
   );
 }
 
-export async function __migrationSyncAuditIndexes(): Promise<void> {
-  await AuditLogModel.syncIndexes();
+export async function __migrationCreateAuditIndexes(): Promise<void> {
+  await AuditLogModel.createIndexes();
 }
 
 export async function __migrationFindByLegacyPgId(

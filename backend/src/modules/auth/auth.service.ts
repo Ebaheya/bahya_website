@@ -25,15 +25,72 @@ import type {
 // service throws AppError(503, 'AUDIT_UNAVAILABLE'). For LOGIN_FAIL specifically
 // the contract (contracts/audit-service.md § 1.3) says the client MUST still
 // receive the standard 401, with the audit failure surfaced server-side only.
-// All other strict actions (LOGIN, USER_CREATED, ...) keep the 503 propagation.
 async function writeLoginFailAudit(input: AuditInput): Promise<void> {
   try {
     await writeAudit(input);
   } catch (err) {
     if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
       logger.error(
-        { err, action: input.action, actorId: input.actorId ?? null },
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_preserved_response',
+          actorId: input.actorId ?? null,
+        },
         'login_fail audit failed; preserving 401 to client'
+      );
+      return;
+    }
+    throw err;
+  }
+}
+
+// USER_CREATED is strict-tier, but these callers invoke audit after PostgreSQL
+// has already committed. Returning 503 at that point makes the successful create
+// look failed and retries collide on the unique email constraint.
+async function writeCommittedUserCreatedAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit user-created audit failed; preserving successful response'
+      );
+      return;
+    }
+    throw err;
+  }
+}
+
+// LOGIN is written after refresh-token persistence so audit records only
+// represent usable sessions. At that point the auth side effect has committed,
+// so Mongo audit downtime must not turn the successful login into a 503.
+async function writeCommittedLoginAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit login audit failed; preserving successful response'
       );
       return;
     }
@@ -92,7 +149,7 @@ export async function registerStaff(input: RegisterStaffInput, req?: Request) {
     role: input.role as Role,
   });
 
-  await writeAudit({
+  await writeCommittedUserCreatedAudit({
     actorId: req?.user?.id ?? null,
     action: 'USER_CREATED',
     entityType: 'USER',
@@ -116,7 +173,7 @@ export async function registerPatient(input: RegisterPatientInput, req?: Request
     role: 'PATIENT',
   });
 
-  await writeAudit({
+  await writeCommittedUserCreatedAudit({
     actorId: req?.user?.id ?? null,
     action: 'USER_CREATED',
     entityType: 'USER',
@@ -153,15 +210,15 @@ export async function login(input: LoginInput, req?: Request) {
     throw AppError.unauthorized('Invalid email or password');
   }
 
-  await writeAudit({
+  const tokens = await issueTokens(user.id, user.role, req);
+
+  await writeCommittedLoginAudit({
     actorId: user.id,
     action: 'LOGIN',
     entityType: 'USER',
     entityId: user.id,
     req,
   });
-
-  const tokens = await issueTokens(user.id, user.role, req);
 
   return tokens;
 }
@@ -382,8 +439,6 @@ export async function adminExists(): Promise<boolean> {
 // Creates the very first ADMIN under a Postgres advisory lock so that two
 // simultaneous bootstrap requests cannot both observe "no admin" and both succeed.
 // pg_advisory_xact_lock is released automatically at transaction end.
-// writeAudit is intentionally called after the transaction so that an audit
-// write failure does not roll back the user creation.
 export async function bootstrapFirstAdmin(input: RegisterStaffInput, req?: Request) {
   const user = await prisma.$transaction(async (tx) => {
     // Lock key: arbitrary stable bigint scoped to this operation.
@@ -417,7 +472,7 @@ export async function bootstrapFirstAdmin(input: RegisterStaffInput, req?: Reque
     });
   });
 
-  await writeAudit({
+  await writeCommittedUserCreatedAudit({
     actorId: null,
     action: 'USER_CREATED',
     entityType: 'USER',

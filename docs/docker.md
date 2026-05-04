@@ -61,10 +61,14 @@ the credentials from `MONGO_INITDB_ROOT_USERNAME` and
 
 ## Audit Failure Operations
 
-Strict audit actions reject the originating request if MongoDB is unavailable.
-For operator triage, a 503 with `AUDIT_UNAVAILABLE` during `USER_CREATED`,
-`PASSWORD_RESET_BY_ADMIN`, `LOGIN`, `HIGH_RISK_ALERT_CREATED`, or strict
-login-failure auditing means MongoDB health should be checked first:
+Strict audit actions reject the originating request if MongoDB is unavailable
+before the primary database write commits. For operator triage, a 503 with
+`AUDIT_UNAVAILABLE` during `PASSWORD_RESET_BY_ADMIN` or
+`HIGH_RISK_ALERT_CREATED` means MongoDB health should be checked first.
+`USER_CREATED` audit failures after a user row has committed, `LOGIN` audit
+failures after refresh-token persistence, and `LOGIN_FAIL` audit failures that
+must preserve the standard 401 response, are logged as `audit_write_failure`
+errors while the client response is preserved:
 
 ```powershell
 docker compose ps

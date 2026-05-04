@@ -4,9 +4,9 @@ import { disconnectPrisma, prisma } from '../src/config/prisma';
 import { logger } from '../src/config/logger';
 import { AUDIT_ACTIONS } from '../src/modules/audit-logs/audit.actions';
 import {
+  __migrationCreateAuditIndexes,
   __migrationFindByLegacyPgId,
   __migrationInsertLegacyAudit,
-  __migrationSyncAuditIndexes,
 } from '../src/modules/audit-logs/audit.service';
 
 interface LegacyAuditRow {
@@ -90,7 +90,7 @@ async function migrate(): Promise<Summary> {
 
   await prisma.$connect();
   await connectMongo();
-  await __migrationSyncAuditIndexes();
+  await __migrationCreateAuditIndexes();
 
   let lastCreatedAt: Date | null = null;
   let lastId: string | null = null;
