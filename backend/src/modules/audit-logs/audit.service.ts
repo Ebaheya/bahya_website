@@ -150,8 +150,8 @@ function isDuplicateKeyError(err: unknown): boolean {
   );
 }
 
-export async function __migrationSyncAuditIndexes(): Promise<void> {
-  await AuditLogModel.syncIndexes();
+export async function __migrationCreateAuditIndexes(): Promise<void> {
+  await AuditLogModel.createIndexes();
 }
 
 export async function __migrationFindByLegacyPgId(

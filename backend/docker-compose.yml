@@ -32,7 +32,7 @@ services:
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "mongosh --quiet --host localhost --eval \"db.adminCommand('ping').ok\" | grep -q 1"
+        - "mongosh --quiet --host localhost --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\" | grep -q 1"
       interval: 5s
       timeout: 5s
       retries: 10
