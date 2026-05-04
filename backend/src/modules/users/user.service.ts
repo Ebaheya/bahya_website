@@ -1,11 +1,12 @@
 import type { Request } from 'express';
 import { Prisma, type Role, type User } from '@prisma/client';
 import { prisma } from '../../config/prisma';
+import { logger } from '../../config/logger';
 import { writeAudit } from '../../middleware/audit';
 import { AppError } from '../../utils/httpError';
 import { sendEmail } from '../email/email.service';
 import { buildPasswordResetEmail } from '../email/templates/password-reset';
-import { buildResetUrl, issueResetToken } from '../auth/reset-tokens';
+import { buildResetUrl, invalidateResetToken, issueResetToken } from '../auth/reset-tokens';
 import type { ListUsersQuery, PatchUserInput } from './user.schema';
 
 export const publicUserSelect = {
@@ -192,10 +193,26 @@ export async function triggerReset(targetId: string, actorId: string, req?: Requ
   });
   if (!target) throw AppError.notFound('User not found');
 
-  const { rawToken } = await issueResetToken(target.id);
+  const issuedToken = await issueResetToken(target.id);
 
-  const email = buildPasswordResetEmail(buildResetUrl(rawToken), target.fullName);
-  await sendEmail(target.email, email.subject, email.html);
+  const email = buildPasswordResetEmail(buildResetUrl(issuedToken.rawToken), target.fullName);
+  try {
+    await sendEmail(target.email, email.subject, email.html);
+  } catch (err) {
+    try {
+      await invalidateResetToken(issuedToken.id);
+    } catch (cleanupErr) {
+      logger.error(
+        {
+          err: cleanupErr,
+          metric: 'password_reset_token_cleanup_failed',
+          userId: target.id,
+        },
+        'failed to invalidate undelivered password reset token'
+      );
+    }
+    throw err;
+  }
 
   await writeAudit({
     actorId,

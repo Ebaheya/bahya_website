@@ -13,7 +13,12 @@ import { writeAudit, getClientIp, type AuditInput } from '../../middleware/audit
 import { sendEmail } from '../email/email.service';
 import { buildPasswordResetEmail } from '../email/templates/password-reset';
 import * as users from '../users/user.service';
-import { buildResetUrl, hashResetToken, issueResetToken } from './reset-tokens';
+import {
+  buildResetUrl,
+  hashResetToken,
+  invalidateResetToken,
+  issueResetToken,
+} from './reset-tokens';
 import type {
   LoginInput,
   RegisterPatientInput,
@@ -335,10 +340,33 @@ export async function forgotPassword(email: string, req?: Request) {
 
   if (!user || !user.isActive) return { message: forgotPasswordMessage };
 
-  const { rawToken } = await issueResetToken(user.id);
+  const issuedToken = await issueResetToken(user.id);
 
-  const emailContent = buildPasswordResetEmail(buildResetUrl(rawToken), user.fullName);
-  await sendEmail(user.email, emailContent.subject, emailContent.html);
+  const emailContent = buildPasswordResetEmail(
+    buildResetUrl(issuedToken.rawToken),
+    user.fullName
+  );
+  try {
+    await sendEmail(user.email, emailContent.subject, emailContent.html);
+  } catch (err) {
+    try {
+      await invalidateResetToken(issuedToken.id);
+    } catch (cleanupErr) {
+      logger.error(
+        {
+          err: cleanupErr,
+          metric: 'password_reset_token_cleanup_failed',
+          userId: user.id,
+        },
+        'failed to invalidate undelivered password reset token'
+      );
+    }
+    logger.error(
+      { err, metric: 'password_reset_email_delivery_failed', userId: user.id },
+      'password reset email failed; returning generic forgot-password response'
+    );
+    return { message: forgotPasswordMessage };
+  }
 
   await writeAudit({
     actorId: null,

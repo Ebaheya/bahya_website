@@ -174,6 +174,33 @@ describe('POST /api/v1/auth/forgot-password and /reset-password', () => {
     ).resolves.toBe(0);
   });
 
+  it('returns the generic response and invalidates the token when email delivery fails', async () => {
+    const user = await createUser('PATIENT', 'patient.forgot-email-fail@example.com');
+    (emailService.sendEmail as jest.Mock).mockRejectedValueOnce(new Error('SMTP down'));
+
+    const response = await request('/api/v1/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: user.email }),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      message: forgotPasswordMessage,
+    });
+
+    await expect(
+      prisma.passwordResetToken.count({
+        where: { userId: user.id, usedAt: null },
+      })
+    ).resolves.toBe(0);
+    await expect(
+      mongoose.connection.collection('audit_logs').countDocuments({
+        action: 'PASSWORD_RESET_REQUESTED',
+        entityId: user.id,
+      })
+    ).resolves.toBe(0);
+  });
+
   it('resets password with a valid token, marks token used, revokes tokens, and writes audit', async () => {
     const user = await createUser('PATIENT', 'patient.reset@example.com');
     await prisma.refreshToken.create({

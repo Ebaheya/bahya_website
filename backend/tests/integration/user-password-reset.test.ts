@@ -6,6 +6,7 @@ import type { createApp as createAppFn } from '../../src/app';
 import type { hashPassword as hashPasswordFn } from '../../src/utils/passwords';
 import type { signAccessToken as signAccessTokenFn } from '../../src/utils/tokens';
 import type * as emailServiceModule from '../../src/modules/email/email.service';
+import { AppError } from '../../src/utils/httpError';
 
 const password = 'StaffPass123!';
 
@@ -221,6 +222,36 @@ describe('POST /api/v1/users/:id/trigger-reset', () => {
         where: { userId: target.user.id, usedAt: null },
       })
     ).resolves.toBe(1);
+  });
+
+  it('surfaces email delivery failures without leaving an active reset token or audit event', async () => {
+    const admin = await createUser('ADMIN', 'admin.reset-email-fail@example.com');
+    const target = await createUser('DOCTOR', 'doctor.reset-email-fail@example.com');
+    (emailService.sendEmail as jest.Mock).mockRejectedValueOnce(
+      AppError.emailDeliveryFailed()
+    );
+
+    const response = await request(`/api/v1/users/${target.user.id}/trigger-reset`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${admin.token}` },
+    });
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'EMAIL_DELIVERY_FAILED' },
+    });
+
+    await expect(
+      prisma.passwordResetToken.count({
+        where: { userId: target.user.id, usedAt: null },
+      })
+    ).resolves.toBe(0);
+    await expect(
+      mongoose.connection.collection('audit_logs').countDocuments({
+        action: 'PASSWORD_RESET_BY_ADMIN',
+        entityId: target.user.id,
+      })
+    ).resolves.toBe(0);
   });
 
   it('rejects non-admin users', async () => {

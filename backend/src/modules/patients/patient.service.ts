@@ -25,6 +25,8 @@ const patientInclude = {
 
 type PatientWithUser = Prisma.PatientGetPayload<{ include: typeof patientInclude }>;
 
+const maxTimelineMergeWindow = 1000;
+
 interface TimelineItem {
   kind: 'ASSESSMENT' | 'INTERVENTION';
   id: string;
@@ -40,6 +42,8 @@ interface AssessmentDelegate {
   }): Promise<Array<Record<string, unknown>>>;
   count(args: { where: { patientId: string } }): Promise<number>;
 }
+
+type TimelineSourceResult = { data: TimelineItem[]; total: number };
 
 export function sanitizePatientResponse(patient: PatientWithUser) {
   const { user, ...patientFields } = patient;
@@ -98,8 +102,23 @@ function jsonForPrisma(value: Record<string, unknown> | null) {
   return value === null ? Prisma.JsonNull : (value as Prisma.InputJsonValue);
 }
 
+function canonicalizeJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalizeJson);
+
+  if (isRecord(value)) {
+    return Object.keys(value)
+      .sort()
+      .reduce<Record<string, unknown>>((result, key) => {
+        result[key] = canonicalizeJson(value[key]);
+        return result;
+      }, {});
+  }
+
+  return value ?? null;
+}
+
 function stableJson(value: unknown): string {
-  return JSON.stringify(value ?? null);
+  return JSON.stringify(canonicalizeJson(value));
 }
 
 function asDate(value: unknown): Date {
@@ -123,13 +142,24 @@ function asSummary(value: Record<string, unknown>, fallback: string): string {
   return fallback;
 }
 
+function isAssessmentDelegate(value: unknown): value is AssessmentDelegate {
+  return (
+    isRecord(value) &&
+    typeof value.findMany === 'function' &&
+    typeof value.count === 'function'
+  );
+}
+
+function getAssessmentDelegate(): AssessmentDelegate | null {
+  const delegate = Reflect.get(prisma, 'assessment');
+  return isAssessmentDelegate(delegate) ? delegate : null;
+}
+
 async function getAssessmentTimelineItems(
   patientId: string,
   limit: number
-): Promise<{ data: TimelineItem[]; total: number }> {
-  const assessmentDelegate = (prisma as unknown as { assessment?: AssessmentDelegate })
-    .assessment;
-
+): Promise<TimelineSourceResult> {
+  const assessmentDelegate = getAssessmentDelegate();
   if (!assessmentDelegate) return { data: [], total: 0 };
 
   const [rows, total] = await Promise.all([
@@ -155,7 +185,7 @@ async function getAssessmentTimelineItems(
 async function getInterventionTimelineItems(
   patientId: string,
   limit: number
-): Promise<{ data: TimelineItem[]; total: number }> {
+): Promise<TimelineSourceResult> {
   if (mongoose.connection.readyState !== 1) {
     throw new AppError(
       503,
@@ -386,6 +416,12 @@ export async function getPatientTimeline(
   pageSize: number
 ) {
   const limit = page * pageSize;
+  if (limit > maxTimelineMergeWindow) {
+    throw AppError.badRequest(
+      `Timeline pagination window cannot exceed ${maxTimelineMergeWindow} items`
+    );
+  }
+
   const skip = (page - 1) * pageSize;
 
   const [assessments, interventions] = await Promise.all([

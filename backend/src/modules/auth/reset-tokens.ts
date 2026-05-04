@@ -13,6 +13,7 @@ export function buildResetUrl(rawToken: string): string {
 }
 
 export interface IssuedResetToken {
+  id: string;
   rawToken: string;
   tokenHash: string;
   expiresAt: Date;
@@ -24,15 +25,28 @@ export async function issueResetToken(userId: string): Promise<IssuedResetToken>
   const tokenHash = hashResetToken(rawToken);
   const expiresAt = new Date(now.getTime() + env.RESET_TOKEN_TTL_MINUTES * 60 * 1000);
 
-  await prisma.$transaction([
-    prisma.passwordResetToken.updateMany({
+  const token = await prisma.$transaction(async (tx) => {
+    // Serialize issuance per user so concurrent reset requests cannot both
+    // leave an unused token active.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('password_reset_token'), hashtext(${userId}))`;
+
+    await tx.passwordResetToken.updateMany({
       where: { userId, usedAt: null },
       data: { usedAt: now },
-    }),
-    prisma.passwordResetToken.create({
-      data: { userId, tokenHash, expiresAt },
-    }),
-  ]);
+    });
 
-  return { rawToken, tokenHash, expiresAt };
+    return tx.passwordResetToken.create({
+      data: { userId, tokenHash, expiresAt },
+      select: { id: true },
+    });
+  });
+
+  return { id: token.id, rawToken, tokenHash, expiresAt };
+}
+
+export async function invalidateResetToken(tokenId: string): Promise<void> {
+  await prisma.passwordResetToken.updateMany({
+    where: { id: tokenId, usedAt: null },
+    data: { usedAt: new Date() },
+  });
 }

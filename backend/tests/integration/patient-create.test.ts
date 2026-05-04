@@ -533,6 +533,12 @@ describe('POST /api/v1/patients', () => {
       total: 0,
     });
 
+    const deepTimeline = await request(
+      `/api/v1/patients/${patient.id}/timeline?page=1001&pageSize=1`,
+      { headers: { authorization: `Bearer ${doctor.token}` } }
+    );
+    expect(deepTimeline.status).toBe(400);
+
     const blockedCallCenter = await request(`/api/v1/patients/${patient.id}/timeline`, {
       headers: { authorization: `Bearer ${callCenter.token}` },
     });

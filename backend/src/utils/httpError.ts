@@ -40,6 +40,10 @@ export class AppError extends Error {
     return new AppError(400, 'INVALID_OR_EXPIRED_TOKEN', message);
   }
 
+  static emailDeliveryFailed(message = 'Email delivery failed'): AppError {
+    return new AppError(503, 'EMAIL_DELIVERY_FAILED', message);
+  }
+
   static internal(message = 'Internal server error'): AppError {
     return new AppError(500, 'INTERNAL', message);
   }
