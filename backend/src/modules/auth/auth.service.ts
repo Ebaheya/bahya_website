@@ -363,6 +363,7 @@ export async function changePassword(
   const ok = await verifyPassword(currentPassword, user.passwordHash);
   if (!ok) throw AppError.invalidCredentials();
 
+  const now = new Date();
   const passwordHash = await hashPassword(newPassword);
   await prisma.$transaction([
     prisma.user.update({
@@ -371,7 +372,11 @@ export async function changePassword(
     }),
     prisma.refreshToken.updateMany({
       where: { userId: user.id, revokedAt: null },
-      data: { revokedAt: new Date() },
+      data: { revokedAt: now },
+    }),
+    prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: now },
     }),
   ]);
 

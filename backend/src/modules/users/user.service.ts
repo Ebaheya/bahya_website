@@ -2,7 +2,7 @@ import type { Request } from 'express';
 import { Prisma, type Role, type User } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { logger } from '../../config/logger';
-import { writeAudit } from '../../middleware/audit';
+import { writeAudit, type AuditInput } from '../../middleware/audit';
 import { AppError } from '../../utils/httpError';
 import { sendEmail } from '../email/email.service';
 import { buildPasswordResetEmail } from '../email/templates/password-reset';
@@ -54,6 +54,29 @@ export function revokeAllTokens(userId: string) {
     where: { userId, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+}
+
+async function writeCommittedAdminResetAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit admin password-reset audit failed; preserving successful response'
+      );
+      return;
+    }
+    throw err;
+  }
 }
 
 export async function listUsers(query: ListUsersQuery) {
@@ -214,7 +237,7 @@ export async function triggerReset(targetId: string, actorId: string, req?: Requ
     throw err;
   }
 
-  await writeAudit({
+  await writeCommittedAdminResetAudit({
     actorId,
     action: 'PASSWORD_RESET_BY_ADMIN',
     entityType: 'USER',

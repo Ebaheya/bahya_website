@@ -254,6 +254,45 @@ describe('POST /api/v1/users/:id/trigger-reset', () => {
     ).resolves.toBe(0);
   });
 
+  it('preserves success when the admin reset audit fails after email delivery', async () => {
+    const admin = await createUser('ADMIN', 'admin.reset-audit-down@example.com');
+    const target = await createUser('DOCTOR', 'doctor.reset-audit-down@example.com');
+
+    await mongoose.disconnect();
+    try {
+      const response = await request(`/api/v1/users/${target.user.id}/trigger-reset`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${admin.token}` },
+      });
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({
+        message: "Password reset link sent to user's email",
+      });
+    } finally {
+      await mongoose.connect(process.env.MONGODB_URI as string, {
+        serverSelectionTimeoutMS: 5000,
+      });
+    }
+
+    expect(emailService.sendEmail).toHaveBeenCalledWith(
+      target.user.email,
+      expect.any(String),
+      expect.stringContaining('/reset-password?token=')
+    );
+    await expect(
+      prisma.passwordResetToken.count({
+        where: { userId: target.user.id, usedAt: null },
+      })
+    ).resolves.toBe(1);
+    await expect(
+      mongoose.connection.collection('audit_logs').countDocuments({
+        action: 'PASSWORD_RESET_BY_ADMIN',
+        entityId: target.user.id,
+      })
+    ).resolves.toBe(0);
+  });
+
   it('rejects non-admin users', async () => {
     const actor = await createUser('DOCTOR', 'doctor.reset-forbidden@example.com');
     const target = await createUser('PATIENT', 'patient.reset-forbidden@example.com');

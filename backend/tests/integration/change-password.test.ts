@@ -96,6 +96,13 @@ describe('PATCH /api/v1/auth/change-password', () => {
         },
       ],
     });
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: actor.user.id,
+        tokenHash: 'active-reset-token-before-password-change',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
 
     const response = await request('/api/v1/auth/change-password', {
       method: 'PATCH',
@@ -118,6 +125,11 @@ describe('PATCH /api/v1/auth/change-password', () => {
     await expect(
       prisma.refreshToken.findUnique({ where: { tokenHash: 'active-refresh-token' } })
     ).resolves.toMatchObject({ revokedAt: expect.any(Date) });
+    await expect(
+      prisma.passwordResetToken.findUnique({
+        where: { tokenHash: 'active-reset-token-before-password-change' },
+      })
+    ).resolves.toMatchObject({ usedAt: expect.any(Date) });
 
     const audit = await mongoose.connection.collection('audit_logs').findOne({
       action: 'PASSWORD_CHANGED',
