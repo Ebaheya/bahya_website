@@ -1,7 +1,8 @@
-import 'package:bahya_website/screens/dashboard_panel.dart';
+import 'package:bahya_website/screens/admin_panel/dashboard_panel.dart';
 import 'package:bahya_website/helper/admin_widgets/sidebar_panel.dart';
-import 'package:bahya_website/screens/report_panel.dart';
-import 'package:bahya_website/screens/users_panel.dart';
+import 'package:bahya_website/screens/admin_panel/report_panel.dart';
+import 'package:bahya_website/screens/admin_panel/settings_panel.dart';
+import 'package:bahya_website/screens/admin_panel/users_panel.dart';
 import 'package:flutter/material.dart';
 
 class AdminPanelPage extends StatefulWidget {
@@ -96,12 +97,3 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 //   }
 // }
 
-
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Settings Page"));
-  }
-}

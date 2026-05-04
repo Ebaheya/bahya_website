@@ -1,4 +1,4 @@
-import 'package:bahya_website/screens/admin_panal.dart';
+import 'package:bahya_website/screens/admin_panel/admin_panal.dart';
 import 'package:go_router/go_router.dart';
 
 import 'screens/login.dart';
