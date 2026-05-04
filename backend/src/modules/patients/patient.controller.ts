@@ -9,12 +9,6 @@ import {
 } from './patient.schema';
 import * as patientService from './patient.service';
 
-function omitFinancials<T extends { financials?: unknown }>(patient: T): Omit<T, 'financials'> {
-  const response = { ...patient };
-  delete response.financials;
-  return response;
-}
-
 export async function create(
   req: Request,
   res: Response,
@@ -48,10 +42,7 @@ export async function getById(
       throw AppError.forbidden('Patients can only access their own profile');
     }
 
-    const response =
-      req.user.role === 'VOLUNTEER' ? omitFinancials(patient) : patient;
-
-    res.status(200).json(response);
+    res.status(200).json(patientService.projectForRole(patient, req.user.role));
   } catch (err) {
     next(err);
   }
@@ -67,10 +58,8 @@ export async function list(
 
     const query = queryPatientsSchema.parse(req.query);
     const result = await patientService.listPatients(query);
-    const data =
-      req.user.role === 'VOLUNTEER'
-        ? result.data.map((patient) => omitFinancials(patient))
-        : result.data;
+    const role = req.user.role;
+    const data = result.data.map((patient) => patientService.projectForRole(patient, role));
 
     res.status(200).json({ ...result, data });
   } catch (err) {
@@ -90,10 +79,7 @@ export async function patch(
     const input = patchPatientSchema.parse(req.body);
     const patient = await patientService.patchPatient(id, input, req.user.id, req);
 
-    const response =
-      req.user.role === 'VOLUNTEER' ? omitFinancials(patient) : patient;
-
-    res.status(200).json(response);
+    res.status(200).json(patientService.projectForRole(patient, req.user.role));
   } catch (err) {
     next(err);
   }

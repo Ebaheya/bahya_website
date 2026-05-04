@@ -11,6 +11,6 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
       html,
     });
   } catch (err) {
-    logger.warn({ err }, 'email send failed');
+    logger.error({ err, to, subject, metric: 'email_send_failure' }, 'email send failed');
   }
 }

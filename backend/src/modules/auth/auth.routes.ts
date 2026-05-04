@@ -25,9 +25,10 @@ const forgotPasswordLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     const email = (req.body as { email?: unknown } | undefined)?.email;
+    const ip = req.ip ?? 'unknown';
     return typeof email === 'string'
-      ? `forgot-password:${email.toLowerCase()}`
-      : `forgot-password:${req.ip ?? 'unknown'}`;
+      ? `forgot-password:${email.toLowerCase()}:${ip}`
+      : `forgot-password:${ip}`;
   },
 });
 

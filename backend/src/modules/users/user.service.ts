@@ -1,12 +1,11 @@
-import crypto from 'node:crypto';
 import type { Request } from 'express';
 import { Prisma, type Role, type User } from '@prisma/client';
 import { prisma } from '../../config/prisma';
-import { env } from '../../config/env';
 import { writeAudit } from '../../middleware/audit';
 import { AppError } from '../../utils/httpError';
 import { sendEmail } from '../email/email.service';
 import { buildPasswordResetEmail } from '../email/templates/password-reset';
+import { buildResetUrl, issueResetToken } from '../auth/reset-tokens';
 import type { ListUsersQuery, PatchUserInput } from './user.schema';
 
 export const publicUserSelect = {
@@ -177,10 +176,6 @@ export async function patchUserStatus(
   return updated;
 }
 
-function hashResetToken(rawToken: string): string {
-  return crypto.createHash('sha256').update(rawToken).digest('hex');
-}
-
 export async function triggerReset(targetId: string, actorId: string, req?: Request) {
   const target = await prisma.user.findUnique({
     where: { id: targetId },
@@ -188,30 +183,9 @@ export async function triggerReset(targetId: string, actorId: string, req?: Requ
   });
   if (!target) throw AppError.notFound('User not found');
 
-  const now = new Date();
-  const rawToken = crypto.randomBytes(64).toString('hex');
-  const tokenHash = hashResetToken(rawToken);
-  const expiresAt = new Date(
-    now.getTime() + env.RESET_TOKEN_TTL_MINUTES * 60 * 1000
-  );
+  const { rawToken } = await issueResetToken(target.id);
 
-  await prisma.$transaction([
-    prisma.passwordResetToken.updateMany({
-      where: { userId: target.id, usedAt: null },
-      data: { usedAt: now },
-    }),
-    prisma.passwordResetToken.create({
-      data: {
-        userId: target.id,
-        tokenHash,
-        expiresAt,
-      },
-    }),
-  ]);
-
-  const resetUrl = new URL('/reset-password', env.APP_URL);
-  resetUrl.searchParams.set('token', rawToken);
-  const email = buildPasswordResetEmail(resetUrl.toString(), target.fullName);
+  const email = buildPasswordResetEmail(buildResetUrl(rawToken), target.fullName);
   await sendEmail(target.email, email.subject, email.html);
 
   await writeAudit({

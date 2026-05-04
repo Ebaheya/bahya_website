@@ -1,9 +1,7 @@
-import crypto from 'node:crypto';
 import type { Request } from 'express';
 import type { Role } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { logger } from '../../config/logger';
-import { env } from '../../config/env';
 import { AppError } from '../../utils/httpError';
 import { hashPassword, verifyPassword } from '../../utils/passwords';
 import {
@@ -15,6 +13,7 @@ import { writeAudit, getClientIp, type AuditInput } from '../../middleware/audit
 import { sendEmail } from '../email/email.service';
 import { buildPasswordResetEmail } from '../email/templates/password-reset';
 import * as users from '../users/user.service';
+import { buildResetUrl, hashResetToken, issueResetToken } from './reset-tokens';
 import type {
   LoginInput,
   RegisterPatientInput,
@@ -103,18 +102,8 @@ interface TokenBundle {
   refreshToken: string;
 }
 
-const forgotPasswordMessage =
+export const forgotPasswordMessage =
   'If an account with that email exists, a password reset link has been sent';
-
-function hashResetToken(rawToken: string): string {
-  return crypto.createHash('sha256').update(rawToken).digest('hex');
-}
-
-function buildResetUrl(rawToken: string): string {
-  const resetUrl = new URL('/reset-password', env.APP_URL);
-  resetUrl.searchParams.set('token', rawToken);
-  return resetUrl.toString();
-}
 
 async function issueTokens(
   userId: string,
@@ -346,26 +335,7 @@ export async function forgotPassword(email: string, req?: Request) {
 
   if (!user || !user.isActive) return { message: forgotPasswordMessage };
 
-  const now = new Date();
-  const rawToken = crypto.randomBytes(64).toString('hex');
-  const tokenHash = hashResetToken(rawToken);
-  const expiresAt = new Date(
-    now.getTime() + env.RESET_TOKEN_TTL_MINUTES * 60 * 1000
-  );
-
-  await prisma.$transaction([
-    prisma.passwordResetToken.updateMany({
-      where: { userId: user.id, usedAt: null },
-      data: { usedAt: now },
-    }),
-    prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        tokenHash,
-        expiresAt,
-      },
-    }),
-  ]);
+  const { rawToken } = await issueResetToken(user.id);
 
   const emailContent = buildPasswordResetEmail(buildResetUrl(rawToken), user.fullName);
   await sendEmail(user.email, emailContent.subject, emailContent.html);

@@ -6,6 +6,7 @@ import type { PrismaClient, Role } from '@prisma/client';
 import type { createApp as createAppFn } from '../../src/app';
 import type { hashPassword as hashPasswordFn, verifyPassword as verifyPasswordFn } from '../../src/utils/passwords';
 import type * as emailServiceModule from '../../src/modules/email/email.service';
+import type * as authServiceModule from '../../src/modules/auth/auth.service';
 
 const oldPassword = 'OldPass123!';
 const newPassword = 'ResetPass123!';
@@ -15,6 +16,7 @@ let prisma: PrismaClient;
 let hashPassword: typeof hashPasswordFn;
 let verifyPassword: typeof verifyPasswordFn;
 let emailService: typeof emailServiceModule;
+let forgotPasswordMessage: string;
 let server: http.Server;
 let baseUrl: string;
 
@@ -46,7 +48,7 @@ function hashResetToken(rawToken: string): string {
 
 function tokenFromEmailHtml(): string {
   const html = (emailService.sendEmail as jest.Mock).mock.calls[0][2] as string;
-  const match = html.match(/[?&amp;]token=([a-f0-9]+)/);
+  const match = html.match(/[?&]token=([a-f0-9]+)/);
   expect(match).not.toBeNull();
   return match![1];
 }
@@ -60,6 +62,8 @@ describe('POST /api/v1/auth/forgot-password and /reset-password', () => {
     ({ prisma } = await import('../../src/config/prisma'));
     ({ hashPassword, verifyPassword } = await import('../../src/utils/passwords'));
     emailService = await import('../../src/modules/email/email.service');
+    const authService: typeof authServiceModule = await import('../../src/modules/auth/auth.service');
+    forgotPasswordMessage = authService.forgotPasswordMessage;
 
     if (mongoose.connection.readyState !== 1) {
       await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
@@ -109,7 +113,7 @@ describe('POST /api/v1/auth/forgot-password and /reset-password', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      message: 'If an account with that email exists, a password reset link has been sent',
+      message: forgotPasswordMessage,
     });
 
     const previous = await prisma.passwordResetToken.findUnique({
@@ -157,7 +161,7 @@ describe('POST /api/v1/auth/forgot-password and /reset-password', () => {
 
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toEqual({
-        message: 'If an account with that email exists, a password reset link has been sent',
+        message: forgotPasswordMessage,
       });
     }
 

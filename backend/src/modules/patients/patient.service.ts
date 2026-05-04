@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, type Role } from '@prisma/client';
 import type { Request } from 'express';
 import mongoose from 'mongoose';
 import { prisma } from '../../config/prisma';
@@ -54,6 +54,16 @@ export function sanitizePatientResponse(patient: PatientWithUser) {
   };
 }
 
+export function projectForRole<T extends Record<string, unknown>>(
+  patient: T,
+  role: Role
+): T {
+  if (role !== 'VOLUNTEER') return patient;
+  const copy: Record<string, unknown> = { ...patient };
+  delete copy.financials;
+  return copy as T;
+}
+
 function isUniqueConstraintError(err: unknown): err is Prisma.PrismaClientKnownRequestError {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
 }
@@ -103,7 +113,6 @@ function asDate(value: unknown): Date {
 
 function asId(value: unknown): string {
   if (value === null || value === undefined) return '';
-  if (typeof value === 'object' && 'toString' in value) return value.toString();
   return String(value);
 }
 
