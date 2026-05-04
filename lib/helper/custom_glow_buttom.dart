@@ -42,6 +42,7 @@ class CustomGlowButton extends StatelessWidget {
           foregroundColor: textColor ?? Color(0xFFFF7BB0),
           shape: const StadiumBorder(),
           padding: const EdgeInsets.symmetric(vertical: 12),
+          
         ),
         onPressed: onPressed,
         child: customText(

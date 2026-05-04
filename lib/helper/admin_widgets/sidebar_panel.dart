@@ -33,10 +33,8 @@ class Sidebar extends StatelessWidget {
                 children: [
                   sidebarItem(0, Icons.dashboard, "Dashboard"),
                   sidebarItem(1, Icons.people, "Users"),
-                  sidebarItem(2, Icons.local_hospital, "Patients"),
-                  sidebarItem(3, Icons.group, "Team"),
-                  sidebarItem(4, Icons.bar_chart, "Reports"),
-                  sidebarItem(5, Icons.settings, "Settings"),
+                  sidebarItem(2, Icons.bar_chart, "Reports"),
+                  sidebarItem(3, Icons.settings, "Settings"),
                 ],
               ),
             ),
