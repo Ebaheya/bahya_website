@@ -68,6 +68,32 @@ async function writeCommittedUserCreatedAudit(input: AuditInput): Promise<void> 
   }
 }
 
+// LOGIN is written after refresh-token persistence so audit records only
+// represent usable sessions. At that point the auth side effect has committed,
+// so Mongo audit downtime must not turn the successful login into a 503.
+async function writeCommittedLoginAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit login audit failed; preserving successful response'
+      );
+      return;
+    }
+    throw err;
+  }
+}
+
 interface TokenBundle {
   accessToken: string;
   refreshToken: string;
@@ -169,7 +195,7 @@ export async function login(input: LoginInput, req?: Request) {
 
   const tokens = await issueTokens(user.id, user.role, req);
 
-  await writeAudit({
+  await writeCommittedLoginAudit({
     actorId: user.id,
     action: 'LOGIN',
     entityType: 'USER',
