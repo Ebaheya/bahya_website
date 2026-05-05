@@ -12,6 +12,7 @@ import {
   resetPasswordSchema,
 } from './auth.schema';
 import * as authService from './auth.service';
+import * as patientService from '../patients/patient.service';
 import * as users from '../users/user.service';
 
 export async function registerStaff(
@@ -54,9 +55,10 @@ export async function registerPatient(
   next: NextFunction
 ): Promise<void> {
   try {
+    if (!req.user) throw AppError.unauthorized();
     const input = registerPatientSchema.parse(req.body);
-    const user = await authService.registerPatient(input, req);
-    res.status(201).json({ user });
+    const patient = await patientService.createPatient(input, req.user.id, req);
+    res.status(201).json(patient);
   } catch (err) {
     next(err);
   }

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zodEDimport { createPatientSchema } from '../patients/patient.schema';
 
 const password = z
   .string()
@@ -16,11 +16,9 @@ export const registerStaffSchema = z.object({
   role: z.enum(['ADMIN', 'DOCTOR', 'VOLUNTEER', 'CALL_CENTER']),
 });
 
-export const registerPatientSchema = z.object({
-  email,
-  password,
-  fullName,
-});
+// register-patient and POST /api/v1/patients share the same payload shape:
+// both atomically create a User + Patient pair.
+export const registerPatientSchema = createPatientSchema;
 
 export const loginSchema = z.object({
   email,

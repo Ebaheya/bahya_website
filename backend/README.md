@@ -121,6 +121,10 @@ Notes:
 - First admin bootstrap uses `X-Bootstrap-Secret` and is only allowed while no
   admin exists.
 - Normal staff registration requires an ADMIN access token.
+- Patient registration creates the `User` and matching `Patient` row
+  atomically. `POST /auth/register-patient` requires the same core patient
+  identity fields as `POST /patients`, including `phone`, in addition to
+  `fullName`, `email`, and `password`.
 - Login is rate-limited at 10 requests per minute per IP.
 - Forgot password is rate-limited at 5 requests per email per 15-minute window.
 - Password changes and resets revoke existing refresh tokens.

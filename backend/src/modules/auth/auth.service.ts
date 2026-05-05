@@ -21,7 +21,6 @@ import {
 } from './reset-tokens';
 import type {
   LoginInput,
-  RegisterPatientInput,
   RegisterStaffInput,
 } from './auth.schema';
 
@@ -193,30 +192,6 @@ export async function registerStaff(input: RegisterStaffInput, req?: Request) {
     fullName: input.fullName,
     passwordHash,
     role: input.role as Role,
-  });
-
-  await writeCommittedUserCreatedAudit({
-    actorId: req?.user?.id ?? null,
-    action: 'USER_CREATED',
-    entityType: 'USER',
-    entityId: user.id,
-    newValues: { email: user.email, role: user.role, fullName: user.fullName },
-    req,
-  });
-
-  return user;
-}
-
-export async function registerPatient(input: RegisterPatientInput, req?: Request) {
-  const existing = await users.findByEmail(input.email);
-  if (existing) throw AppError.conflict('Email already registered');
-
-  const passwordHash = await hashPassword(input.password);
-  const user = await users.createUser({
-    email: input.email,
-    fullName: input.fullName,
-    passwordHash,
-    role: 'PATIENT',
   });
 
   await writeCommittedUserCreatedAudit({
