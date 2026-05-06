@@ -2,7 +2,7 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
-import { corsOrigins, corsCredentials } from './config/env';
+import { corsOrigins, corsCredentials, env } from './config/env';
 import { logger } from './config/logger';
 import { apiRouter } from './routes';
 import { requestId } from './middleware/requestId';
@@ -12,7 +12,7 @@ export function createApp(): Express {
   const app = express();
 
   app.disable('x-powered-by');
-  app.set('trust proxy', 1);
+  if (env.TRUST_PROXY) app.set('trust proxy', 1);
 
   app.use(requestId);
   app.use(

@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import * as controller from './auth.controller';
+import { rateLimitIpKey } from './rate-limit-keys';
 
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -16,6 +17,28 @@ const loginLimiter = rateLimit({
   limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
+});
+
+const forgotPasswordIpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `forgot-password-ip:${rateLimitIpKey(req.ip)}`,
+});
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const email = (req.body as { email?: unknown } | undefined)?.email;
+    const ip = rateLimitIpKey(req.ip);
+    return typeof email === 'string'
+      ? `forgot-password:${email.toLowerCase()}:${ip}`
+      : `forgot-password:${ip}`;
+  },
 });
 
 export const authRouter = Router();
@@ -33,15 +56,15 @@ authRouter.post(
   controller.registerStaff
 );
 
-authRouter.post(
-  '/register-patient',
-  authLimiter,
-  authenticate,
-  authorize('ADMIN', 'CALL_CENTER'),
-  controller.registerPatient
-);
-
 authRouter.post('/login', loginLimiter, controller.login);
 authRouter.post('/refresh', authLimiter, controller.refresh);
 authRouter.post('/logout', authLimiter, controller.logout);
+authRouter.patch('/change-password', authLimiter, authenticate, controller.changePassword);
+authRouter.post(
+  '/forgot-password',
+  forgotPasswordIpLimiter,
+  forgotPasswordLimiter,
+  controller.forgotPassword
+);
+authRouter.post('/reset-password', authLimiter, controller.resetPassword);
 authRouter.get('/me', authenticate, controller.me);
