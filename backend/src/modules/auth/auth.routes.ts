@@ -19,6 +19,14 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const forgotPasswordIpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `forgot-password-ip:${rateLimitIpKey(req.ip)}`,
+});
+
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 5,
@@ -52,6 +60,11 @@ authRouter.post('/login', loginLimiter, controller.login);
 authRouter.post('/refresh', authLimiter, controller.refresh);
 authRouter.post('/logout', authLimiter, controller.logout);
 authRouter.patch('/change-password', authLimiter, authenticate, controller.changePassword);
-authRouter.post('/forgot-password', forgotPasswordLimiter, controller.forgotPassword);
+authRouter.post(
+  '/forgot-password',
+  forgotPasswordIpLimiter,
+  forgotPasswordLimiter,
+  controller.forgotPassword
+);
 authRouter.post('/reset-password', authLimiter, controller.resetPassword);
 authRouter.get('/me', authenticate, controller.me);
