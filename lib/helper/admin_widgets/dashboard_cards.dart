@@ -6,14 +6,15 @@ class DashboardCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final String value;
-  final double percentage;
-
+  final double? percentage;
+  final bool hasPercentage;
   const DashboardCard({
     super.key,
     required this.icon,
     required this.title,
     required this.value,
-    required this.percentage,
+     this.percentage,
+     this.hasPercentage = true,
   });
 
   @override
@@ -29,7 +30,7 @@ class _DashboardCardState extends State<DashboardCard> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isPositive = widget.percentage >= 0;
+    final bool isPositive = widget.percentage != null && widget.percentage! >= 0;
 
     final scale = _pressed ? 0.98 : (_hover ? 1.04 : 1.0);
     final iconScale = _hover ? 1.15 : 1.0;
@@ -94,14 +95,16 @@ class _DashboardCardState extends State<DashboardCard> {
                     ),
 
                     /// Percentage
+                    widget.hasPercentage ? 
                     customText(
                       text:
-                          "${isPositive ? "+" : ""}${widget.percentage.toStringAsFixed(1)}%",
+                          "${isPositive ? "+" : ""}${widget.percentage?.toStringAsFixed(1)}%",
                       size: getScreenWidth(context) * 0.01,
                       color: isPositive ? Colors.green : Colors.red,
                       bold: true,
                       isEnglish: true,
-                    ),
+                    )
+                    : const SizedBox.shrink(),
                   ],
                 ),
 
