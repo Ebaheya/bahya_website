@@ -172,9 +172,21 @@ export async function patchUserStatus(
   // leaving the system with zero active admins. Same lock key as bootstrap so
   // bootstrap and deactivate cannot interleave either. The lock is released at
   // transaction end.
-  const updated = await prisma.$transaction(async (tx) => {
+  const statusChange = await prisma.$transaction(async (tx) => {
+    let previous = existing;
+
     if (!isActive && existing.role === 'ADMIN') {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(9876543210)`;
+
+      const locked = await tx.user.findUnique({
+        where: { id },
+        select: publicUserSelect,
+      });
+      if (!locked) throw AppError.notFound('User not found');
+      if (locked.isActive === isActive) {
+        return { user: locked, previous: locked, changed: false };
+      }
+      previous = locked;
 
       const activeAdmins = await tx.user.count({
         where: { role: 'ADMIN', isActive: true },
@@ -188,15 +200,20 @@ export async function patchUserStatus(
       }
     }
 
-    return tx.user.update({
+    const user = await tx.user.update({
       where: { id },
       data: { isActive },
       select: publicUserSelect,
     });
+    return { user, previous, changed: true };
   });
 
   if (!isActive) {
     await revokeAllTokens(id);
+  }
+
+  if (!statusChange.changed) {
+    return statusChange.user;
   }
 
   await writeAudit({
@@ -204,12 +221,12 @@ export async function patchUserStatus(
     action: isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
     entityType: 'USER',
     entityId: id,
-    oldValues: { isActive: existing.isActive },
-    newValues: { isActive: updated.isActive },
+    oldValues: { isActive: statusChange.previous.isActive },
+    newValues: { isActive: statusChange.user.isActive },
     req,
   });
 
-  return updated;
+  return statusChange.user;
 }
 
 export async function triggerReset(targetId: string, actorId: string, req?: Request) {

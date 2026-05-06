@@ -435,20 +435,27 @@ export async function resetPassword(
 
   const passwordHash = await hashPassword(newPassword);
   await prisma.$transaction(async (tx) => {
+    const transactionNow = new Date();
     const marked = await tx.passwordResetToken.updateMany({
-      where: { id: token.id, usedAt: null },
-      data: { usedAt: now },
+      where: {
+        id: token.id,
+        usedAt: null,
+        expiresAt: { gt: transactionNow },
+        user: { is: { isActive: true } },
+      },
+      data: { usedAt: transactionNow },
     });
     if (marked.count !== 1) throw AppError.invalidOrExpiredToken();
 
-    await tx.user.update({
-      where: { id: token.userId },
+    const updatedUser = await tx.user.updateMany({
+      where: { id: token.userId, isActive: true },
       data: { passwordHash },
     });
+    if (updatedUser.count !== 1) throw AppError.invalidOrExpiredToken();
 
     await tx.refreshToken.updateMany({
       where: { userId: token.userId, revokedAt: null },
-      data: { revokedAt: now },
+      data: { revokedAt: transactionNow },
     });
   });
 
