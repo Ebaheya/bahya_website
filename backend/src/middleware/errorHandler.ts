@@ -6,7 +6,11 @@ import { logger } from '../config/logger';
 
 export function notFoundHandler(req: Request, res: Response): void {
   res.status(404).json({
-    error: { code: 'NOT_FOUND', message: `Route ${req.method} ${req.path} not found` },
+    error: {
+      code: 'NOT_FOUND',
+      message: `Route ${req.method} ${req.path} not found`,
+      requestId: req.id ?? null,
+    },
   });
 }
 
@@ -21,6 +25,7 @@ export function errorHandler(
       error: {
         code: 'VALIDATION_ERROR',
         message: 'Invalid request data',
+        requestId: req.id ?? null,
         details: err.flatten(),
       },
     });
@@ -29,7 +34,12 @@ export function errorHandler(
 
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
-      error: { code: err.code, message: err.message, details: err.details },
+      error: {
+        code: err.code,
+        message: err.message,
+        requestId: req.id ?? null,
+        details: err.details,
+      },
     });
     return;
   }
@@ -44,6 +54,7 @@ export function errorHandler(
       error: {
         code: 'CONFLICT',
         message: 'A record with those values already exists',
+        requestId: req.id ?? null,
         details: { target: (err.meta as { target?: unknown } | undefined)?.target },
       },
     });
@@ -51,5 +62,11 @@ export function errorHandler(
   }
 
   logger.error({ err, reqId: req.id, path: req.path, method: req.method }, 'unhandled error');
-  res.status(500).json({ error: { code: 'INTERNAL', message: 'Internal server error' } });
+  res.status(500).json({
+    error: {
+      code: 'INTERNAL',
+      message: 'Internal server error',
+      requestId: req.id ?? null,
+    },
+  });
 }

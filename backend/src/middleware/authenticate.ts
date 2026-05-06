@@ -1,3 +1,10 @@
+// Constitution IV (NON-NEGOTIABLE): This middleware satisfies the requirement that the
+// backend MUST NOT trust the role claim from the JWT alone. On every protected request
+// it fetches the current User record from PostgreSQL and verifies:
+//   1. the user exists,
+//   2. the user is active (isActive = true), and
+//   3. req.user.role is set from the DB record — not from the JWT payload.
+// DO NOT remove the DB lookup or short-circuit it with a JWT-only path.
 import type { Request, Response, NextFunction } from 'express';
 import { JsonWebTokenError, NotBeforeError, TokenExpiredError } from 'jsonwebtoken';
 import { AppError } from '../utils/httpError';

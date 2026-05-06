@@ -15,17 +15,24 @@ enum Role {
   PATIENT
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  passwordHash  String
-  fullName      String
-  role          Role
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  passwordHash        String
+  fullName            String
+  role                Role
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  refreshTokens       RefreshToken[]
+  patient             Patient?
+  passwordResetTokens PasswordResetToken[]
 
   @@index([role])
 }
@@ -45,19 +52,33 @@ model RefreshToken {
   @@index([userId])
 }
 
-model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?
-  actionType String
-  entity     String?
-  entityId   String?
-  oldValues  Json?
-  newValues  Json?
-  ip         String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
-  user       User?    @relation(fields: [userId], references: [id])
+model Patient {
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  phone                 String
+  dateOfBirth           DateTime?
+  gender                Gender?
+  address               String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  medicalHistory        Json?
+  socialStatus          Json?
+  financials            Json?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id])
 
-  @@index([userId, createdAt])
-  @@index([actionType, createdAt])
+  @@index([phone])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
