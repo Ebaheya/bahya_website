@@ -7,12 +7,10 @@ import {
   loginSchema,
   logoutSchema,
   refreshSchema,
-  registerPatientSchema,
   registerStaffSchema,
   resetPasswordSchema,
 } from './auth.schema';
 import * as authService from './auth.service';
-import * as patientService from '../patients/patient.service';
 import * as users from '../users/user.service';
 
 export async function registerStaff(
@@ -44,21 +42,6 @@ export async function registerStaff(
     // preventing two simultaneous requests from both creating an admin.
     const user = await authService.bootstrapFirstAdmin(input, req);
     res.status(201).json({ user, bootstrap: true });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function registerPatient(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    if (!req.user) throw AppError.unauthorized();
-    const input = registerPatientSchema.parse(req.body);
-    const patient = await patientService.createPatient(input, req.user.id, req);
-    res.status(201).json(patient);
   } catch (err) {
     next(err);
   }

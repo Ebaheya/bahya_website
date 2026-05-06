@@ -37,6 +37,17 @@ const envSchema = z.object({
 
   CORS_ORIGINS: z.string().default('*'),
 
+  // Controls Express's `trust proxy` setting. When true, req.ip is taken from
+  // X-Forwarded-For — required behind a reverse proxy (Nginx, ALB) so per-IP
+  // rate limits and audit logs reflect the real client. When false, XFF is
+  // ignored and the socket address is used. Leaving this on without a proxy
+  // in front lets attackers spoof X-Forwarded-For to defeat rate limits.
+  TRUST_PROXY: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true' || v === '1')
+    .pipe(z.boolean()),
+
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z
     .string()

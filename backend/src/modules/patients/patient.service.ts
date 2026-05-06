@@ -12,8 +12,8 @@ import type {
   QueryPatientsInput,
 } from './patient.schema';
 
-// PATIENT_CREATED is strict-tier, but createPatient writes it after both the
-// User and Patient rows have committed. A 503 here would surface the create as
+// USER_CREATED and PATIENT_CREATED are strict-tier, but createPatient writes
+// them after both rows have committed. A 503 here would surface the create as
 // failed even though it succeeded; client retries would then trip the email
 // uniqueness constraint and report the patient as un-creatable.
 async function writeCommittedPatientCreatedAudit(input: AuditInput): Promise<void> {
@@ -245,11 +245,21 @@ export async function createPatient(
   actorId: string,
   req?: Request
 ) {
-  const passwordHash = await hashPassword(input.password);
-
   let patient: PatientWithUser;
   try {
     patient = await prisma.$transaction(async (tx) => {
+      // Pre-check inside the tx to surface email collisions before paying the
+      // bcrypt cost (~200ms) on every conflicting submission. The unique
+      // constraint on User.email remains the authoritative backstop for the
+      // race window between this check and the create.
+      const existing = await tx.user.findUnique({
+        where: { email: input.email },
+        select: { id: true },
+      });
+      if (existing) throw AppError.conflict('Email already registered');
+
+      const passwordHash = await hashPassword(input.password);
+
       const user = await tx.user.create({
         data: {
           email: input.email,
@@ -284,6 +294,19 @@ export async function createPatient(
   }
 
   const response = sanitizePatientResponse(patient);
+
+  await writeCommittedPatientCreatedAudit({
+    actorId,
+    action: 'USER_CREATED',
+    entityType: 'USER',
+    entityId: patient.user.id,
+    newValues: {
+      email: response.email,
+      role: response.role,
+      fullName: response.fullName,
+    },
+    req,
+  });
 
   await writeCommittedPatientCreatedAudit({
     actorId,

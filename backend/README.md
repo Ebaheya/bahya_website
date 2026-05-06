@@ -107,7 +107,6 @@ Base path: `/api/v1`.
 ### Auth
 
 - `POST /auth/register-staff`
-- `POST /auth/register-patient`
 - `POST /auth/login`
 - `POST /auth/refresh`
 - `POST /auth/logout`
@@ -121,10 +120,9 @@ Notes:
 - First admin bootstrap uses `X-Bootstrap-Secret` and is only allowed while no
   admin exists.
 - Normal staff registration requires an ADMIN access token.
-- Patient registration creates the `User` and matching `Patient` row
-  atomically. `POST /auth/register-patient` requires the same core patient
-  identity fields as `POST /patients`, including `phone`, in addition to
-  `fullName`, `email`, and `password`.
+- Patient registration is exposed as `POST /patients` (see Patients section
+  below). It atomically creates the linked `User` and `Patient` rows and
+  emits both `USER_CREATED` and `PATIENT_CREATED` audit records.
 - Login is rate-limited at 10 requests per minute per IP.
 - Forgot password is rate-limited at 5 requests per email per 15-minute window.
 - Password changes and resets revoke existing refresh tokens.

@@ -48,14 +48,6 @@ authRouter.post(
   controller.registerStaff
 );
 
-authRouter.post(
-  '/register-patient',
-  authLimiter,
-  authenticate,
-  authorize('ADMIN', 'CALL_CENTER'),
-  controller.registerPatient
-);
-
 authRouter.post('/login', loginLimiter, controller.login);
 authRouter.post('/refresh', authLimiter, controller.refresh);
 authRouter.post('/logout', authLimiter, controller.logout);

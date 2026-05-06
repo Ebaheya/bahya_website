@@ -51,7 +51,7 @@ const validBody = {
   gender: 'FEMALE',
 };
 
-describe('POST /api/v1/auth/register-patient', () => {
+describe('POST /api/v1/patients (patient registration)', () => {
   beforeAll(async () => {
     process.env.MONGODB_URI ??=
       'mongodb://bahya:bahya@localhost:27017/bahya_activity?authSource=admin';
@@ -87,17 +87,21 @@ describe('POST /api/v1/auth/register-patient', () => {
     await mongoose.disconnect();
   });
 
-  it('creates linked User + Patient atomically and logs PATIENT_CREATED', async () => {
+  it('creates linked User + Patient atomically and logs USER_CREATED + PATIENT_CREATED', async () => {
     const admin = await createStaff('ADMIN', 'admin.register-patient@example.com');
 
-    const response = await request('/api/v1/auth/register-patient', {
+    const response = await request('/api/v1/patients', {
       method: 'POST',
       headers: { authorization: `Bearer ${admin.token}` },
       body: JSON.stringify(validBody),
     });
 
     expect(response.status).toBe(201);
-    const body = (await response.json()) as { id: string; userId: string; passwordHash?: string };
+    const body = (await response.json()) as {
+      id: string;
+      userId: string;
+      passwordHash?: string;
+    };
     expect(body).toMatchObject({
       fullName: validBody.fullName,
       email: validBody.email,
@@ -118,12 +122,22 @@ describe('POST /api/v1/auth/register-patient', () => {
       phone: validBody.phone,
     });
 
-    const audit = await mongoose.connection.collection('audit_logs').findOne({
+    const userCreated = await mongoose.connection.collection('audit_logs').findOne({
+      action: 'USER_CREATED',
+      entityType: 'USER',
+      entityId: body.userId,
+    });
+    expect(userCreated).toMatchObject({
+      actorId: admin.user.id,
+      newValues: { email: validBody.email, role: 'PATIENT' },
+    });
+
+    const patientCreated = await mongoose.connection.collection('audit_logs').findOne({
       action: 'PATIENT_CREATED',
       entityType: 'PATIENT',
       entityId: body.id,
     });
-    expect(audit).toMatchObject({
+    expect(patientCreated).toMatchObject({
       actorId: admin.user.id,
       newValues: { email: validBody.email, role: 'PATIENT' },
     });
@@ -141,14 +155,14 @@ describe('POST /api/v1/auth/register-patient', () => {
   it('rejects duplicate email and leaves zero orphaned User rows', async () => {
     const admin = await createStaff('ADMIN', 'admin.dup-register-patient@example.com');
 
-    const first = await request('/api/v1/auth/register-patient', {
+    const first = await request('/api/v1/patients', {
       method: 'POST',
       headers: { authorization: `Bearer ${admin.token}` },
       body: JSON.stringify(validBody),
     });
     expect(first.status).toBe(201);
 
-    const dup = await request('/api/v1/auth/register-patient', {
+    const dup = await request('/api/v1/patients', {
       method: 'POST',
       headers: { authorization: `Bearer ${admin.token}` },
       body: JSON.stringify({ ...validBody, phone: '+201888888888' }),
@@ -168,7 +182,7 @@ describe('POST /api/v1/auth/register-patient', () => {
     const admin = await createStaff('ADMIN', 'admin.missing-phone@example.com');
 
     const { phone: _phone, ...bodyWithoutPhone } = validBody;
-    const response = await request('/api/v1/auth/register-patient', {
+    const response = await request('/api/v1/patients', {
       method: 'POST',
       headers: { authorization: `Bearer ${admin.token}` },
       body: JSON.stringify(bodyWithoutPhone),
@@ -188,7 +202,7 @@ describe('POST /api/v1/auth/register-patient', () => {
   ])('rejects %s role with 403 and creates no records', async (role, email) => {
     const actor = await createStaff(role, email);
 
-    const response = await request('/api/v1/auth/register-patient', {
+    const response = await request('/api/v1/patients', {
       method: 'POST',
       headers: { authorization: `Bearer ${actor.token}` },
       body: JSON.stringify({ ...validBody, email: `${role.toLowerCase()}.blocked@example.com` }),
@@ -199,7 +213,7 @@ describe('POST /api/v1/auth/register-patient', () => {
   });
 
   it('rejects unauthenticated requests with 401', async () => {
-    const response = await request('/api/v1/auth/register-patient', {
+    const response = await request('/api/v1/patients', {
       method: 'POST',
       body: JSON.stringify(validBody),
     });
