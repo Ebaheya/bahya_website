@@ -133,4 +133,35 @@ describe('PATCH /api/v1/users/:id/status last-admin lockout', () => {
       newValues: { isActive: false },
     });
   });
+
+  it('revokes tokens when retrying deactivation for an already inactive user', async () => {
+    const actor = await createUser('ADMIN', 'admin.retry-actor@example.com');
+    const target = await createUser('DOCTOR', 'doctor.already-inactive@example.com');
+    await prisma.user.update({
+      where: { id: target.user.id },
+      data: { isActive: false },
+    });
+    await prisma.refreshToken.create({
+      data: {
+        userId: target.user.id,
+        tokenHash: 'already-inactive-refresh-token',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+
+    const response = await request(`/api/v1/users/${target.user.id}/status`, {
+      method: 'PATCH',
+      headers: { authorization: `Bearer ${actor.token}` },
+      body: JSON.stringify({ isActive: false }),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      id: target.user.id,
+      isActive: false,
+    });
+    await expect(
+      prisma.refreshToken.findUnique({ where: { tokenHash: 'already-inactive-refresh-token' } })
+    ).resolves.toMatchObject({ revokedAt: expect.any(Date) });
+  });
 });

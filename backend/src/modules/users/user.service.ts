@@ -161,6 +161,9 @@ export async function patchUserStatus(
   if (!existing) throw AppError.notFound('User not found');
 
   if (existing.isActive === isActive) {
+    if (!isActive) {
+      await revokeAllTokens(id);
+    }
     return existing;
   }
 
