@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 
 final dio = Dio(BaseOptions(baseUrl: baseUrl));
 
@@ -51,57 +52,66 @@ Future<void> logout({required String refreshToken}) async {
   }
 }
 
-Future<Response> safeRequest(
-  Future<Response> Function(String? token) request,
-) async {
-  final storage = SecureStorageService();
-  String? accessToken = await storage.getAccessToken();
+// Future<Response> safeRequest(
+//   Future<Response> Function(String? token) request,
+// ) async {
+//   final storage = SecureStorageService();
+//   String? accessToken = await storage.getAccessToken();
 
-  try {
-    return await request(accessToken);
-  } on DioException catch (e) {
-    if (e.response?.statusCode == 401) {
-      try {
-        final refreshToken = await storage.getRefreshToken();
+//   try {
+//     return await request(accessToken);
+//   } on DioException catch (e) {
+//     if (e.response?.statusCode == 401) {
+//       try {
+//         final refreshToken = await storage.getRefreshToken();
 
-        final refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
+//         final refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
 
-        final refreshResponse = await refreshDio.post(
-          '$baseUrl/auth/refresh',
-          data: {"refreshToken": refreshToken},
-        );
+//         final refreshResponse = await refreshDio.post(
+//           '$baseUrl/auth/refresh',
+//           data: {"refreshToken": refreshToken},
+//         );
 
-        if (refreshResponse.statusCode == 200) {
-          final newAccess = refreshResponse.data['accessToken'];
-          final newRefresh = refreshResponse.data['refreshToken'];
+//         if (refreshResponse.statusCode == 200) {
+//           final newAccess = refreshResponse.data['accessToken'];
+//           final newRefresh = refreshResponse.data['refreshToken'];
 
-          await storage.saveTokens(
-            accessToken: newAccess,
-            refreshToken: newRefresh,
-          );
+//           await storage.saveTokens(
+//             accessToken: newAccess,
+//             refreshToken: newRefresh,
+//           );
 
-          return await request(newAccess);
-        } else {
-          throw Exception("Refresh failed");
-        }
-      } catch (_) {
-        await storage.clearTokens();
-        rethrow;
-      }
-    }
-    rethrow;
-  }
-}
+//           return await request(newAccess);
+//         } else {
+//           throw Exception("Refresh failed");
+//         }
+//       } catch (_) {
+//         await storage.clearTokens();
+//         rethrow;
+//       }
+//     }
+//     rethrow;
+//   }
+// }
 
 void setupInterceptors(Dio dio) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final storage = SecureStorageService();
-        final token = await storage.getAccessToken();
+        // Public endpoints
+        final publicEndpoints = ['/auth/login', '/auth/refresh', '/health'];
 
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
+        final isPublic = publicEndpoints.any(
+          (endpoint) => options.path.contains(endpoint),
+        );
+
+        if (!isPublic) {
+          final storage = SecureStorageService();
+          final token = await storage.getAccessToken();
+
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
         }
 
         handler.next(options);
@@ -115,16 +125,17 @@ void setupInterceptors(Dio dio) {
           try {
             final refreshToken = await storage.getRefreshToken();
 
-            // مهم: Dio جديد عشان ميعملش loop
             final refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
 
             final refreshResponse = await refreshDio.post(
-              '$baseUrl/auth/refresh',
+              '/auth/refresh',
               data: {"refreshToken": refreshToken},
             );
 
+            // Refresh success
             if (refreshResponse.statusCode == 200) {
               final newAccess = refreshResponse.data['accessToken'];
+
               final newRefresh = refreshResponse.data['refreshToken'];
 
               await storage.saveTokens(
@@ -135,13 +146,17 @@ void setupInterceptors(Dio dio) {
               final request = e.requestOptions;
 
               request.headers['Authorization'] = 'Bearer $newAccess';
+
               request.extra['retried'] = true;
 
               final response = await dio.fetch(request);
+
               return handler.resolve(response);
             }
-          } catch (_) {
+          } catch (refreshError) {
             await storage.clearTokens();
+
+            debugPrint('Refresh Token Error: $refreshError');
           }
         }
 

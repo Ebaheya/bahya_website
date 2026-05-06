@@ -6,7 +6,7 @@ class AppRepository {
   WebService webService = WebService();
   Future<UserModel> getUserProfile({required String accessToken}) async {
     try {
-      final data = await webService.getUserInfo(accessToken: accessToken);
+      final data = await webService.getUserInfo();
       return UserModel.fromJson(data['user']);
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Failed to get user');
