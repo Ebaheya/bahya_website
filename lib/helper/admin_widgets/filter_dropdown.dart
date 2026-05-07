@@ -6,12 +6,14 @@ class FilterDropdown extends StatefulWidget {
   final String hint;
   final List<String> items;
   final Function(String) onChanged;
+  final BorderRadius? borderRadius;
 
   const FilterDropdown({
     super.key,
     required this.hint,
     required this.items,
     required this.onChanged,
+    this.borderRadius,
   });
 
   @override
@@ -27,14 +29,14 @@ class _FilterDropdownState extends State<FilterDropdown> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: widget.borderRadius ?? BorderRadius.circular(24),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedValue,
           dropdownColor: Colors.white,
           mouseCursor: SystemMouseCursors.click,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: widget.borderRadius ?? BorderRadius.circular(24),
           hint: customText(
             text: widget.hint,
             size: getScreenWidth(context) * 0.008,

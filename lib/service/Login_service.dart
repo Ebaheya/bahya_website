@@ -98,7 +98,7 @@ void setupInterceptors(Dio dio) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Public endpoints
+
         final publicEndpoints = ['/auth/login', '/auth/refresh', '/health'];
 
         final isPublic = publicEndpoints.any(

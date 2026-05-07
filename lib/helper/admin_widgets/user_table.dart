@@ -100,7 +100,7 @@ class UsersTable extends StatelessWidget {
                                 const SizedBox(width: 10),
                                 customText(
                                   text: user["name"],
-                                  size: w * 0.008,
+                                  size: w * 0.01,
                                   isEnglish: true,
                                 ),
                               ],
@@ -110,7 +110,7 @@ class UsersTable extends StatelessWidget {
                           DataCell(
                             customText(
                               text: user["email"],
-                              size: w * 0.008,
+                              size: w * 0.01,
                               isEnglish: true,
                             ),
                           ),
@@ -130,7 +130,7 @@ class UsersTable extends StatelessWidget {
                           DataCell(
                             customText(
                               text: user["last"],
-                              size: w * 0.008,
+                              size: w * 0.01,
                               isEnglish: true,
                             ),
                           ),
@@ -152,7 +152,7 @@ class UsersTable extends StatelessWidget {
   Widget headerCell(BuildContext context, String text) {
     return customText(
       text: text,
-      size: getScreenWidth(context) * 0.009,
+      size: getScreenWidth(context) * 0.01,
       bold: true,
       isEnglish: true,
       color: const Color(0xFF7A004C),
@@ -168,7 +168,7 @@ class UsersTable extends StatelessWidget {
       ),
       child: customText(
         text: text,
-        size: getScreenWidth(context) * 0.008,
+        size: getScreenWidth(context) * 0.01,
         isEnglish: true,
       ),
     );

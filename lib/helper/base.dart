@@ -306,7 +306,7 @@ class LegendDot extends StatelessWidget {
 Widget pageHeader({
   required double width,
   required String title,
-  required String subtitle,
+  String? subtitle,
   List<Widget>? widgets,
 }) {
   return Container(
@@ -323,11 +323,13 @@ Widget pageHeader({
           children: [
             customText(text: title, size: width * 0.013, color: Colors.white),
             const SizedBox(height: 10),
-            customText(
-              text: subtitle,
-              color: Colors.white54,
-              size: width * 0.01,
-            ),
+            subtitle != null
+                ? customText(
+                    text: subtitle,
+                    color: Colors.white54,
+                    size: width * 0.01,
+                  )
+                : const SizedBox.shrink(),
           ],
         ),
         const Spacer(),
@@ -336,3 +338,4 @@ Widget pageHeader({
     ),
   );
 }
+

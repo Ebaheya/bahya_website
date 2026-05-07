@@ -1,3 +1,4 @@
+import 'package:bahya_website/helper/admin_widgets/add_user.dart';
 import 'package:bahya_website/helper/admin_widgets/user_table.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
@@ -21,7 +22,13 @@ class UsersPage extends StatelessWidget {
             widgets: [
               CustomGlowButton(
                 title: "Add User",
-                onPressed: () {},
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const AddUserDialog(),
+                  );
+                },
                 textSize: getScreenWidth(context) * 0.011,
                 textColor: textColor,
                 glowColor: Colors.white,

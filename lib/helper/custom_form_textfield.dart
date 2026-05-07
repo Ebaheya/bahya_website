@@ -1,18 +1,22 @@
+import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-enum CustomTextFieldType { email, name, password, number, phone, text }
+enum CustomTextFieldType { email, name, password, number, phone, text, date }
 
 class CustomFormTextField extends StatefulWidget {
   final String labelText;
   final String hintText;
   final AutovalidateMode autovalidateMode;
   final bool obscureText;
+  final bool readOnly;
   final CustomTextFieldType keyboardType;
   final TextEditingController? controller;
   final TextDirection textDirection;
   final Icon? suffixIcon;
   final int maxLines;
+  final VoidCallback? onTap;
+
   const CustomFormTextField({
     super.key,
     required this.labelText,
@@ -20,10 +24,12 @@ class CustomFormTextField extends StatefulWidget {
     required this.autovalidateMode,
     required this.keyboardType,
     this.obscureText = false,
+    this.readOnly = false,
     this.controller,
     this.textDirection = TextDirection.rtl,
     this.suffixIcon,
     this.maxLines = 1,
+    this.onTap,
   });
 
   @override
@@ -36,6 +42,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
   @override
   void initState() {
     super.initState();
+
     _obscureText = widget.obscureText;
   }
 
@@ -43,16 +50,23 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     switch (type) {
       case CustomTextFieldType.email:
         return TextInputType.emailAddress;
+
       case CustomTextFieldType.name:
         return TextInputType.name;
+
       case CustomTextFieldType.number:
         return TextInputType.number;
+
       case CustomTextFieldType.phone:
         return TextInputType.phone;
+
       case CustomTextFieldType.password:
         return TextInputType.visiblePassword;
+
       case CustomTextFieldType.text:
         return TextInputType.text;
+      case CustomTextFieldType.date:
+        return TextInputType.datetime;
     }
   }
 
@@ -64,39 +78,51 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     switch (widget.keyboardType) {
       case CustomTextFieldType.email:
         final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$');
+
         if (!emailRegex.hasMatch(value)) {
           return 'أدخل بريدًا إلكترونيًا صالحًا';
         }
+
         break;
 
       case CustomTextFieldType.name:
         if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
           return 'أدخل اسمًا صالحًا';
         }
+
         break;
 
       case CustomTextFieldType.number:
         if (!RegExp(r'^\d+$').hasMatch(value)) {
           return 'أدخل أرقامًا فقط';
         }
+
         break;
 
       case CustomTextFieldType.phone:
         if (!RegExp(r'^\d{11}$').hasMatch(value)) {
           return 'أدخل رقم هاتف مكون من 11 رقمًا';
         }
+
         break;
 
       case CustomTextFieldType.password:
         if (value.length < 6) {
           return 'يجب أن تكون كلمة المرور مكونة من 6 أحرف على الأقل';
         }
+
         break;
 
       case CustomTextFieldType.text:
         if (value.trim().isEmpty) {
           return 'يجب ألا يكون هذا الحقل فارغًا';
         }
+      case CustomTextFieldType.date:
+        if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value)) {
+          return 'أدخل تاريخًا صالحًا (mm/dd/yyyy)';
+        }
+
+        break;
     }
 
     return null;
@@ -104,14 +130,24 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
   @override
   Widget build(BuildContext context) {
+    double width = getScreenWidth(context);
     return TextFormField(
       keyboardType: _mapKeyboardType(widget.keyboardType),
+
       controller: widget.controller,
+
       obscureText: _obscureText,
+
       validator: _validate,
+
+      onTap: widget.onTap,
+
+      readOnly: widget.readOnly,
+
       inputFormatters: [
         if (widget.keyboardType == CustomTextFieldType.phone) ...[
           FilteringTextInputFormatter.digitsOnly,
+
           LengthLimitingTextInputFormatter(11),
         ] else if (widget.keyboardType == CustomTextFieldType.number) ...[
           FilteringTextInputFormatter.digitsOnly,
@@ -123,18 +159,26 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
       ],
 
       obscuringCharacter: '•',
+
       autovalidateMode: widget.autovalidateMode,
+
       textDirection: widget.textDirection,
+
       maxLines: widget.maxLines,
+
       minLines: 1,
+
       expands: false,
-      style: const TextStyle(
+
+      style: TextStyle(
         color: Colors.black,
-        fontSize: 16,
+        fontSize: width * 0.01,
         fontFamily: 'ArabicCustomFont',
       ),
+
       decoration: InputDecoration(
         alignLabelWithHint: true,
+
         suffixIcon: widget.obscureText
             ? IconButton(
                 onPressed: () {
@@ -142,43 +186,60 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                     _obscureText = !_obscureText;
                   });
                 },
+
                 icon: Icon(
                   _obscureText ? Icons.visibility : Icons.visibility_off,
+
                   color: Colors.grey,
                 ),
               )
             : widget.suffixIcon,
+
         hintText: widget.hintText,
+
         labelText: widget.labelText,
+
         hintTextDirection: widget.textDirection,
 
-        labelStyle: const TextStyle(
+        labelStyle: TextStyle(
           color: Colors.black,
-          fontSize: 16,
+          fontSize: width * 0.01,
           fontFamily: 'ArabicCustomFont',
         ),
-        hintStyle: const TextStyle(
+
+        hintStyle: TextStyle(
           color: Colors.grey,
-          fontSize: 14,
+          fontSize: width * 0.01,
           fontFamily: 'ArabicCustomFont',
         ),
+
         contentPadding: const EdgeInsets.symmetric(
           vertical: 14,
           horizontal: 12,
         ),
+
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
+
           borderSide: const BorderSide(color: Colors.grey, width: 1.2),
         ),
+
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
+
           borderSide: const BorderSide(color: Colors.grey, width: 1.2),
         ),
+
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: Color(0xFFFF7BB0), width: 1.5),
+
+          borderSide: const BorderSide(color: Color(0xFFFF7BB0), width: 1.5),
         ),
-        errorStyle: TextStyle(fontFamily: 'ArabicCustomFont', fontSize: 12),
+
+        errorStyle: TextStyle(
+          fontFamily: 'ArabicCustomFont',
+          fontSize: width * 0.01,
+        ),
       ),
     );
   }
