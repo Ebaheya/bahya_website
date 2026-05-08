@@ -5,8 +5,10 @@ import 'package:bahya_website/helper/admin_widgets/add_patient.dart';
 import 'package:bahya_website/helper/admin_widgets/add_staff_dialog.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
+import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
+
 class AddUserDialog extends StatefulWidget {
   const AddUserDialog({super.key});
 
@@ -271,11 +273,27 @@ class _AddUserDialogState extends State<AddUserDialog>
 
                                     role: selectedRole!,
                                   );
-
                                   debugPrint("Staff created successfully");
-                                  Navigator.pop(context);
+                                  customDialog(
+                                    context: context,
+                                    title: "Done",
+                                    message: "Staff created successfully",
+                                    onClose: () {
+                                      Navigator.pop(context);
+                                      Navigator.pop(context);
+                                    },
+                                  );
                                 } catch (e) {
                                   debugPrint("Error creating staff: $e");
+                                  customDialog(
+                                    context: context,
+                                    title: "Error",
+                                    message: "Failed to create staff: $e",
+                                    onClose: () {
+                                      Navigator.pop(context);
+                                       Navigator.pop(context);
+                                    },
+                                  );
                                 }
                               } else {
                                 try {
@@ -288,8 +306,8 @@ class _AddUserDialogState extends State<AddUserDialog>
 
                                     phone: patientPhoneController.text,
 
-                                   dateOfBirth:
-                                   "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}",
+                                    dateOfBirth:
+                                        "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}",
 
                                     gender: selectedGender ?? '',
 
@@ -302,8 +320,25 @@ class _AddUserDialogState extends State<AddUserDialog>
                                         emergencyPhoneController.text,
                                   );
                                   debugPrint("Patient created successfully");
-                                  Navigator.pop(context);
+                                  customDialog(
+                                    context: context,
+                                    title: "Done",
+                                    message: "Patient created successfully",
+                                    onClose: () {
+                                      Navigator.pop(context);
+                                       Navigator.pop(context);
+                                    },
+                                  );
                                 } catch (e) {
+                                  customDialog(
+                                    context: context,
+                                    title: "Error",
+                                    message: "Failed to create patient: $e",
+                                    onClose: () {
+                                      Navigator.pop(context);
+                                       Navigator.pop(context);
+                                    },
+                                  );
                                   debugPrint("Error creating patient: $e");
                                 }
                               }

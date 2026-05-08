@@ -1,3 +1,6 @@
+import 'package:bahya_website/data/local/data_secure.dart';
+import 'package:bahya_website/helper/massage_dialog.dart';
+import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
@@ -137,10 +140,26 @@ class HomeDrawer extends StatelessWidget {
                   index: 4,
                   icon: Icons.logout,
                   title: 'تسجيل الخروج',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: logout logic
-                    // Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+                  onTap: () async {
+                    try {
+                      final String? refreshToken = await SecureStorageService()
+                          .getRefreshToken();
+                      await logout(refreshToken: refreshToken!);
+                      customDialog(
+                        onClose: () {
+                          context.go('/login');
+                        },
+                        context: context,
+                        title: 'تم',
+                        message: 'تم تسجيل الخروج بنجاح.',
+                      );
+                    } catch (e) {
+                      customDialog(
+                        context: context,
+                        title: 'خطأ',
+                        message: 'حدث خطأ أثناء تسجيل الخروج. حاول مرة أخرى.',
+                      );
+                    }
                   },
                 ),
 

@@ -1,11 +1,8 @@
 import 'package:bahya_website/helper/custom_form_textfield.dart';
-import 'package:bahya_website/helper/custom_glow_buttom.dart';
-import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:go_router/go_router.dart';
+
 
 Widget customText({
   required String text,
@@ -115,11 +112,11 @@ PreferredSizeWidget customAppBar({
   return PreferredSize(
     preferredSize: Size.fromHeight(h * 0.1),
     child: Container(
-      decoration: const BoxDecoration(
+      decoration:  BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFfca5d6), Color(0xFFDBB1FF), Color(0xFFfca5d6)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+          colors: gradientColors,
+                     begin: Alignment.centerRight,
+          end: Alignment.centerLeft,
         ),
       ),
       child: SafeArea(
@@ -145,35 +142,6 @@ PreferredSizeWidget customAppBar({
                           ),
                         ),
                         SizedBox(width: w * 0.02),
-                        CustomGlowButton(
-                          title: 'تسجيل الخروج',
-                          onPressed: () async {
-                            context.go('/login');
-                            try {
-                              await logout(
-                                refreshToken:
-                                    'c433f3b3282088a913d3281df978c801b9105268fb339fcfee640b45f9e61c71430a07bca0dcb403644ad5810abdd860307f753039253fa15c5de5da01871e79',
-                              );
-                              customDialog(
-                                context: context,
-                                title: 'تم',
-                                message: 'تم تسجيل الخروج بنجاح.',
-                              );
-                            } catch (e) {
-                              customDialog(
-                                context: context,
-                                title: 'خطأ',
-                                message:
-                                    'حدث خطأ أثناء تسجيل الخروج. حاول مرة أخرى.',
-                              );
-                            }
-                          },
-                          textSize: h * 0.015,
-                          glowColor: Colors.white,
-                          width: w * 0.25,
-                          backgroundColor: Colors.white,
-                          textColor: const Color(0xFF831843),
-                        ),
                       ],
                     )
                   : const SizedBox.shrink(),
@@ -184,7 +152,7 @@ PreferredSizeWidget customAppBar({
                     text: title,
                     size: h * 0.02,
                     bold: true,
-                    color: const Color(0xFF831843),
+                    color: Colors.white,
                   ),
                   SizedBox(width: w * 0.015),
                   CircleAvatar(
@@ -218,8 +186,7 @@ Widget sectionCard({
   required BuildContext context,
   required String title,
   required Widget child,
-  IconData? trailingIcon,
-  Gradient? gradient,
+  bool ? isShadow = true,
 }) {
   return Container(
     width: getScreenWidth(context) * 0.95,
@@ -227,13 +194,18 @@ Widget sectionCard({
 
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(12),      
       boxShadow: [
-        BoxShadow(
+        isShadow == true ? BoxShadow(
           color: Colors.black26,
           spreadRadius: 1,
           blurRadius: 12,
           offset: const Offset(0, 6),
+        ) : const BoxShadow(
+          color: Colors.transparent,
+          spreadRadius: 0,
+          blurRadius: 0,
+          offset: Offset(0, 0),
         ),
       ],
     ),
@@ -244,9 +216,8 @@ Widget sectionCard({
           height: getScreenHeight(context) * 0.10,
           decoration: BoxDecoration(
             gradient:
-                gradient ??
-                const LinearGradient(
-                  colors: [Color(0xFFfca5d6), Color(0xFFDBB1FF)],
+                 LinearGradient(
+                  colors: gradientColors,
                   begin: Alignment.centerRight,
                   end: Alignment.centerLeft,
                 ),
@@ -259,25 +230,17 @@ Widget sectionCard({
                 text: title,
                 size: getScreenHeight(context) * 0.02,
                 bold: true,
-                color: const Color(0xFF831843),
+                color: Colors.white,
               ),
               const SizedBox(width: 10),
-              if (trailingIcon != null)
-                Icon(
-                  trailingIcon,
-                  color: Colors.white,
-                  size: getScreenHeight(context) * 0.04,
-                ),
             ],
           ),
         ),
-        // المحتوى
         child,
       ],
     ),
   );
 }
-
 class LegendDot extends StatelessWidget {
   final Color color;
   final String label;
@@ -339,3 +302,60 @@ Widget pageHeader({
   );
 }
 
+Widget customLoading() {
+  return Padding(
+    padding: const EdgeInsets.all(20),
+
+    child: Center(
+      child: Center(
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.7, end: 1),
+
+          duration: const Duration(milliseconds: 5000),
+
+          curve: Curves.easeInOut,
+
+          builder: (context, value, child) {
+            return Transform.scale(
+              scale: value,
+
+              child: Container(
+                padding: const EdgeInsets.all(20),
+
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+
+                  gradient: LinearGradient(colors: gradientColors),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradientColors.first.withOpacity(0.35),
+
+                      blurRadius: 25,
+
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+
+                child: const SizedBox(
+                  width: 40,
+
+                  height: 40,
+
+                  child: CircularProgressIndicator(
+                    strokeWidth: 5,
+
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+
+                    backgroundColor: Colors.white24,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+  );
+}

@@ -101,6 +101,7 @@ class _StatCardState extends State<StatCard>
               clipBehavior: Clip.none,
               children: [
                 AnimatedContainer(
+                  width: double.infinity,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOut,
                   padding: const EdgeInsets.all(20),
@@ -210,8 +211,12 @@ class StatsHorizontalGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+     final h = getScreenHeight(context);
+     final w = getScreenWidth(context);
     return SizedBox(
-      height: getScreenHeight(context) * 0.35,
+     
+      height: h * 0.35,
+      // width: w * 0.02,
       child: ScrollConfiguration(
         behavior: const MaterialScrollBehavior().copyWith(
           dragDevices: {

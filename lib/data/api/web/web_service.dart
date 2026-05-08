@@ -82,9 +82,9 @@ class WebService {
     required String emergencyContactPhone,
   }) async {
     try {
-  final res = await dio.post(
-    '/patients',
-    data: {
+      final res = await dio.post(
+        '/patients',
+        data: {
           "fullName": fullName,
           "email": email,
           "password": password,
@@ -97,19 +97,31 @@ class WebService {
           "medicalHistory": {
             "allergies": ["penicillin"],
           },
-        }
-  );
-  if (res.statusCode == 201) {
-    log("Patient created successfully: ${res.data}");
-  } else {
-    throw Exception('Failed to create patient');
+        },
+      );
+      if (res.statusCode == 201) {
+        log("Patient created successfully: ${res.data}");
+      } else {
+        throw Exception('Failed to create patient');
+      }
+    } on DioException catch (e) {
+      debugPrint("DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to create patient');
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      throw Exception('Unexpected error');
+    }
   }
-} on DioException catch (e) {
-  debugPrint("DioException: ${e.response?.data ?? e.message}");
-  throw Exception(e.response?.data ?? 'Failed to create patient');
-} catch (e) {
-  debugPrint("Unexpected error: $e");
-  throw Exception('Unexpected error');
-}
+
+  Future<Map<String, dynamic>> getAllUserInfo() async{
+    try {
+      return await dio.get('/users').then((res) => res.data);
+    } on DioException catch (e) {
+      debugPrint("DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to get all user info');
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      throw Exception('Unexpected error');
+    }
   }
 }

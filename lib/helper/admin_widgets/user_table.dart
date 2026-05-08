@@ -1,10 +1,25 @@
+import 'package:bahya_website/bloc/cubit/user_cubit.dart';
+import 'package:bahya_website/bloc/states/user_state.dart';
 import 'package:bahya_website/helper/admin_widgets/filter_dropdown.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class UsersTable extends StatelessWidget {
+class UsersTable extends StatefulWidget {
   const UsersTable({super.key});
+
+  @override
+  State<UsersTable> createState() => _UsersTableState();
+}
+
+class _UsersTableState extends State<UsersTable> {
+  @override
+  void initState() {
+    super.initState();
+
+    context.read<UserCubit>().getAllUserInfo();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,30 +27,39 @@ class UsersTable extends StatelessWidget {
 
     return Container(
       width: double.infinity,
+
       padding: const EdgeInsets.all(16),
+
       decoration: BoxDecoration(
         color: Colors.white,
+
         borderRadius: BorderRadius.circular(16),
       ),
+
       child: Column(
         children: [
-          /// Filters
           Row(
             children: [
               Expanded(
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: "Search users...",
+
                     hintStyle: TextStyle(
                       fontSize: w * 0.01,
 
                       fontFamily: 'ArabicCustomFont',
                     ),
+
                     filled: true,
+
                     fillColor: const Color(0xFFF5F6FA),
+
                     prefixIcon: const Icon(Icons.search),
+
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30),
+
                       borderSide: BorderSide.none,
                     ),
                   ),
@@ -46,7 +70,9 @@ class UsersTable extends StatelessWidget {
 
               FilterDropdown(
                 hint: "All Roles",
-                items: const ["All", "Patient", "Therapist", "Admin"],
+
+                items: const ["All", "PATIENT", "ADMIN", "DOCTOR"],
+
                 onChanged: (v) {},
               ),
 
@@ -54,7 +80,9 @@ class UsersTable extends StatelessWidget {
 
               FilterDropdown(
                 hint: "All Status",
+
                 items: const ["All", "Active", "Inactive"],
+
                 onChanged: (v) {},
               ),
             ],
@@ -62,86 +90,143 @@ class UsersTable extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          /// Table
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    columnSpacing: 30,
-                    headingRowHeight: 50,
-                    dataRowHeight: 70,
+          BlocBuilder<UserCubit, UserState>(
+            builder: (context, state) {
+              if (state is UserLoading) {
+                return customLoading();
+              }
 
-                    columns: [
-                      DataColumn(label: headerCell(context, "Name")),
-                      DataColumn(label: headerCell(context, "Email")),
-                      DataColumn(label: headerCell(context, "Role")),
-                      DataColumn(label: headerCell(context, "Status")),
-                      DataColumn(label: headerCell(context, "Last Active")),
-                      DataColumn(label: headerCell(context, "Actions")),
-                    ],
+              if (state is UserError) {
+                return SizedBox(
+                  height: 200,
 
-                    rows: _users.map((user) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Colors.grey[200],
-                                  child: customText(
-                                    text: user["name"][0],
+                  child: Center(
+                    child: customText(
+                      text: state.message,
+
+                      size: w * 0.012,
+
+                      color: Colors.red,
+
+                      isEnglish: true,
+                    ),
+                  ),
+                );
+              }
+              if (state is UserLoaded) {
+                final users = state.users;
+
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minWidth: constraints.maxWidth,
+                        ),
+
+                        child: DataTable(
+                          columnSpacing: 30,
+
+                          headingRowHeight: 50,
+
+                          dataRowHeight: 70,
+
+                          columns: [
+                            DataColumn(label: headerCell(context, "Name")),
+
+                            DataColumn(label: headerCell(context, "Email")),
+
+                            DataColumn(label: headerCell(context, "Role")),
+
+                            DataColumn(label: headerCell(context, "Status")),
+
+                            // DataColumn(
+                            //   label: headerCell(
+                            //     context,
+                            //     "Last Active",
+                            //   ),
+                            // ),
+                            DataColumn(label: headerCell(context, "Actions")),
+                          ],
+
+                          rows: users.map((user) {
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor: Colors.grey[200],
+
+                                        child: customText(
+                                          text: user.name.isNotEmpty
+                                              ? user.name[0]
+                                              : '?',
+
+                                          size: w * 0.01,
+
+                                          isEnglish: true,
+                                        ),
+                                      ),
+
+                                      const SizedBox(width: 10),
+
+                                      customText(
+                                        text: user.name,
+
+                                        size: w * 0.01,
+
+                                        isEnglish: true,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                DataCell(
+                                  customText(
+                                    text: user.email,
+
                                     size: w * 0.01,
+
                                     isEnglish: true,
                                   ),
                                 ),
-                                const SizedBox(width: 10),
-                                customText(
-                                  text: user["name"],
-                                  size: w * 0.01,
-                                  isEnglish: true,
+                                DataCell(
+                                  _badge(user.role, Colors.grey, context),
                                 ),
+                                DataCell(
+                                  _badge(
+                                    user.isActive ? "Active" : "Inactive",
+
+                                    user.isActive ? Colors.green : Colors.grey,
+
+                                    context,
+                                  ),
+                                ),
+                                // DataCell(
+                                //
+                                //   customText(
+                                //
+                                //     text: "N/A",
+                                //
+                                //     size: w * 0.01,
+                                //
+                                //     isEnglish: true,
+                                //   ),
+                                // ),
+                                const DataCell(Icon(Icons.more_vert)),
                               ],
-                            ),
-                          ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
 
-                          DataCell(
-                            customText(
-                              text: user["email"],
-                              size: w * 0.01,
-                              isEnglish: true,
-                            ),
-                          ),
-
-                          DataCell(_badge(user["role"], Colors.grey, context)),
-
-                          DataCell(
-                            _badge(
-                              user["status"],
-                              user["status"] == "Active"
-                                  ? Colors.green
-                                  : Colors.grey,
-                              context,
-                            ),
-                          ),
-
-                          DataCell(
-                            customText(
-                              text: user["last"],
-                              size: w * 0.01,
-                              isEnglish: true,
-                            ),
-                          ),
-
-                          const DataCell(Icon(Icons.more_vert)),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-              );
+              return const SizedBox();
             },
           ),
         ],
@@ -152,9 +237,13 @@ class UsersTable extends StatelessWidget {
   Widget headerCell(BuildContext context, String text) {
     return customText(
       text: text,
+
       size: getScreenWidth(context) * 0.01,
+
       bold: true,
+
       isEnglish: true,
+
       color: const Color(0xFF7A004C),
     );
   }
@@ -162,46 +251,20 @@ class UsersTable extends StatelessWidget {
   Widget _badge(String text, Color color, BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
+
         borderRadius: BorderRadius.circular(20),
       ),
+
       child: customText(
         text: text,
+
         size: getScreenWidth(context) * 0.01,
+
         isEnglish: true,
       ),
     );
   }
 }
-
-final List<Map<String, dynamic>> _users = [
-  {
-    "name": "Sarah Johnson",
-    "email": "sarah.j@email.com",
-    "role": "Patient",
-    "status": "Active",
-    "last": "2 mins ago",
-  },
-  {
-    "name": "Dr. Michael Chen",
-    "email": "dr.chen@email.com",
-    "role": "Therapist",
-    "status": "Active",
-    "last": "5 mins ago",
-  },
-  {
-    "name": "Emma Williams",
-    "email": "emma.w@email.com",
-    "role": "Patient",
-    "status": "Inactive",
-    "last": "2 days ago",
-  },
-  {
-    "name": "Dr. Lisa Anderson",
-    "email": "dr.anderson@email.com",
-    "role": "Therapist",
-    "status": "Active",
-    "last": "1 hour ago",
-  },
-];
