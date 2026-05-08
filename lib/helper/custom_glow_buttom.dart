@@ -12,8 +12,6 @@ class CustomGlowButton extends StatelessWidget {
   final double? width;
   final double? height;
   final double? borderRadius;
-
-  /// 👇 الجديد
   final bool isGradient;
 
   const CustomGlowButton({
@@ -27,8 +25,6 @@ class CustomGlowButton extends StatelessWidget {
     this.width,
     this.height,
     this.borderRadius,
-
-    /// 👇 الجديد
     this.isGradient = false,
   });
 
@@ -49,8 +45,6 @@ class CustomGlowButton extends StatelessWidget {
           ),
         ],
       ),
-
-      /// 👇 لو Gradient
       child: isGradient
           ? ClipRRect(
               borderRadius: radius,
@@ -90,6 +84,7 @@ class CustomGlowButton extends StatelessWidget {
                 text: title,
                 size: textSize ?? getScreenHeight(context) * 0.02,
                 bold: true,
+                color: textColor ?? const Color(0xFFFF7BB0),
               ),
             ),
     );

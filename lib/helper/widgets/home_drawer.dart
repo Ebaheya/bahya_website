@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeDrawer extends StatelessWidget {
   final String userName;
@@ -112,6 +113,17 @@ class HomeDrawer extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, '/volunteer_survey');
+                  },
+                ),
+
+                _animatedItem(
+                  context,
+                  index: 3,
+                  icon: Icons.forum_rounded,
+                  title: 'Admin panael',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.go('/admin');
                   },
                 ),
 

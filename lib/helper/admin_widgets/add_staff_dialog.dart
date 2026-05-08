@@ -3,17 +3,22 @@ import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:flutter/material.dart';
 
 class AddStaffDialog extends StatefulWidget {
-  const AddStaffDialog({super.key});
+ final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final TextEditingController fullNameController;final Function(String) onChanged;
+   const AddStaffDialog({
+    super.key,
+    required this.emailController,
+    required this.passwordController,
+    required this.fullNameController,
+    required this.onChanged,
+  });
   @override
   State<AddStaffDialog> createState() => _AddStaffDialogState();
 }
 
 class _AddStaffDialogState extends State<AddStaffDialog> {
-  final List<String> roles = [
-    "Admin",
-    "Doctor",
-    "Volunteer",
-  ];
+  final List<String> roles = ["ADMIN", "DOCTOR", "VOLUNTEER" , "CALL_CENTER"];
   String? selectedRole;
   @override
   Widget build(BuildContext context) {
@@ -23,9 +28,9 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
           children: [
             Expanded(
               child: CustomFormTextField(
+                controller: widget.fullNameController,
                 hintText: "Full Name",
-                autovalidateMode:
-                    AutovalidateMode.onUserInteraction,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.text,
                 labelText: 'Full Name',
               ),
@@ -35,9 +40,9 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
 
             Expanded(
               child: CustomFormTextField(
+                controller: widget.emailController,
                 hintText: "Email",
-                autovalidateMode:
-                    AutovalidateMode.onUserInteraction,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.email,
                 labelText: 'Email',
               ),
@@ -52,9 +57,9 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
           children: [
             Expanded(
               child: CustomFormTextField(
+                controller: widget.passwordController,
                 hintText: "Password",
-                autovalidateMode:
-                    AutovalidateMode.onUserInteraction,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.text,
                 labelText: 'Password',
               ),
@@ -67,11 +72,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
                 borderRadius: BorderRadius.circular(8),
                 hint: "Select Role",
                 items: roles,
-                onChanged: (v) {
-                  setState(() {
-                    selectedRole = v;
-                  });
-                },
+                onChanged: (widget.onChanged),
               ),
             ),
           ],

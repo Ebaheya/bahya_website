@@ -11,7 +11,7 @@ import 'screens/volunteer_survey_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: '/admin',
+    initialLocation: '/login',
     routes: [
       GoRoute(path: '/login', builder: (context, state) => LoginPage()),
       GoRoute(path: '/admin', builder: (context, state) => AdminPanelPage()),
@@ -36,6 +36,7 @@ class AppRouter {
         path: '/volunteer_survey',
         builder: (context, state) => VolunteerPatientsScreen(),
       ),
+      
     ],
   );
 }

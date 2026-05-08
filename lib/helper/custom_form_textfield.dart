@@ -107,10 +107,17 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         break;
 
       case CustomTextFieldType.password:
+        final passwordRegex = RegExp(
+          r'^[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_\-+=/\\[\];`~]+$',
+        );
+
         if (value.length < 6) {
-          return 'يجب أن تكون كلمة المرور مكونة من 6 أحرف على الأقل';
+          return 'Password must be at least 6 characters';
         }
 
+        if (!passwordRegex.hasMatch(value)) {
+          return 'Password can contain only English letters, numbers, and special characters';
+        }
         break;
 
       case CustomTextFieldType.text:

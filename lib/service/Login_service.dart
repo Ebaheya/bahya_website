@@ -14,7 +14,7 @@ void initDio() {
 Future<void> login({required String email, required String password}) async {
   try {
     final response = await dio.post(
-      '$baseUrl/auth/login',
+      '/auth/login',
       // "email": "admin@clinic.local",
       // "password": "ChangeMe!123",
       data: {"email": email, "password": password},
@@ -36,7 +36,7 @@ Future<void> login({required String email, required String password}) async {
 Future<void> logout({required String refreshToken}) async {
   try {
     final response = await dio.post(
-      '$baseUrl/auth/logout',
+      '/auth/logout',
       data: {"refreshToken": refreshToken},
     );
     if (response.statusCode == 204 || response.statusCode == 200) {
@@ -97,19 +97,25 @@ Future<void> logout({required String refreshToken}) async {
 void setupInterceptors(Dio dio) {
   dio.interceptors.add(
     InterceptorsWrapper(
+      //////////////////////////////////////////////////////////
+      /// REQUEST
+      //////////////////////////////////////////////////////////
       onRequest: (options, handler) async {
+        final storage = SecureStorageService();
 
+        /// Public endpoints
         final publicEndpoints = ['/auth/login', '/auth/refresh', '/health'];
 
+        /// Check if endpoint is public
         final isPublic = publicEndpoints.any(
-          (endpoint) => options.path.contains(endpoint),
+          (endpoint) => options.path.endsWith(endpoint),
         );
 
+        /// Add token only for protected routes
         if (!isPublic) {
-          final storage = SecureStorageService();
           final token = await storage.getAccessToken();
 
-          if (token != null) {
+          if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
         }
@@ -117,50 +123,112 @@ void setupInterceptors(Dio dio) {
         handler.next(options);
       },
 
-      onError: (DioException e, handler) async {
+      //////////////////////////////////////////////////////////
+      /// ERROR
+      //////////////////////////////////////////////////////////
+      onError: (DioException e, ErrorInterceptorHandler handler) async {
         final storage = SecureStorageService();
 
-        if (e.response?.statusCode == 401 &&
-            e.requestOptions.extra['retried'] != true) {
-          try {
-            final refreshToken = await storage.getRefreshToken();
+        /// Original request
+        final request = e.requestOptions;
 
-            final refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
+        /// Public endpoints
+        final publicEndpoints = ['/auth/login', '/auth/refresh', '/health'];
 
-            final refreshResponse = await refreshDio.post(
-              '/auth/refresh',
-              data: {"refreshToken": refreshToken},
-            );
+        /// Prevent refresh on public routes
+        final isPublic = publicEndpoints.any(
+          (endpoint) => request.path.endsWith(endpoint),
+        );
 
-            // Refresh success
-            if (refreshResponse.statusCode == 200) {
-              final newAccess = refreshResponse.data['accessToken'];
+        ////////////////////////////////////////////////////////
+        /// Skip if:
+        /// - request already retried
+        /// - request is public
+        /// - not unauthorized
+        ////////////////////////////////////////////////////////
 
-              final newRefresh = refreshResponse.data['refreshToken'];
-
-              await storage.saveTokens(
-                accessToken: newAccess,
-                refreshToken: newRefresh,
-              );
-
-              final request = e.requestOptions;
-
-              request.headers['Authorization'] = 'Bearer $newAccess';
-
-              request.extra['retried'] = true;
-
-              final response = await dio.fetch(request);
-
-              return handler.resolve(response);
-            }
-          } catch (refreshError) {
-            await storage.clearTokens();
-
-            debugPrint('Refresh Token Error: $refreshError');
-          }
+        if (e.response?.statusCode != 401 ||
+            request.extra['retried'] == true ||
+            isPublic) {
+          return handler.next(e);
         }
 
-        handler.next(e);
+        try {
+          //////////////////////////////////////////////////////
+          /// Get refresh token
+          //////////////////////////////////////////////////////
+
+          final refreshToken = await storage.getRefreshToken();
+
+          /// No refresh token
+          if (refreshToken == null || refreshToken.isEmpty) {
+            await storage.clearTokens();
+
+            return handler.next(e);
+          }
+
+          //////////////////////////////////////////////////////
+          /// Refresh request
+          //////////////////////////////////////////////////////
+
+          final refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
+
+          final refreshResponse = await refreshDio.post(
+            '/auth/refresh',
+
+            data: {"refreshToken": refreshToken},
+          );
+
+          //////////////////////////////////////////////////////
+          /// Success
+          //////////////////////////////////////////////////////
+
+          if (refreshResponse.statusCode == 200) {
+            final newAccess = refreshResponse.data['accessToken'];
+
+            final newRefresh = refreshResponse.data['refreshToken'];
+
+            ////////////////////////////////////////////////////
+            /// Save new tokens
+            ////////////////////////////////////////////////////
+
+            await storage.saveTokens(
+              accessToken: newAccess,
+
+              refreshToken: newRefresh,
+            );
+
+            ////////////////////////////////////////////////////
+            /// Retry original request
+            ////////////////////////////////////////////////////
+
+            request.headers['Authorization'] = 'Bearer $newAccess';
+
+            request.extra['retried'] = true;
+
+            final response = await dio.fetch(request);
+
+            return handler.resolve(response);
+          }
+
+          //////////////////////////////////////////////////////
+          /// Refresh failed
+          //////////////////////////////////////////////////////
+
+          await storage.clearTokens();
+
+          return handler.next(e);
+        } catch (refreshError) {
+          //////////////////////////////////////////////////////
+          /// Refresh crashed
+          //////////////////////////////////////////////////////
+
+          await storage.clearTokens();
+
+          debugPrint('Refresh Token Error: $refreshError');
+
+          return handler.next(e);
+        }
       },
     ),
   );
