@@ -1,3 +1,4 @@
+import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:bahya_website/screens/add_questionnaire.dart';
 import 'package:bahya_website/screens/admin_panel/admin_panal.dart';
 import 'package:bahya_website/screens/home.dart';
@@ -19,17 +20,34 @@ class AuthNotifier extends ChangeNotifier {
 
   bool get passwordResetDone => _passwordResetDone;
 
+  //////////////////////////////////////////////////////
+  /// Check saved token
+  //////////////////////////////////////////////////////
+
+  Future<void> checkLogin() async {
+    final storage = SecureStorageService();
+
+    final token = await storage.getAccessToken();
+
+    _isLoggedIn = token != null && token.isNotEmpty;
+
+    notifyListeners();
+  }
+
+
   void login() {
     _isLoggedIn = true;
 
     notifyListeners();
   }
 
+
   void logout() {
     _isLoggedIn = false;
 
     notifyListeners();
   }
+
 
   void completePasswordReset() {
     _passwordResetDone = true;
@@ -43,7 +61,6 @@ class AuthNotifier extends ChangeNotifier {
     notifyListeners();
   }
 }
-
 final AuthNotifier authNotifier = AuthNotifier();
 
 class AppRouter {

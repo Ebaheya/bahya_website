@@ -3,9 +3,12 @@ import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
-void main() {
+void main() async{
   setUrlStrategy(PathUrlStrategy());
   initDio();
+    WidgetsFlutterBinding.ensureInitialized();
+
+  await authNotifier.checkLogin();
   runApp(MyApp());
 }
 

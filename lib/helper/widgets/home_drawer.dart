@@ -1,5 +1,6 @@
 import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
+import 'package:bahya_website/route.dart';
 import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
@@ -134,7 +135,6 @@ class HomeDrawer extends StatelessWidget {
 
                 const Spacer(),
 
-                // ===== Logout (اختياري) =====
                 _animatedItem(
                   context,
                   index: 4,
@@ -147,6 +147,7 @@ class HomeDrawer extends StatelessWidget {
                       await logout(refreshToken: refreshToken!);
                       customDialog(
                         onClose: () {
+                          authNotifier.logout();
                           context.go('/login');
                         },
                         context: context,
