@@ -3,7 +3,6 @@ import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-
 Widget customText({
   required String text,
   required double size,
@@ -112,10 +111,10 @@ PreferredSizeWidget customAppBar({
   return PreferredSize(
     preferredSize: Size.fromHeight(h * 0.1),
     child: Container(
-      decoration:  BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: gradientColors,
-                     begin: Alignment.centerRight,
+          begin: Alignment.centerRight,
           end: Alignment.centerLeft,
         ),
       ),
@@ -186,7 +185,7 @@ Widget sectionCard({
   required BuildContext context,
   required String title,
   required Widget child,
-  bool ? isShadow = true,
+  bool? isShadow = true,
 }) {
   return Container(
     width: getScreenWidth(context) * 0.95,
@@ -194,19 +193,21 @@ Widget sectionCard({
 
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),      
+      borderRadius: BorderRadius.circular(12),
       boxShadow: [
-        isShadow == true ? BoxShadow(
-          color: Colors.black26,
-          spreadRadius: 1,
-          blurRadius: 12,
-          offset: const Offset(0, 6),
-        ) : const BoxShadow(
-          color: Colors.transparent,
-          spreadRadius: 0,
-          blurRadius: 0,
-          offset: Offset(0, 0),
-        ),
+        isShadow == true
+            ? BoxShadow(
+                color: Colors.black26,
+                spreadRadius: 1,
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              )
+            : const BoxShadow(
+                color: Colors.transparent,
+                spreadRadius: 0,
+                blurRadius: 0,
+                offset: Offset(0, 0),
+              ),
       ],
     ),
     clipBehavior: Clip.antiAlias,
@@ -215,12 +216,11 @@ Widget sectionCard({
         Container(
           height: getScreenHeight(context) * 0.10,
           decoration: BoxDecoration(
-            gradient:
-                 LinearGradient(
-                  colors: gradientColors,
-                  begin: Alignment.centerRight,
-                  end: Alignment.centerLeft,
-                ),
+            gradient: LinearGradient(
+              colors: gradientColors,
+              begin: Alignment.centerRight,
+              end: Alignment.centerLeft,
+            ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -241,6 +241,7 @@ Widget sectionCard({
     ),
   );
 }
+
 class LegendDot extends StatelessWidget {
   final Color color;
   final String label;
@@ -355,6 +356,26 @@ Widget customLoading() {
             );
           },
         ),
+      ),
+    ),
+  );
+}
+
+ScaffoldFeatureController<SnackBar, SnackBarClosedReason> customSnackBar({
+  required BuildContext context,
+  required String message,
+}) {
+  final w = getScreenWidth(context);
+  return ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      backgroundColor: buttonColor,
+      animation: const AlwaysStoppedAnimation(1),
+      showCloseIcon: true,
+      content: customText(
+        isCenter: true,
+        text: message,
+        size: w * 0.01,
+        color: Colors.white,
       ),
     ),
   );

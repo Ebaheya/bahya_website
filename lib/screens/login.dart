@@ -4,9 +4,9 @@ import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/widgets/forget_password_dialog.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/route.dart';
 import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({super.key});
@@ -113,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                                     message: 'تم تسجيل الدخول بنجاح!',
                                     onClose: () {
                                       Navigator.of(context).pop();
-                                      context.go('/home');
+                                      authNotifier.login();
                                     },
                                   );
                                 } catch (e) {

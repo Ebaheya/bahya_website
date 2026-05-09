@@ -155,4 +155,47 @@ class WebService {
       throw Exception('Unexpected error');
     }
   }
+
+  Future<void> forgetPassword({required String email}) async {
+    try {
+      final res = await dio.post(
+        '/auth/forgot-password',
+        data: {"email": email},
+      );
+      if (res.statusCode == 200) {
+        debugPrint("Forget password request successful: ${res.data}");
+      } else {
+        throw Exception('Failed to forget password');
+      }
+    } on DioException catch (e) {
+      debugPrint("DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to forget password');
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      throw Exception('Unexpected error');
+    }
+  }
+
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      final res = await dio.post(
+        '/auth/reset-password',
+        data: {"token": token, "newPassword": newPassword},
+      );
+      if (res.statusCode == 200) {
+        debugPrint("Password reset successful");
+      } else {
+        throw Exception('Failed to reset password');
+      }
+    } on DioException catch (e) {
+      debugPrint("DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to reset password');
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      throw Exception('Unexpected error');
+    }
+  }
 }

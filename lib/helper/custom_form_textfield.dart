@@ -22,7 +22,7 @@ class CustomFormTextField extends StatefulWidget {
   const CustomFormTextField({
     super.key,
     required this.labelText,
-     this.hintText,
+    this.hintText,
     required this.autovalidateMode,
     required this.keyboardType,
     this.obscureText = false,
@@ -75,7 +75,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     }
   }
 
-String? _validate(String? value) {
+  String? _validate(String? value) {
     final text = value?.trim() ?? '';
 
     if (widget.isRequired && text.isEmpty) {
@@ -122,8 +122,8 @@ String? _validate(String? value) {
           r'^[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_\-+=/\\[\];`~]+$',
         );
 
-        if (text.length < 6) {
-          return 'Password must be at least 6 characters';
+        if (text.length < 8) {
+          return 'Password must be at least 8 characters';
         }
 
         if (!passwordRegex.hasMatch(text)) {
@@ -158,7 +158,6 @@ String? _validate(String? value) {
       obscureText: _obscureText,
 
       validator: _validate,
-
       onTap: widget.onTap,
 
       readOnly: widget.readOnly,
@@ -242,7 +241,7 @@ String? _validate(String? value) {
 
           borderSide: widget.isSearch
               ? BorderSide.none
-              :  BorderSide(color: Colors.grey, width: 1.2),
+              : BorderSide(color: Colors.grey, width: 1.2),
         ),
 
         enabledBorder: OutlineInputBorder(
