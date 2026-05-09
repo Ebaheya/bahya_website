@@ -6,7 +6,7 @@ enum CustomTextFieldType { email, name, password, number, phone, text, date }
 
 class CustomFormTextField extends StatefulWidget {
   final String labelText;
-  final String hintText;
+  final String? hintText;
   final AutovalidateMode autovalidateMode;
   final bool obscureText;
   final bool readOnly;
@@ -16,11 +16,13 @@ class CustomFormTextField extends StatefulWidget {
   final Icon? suffixIcon;
   final int maxLines;
   final VoidCallback? onTap;
-
+  final Function(String)? onChange;
+  final bool isSearch;
+  final bool isRequired;
   const CustomFormTextField({
     super.key,
     required this.labelText,
-    required this.hintText,
+     this.hintText,
     required this.autovalidateMode,
     required this.keyboardType,
     this.obscureText = false,
@@ -30,6 +32,9 @@ class CustomFormTextField extends StatefulWidget {
     this.suffixIcon,
     this.maxLines = 1,
     this.onTap,
+    this.onChange,
+    this.isSearch = false,
+    this.isRequired = true,
   });
 
   @override
@@ -70,37 +75,43 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     }
   }
 
-  String? _validate(String? value) {
-    if (value == null || value.isEmpty) {
+String? _validate(String? value) {
+    final text = value?.trim() ?? '';
+
+    if (widget.isRequired && text.isEmpty) {
       return 'هذا الحقل مطلوب';
+    }
+
+    if (!widget.isRequired && text.isEmpty) {
+      return null;
     }
 
     switch (widget.keyboardType) {
       case CustomTextFieldType.email:
         final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$');
 
-        if (!emailRegex.hasMatch(value)) {
+        if (!emailRegex.hasMatch(text)) {
           return 'أدخل بريدًا إلكترونيًا صالحًا';
         }
 
         break;
 
       case CustomTextFieldType.name:
-        if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+        if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(text)) {
           return 'أدخل اسمًا صالحًا';
         }
 
         break;
 
       case CustomTextFieldType.number:
-        if (!RegExp(r'^\d+$').hasMatch(value)) {
+        if (!RegExp(r'^\d+$').hasMatch(text)) {
           return 'أدخل أرقامًا فقط';
         }
 
         break;
 
       case CustomTextFieldType.phone:
-        if (!RegExp(r'^\d{11}$').hasMatch(value)) {
+        if (!RegExp(r'^\d{11}$').hasMatch(text)) {
           return 'أدخل رقم هاتف مكون من 11 رقمًا';
         }
 
@@ -111,21 +122,21 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           r'^[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_\-+=/\\[\];`~]+$',
         );
 
-        if (value.length < 6) {
+        if (text.length < 6) {
           return 'Password must be at least 6 characters';
         }
 
-        if (!passwordRegex.hasMatch(value)) {
+        if (!passwordRegex.hasMatch(text)) {
           return 'Password can contain only English letters, numbers, and special characters';
         }
+
         break;
 
       case CustomTextFieldType.text:
-        if (value.trim().isEmpty) {
-          return 'يجب ألا يكون هذا الحقل فارغًا';
-        }
+        break;
+
       case CustomTextFieldType.date:
-        if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value)) {
+        if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(text)) {
           return 'أدخل تاريخًا صالحًا (mm/dd/yyyy)';
         }
 
@@ -139,6 +150,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
   Widget build(BuildContext context) {
     double width = getScreenWidth(context);
     return TextFormField(
+      onChanged: widget.onChange,
       keyboardType: _mapKeyboardType(widget.keyboardType),
 
       controller: widget.controller,
@@ -228,7 +240,9 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
 
-          borderSide: const BorderSide(color: Colors.grey, width: 1.2),
+          borderSide: widget.isSearch
+              ? BorderSide.none
+              :  BorderSide(color: Colors.grey, width: 1.2),
         ),
 
         enabledBorder: OutlineInputBorder(

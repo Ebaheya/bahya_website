@@ -11,6 +11,11 @@ final class UserLoaded extends UserState {
   UserLoaded({required this.users});
 }
 
+final class UserFilteredLoaded extends UserState {
+  final List<UserModel> users;
+  UserFilteredLoaded({required this.users});
+}
+
 final class UserError extends UserState {
   final String message;
   UserError({required this.message});

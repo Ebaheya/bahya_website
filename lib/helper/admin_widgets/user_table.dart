@@ -1,7 +1,9 @@
 import 'package:bahya_website/bloc/cubit/user_cubit.dart';
 import 'package:bahya_website/bloc/states/user_state.dart';
+import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/helper/admin_widgets/filter_dropdown.dart';
 import 'package:bahya_website/helper/base.dart';
+import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,11 +16,40 @@ class UsersTable extends StatefulWidget {
 }
 
 class _UsersTableState extends State<UsersTable> {
+  final TextEditingController searchController = TextEditingController();
+
+  String? selectedRole;
+
+  bool? selectedStatus;
+
   @override
   void initState() {
     super.initState();
 
     context.read<UserCubit>().getAllUserInfo();
+  }
+
+  void applyFilters() {
+    final cubit = context.read<UserCubit>();
+
+    final hasFilters =
+        searchController.text.trim().isNotEmpty ||
+        selectedRole != null ||
+        selectedStatus != null;
+
+    if (hasFilters) {
+      cubit.getFilteredUserInfo(
+        nameOrEmail: searchController.text.trim(),
+
+        role: selectedRole != null
+            ? UserRole.values.firstWhere((e) => e.name == selectedRole)
+            : null,
+
+        isActive: selectedStatus,
+      );
+    } else {
+      cubit.getAllUserInfo();
+    }
   }
 
   @override
@@ -41,28 +72,15 @@ class _UsersTableState extends State<UsersTable> {
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: "Search users...",
-
-                    hintStyle: TextStyle(
-                      fontSize: w * 0.01,
-
-                      fontFamily: 'ArabicCustomFont',
-                    ),
-
-                    filled: true,
-
-                    fillColor: const Color(0xFFF5F6FA),
-
-                    prefixIcon: const Icon(Icons.search),
-
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
+                child: CustomFormTextField(
+                  labelText: "Search users...",
+                  isSearch: true,
+                  isRequired: false,
+                  textDirection: TextDirection.ltr,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  keyboardType: CustomTextFieldType.text,
+                  controller: searchController,
+                  onChange: (_) => applyFilters(),
                 ),
               ),
 
@@ -71,9 +89,26 @@ class _UsersTableState extends State<UsersTable> {
               FilterDropdown(
                 hint: "All Roles",
 
-                items: const ["All", "PATIENT", "ADMIN", "DOCTOR"],
+                items: const [
+                  "All",
+                  "ADMIN",
 
-                onChanged: (v) {},
+                  "DOCTOR",
+
+                  "VOLUNTEER",
+
+                  "PATIENT",
+
+                  "CALL_CENTER",
+                ],
+
+                onChanged: (v) {
+                  setState(() {
+                    selectedRole = v == "All" ? null : v;
+                  });
+
+                  applyFilters();
+                },
               ),
 
               const SizedBox(width: 10),
@@ -83,7 +118,19 @@ class _UsersTableState extends State<UsersTable> {
 
                 items: const ["All", "Active", "Inactive"],
 
-                onChanged: (v) {},
+                onChanged: (v) {
+                  setState(() {
+                    if (v == "All") {
+                      selectedStatus = null;
+                    } else if (v == "Active") {
+                      selectedStatus = true;
+                    } else {
+                      selectedStatus = false;
+                    }
+                  });
+
+                  applyFilters();
+                },
               ),
             ],
           ),
@@ -99,7 +146,6 @@ class _UsersTableState extends State<UsersTable> {
               if (state is UserError) {
                 return SizedBox(
                   height: 200,
-
                   child: Center(
                     child: customText(
                       text: state.message,
@@ -113,8 +159,11 @@ class _UsersTableState extends State<UsersTable> {
                   ),
                 );
               }
-              if (state is UserLoaded) {
-                final users = state.users;
+
+              if (state is UserLoaded || state is UserFilteredLoaded) {
+                final users = state is UserLoaded
+                    ? state.users
+                    : (state as UserFilteredLoaded).users;
 
                 return LayoutBuilder(
                   builder: (context, constraints) {
@@ -143,7 +192,8 @@ class _UsersTableState extends State<UsersTable> {
                             DataColumn(label: headerCell(context, "Status")),
 
                             // DataColumn(
-                            //   label: headerCell(
+                            //   label:
+                            //       headerCell(
                             //     context,
                             //     "Last Active",
                             //   ),
@@ -192,9 +242,11 @@ class _UsersTableState extends State<UsersTable> {
                                     isEnglish: true,
                                   ),
                                 ),
+
                                 DataCell(
                                   _badge(user.role, Colors.grey, context),
                                 ),
+
                                 DataCell(
                                   _badge(
                                     user.isActive ? "Active" : "Inactive",
@@ -204,17 +256,7 @@ class _UsersTableState extends State<UsersTable> {
                                     context,
                                   ),
                                 ),
-                                // DataCell(
-                                //
-                                //   customText(
-                                //
-                                //     text: "N/A",
-                                //
-                                //     size: w * 0.01,
-                                //
-                                //     isEnglish: true,
-                                //   ),
-                                // ),
+
                                 const DataCell(Icon(Icons.more_vert)),
                               ],
                             );

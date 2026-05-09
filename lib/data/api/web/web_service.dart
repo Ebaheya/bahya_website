@@ -5,6 +5,8 @@ import 'package:bahya_website/service/Login_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
+enum UserRole { ADMIN, DOCTOR, VOLUNTEER, PATIENT, CALL_CENTER }
+
 class WebService {
   final Dio dio = Dio(BaseOptions(baseUrl: baseUrl));
 
@@ -113,7 +115,7 @@ class WebService {
     }
   }
 
-  Future<Map<String, dynamic>> getAllUserInfo() async{
+  Future<Map<String, dynamic>> getAllUserInfo() async {
     try {
       return await dio.get('/users').then((res) => res.data);
     } on DioException catch (e) {
@@ -121,6 +123,35 @@ class WebService {
       throw Exception(e.response?.data ?? 'Failed to get all user info');
     } catch (e) {
       debugPrint("Unexpected error: $e");
+      throw Exception('Unexpected error');
+    }
+  }
+
+  Future<Map<String, dynamic>> getFilteredUserInfo({
+    String? nameOrEmail,
+    UserRole? role,
+    bool? isActive,
+  }) async {
+    try {
+      final res = await dio.get(
+        '/users',
+        queryParameters: {
+          if (nameOrEmail != null && nameOrEmail.isNotEmpty) 'q': nameOrEmail,
+
+          if (role != null) 'role': role.name,
+
+          if (isActive != null) 'isActive': isActive,
+        },
+      );
+
+      return res.data;
+    } on DioException catch (e) {
+      debugPrint("DioException: ${e.response?.data ?? e.message}");
+
+      throw Exception(e.response?.data ?? 'Failed to get filtered user info');
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+
       throw Exception('Unexpected error');
     }
   }
