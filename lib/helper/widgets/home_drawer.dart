@@ -1,6 +1,7 @@
 import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/route.dart';
+import 'package:bahya_website/screens/profile_widget.dart';
 import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
@@ -65,6 +66,16 @@ class HomeDrawer extends StatelessWidget {
                 const Divider(color: Colors.white70, thickness: 3),
 
                 // ===== Section Title =====
+                _animatedItem(
+                  context,
+                  index: 0,
+                  icon: Icons.person,
+                  title: 'الملف الشخصى',
+                  onTap: () {
+                    Navigator.pop(context);
+                    showProfileDialog(context);
+                  },
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,

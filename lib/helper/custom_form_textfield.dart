@@ -19,6 +19,7 @@ class CustomFormTextField extends StatefulWidget {
   final Function(String)? onChange;
   final bool isSearch;
   final bool isRequired;
+
   const CustomFormTextField({
     super.key,
     required this.labelText,
@@ -70,6 +71,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
       case CustomTextFieldType.text:
         return TextInputType.text;
+
       case CustomTextFieldType.date:
         return TextInputType.datetime;
     }
@@ -119,7 +121,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
       case CustomTextFieldType.password:
         final passwordRegex = RegExp(
-          r'^[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_\-+=/\\[\];`~]+$',
+          r'^[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_+=/\\[\];`~\-]+$',
         );
 
         if (text.length < 8) {
@@ -149,8 +151,10 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
   @override
   Widget build(BuildContext context) {
     double width = getScreenWidth(context);
+
     return TextFormField(
       onChanged: widget.onChange,
+
       keyboardType: _mapKeyboardType(widget.keyboardType),
 
       controller: widget.controller,
@@ -158,6 +162,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
       obscureText: _obscureText,
 
       validator: _validate,
+
       onTap: widget.onTap,
 
       readOnly: widget.readOnly,
@@ -172,7 +177,9 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         ] else if (widget.keyboardType == CustomTextFieldType.email) ...[
           FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._-]')),
         ] else if (widget.keyboardType == CustomTextFieldType.password) ...[
-          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9#@&%$!]')),
+          FilteringTextInputFormatter.allow(
+            RegExp(r'[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_+=/\[\];`~\\-]'),
+          ),
         ],
       ],
 
@@ -190,7 +197,9 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
       style: TextStyle(
         color: Colors.black,
+
         fontSize: width * 0.01,
+
         fontFamily: 'ArabicCustomFont',
       ),
 
@@ -221,18 +230,23 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
         labelStyle: TextStyle(
           color: Colors.black,
+
           fontSize: width * 0.01,
+
           fontFamily: 'ArabicCustomFont',
         ),
 
         hintStyle: TextStyle(
           color: Colors.grey,
+
           fontSize: width * 0.01,
+
           fontFamily: 'ArabicCustomFont',
         ),
 
         contentPadding: const EdgeInsets.symmetric(
           vertical: 14,
+
           horizontal: 12,
         ),
 
@@ -241,7 +255,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
           borderSide: widget.isSearch
               ? BorderSide.none
-              : BorderSide(color: Colors.grey, width: 1.2),
+              : const BorderSide(color: Colors.grey, width: 1.2),
         ),
 
         enabledBorder: OutlineInputBorder(
@@ -258,6 +272,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
         errorStyle: TextStyle(
           fontFamily: 'ArabicCustomFont',
+
           fontSize: width * 0.01,
         ),
       ),

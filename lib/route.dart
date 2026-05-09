@@ -4,6 +4,7 @@ import 'package:bahya_website/screens/admin_panel/admin_panal.dart';
 import 'package:bahya_website/screens/home.dart';
 import 'package:bahya_website/screens/login.dart';
 import 'package:bahya_website/screens/patient_info.dart';
+import 'package:bahya_website/screens/profile_widget.dart';
 import 'package:bahya_website/screens/publish_schedule_screen.dart';
 import 'package:bahya_website/screens/questionnaire_filler.dart';
 import 'package:bahya_website/screens/reset_password.dart';
@@ -106,7 +107,6 @@ class AppRouter {
           return LoginPage();
         },
       ),
-
       GoRoute(
         path: '/reset-password',
 

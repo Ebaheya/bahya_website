@@ -15,20 +15,39 @@ Future<void> login({required String email, required String password}) async {
   try {
     final response = await dio.post(
       '/auth/login',
-      // "email": "admin@clinic.local",
-      // "password": "ChangeMe!123",
-      data: {"email": email, "password": password},
-      options: Options(contentType: 'application/json'),
+
+      data: {"email": email.trim().toLowerCase(), "password": password.trim()},
+
+      options: Options(contentType: Headers.jsonContentType),
     );
-    log('Login successful: ${response.data}');
+
+    debugPrint('Login successful');
+
+    final accessToken = response.data['accessToken'];
+
+    final refreshToken = response.data['refreshToken'];
+
+    if (accessToken == null || refreshToken == null) {
+      throw Exception('Invalid tokens received');
+    }
+
     await SecureStorageService().saveTokens(
-      accessToken: response.data['accessToken'],
-      refreshToken: response.data['refreshToken'],
+      accessToken: accessToken,
+
+      refreshToken: refreshToken,
     );
   } on DioException catch (e) {
-    throw Exception(e.response?.data ?? "Login failed");
+    debugPrint('Login Error: ${e.response?.data}');
+
+    final errorMessage =
+        e.response?.data?['error']?['message'] ??
+        e.response?.data?['message'] ??
+        'Login failed';
+
+    throw Exception(errorMessage);
   } catch (e) {
-    log('Unexpected error: $e');
+    debugPrint('Unexpected error: $e');
+
     throw Exception('Something went wrong');
   }
 }

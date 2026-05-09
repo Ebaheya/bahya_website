@@ -198,4 +198,33 @@ class WebService {
       throw Exception('Unexpected error');
     }
   }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final res = await dio.patch(
+        '/auth/change-password',
+        data: {
+          "currentPassword": currentPassword,
+          "newPassword": newPassword,
+        },
+      );
+      if (res.statusCode == 200) {
+        debugPrint("Password change successful");
+      }
+      if (res.statusCode == 401) {
+        throw Exception('Current password is incorrect');
+      } else {
+        throw Exception('Failed to change password');
+      }
+    } on DioException catch (e) {
+      debugPrint("DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to change password');
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      throw Exception('Unexpected error');
+    }
+  }
 }

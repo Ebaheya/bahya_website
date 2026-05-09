@@ -127,19 +127,34 @@ PreferredSizeWidget customAppBar({
               isHomeBar
                   ? Row(
                       children: [
-                        GestureDetector(
-                          onTap: () {
+                        IconButton(
+                          onPressed: () {
                             scaffoldKey?.currentState?.openDrawer();
                           },
-                          child: CircleAvatar(
-                            radius: h * 0.023,
-                            backgroundColor: Colors.white,
-                            child: const Icon(
-                              Icons.person,
-                              color: Colors.pinkAccent,
-                            ),
+                          icon: const Icon(
+                            Icons.menu,
+                            color: Colors.white,
+                            size: 28,
                           ),
                         ),
+                        // GestureDetector(
+                        //   onTap: () {
+                        //     scaffoldKey?.currentState?.openDrawer();
+                        //   },
+                        //   child: const Icon(
+                        //     Icons.menu,
+                        //     color: Colors.white,
+                        //     size: 28,
+                        //   ),
+                        //   // child: CircleAvatar(
+                        //   //   radius: h * 0.023,
+                        //   //   backgroundColor: Colors.white,
+                        //   //   child: const Icon(
+                        //   //     Icons.person,
+                        //   //     color: Colors.pinkAccent,
+                        //   //   ),
+                        //   // ),
+                        // ),
                         SizedBox(width: w * 0.02),
                       ],
                     )
