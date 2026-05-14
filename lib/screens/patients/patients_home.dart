@@ -19,79 +19,60 @@ class PatientsHome extends StatelessWidget {
       backgroundColor: backgroundColor,
       body: Directionality(
         textDirection: TextDirection.rtl,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                    gradient: LinearGradient(colors: gradientColors),
-                  ),
-                  child: Column(
-                    children: [
-                      Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.3),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.white.withOpacity(0.3),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.chat,
-                              color: Colors.white,
-                              size: w * 0.1,
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              customText(
-                                text: "محتاجه مساعده؟",
-                                size: w * 0.05,
-                                color: Colors.white,
-                              ),
-                              customText(
-                                text: 'تواصلى مع الشات بوت الخاص بنا',
-                                size: w * 0.03,
-                                color: Colors.white,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      CustomGlowButton(
-                        title: "تحدثى الان",
-                        onPressed: () {},
-                        width: w * 0.8,
-                        textSize: w * 0.04,
-                        height: h * 0.06,
-                        borderRadius: 12,
-                      ),
-                    ],
-                  ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              chatBotCard(w: w, h: h),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerRight,
+                child: customText(
+                  text: "الخدمات المجتمعية",
+                  size: w * 0.05,
+                  isCenter: false,
                 ),
-              ],
-            ),
+              ),
+              SizedBox(height: 20),
+              serviceCard(
+                title: "البرامج التعليميه",
+                description: "انضمي إلى برامجنا التعليمية",
+                onTap: () {},
+                w: w,
+                h: h,
+                icon: Icons.menu_book_rounded,
+                primaryColor: Colors.green[100]!,
+                secondaryColor: Colors.green[400]!,
+                buttonColor: Colors.green,
+                salesBackgroundColor: Colors.green[300]!,
+              ),
+              SizedBox(height: 20),
+              serviceCard(
+                title: "الرحلات و النزهات",
+                description: "استمتعى مع المحاربات",
+                onTap: () {},
+                w: w,
+                h: h,
+                icon: Icons.directions_bus_rounded,
+                primaryColor: Colors.blue[100]!,
+                secondaryColor: Colors.blue[400]!,
+                buttonColor: Colors.blue,
+                salesBackgroundColor: Colors.blue[300]!,
+              ),
+              SizedBox(height: 20),
+              serviceCard(
+                title: "مجموعات الدعم",
+                description: "شاركى تجاربيك مع من يفهومنك",
+                onTap: () {},
+                w: w,
+                h: h,
+                icon: Icons.groups_rounded,
+                primaryColor: Colors.purple[100]!,
+                secondaryColor: Colors.purple[400]!,
+                buttonColor: Colors.purple,
+                salesBackgroundColor: Colors.purple[300]!,
+              ),
+            ],
           ),
         ),
       ),
