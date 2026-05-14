@@ -1,0 +1,50 @@
+import 'package:bahya_app/helper/base.dart';
+import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:flutter/material.dart';
+
+class TravelScreen extends StatelessWidget {
+  const TravelScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      appBar: customAppBar(
+        context: context,
+        title: 'الرحلات والنزهات',
+        subTitle: 'اختاري ما يناسبك وانضمي الآن',
+        icon: Icons.directions_bus_rounded,
+        isHome: false,
+      ),
+      body: SingleChildScrollView(
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Column(
+            children: [
+              serviceCards(
+                w: getScreenWidth(context),
+                h: getScreenHeight(context),
+                title: 'رحلة إلى المتحف المصري',
+                date: 'الجمعة 15 سبتمبر 2024',
+                time: '10:00 صباحًا - 4:00 مساءً',
+                location: 'المتحف المصري، القاهرة',
+                availableSeats: 10,
+                isTravel: true,
+              ),
+              serviceCards(
+                w: getScreenWidth(context),
+                h: getScreenHeight(context),
+                title: 'نزهة في حديقة الأزهر',
+                date: 'الأحد 20 سبتمبر 2024',
+                time: '3:00 مساءً - 6:00 مساءً',
+                location: 'حديقة الأزهر، القاهرة',
+                availableSeats: 15,
+                isTravel: true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

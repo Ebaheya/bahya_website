@@ -63,8 +63,8 @@ flutter:
   fonts:
     - family: ArabicCustomFont
       fonts:
-        - asset: assets/fonts/cairo/Cairo-Bold.ttf
-        - asset: assets/fonts/cairo/Cairo-Regular.ttf
+        - asset: assets/fonts/Cairo-Bold.ttf
+        - asset: assets/fonts/Cairo-Regular.ttf
   #   - family: Trajan Pro
   #     fonts:
   #       - asset: fonts/TrajanPro.ttf

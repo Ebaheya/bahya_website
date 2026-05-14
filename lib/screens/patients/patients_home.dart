@@ -1,5 +1,4 @@
 import 'package:bahya_app/helper/base.dart';
-import 'package:bahya_app/helper/custom_glow_buttom.dart';
 import 'package:bahya_app/helper/widgets/constant.dart';
 import 'package:flutter/material.dart';
 
@@ -37,7 +36,9 @@ class PatientsHome extends StatelessWidget {
               serviceCard(
                 title: "البرامج التعليميه",
                 description: "انضمي إلى برامجنا التعليمية",
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(context, '/programsScreen');
+                },
                 w: w,
                 h: h,
                 icon: Icons.menu_book_rounded,
@@ -50,7 +51,9 @@ class PatientsHome extends StatelessWidget {
               serviceCard(
                 title: "الرحلات و النزهات",
                 description: "استمتعى مع المحاربات",
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(context, '/travelScreen');
+                },
                 w: w,
                 h: h,
                 icon: Icons.directions_bus_rounded,
@@ -63,7 +66,9 @@ class PatientsHome extends StatelessWidget {
               serviceCard(
                 title: "مجموعات الدعم",
                 description: "شاركى تجاربيك مع من يفهومنك",
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(context, '/supportScreen');
+                },
                 w: w,
                 h: h,
                 icon: Icons.groups_rounded,

@@ -20,7 +20,7 @@ Widget customText({
       fontSize: size,
       fontFamily: 'ArabicCustomFont',
       fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-      color: isGradient ? null : (color ?? Colors.black),
+      color: isGradient ? null : (color ?? textColor),
       foreground: isGradient
           ? (Paint()
               ..shader = LinearGradient(
@@ -113,7 +113,9 @@ PreferredSizeWidget customAppBar({
   required BuildContext context,
   required String title,
   required String subTitle,
+  IconData? icon,
   GlobalKey<ScaffoldState>? scaffoldKey,
+  isHome = true,
 }) {
   final h = getScreenHeight(context);
   final w = getScreenWidth(context);
@@ -153,24 +155,53 @@ PreferredSizeWidget customAppBar({
                 ),
                 child: IconButton(
                   onPressed: () {},
-                  icon: const Icon(Icons.person, color: Colors.white),
+                  icon: Icon(icon ?? Icons.person, color: Colors.white),
                 ),
               ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Row(
                 children: [
-                  customText(
-                    text: title,
-                    size: w * 0.05,
-                    bold: true,
-                    color: Colors.white,
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      customText(
+                        text: title,
+                        size: w * 0.05,
+                        bold: true,
+                        color: Colors.white,
+                      ),
+                      customText(
+                        text: subTitle,
+                        size: w * 0.03,
+                        bold: true,
+                        color: Colors.white,
+                      ),
+                    ],
                   ),
-                  customText(
-                    text: subTitle,
-                    size: w * 0.03,
-                    bold: true,
-                    color: Colors.white,
-                  ),
+                  const SizedBox(width: 10),
+                  isHome
+                      ? SizedBox.shrink()
+                      : Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.white.withOpacity(0.3),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: IconButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                 ],
               ),
             ],
@@ -314,6 +345,129 @@ Widget serviceCard({
           glowColor: salesBackgroundColor,
         ),
       ],
+    ),
+  );
+}
+
+Widget serviceCards({
+  required double w,
+  required double h,
+  required String title,
+  required String date,
+  required String time,
+  required String location,
+  required double availableSeats,
+  bool isSupport = false,
+  String? meetingPlace,
+  bool isTravel = false,
+}) {
+  return Padding(
+    padding: const EdgeInsets.all(8.0),
+    child: Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            customText(text: title, size: w * 0.04),
+            SizedBox(height: h * 0.01),
+            Row(
+              children: [
+                Icon(Icons.calendar_month, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                customText(
+                  text: isTravel ? 'موعد الانطلاق: $date' : 'التاريخ: $date',
+                  size: w * 0.04,
+                  color: Colors.grey[600],
+                ),
+              ],
+            ),
+            SizedBox(height: h * 0.01),
+            Row(
+              children: [
+                Icon(Icons.access_time, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                customText(
+                  text: isTravel ? 'المده: $time' : 'الوقت: $time',
+                  size: w * 0.04,
+                  color: Colors.grey[600],
+                ),
+              ],
+            ),
+            SizedBox(height: h * 0.01),
+            Row(
+              children: [
+                Icon(Icons.location_on, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                customText(
+                  text: isTravel ? "المكان: $location" : "الفرع: $location",
+                  size: w * 0.04,
+                  color: Colors.grey[600],
+                ),
+              ],
+            ),
+            SizedBox(height: h * 0.01),
+            isTravel
+                ? Row(
+                    children: [
+                      Icon(Icons.directions_bus, color: Colors.grey[600]),
+                      const SizedBox(width: 8),
+                      customText(
+                        text: "موقع التجمع: $meetingPlace",
+                        size: w * 0.04,
+                        color: Colors.grey[600],
+                      ),
+                    ],
+                  )
+                : SizedBox.shrink(),
+            SizedBox(height: h * 0.02),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isTravel
+                    ? Colors.blue[100]!
+                    : (isSupport ? Colors.purple[100]! : Colors.green[100]!),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: customText(
+                text: "متاح $availableSeats مقعد",
+                size: w * 0.035,
+                color: isTravel
+                    ? Colors.blue[800]
+                    : (isSupport ? Colors.purple[800] : Colors.green[800]),
+              ),
+            ),
+            SizedBox(height: h * 0.02),
+            CustomGlowButton(
+              title: "انضمام",
+              width: double.infinity,
+              height: h * 0.05,
+              textSize: w * 0.035,
+              glowColor: isTravel
+                  ? Colors.blue[300]!
+                  : (isSupport ? Colors.purple[300]! : Colors.green[300]!),
+              backgroundColor: isTravel
+                  ? Colors.blue
+                  : (isSupport ? Colors.purple : Colors.green),
+              textColor: Colors.white,
+              borderRadius: 8,
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }
