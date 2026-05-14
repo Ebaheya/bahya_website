@@ -1,6 +1,7 @@
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/widgets/constant.dart';
 import 'package:flutter/material.dart';
+import 'package:bahya_app/helper/widgets/constant.dart' as constants;
 
 class CustomGlowButton extends StatelessWidget {
   final String title;
@@ -84,7 +85,7 @@ class CustomGlowButton extends StatelessWidget {
                 text: title,
                 size: textSize ?? getScreenHeight(context) * 0.02,
                 bold: true,
-                color: textColor ?? const Color(0xFFFF7BB0),
+                color: textColor ?? constants.textColor,
               ),
             ),
     );

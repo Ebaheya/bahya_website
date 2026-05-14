@@ -1,7 +1,6 @@
 import 'package:bahya_app/helper/widgets/constant.dart';
 import 'package:flutter/material.dart';
 
-
 Widget customText({
   required String text,
   required double size,
@@ -30,6 +29,7 @@ Widget customText({
     ),
   );
 }
+
 ScaffoldFeatureController<SnackBar, SnackBarClosedReason> customSnackBar({
   required BuildContext context,
   required String message,
@@ -111,7 +111,7 @@ Widget customLoading() {
 PreferredSizeWidget customAppBar({
   required BuildContext context,
   required String title,
-  bool isHomeBar = true,
+  required String subTitle,
   GlobalKey<ScaffoldState>? scaffoldKey,
 }) {
   final h = getScreenHeight(context);
@@ -121,6 +121,10 @@ PreferredSizeWidget customAppBar({
     preferredSize: Size.fromHeight(h * 0.1),
     child: Container(
       decoration: BoxDecoration(
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
         gradient: LinearGradient(
           colors: gradientColors,
           begin: Alignment.centerRight,
@@ -129,72 +133,43 @@ PreferredSizeWidget customAppBar({
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.all(8),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              isHomeBar
-                  ? Row(
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            scaffoldKey?.currentState?.openDrawer();
-                          },
-                          icon: const Icon(
-                            Icons.menu,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                        // GestureDetector(
-                        //   onTap: () {
-                        //     scaffoldKey?.currentState?.openDrawer();
-                        //   },
-                        //   child: const Icon(
-                        //     Icons.menu,
-                        //     color: Colors.white,
-                        //     size: 28,
-                        //   ),
-                        //   // child: CircleAvatar(
-                        //   //   radius: h * 0.023,
-                        //   //   backgroundColor: Colors.white,
-                        //   //   child: const Icon(
-                        //   //     Icons.person,
-                        //   //     color: Colors.pinkAccent,
-                        //   //   ),
-                        //   // ),
-                        // ),
-                        SizedBox(width: w * 0.02),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-
-              Row(
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.3),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.person, color: Colors.white),
+                ),
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   customText(
                     text: title,
-                    size: h * 0.02,
+                    size: w * 0.05,
                     bold: true,
                     color: Colors.white,
                   ),
-                  SizedBox(width: w * 0.015),
-                  CircleAvatar(
-                    radius: h * 0.02,
-                    backgroundColor: Colors.white,
-                    child: const Icon(
-                      Icons.favorite_border,
-                      color: Colors.pinkAccent,
-                    ),
+                  customText(
+                    text: subTitle,
+                    size: w * 0.03,
+                    bold: true,
+                    color: Colors.white,
                   ),
-                  if (!isHomeBar)
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
                 ],
               ),
             ],
