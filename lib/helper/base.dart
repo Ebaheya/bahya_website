@@ -1,5 +1,8 @@
+import 'dart:ui';
+
 import 'package:bahya_app/helper/custom_glow_buttom.dart';
 import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/screens/patients/profile.dart';
 import 'package:flutter/material.dart';
 
 Widget customText({
@@ -141,28 +144,58 @@ PreferredSizeWidget customAppBar({
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              icon == null
-                  ? SizedBox.shrink()
-                  : Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.3),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        onPressed: () {},
-                        icon: Icon(
-                          isHome ? Icons.home : icon,
-                          color: Colors.white,
-                        ),
-                      ),
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.3),
+                      blurRadius: 10,
+                      spreadRadius: 2,
                     ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    showGeneralDialog(
+                      context: context,
+                      barrierLabel: "Profile",
+                      barrierDismissible: true,
+                      barrierColor: Colors.black.withOpacity(0.2),
+                      transitionDuration: const Duration(milliseconds: 300),
+                      pageBuilder: (context, animation, secondaryAnimation) {
+                        return const Profile();
+                      },
+                      transitionBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                            final curvedAnimation = CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutBack,
+                            );
+
+                            return BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.25),
+                                  end: Offset.zero,
+                                ).animate(curvedAnimation),
+                                child: FadeTransition(
+                                  opacity: curvedAnimation,
+                                  child: child,
+                                ),
+                              ),
+                            );
+                          },
+                    );
+                  },
+                  icon: Icon(
+                    isHome ? Icons.person_2_outlined : icon,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
               Row(
                 children: [
                   Column(
