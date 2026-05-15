@@ -141,23 +141,28 @@ PreferredSizeWidget customAppBar({
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.3),
-                      blurRadius: 10,
-                      spreadRadius: 2,
+              icon == null
+                  ? SizedBox.shrink()
+                  : Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.3),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        onPressed: () {},
+                        icon: Icon(
+                          isHome ? Icons.home : icon,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-                child: IconButton(
-                  onPressed: () {},
-                  icon: Icon(icon ?? Icons.person, color: Colors.white),
-                ),
-              ),
               Row(
                 children: [
                   Column(
@@ -468,6 +473,113 @@ Widget serviceCards({
           ],
         ),
       ),
+    ),
+  );
+}
+
+Widget requestedState({required double w, required double h}) {
+  return Container(
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.3),
+          blurRadius: 7,
+          offset: const Offset(0, 0),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            customText(text: 'الحاله الإجمالية', size: w * 0.04),
+            SizedBox(width: 10),
+            Container(
+              width: w * 0.1,
+              height: h * 0.035,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_outline,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            Container(
+              height: h * 0.1,
+              width: w * 0.4,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 7,
+                    offset: const Offset(0, 0),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  customText(text: "1", size: w * 0.05, color: Colors.grey),
+                  SizedBox(height: 10),
+                  customText(
+                    text: "في الانتظار",
+                    size: w * 0.04,
+                    color: Colors.grey,
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              height: h * 0.1,
+              width: w * 0.4,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 7,
+                    offset: const Offset(0, 0),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  customText(text: "2", size: w * 0.05, color: Colors.green),
+                  SizedBox(height: 10),
+                  customText(
+                    text: "مقبولة",
+                    size: w * 0.04,
+                    color: Colors.green,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 20),
+      ],
     ),
   );
 }
