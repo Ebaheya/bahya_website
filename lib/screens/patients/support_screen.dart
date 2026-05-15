@@ -21,7 +21,7 @@ class SupportScreen extends StatelessWidget {
           textDirection: TextDirection.rtl,
           child: Column(
             children: [
-              serviceCards(
+              serviceInfo(
                 w: getScreenWidth(context),
                 h: getScreenHeight(context),
                 title: 'جلسة دعم نفسي جماعية',
@@ -31,7 +31,7 @@ class SupportScreen extends StatelessWidget {
                 availableSeats: 20,
                 isSupport: true,
               ),
-              serviceCards(
+              serviceInfo(
                 w: getScreenWidth(context),
                 h: getScreenHeight(context),
                 title: 'جلسة دعم نفسي فردية',

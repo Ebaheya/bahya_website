@@ -23,7 +23,7 @@ class ProgramsScreen extends StatelessWidget {
           textDirection: TextDirection.rtl,
           child: Column(
             children: [
-              serviceCards(
+              serviceInfo(
                 w: w,
                 h: h,
                 title: 'دروس القراءة والكتابة - المستوى الأول',
@@ -32,7 +32,7 @@ class ProgramsScreen extends StatelessWidget {
                 location: 'بهيه - الشيخ زايد',
                 availableSeats: 20,
               ),
-              serviceCards(
+              serviceInfo(
                 w: w,
                 h: h,
                 title: 'دروس القراءة والكتابة - المستوى الثاني',
@@ -48,4 +48,3 @@ class ProgramsScreen extends StatelessWidget {
     );
   }
 }
-

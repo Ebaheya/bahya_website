@@ -17,13 +17,48 @@ class RequestedService extends StatelessWidget {
         isHome: false,
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              SizedBox(height: 20),
-              requestedState(w: w, h: h),
-            ],
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                SizedBox(height: 20),
+                requestedState(w: w, h: h),
+                serviceInfo(
+                  isCompleted: true,
+                  isRequested: true,
+                  w: w,
+                  h: h,
+                  title: 'دروس محو الأمية - المستوى الأول',
+                  date: 'السبت والاثنين والأربعاء',
+                  time: '5:00 مساءً - 6:30 مساءً',
+                  location: 'بهيه - الشيخ زايد',
+                ),
+                serviceInfo(
+                  isSupport: true,
+                  isRequested: true,
+                  isUnderReview: true,
+                  w: w,
+                  h: h,
+                  title: 'دروس محو الأمية - المستوى الأول',
+                  date: 'السبت والاثنين والأربعاء',
+                  time: '5:00 مساءً - 6:30 مساءً',
+                  location: 'بهيه - الشيخ زايد',
+                ),
+                serviceInfo(
+                  isRequested: true,
+                  isTravel: true,
+                  w: w,
+                  h: h,
+                  title: 'دروس محو الأمية - المستوى الأول',
+                  date: 'السبت والاثنين والأربعاء',
+                  time: '5:00 مساءً - 6:30 مساءً',
+                  location: 'بهيه - الشيخ زايد',
+                  meetingPlace: 'محطة مترو الشيخ زايد',
+                ),
+              ],
+            ),
           ),
         ),
       ),

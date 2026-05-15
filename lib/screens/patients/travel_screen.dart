@@ -21,7 +21,7 @@ class TravelScreen extends StatelessWidget {
           textDirection: TextDirection.rtl,
           child: Column(
             children: [
-              serviceCards(
+              serviceInfo(
                 w: getScreenWidth(context),
                 h: getScreenHeight(context),
                 title: 'رحلة إلى المتحف المصري',
@@ -31,7 +31,7 @@ class TravelScreen extends StatelessWidget {
                 availableSeats: 10,
                 isTravel: true,
               ),
-              serviceCards(
+              serviceInfo(
                 w: getScreenWidth(context),
                 h: getScreenHeight(context),
                 title: 'نزهة في حديقة الأزهر',

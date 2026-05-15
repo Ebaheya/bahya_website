@@ -354,17 +354,20 @@ Widget serviceCard({
   );
 }
 
-Widget serviceCards({
+Widget serviceInfo({
   required double w,
   required double h,
   required String title,
   required String date,
   required String time,
   required String location,
-  required double availableSeats,
+  double? availableSeats,
+  bool isCompleted = false,
+  bool isUnderReview = false,
   bool isSupport = false,
   String? meetingPlace,
   bool isTravel = false,
+  bool isRequested = false,
 }) {
   return Padding(
     padding: const EdgeInsets.all(8.0),
@@ -385,91 +388,181 @@ Widget serviceCards({
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            customText(text: title, size: w * 0.04),
-            SizedBox(height: h * 0.01),
             Row(
               children: [
-                Icon(Icons.calendar_month, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                customText(
-                  text: isTravel ? 'موعد الانطلاق: $date' : 'التاريخ: $date',
-                  size: w * 0.04,
-                  color: Colors.grey[600],
+                isRequested
+                    ? Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isTravel
+                              ? Colors.blue[100]!
+                              : (isSupport
+                                    ? Colors.purple[100]!
+                                    : Colors.green[100]!),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          isTravel
+                              ? Icons.directions_bus_rounded
+                              : (isSupport
+                                    ? Icons.groups_rounded
+                                    : Icons.menu_book_rounded),
+                          size: w * 0.1,
+                          color: isTravel
+                              ? Colors.blue[400]!
+                              : (isSupport
+                                    ? Colors.purple[400]!
+                                    : Colors.green[400]!),
+                        ),
+                      )
+                    : SizedBox.shrink(),
+                Spacer(),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    customText(text: title, size: w * 0.04),
+                    SizedBox(height: h * 0.01),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_month, color: Colors.grey[600]),
+                        const SizedBox(width: 8),
+                        customText(
+                          text: isTravel
+                              ? 'موعد الانطلاق: $date'
+                              : 'التاريخ: $date',
+                          size: w * 0.035,
+                          color: Colors.grey[600],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: h * 0.01),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, color: Colors.grey[600]),
+                        const SizedBox(width: 8),
+                        customText(
+                          text: isTravel ? 'المده: $time' : 'الوقت: $time',
+                          size: w * 0.035,
+                          color: Colors.grey[600],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: h * 0.01),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, color: Colors.grey[600]),
+                        const SizedBox(width: 8),
+                        customText(
+                          text: isTravel
+                              ? "المكان: $location"
+                              : "الفرع: $location",
+                          size: w * 0.035,
+                          color: Colors.grey[600],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: h * 0.01),
+                    isTravel
+                        ? Row(
+                            children: [
+                              Icon(
+                                Icons.directions_bus,
+                                color: Colors.grey[600],
+                              ),
+                              const SizedBox(width: 8),
+                              customText(
+                                text: "موقع التجمع: $meetingPlace",
+                                size: w * 0.035,
+                                color: Colors.grey[600],
+                              ),
+                            ],
+                          )
+                        : SizedBox.shrink(),
+                  ],
                 ),
               ],
             ),
-            SizedBox(height: h * 0.01),
-            Row(
-              children: [
-                Icon(Icons.access_time, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                customText(
-                  text: isTravel ? 'المده: $time' : 'الوقت: $time',
-                  size: w * 0.04,
-                  color: Colors.grey[600],
-                ),
-              ],
-            ),
-            SizedBox(height: h * 0.01),
-            Row(
-              children: [
-                Icon(Icons.location_on, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                customText(
-                  text: isTravel ? "المكان: $location" : "الفرع: $location",
-                  size: w * 0.04,
-                  color: Colors.grey[600],
-                ),
-              ],
-            ),
-            SizedBox(height: h * 0.01),
-            isTravel
-                ? Row(
-                    children: [
-                      Icon(Icons.directions_bus, color: Colors.grey[600]),
-                      const SizedBox(width: 8),
-                      customText(
-                        text: "موقع التجمع: $meetingPlace",
-                        size: w * 0.04,
-                        color: Colors.grey[600],
-                      ),
-                    ],
+            SizedBox(height: h * 0.02),
+            isRequested
+                ? Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isCompleted
+                          ? Colors.green[100]!
+                          : (isUnderReview
+                                ? Colors.orange[100]!
+                                : Colors.red[100]!),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: customText(
+                      text: isCompleted
+                          ? "تمت الموافقة على طلبك"
+                          : (isUnderReview
+                                ? "طلبك قيد المراجعة"
+                                : "تم رفض طلبك"),
+                      size: w * 0.035,
+                      color: isCompleted
+                          ? Colors.green[800]
+                          : (isUnderReview
+                                ? Colors.orange[800]
+                                : Colors.red[800]!),
+                    ),
                   )
-                : SizedBox.shrink(),
-            SizedBox(height: h * 0.02),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isTravel
-                    ? Colors.blue[100]!
-                    : (isSupport ? Colors.purple[100]! : Colors.green[100]!),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: customText(
-                text: "متاح $availableSeats مقعد",
-                size: w * 0.035,
-                color: isTravel
-                    ? Colors.blue[800]
-                    : (isSupport ? Colors.purple[800] : Colors.green[800]),
-              ),
-            ),
-            SizedBox(height: h * 0.02),
-            CustomGlowButton(
-              title: "انضمام",
-              width: double.infinity,
-              height: h * 0.05,
-              textSize: w * 0.035,
-              glowColor: isTravel
-                  ? Colors.blue[300]!
-                  : (isSupport ? Colors.purple[300]! : Colors.green[300]!),
-              backgroundColor: isTravel
-                  ? Colors.blue
-                  : (isSupport ? Colors.purple : Colors.green),
-              textColor: Colors.white,
-              borderRadius: 8,
-              onPressed: () {},
-            ),
+                : Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isTravel
+                          ? Colors.blue[100]!
+                          : (isSupport
+                                ? Colors.purple[100]!
+                                : Colors.green[100]!),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: customText(
+                      text: "متاح $availableSeats مقعد",
+                      size: w * 0.035,
+                      color: isTravel
+                          ? Colors.blue[800]
+                          : (isSupport
+                                ? Colors.purple[800]
+                                : Colors.green[800]),
+                    ),
+                  ),
+            SizedBox(height: h * 0.01),
+            isRequested
+                ? SizedBox.shrink()
+                : CustomGlowButton(
+                    title: "انضمام",
+                    width: double.infinity,
+                    height: h * 0.05,
+                    textSize: w * 0.035,
+                    glowColor: isTravel
+                        ? Colors.blue[300]!
+                        : (isSupport
+                              ? Colors.purple[300]!
+                              : Colors.green[300]!),
+                    backgroundColor: isTravel
+                        ? Colors.blue
+                        : (isSupport ? Colors.purple : Colors.green),
+                    textColor: Colors.white,
+                    borderRadius: 8,
+                    onPressed: () {},
+                  ),
           ],
         ),
       ),
@@ -495,10 +588,8 @@ Widget requestedState({required double w, required double h}) {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            customText(text: 'الحاله الإجمالية', size: w * 0.04),
-            SizedBox(width: 10),
             Container(
               width: w * 0.1,
               height: h * 0.035,
@@ -515,12 +606,41 @@ Widget requestedState({required double w, required double h}) {
                 color: Colors.white,
               ),
             ),
+            SizedBox(width: 10),
+            customText(text: 'الحاله الإجمالية', size: w * 0.04),
           ],
         ),
         SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
+            Container(
+              height: h * 0.1,
+              width: w * 0.4,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 7,
+                    offset: const Offset(0, 0),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  customText(text: "2", size: w * 0.05, color: Colors.green),
+                  SizedBox(height: 10),
+                  customText(
+                    text: "مقبولة",
+                    size: w * 0.04,
+                    color: Colors.green,
+                  ),
+                ],
+              ),
+            ),
             Container(
               height: h * 0.1,
               width: w * 0.4,
@@ -545,33 +665,6 @@ Widget requestedState({required double w, required double h}) {
                     text: "في الانتظار",
                     size: w * 0.04,
                     color: Colors.grey,
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              height: h * 0.1,
-              width: w * 0.4,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 7,
-                    offset: const Offset(0, 0),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  customText(text: "2", size: w * 0.05, color: Colors.green),
-                  SizedBox(height: 10),
-                  customText(
-                    text: "مقبولة",
-                    size: w * 0.04,
-                    color: Colors.green,
                   ),
                 ],
               ),
