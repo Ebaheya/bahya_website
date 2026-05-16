@@ -73,19 +73,21 @@ class CustomGlowButton extends StatelessWidget {
                 ),
               ),
             )
-          : ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: backgroundColor ?? Colors.white,
-                foregroundColor: textColor ?? const Color(0xFFFF7BB0),
-                shape: RoundedRectangleBorder(borderRadius: radius),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: onPressed,
-              child: customText(
-                text: title,
-                size: textSize ?? getScreenHeight(context) * 0.02,
-                bold: true,
-                color: textColor ?? constants.textColor,
+          : SizedBox(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: backgroundColor ?? Colors.white,
+                  foregroundColor: textColor ?? const Color(0xFFFF7BB0),
+                  shape: RoundedRectangleBorder(borderRadius: radius),
+                  padding: const EdgeInsets.all(1),
+                ),
+                onPressed: onPressed,
+                child: customText(
+                  text: title,
+                  size: textSize ?? getScreenHeight(context) * 0.02,
+                  bold: true,
+                  color: textColor ?? constants.textColor,
+                ),
               ),
             ),
     );

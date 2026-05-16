@@ -14,11 +14,13 @@ Widget customText({
   Color? color,
   bool bold = true,
   TextAlign? align,
+  int maxLines = 1,
 }) {
   return Text(
     text,
     textAlign: isCenter ? TextAlign.center : TextAlign.start,
     textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+    maxLines: maxLines,
     style: TextStyle(
       fontSize: size,
       fontFamily: 'ArabicCustomFont',
@@ -119,12 +121,15 @@ PreferredSizeWidget customAppBar({
   IconData? icon,
   GlobalKey<ScaffoldState>? scaffoldKey,
   isHome = true,
+  void Function()? onIconPressed,
+  List<Widget>? widgets,
+  Size? preferredSize,
 }) {
   final h = getScreenHeight(context);
   final w = getScreenWidth(context);
 
   return PreferredSize(
-    preferredSize: Size.fromHeight(h * 0.1),
+    preferredSize: preferredSize ?? Size.fromHeight(h * 0.1),
     child: Container(
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.only(
@@ -140,98 +145,13 @@ PreferredSizeWidget customAppBar({
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
             children: [
-              (icon == null && isHome == false)
-                  ? SizedBox.shrink()
-                  : Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.3),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        onPressed: () {
-                          isHome
-                              ? showGeneralDialog(
-                                  context: context,
-                                  barrierLabel: "Profile",
-                                  barrierDismissible: true,
-                                  barrierColor: Colors.black.withOpacity(0.2),
-                                  transitionDuration: const Duration(
-                                    milliseconds: 300,
-                                  ),
-                                  pageBuilder:
-                                      (context, animation, secondaryAnimation) {
-                                        return const Profile();
-                                      },
-                                  transitionBuilder:
-                                      (
-                                        context,
-                                        animation,
-                                        secondaryAnimation,
-                                        child,
-                                      ) {
-                                        final curvedAnimation = CurvedAnimation(
-                                          parent: animation,
-                                          curve: Curves.easeOutBack,
-                                        );
-
-                                        return BackdropFilter(
-                                          filter: ImageFilter.blur(
-                                            sigmaX: 8,
-                                            sigmaY: 8,
-                                          ),
-                                          child: SlideTransition(
-                                            position: Tween<Offset>(
-                                              begin: const Offset(0, 0.25),
-                                              end: Offset.zero,
-                                            ).animate(curvedAnimation),
-                                            child: FadeTransition(
-                                              opacity: curvedAnimation,
-                                              child: child,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                )
-                              : null;
-                        },
-                        icon: Icon(
-                          isHome ? Icons.person_2_outlined : icon,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      customText(
-                        text: title,
-                        size: w * 0.05,
-                        bold: true,
-                        color: Colors.white,
-                      ),
-                      customText(
-                        text: subTitle,
-                        size: w * 0.03,
-                        bold: true,
-                        color: Colors.white,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 10),
-                  isHome
+                  (icon == null && isHome == false)
                       ? SizedBox.shrink()
                       : Container(
                           decoration: BoxDecoration(
@@ -247,16 +167,118 @@ PreferredSizeWidget customAppBar({
                           ),
                           child: IconButton(
                             onPressed: () {
-                              Navigator.pop(context);
+                              isHome
+                                  ? showGeneralDialog(
+                                      context: context,
+                                      barrierLabel: "Profile",
+                                      barrierDismissible: true,
+                                      barrierColor: Colors.black.withOpacity(
+                                        0.2,
+                                      ),
+                                      transitionDuration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      pageBuilder:
+                                          (
+                                            context,
+                                            animation,
+                                            secondaryAnimation,
+                                          ) {
+                                            return const Profile();
+                                          },
+                                      transitionBuilder:
+                                          (
+                                            context,
+                                            animation,
+                                            secondaryAnimation,
+                                            child,
+                                          ) {
+                                            final curvedAnimation =
+                                                CurvedAnimation(
+                                                  parent: animation,
+                                                  curve: Curves.easeOutBack,
+                                                );
+
+                                            return BackdropFilter(
+                                              filter: ImageFilter.blur(
+                                                sigmaX: 8,
+                                                sigmaY: 8,
+                                              ),
+                                              child: SlideTransition(
+                                                position: Tween<Offset>(
+                                                  begin: const Offset(0, 0.25),
+                                                  end: Offset.zero,
+                                                ).animate(curvedAnimation),
+                                                child: FadeTransition(
+                                                  opacity: curvedAnimation,
+                                                  child: child,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                    )
+                                  : onIconPressed != null
+                                  ? onIconPressed()
+                                  : null;
                             },
-                            icon: const Icon(
-                              Icons.arrow_forward_rounded,
+                            icon: Icon(
+                              isHome ? Icons.person_2_outlined : icon,
                               color: Colors.white,
                             ),
                           ),
                         ),
+                  Row(
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          customText(
+                            text: title,
+                            size: w * 0.05,
+                            bold: true,
+                            color: Colors.white,
+                          ),
+                          customText(
+                            text: subTitle,
+                            size: w * 0.03,
+                            bold: true,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 10),
+                      isHome
+                          ? SizedBox.shrink()
+                          : widgets != null
+                          ? SizedBox.shrink()
+                          : Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.3),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(0.3),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                icon: const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                    ],
+                  ),
                 ],
               ),
+              SizedBox(height: h * 0.02),
+              if (widgets != null) ...widgets,
             ],
           ),
         ),
@@ -722,5 +744,95 @@ Widget requestedState({required double w, required double h}) {
         SizedBox(height: 20),
       ],
     ),
+  );
+}
+
+Widget adminStateCards({required double w, required double h}) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceAround,
+    children: [
+      Container(
+        width: w * 0.25,
+        height: h * 0.18,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.av_timer_rounded, color: Colors.white, size: w * 0.06),
+            SizedBox(height: 4),
+            customText(text: '4', size: w * 0.035, color: Colors.white),
+            SizedBox(height: 4),
+            SizedBox(
+              width: w * 0.17,
+              child: customText(
+                text: 'طلبات قيد المراجعة',
+                size: w * 0.035,
+                maxLines: 3,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+      Container(
+        width: w * 0.25,
+        height: h * 0.18,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.person_add_alt_rounded,
+              color: Colors.white,
+              size: w * 0.06,
+            ),
+            SizedBox(height: 4),
+            customText(text: '4', size: w * 0.035, color: Colors.white),
+            SizedBox(height: 4),
+            SizedBox(
+              width: w * 0.17,
+              child: customText(
+                text: 'انضمامات جديدة اليوم',
+                size: w * 0.035,
+                maxLines: 3,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+      Container(
+        width: w * 0.25,
+        height: h * 0.18,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: w * 0.06),
+            SizedBox(height: 4),
+            customText(text: '4', size: w * 0.035, color: Colors.white),
+            SizedBox(height: 4),
+            SizedBox(
+              width: w * 0.17,
+              child: customText(
+                text: 'طلبات تمت الموافقة عليها',
+                size: w * 0.035,
+                maxLines: 3,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
   );
 }
