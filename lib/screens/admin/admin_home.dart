@@ -120,6 +120,18 @@ Widget requestedServiceCard({
   bool isTravel = false,
   bool isSupport = false,
 }) {
+  final Color primaryColor = isTravel
+      ? Colors.blue[400]!
+      : (isSupport ? Colors.purple[400]! : Colors.green[400]!);
+
+  final Color secondaryColor = isTravel
+      ? Colors.blue[100]!
+      : (isSupport ? Colors.purple[100]! : Colors.green[100]!);
+
+  final IconData serviceIcon = isTravel
+      ? Icons.directions_bus_rounded
+      : (isSupport ? Icons.groups_rounded : Icons.menu_book_rounded);
+
   return Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
@@ -127,98 +139,286 @@ Widget requestedServiceCard({
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 10,
-          offset: const Offset(0, 0),
+          color: Colors.pink.withOpacity(0.08),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
         ),
       ],
     ),
     child: Column(
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              height: h * 0.1,
-              width: w * 0.2,
+              height: h * 0.12,
+              width: w * 0.22,
               decoration: BoxDecoration(
-                color: isTravel
-                    ? Colors.blue[100]!
-                    : (isSupport ? Colors.purple[100]! : Colors.green[100]!),
-                borderRadius: BorderRadius.circular(12),
+                color: secondaryColor.withOpacity(0.35),
+                borderRadius: BorderRadius.circular(24),
               ),
-              child: Icon(
-                isTravel
-                    ? Icons.directions_bus_rounded
-                    : (isSupport
-                          ? Icons.groups_rounded
-                          : Icons.menu_book_rounded),
-                color: isTravel
-                    ? Colors.blue[400]!
-                    : (isSupport ? Colors.purple[400]! : Colors.green[400]!),
-                size: w * 0.1,
-              ),
+              child: Icon(serviceIcon, color: primaryColor, size: w * 0.1),
             ),
-            SizedBox(width: w * 0.02),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                customText(text: nameOfPatient, size: w * 0.035),
-                customText(
-                  text: 'الرقم الطبى : $medicalNumber',
-                  size: w * 0.035,
-                ),
-                SizedBox(height: 5),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+
+            SizedBox(width: w * 0.03),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  customText(
+                    text: nameOfPatient,
+                    size: w * 0.045,
+                    color: const Color(0xff7A004C),
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.purple[200]!.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
+
+                  SizedBox(height: h * 0.004),
+
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "الرقم الطبي : ",
+                          style: TextStyle(
+                            fontSize: w * 0.036,
+                            color: Colors.grey[700],
+                            fontFamily: 'ArabicCustomFont',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        TextSpan(
+                          text: medicalNumber,
+                          style: TextStyle(
+                            fontSize: w * 0.035,
+                            color: const Color(0xffEA4C89),
+                            fontFamily: 'ArabicCustomFont',
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      customText(
-                        text: 'الخدمه: $service',
-                        size: w * 0.03,
-                        color: Colors.black,
-                        maxLines: 3,
+
+                  SizedBox(height: h * 0.015),
+
+                  Container(
+                 
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFDF4FA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xffFF69A6).withOpacity(0.25),
                       ),
-                      const SizedBox(height: 4),
-                      customText(
-                        text: "تاريخ الطلب : $requestDate",
-                        size: w * 0.03,
-                        color: Colors.black,
-                      ),
-                    ],
+                    ),
+
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              RichText(
+                                softWrap: true,
+                                overflow: TextOverflow.visible,
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: "الخدمه: ",
+                                      style: TextStyle(
+                                        fontSize: w * 0.035,
+                                        color: Colors.grey[700],
+                                        fontFamily: 'ArabicCustomFont',
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: service,
+                                      style: TextStyle(
+                                        fontSize: w * 0.035,
+                                        color: const Color(0xffEA4C89),
+                                        fontFamily: 'ArabicCustomFont',
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: h * 0.012,
+                                ),
+                                child: Container(
+                                  height: 1.2,
+                                  width: double.infinity,
+                                  color: Colors.pink.withOpacity(0.25),
+                                ),
+                              ),
+
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_month_rounded,
+                                    color: Colors.deepPurpleAccent,
+                                    size: w * 0.05,
+                                  ),
+
+                                  SizedBox(width: w * 0.02),
+
+                                  Expanded(
+                                    child: RichText(
+                                      softWrap: true,
+                                      overflow: TextOverflow.visible,
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: "تاريخ الطلب: ",
+                                            style: TextStyle(
+                                              fontSize: w * 0.034,
+                                              color: Colors.grey[700],
+                                              fontFamily: 'ArabicCustomFont',
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text: requestDate,
+                                            style: TextStyle(
+                                              fontSize: w * 0.034,
+                                              color: const Color(0xffEA4C89),
+                                              fontFamily: 'ArabicCustomFont',
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(width: w * 0.03),
+
+                        Center(
+                          child: Container(
+                            height: h * 0.055,
+                            width: h * 0.055,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xffFF69A6).withOpacity(0.1),
+                            ),
+                            child: Icon(
+                              Icons.workspace_premium_outlined,
+                              color: const Color(0xffEA4C89),
+                              size: w * 0.065,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
-        SizedBox(height: h * 0.02),
+
+        SizedBox(height: h * 0.03),
+
         Row(
           children: [
-            CustomGlowButton(
-              width: w * 0.3,
-              height: h * 0.04,
-              borderRadius: 12,
-              title: "قبول الطلب",
-              onPressed: () {},
-              isGradient: true,
-              textSize: w * 0.04,
+            Expanded(
+              child: Container(
+                height: h * 0.065,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xff8E2DE2), Color(0xffFF4F9A)],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.pink.withOpacity(0.25),
+                      blurRadius: 15,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: () {},
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.white,
+                        ),
+
+                        SizedBox(width: w * 0.02),
+
+                        customText(
+                          text: "قبول الطلب",
+                          size: w * 0.04,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-            const Spacer(),
-            CustomGlowButton(
-              width: w * 0.3,
-              height: h * 0.04,
-              borderRadius: 12,
-              title: "رفض الطلب",
-              onPressed: () {},
-              isGradient: false,
-              textSize: w * 0.04,
+
+            SizedBox(width: w * 0.04),
+
+            Expanded(
+              child: Container(
+                height: h * 0.065,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xffFF69A6),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.pink.withOpacity(0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: () {},
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.close_rounded,
+                          color: Color(0xffFF4F9A),
+                        ),
+
+                        SizedBox(width: w * 0.02),
+
+                        customText(
+                          text: "رفض الطلب",
+                          size: w * 0.04,
+                          color: const Color(0xffB1005A),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
