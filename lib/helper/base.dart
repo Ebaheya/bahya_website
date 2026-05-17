@@ -1,6 +1,10 @@
 import 'dart:ui';
 
+import 'package:bahya_app/helper/custom_date_picker.dart';
+import 'package:bahya_app/helper/custom_form_textfield.dart';
 import 'package:bahya_app/helper/custom_glow_buttom.dart';
+import 'package:bahya_app/helper/custom_time_picker.dart';
+import 'package:bahya_app/helper/filter_dropdown.dart';
 import 'package:bahya_app/helper/widgets/constant.dart';
 import 'package:bahya_app/screens/patients/profile.dart';
 import 'package:flutter/material.dart';
@@ -834,5 +838,155 @@ Widget adminStateCards({required double w, required double h}) {
         ),
       ),
     ],
+  );
+}
+
+Widget serviceAddForm({
+  required BuildContext context,
+  required TextEditingController timeController,
+  required bool isTravel,
+  required Function(String) onChanged,
+}) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withOpacity(0.4),
+
+          blurRadius: 1,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        FilterDropdown(
+          borderRadius: BorderRadius.circular(8),
+          hint: "اختر نوع الخدمه",
+          items: const [
+            "خدمات تعليميه",
+            "رحلات و نزهات",
+            "مجموعات الدعم النفسي",
+          ],
+          onChanged: (onChanged),
+        ),
+        SizedBox(height: 15),
+        CustomFormTextField(
+          hintText: "اسم الخدمه مثال: محو الاميه  المستوى الاول",
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          keyboardType: CustomTextFieldType.text,
+
+          borderRadius: 8,
+        ),
+        SizedBox(height: 15),
+        Row(
+          children: [
+            SizedBox(
+              width: getScreenWidth(context) * 0.37,
+              child: CustomDatePickerField(
+                hintText: isTravel ? "تاريخ البدايه" : "تاريخ الخدمه",
+                controller: TextEditingController(),
+                borderRadius: 8,
+              ),
+            ),
+            const Spacer(),
+
+            SizedBox(
+              width: getScreenWidth(context) * 0.37,
+              child: CustomTimePickerField(
+                borderRadius: 8,
+                labelText: "الوقت",
+                hintText: "-- : --",
+                controller: timeController,
+                onTimeSelected: (time) {
+                  print(time.format(context));
+                },
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 15),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) {
+            return SizeTransition(
+              sizeFactor: animation,
+              axisAlignment: -1,
+              child: FadeTransition(opacity: animation, child: child),
+            );
+          },
+
+          child: isTravel
+              ? Column(
+                  key: const ValueKey("travelFields"),
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: CustomDatePickerField(
+                        hintText: "تاريخ النهايه",
+                        controller: TextEditingController(),
+                        borderRadius: 8,
+                      ),
+                    ),
+
+                    SizedBox(height: 15),
+
+                    CustomFormTextField(
+                      hintText: "مكان التجمع : مثال: الرياض - حي النخيل",
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      keyboardType: CustomTextFieldType.text,
+                      borderRadius: 8,
+                    ),
+
+                    SizedBox(height: 15),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: CustomTimePickerField(
+                        borderRadius: 8,
+                        labelText: "وقت الانطلاق",
+                        hintText: "-- : --",
+                        controller: timeController,
+                        onTimeSelected: (time) {
+                          print(time.format(context));
+                        },
+                      ),
+                    ),
+
+                    SizedBox(height: 15),
+                  ],
+                )
+              : const SizedBox.shrink(),
+        ),
+        CustomFormTextField(
+          hintText: "الموقع او الفرع : مثال: الرياض - حي النخيل",
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          keyboardType: CustomTextFieldType.text,
+
+          borderRadius: 8,
+        ),
+        SizedBox(height: 15),
+        CustomFormTextField(
+          hintText: "عدد المقاعد المتوفره : مثال: 10 مقاعد",
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          keyboardType: CustomTextFieldType.text,
+
+          borderRadius: 8,
+        ),
+        SizedBox(height: 15),
+        CustomGlowButton(
+          width: double.infinity,
+          borderRadius: 12,
+          title: "اضافة الخدمه",
+          onPressed: () {},
+          isGradient: true,
+        ),
+      ],
+    ),
   );
 }

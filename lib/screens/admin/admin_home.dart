@@ -33,7 +33,9 @@ class AdminHome extends StatelessWidget {
                   width: double.infinity,
                   borderRadius: 12,
                   title: "انشاء خدمه جديده ",
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/addService');
+                  },
                   isGradient: true,
                 ),
                 SizedBox(height: h * 0.02),
@@ -172,11 +174,7 @@ Widget requestedServiceCard({
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: isTravel
-                        ? Colors.blue[100]!
-                        : (isSupport
-                              ? Colors.purple[100]!
-                              : Colors.green[100]!),
+                    color: Colors.purple[200]!.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(

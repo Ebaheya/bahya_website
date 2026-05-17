@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 enum CustomTextFieldType { email, name, password, number, phone, text, date }
 
 class CustomFormTextField extends StatefulWidget {
-  final String labelText;
+  final String? labelText;
   final String? hintText;
   final AutovalidateMode autovalidateMode;
   final bool obscureText;
@@ -19,10 +19,10 @@ class CustomFormTextField extends StatefulWidget {
   final Function(String)? onChange;
   final bool isSearch;
   final bool isRequired;
-
+  final double? borderRadius;
   const CustomFormTextField({
     super.key,
-    required this.labelText,
+    this.labelText,
     this.hintText,
     required this.autovalidateMode,
     required this.keyboardType,
@@ -36,6 +36,7 @@ class CustomFormTextField extends StatefulWidget {
     this.onChange,
     this.isSearch = false,
     this.isRequired = true,
+    this.borderRadius,
   });
 
   @override
@@ -125,11 +126,11 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         );
 
         if (text.length < 8) {
-          return 'Password must be at least 8 characters';
+          return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
         }
 
         if (!passwordRegex.hasMatch(text)) {
-          return 'Password can contain only English letters, numbers, and special characters';
+          return 'كلمة المرور يمكن أن تحتوي فقط على حروف إنجليزية، أرقام، ورموز خاصة';  
         }
 
         break;
@@ -191,14 +192,14 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
       maxLines: widget.maxLines,
 
-      minLines: 1,
+      minLines: widget.maxLines,
 
       expands: false,
 
       style: TextStyle(
         color: Colors.black,
 
-        fontSize: width * 0.01,
+        fontSize: width * 0.04,
 
         fontFamily: 'ArabicCustomFont',
       ),
@@ -231,7 +232,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         labelStyle: TextStyle(
           color: Colors.black,
 
-          fontSize: width * 0.01,
+          fontSize: width * 0.1,
 
           fontFamily: 'ArabicCustomFont',
         ),
@@ -239,7 +240,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         hintStyle: TextStyle(
           color: Colors.grey,
 
-          fontSize: width * 0.01,
+          fontSize: width * 0.04,
 
           fontFamily: 'ArabicCustomFont',
         ),
@@ -259,13 +260,13 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         ),
 
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(widget.borderRadius ?? 30),
 
-          borderSide: const BorderSide(color: Colors.grey, width: 1.2),
+          borderSide: const BorderSide(color: Color(0xFFFF7BB0), width: 1.5),
         ),
 
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(widget.borderRadius ?? 30),
 
           borderSide: const BorderSide(color: Color(0xFFFF7BB0), width: 1.5),
         ),
@@ -273,7 +274,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         errorStyle: TextStyle(
           fontFamily: 'ArabicCustomFont',
 
-          fontSize: width * 0.01,
+          fontSize: width * 0.04,
         ),
       ),
     );
