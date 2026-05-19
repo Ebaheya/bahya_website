@@ -100,7 +100,6 @@ class _PatientsHomeState extends State<PatientsHome> {
 
                 const SizedBox(height: 28),
 
-                // here
                 sectionTitle(w: w, title: "مقالات مفيدة"),
 
                 const SizedBox(height: 14),
@@ -144,19 +143,12 @@ class _PatientsHomeState extends State<PatientsHome> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startDocked,
       bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(left: w * 0.5, bottom: 15),
+        padding: EdgeInsets.only(left: w * 0.4, bottom: 15),
         child: Container(
           height: 75,
           decoration: BoxDecoration(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(40),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -164,6 +156,7 @@ class _PatientsHomeState extends State<PatientsHome> {
               const SizedBox(width: 50),
               navButton(
                 w: w,
+                h: h,
                 title: "طلباتي",
                 isSelected: currentIndex == 1,
                 onTap: () {
@@ -274,26 +267,72 @@ class _PatientsHomeState extends State<PatientsHome> {
     required bool isSelected,
     required VoidCallback onTap,
     required double w,
+    required double h,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 110,
-        height: 42,
+        width: w * 0.45,
+        height: h * 0.06,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.pink[300]!, width: 1.5),
+          borderRadius: BorderRadius.circular(35),
+          border: Border.all(color: Colors.pink[100]!, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.pink[300]!.withOpacity(0.8),
-              blurRadius: 10,
+              color: Colors.pink.withOpacity(0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: Colors.pink[200]!.withOpacity(0.25),
+              blurRadius: 18,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        alignment: Alignment.center,
-        child: customText(text: title, size: w * 0.04, color: textColor),
+        child: Row(
+          children: [
+            Icon(
+              Icons.arrow_back_ios_rounded,
+              color: Colors.pink[300],
+              size: w * 0.05,
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: customText(
+                text: title,
+                size: w * 0.045,
+                color: textColor,
+                bold: true,
+              ),
+            ),
+            Container(
+              width: 1.5,
+              height: 30,
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              color: Colors.pink[100],
+            ),
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                ),
+              ),
+              child: const Icon(
+                Icons.assignment_outlined,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -262,7 +262,7 @@ Widget serviceCard({
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.arrow_back_ios_new_rounded,
+                Icons.arrow_forward_ios_rounded,
                 color: buttonColor,
                 size: w * 0.03,
               ),
@@ -535,107 +535,129 @@ Widget serviceInfo({
 }
 
 Widget requestedState({required double w, required double h}) {
+  Widget stateBox({
+    required String count,
+    required String title,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        height: h * 0.17,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              height: h * 0.055,
+              width: h * 0.055,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: w * 0.07),
+            ),
+
+            SizedBox(height: h * 0.012),
+
+            customText(text: count, size: w * 0.06, color: color, bold: true),
+
+            SizedBox(height: h * 0.004),
+
+            customText(text: title, size: w * 0.035, color: color, bold: true),
+
+            SizedBox(height: h * 0.01),
+
+            Container(
+              height: 4,
+              width: w * 0.07,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   return Container(
-    padding: const EdgeInsets.all(8),
+    width: double.infinity,
+    padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(24),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.3),
-          blurRadius: 7,
-          offset: const Offset(0, 0),
+          color: Colors.purple.withOpacity(0.08),
+          blurRadius: 24,
+          offset: const Offset(0, 8),
         ),
       ],
     ),
     child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            customText(
+              text: 'الحاله الإجمالية',
+              size: w * 0.045,
+              bold: true,
+              color: const Color(0xff14213D),
+            ),
+            const Spacer(),
             Container(
-              width: w * 0.1,
-              height: h * 0.035,
+              height: h * 0.045,
+              width: h * 0.045,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: gradientColors,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.check_circle_outline,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.trending_up_rounded, color: Colors.white),
             ),
-            SizedBox(width: 10),
-            customText(text: 'الحاله الإجمالية', size: w * 0.04),
           ],
         ),
-        SizedBox(height: 10),
+
+        SizedBox(height: h * 0.025),
+
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            Container(
-              height: h * 0.1,
-              width: w * 0.4,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 7,
-                    offset: const Offset(0, 0),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  customText(text: "2", size: w * 0.05, color: Colors.green),
-                  SizedBox(height: 10),
-                  customText(
-                    text: "مقبولة",
-                    size: w * 0.04,
-                    color: Colors.green,
-                  ),
-                ],
-              ),
+            stateBox(
+              count: "1",
+              title: "مرفوض",
+              icon: Icons.close_rounded,
+              color: Colors.pink,
             ),
-            Container(
-              height: h * 0.1,
-              width: w * 0.4,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 7,
-                    offset: const Offset(0, 0),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  customText(text: "1", size: w * 0.05, color: Colors.grey),
-                  SizedBox(height: 10),
-                  customText(
-                    text: "في الانتظار",
-                    size: w * 0.04,
-                    color: Colors.grey,
-                  ),
-                ],
-              ),
+            stateBox(
+              count: "1",
+              title: "في الانتظار",
+              icon: Icons.access_time_rounded,
+              color: Colors.deepPurple,
+            ),
+            stateBox(
+              count: "2",
+              title: "مقبولة",
+              icon: Icons.check_circle_outline_rounded,
+              color: Colors.green,
             ),
           ],
         ),
-        SizedBox(height: 20),
       ],
     ),
   );
