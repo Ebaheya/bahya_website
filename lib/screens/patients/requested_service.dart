@@ -11,6 +11,7 @@ class RequestedService extends StatelessWidget {
     final w = getScreenWidth(context);
     final h = getScreenHeight(context);
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: customAppBar(
         context: context,
         title: 'طلباتي',
@@ -25,7 +26,7 @@ class RequestedService extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                SizedBox(height: 20),
+                 SizedBox(height: h * 0.15),
                 requestedState(w: w, h: h),
                 serviceInfo(
                   isCompleted: true,

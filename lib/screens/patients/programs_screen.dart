@@ -11,6 +11,7 @@ class ProgramsScreen extends StatelessWidget {
     final w = getScreenWidth(context);
     final h = getScreenHeight(context);
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: backgroundColor,
       appBar: customAppBar(
         context: context,
@@ -24,6 +25,7 @@ class ProgramsScreen extends StatelessWidget {
           textDirection: TextDirection.rtl,
           child: Column(
             children: [
+              SizedBox(height: h * 0.15),
               serviceInfo(
                 w: w,
                 h: h,

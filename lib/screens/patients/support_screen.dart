@@ -8,7 +8,9 @@ class SupportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = getScreenHeight(context);
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: backgroundColor,
       appBar: customAppBar(
         context: context,
@@ -22,6 +24,7 @@ class SupportScreen extends StatelessWidget {
           textDirection: TextDirection.rtl,
           child: Column(
             children: [
+              SizedBox(height: h * 0.15),
               serviceInfo(
                 w: getScreenWidth(context),
                 h: getScreenHeight(context),
@@ -42,7 +45,7 @@ class SupportScreen extends StatelessWidget {
                 availableSeats: 10,
                 isSupport: true,
               ),
-                   const SizedBox(height: 20),
+              const SizedBox(height: 20),
             ],
           ),
         ),

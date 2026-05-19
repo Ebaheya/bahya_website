@@ -8,7 +8,9 @@ class TravelScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = getScreenHeight(context);
     return Scaffold(
+extendBodyBehindAppBar: true,
       backgroundColor: backgroundColor,
       appBar: customAppBar(
         context: context,
@@ -22,6 +24,7 @@ class TravelScreen extends StatelessWidget {
           textDirection: TextDirection.rtl,
           child: Column(
             children: [
+               SizedBox(height: h * 0.15),
               serviceInfo(
                 w: getScreenWidth(context),
                 h: getScreenHeight(context),

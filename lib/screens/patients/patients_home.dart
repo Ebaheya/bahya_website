@@ -20,15 +20,13 @@ class _PatientsHomeState extends State<PatientsHome> {
 
     return Scaffold(
       extendBody: true,
-
+      extendBodyBehindAppBar: true,
       appBar: customAppBar(
         title: "أهلاً بعودتك، البطلة",
         subTitle: 'اليوم هو بداية جديدة مليئة بالأمل',
         context: context,
       ),
-
       backgroundColor: backgroundColor,
-
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: Padding(
@@ -36,28 +34,12 @@ class _PatientsHomeState extends State<PatientsHome> {
           child: SingleChildScrollView(
             child: Column(
               children: [
+                SizedBox(height: h * 0.15),
                 chatBotCard(w: w, h: h),
 
                 const SizedBox(height: 20),
 
-                Row(
-                  children: [
-                    Container(
-                      width: 4,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.pink[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    customText(
-                      text: "الخدمات المجتمعية",
-                      size: w * 0.05,
-                      isCenter: false,
-                    ),
-                  ],
-                ),
+                sectionTitle(w: w, title: "الخدمات المجتمعية"),
 
                 const SizedBox(height: 20),
 
@@ -79,9 +61,7 @@ class _PatientsHomeState extends State<PatientsHome> {
                         salesBackgroundColor: Colors.purple[300]!,
                       ),
                     ),
-
                     const SizedBox(width: 12),
-
                     Expanded(
                       child: serviceCard(
                         title: "الرحلات و التنزهات",
@@ -98,9 +78,7 @@ class _PatientsHomeState extends State<PatientsHome> {
                         salesBackgroundColor: Colors.blue[300]!,
                       ),
                     ),
-
                     const SizedBox(width: 12),
-
                     Expanded(
                       child: serviceCard(
                         title: "البرامج التعليمية",
@@ -118,6 +96,44 @@ class _PatientsHomeState extends State<PatientsHome> {
                       ),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 28),
+
+                // here
+                sectionTitle(w: w, title: "مقالات مفيدة"),
+
+                const SizedBox(height: 14),
+
+                articleCard(
+                  w: w,
+                  icon: Icons.favorite_rounded,
+                  topic: "نصائح للتعامل مع القلق أثناء العلاج",
+                  subTopic: "خطوات بسيطة تساعدك على الهدوء والدعم النفسي",
+                  color: Colors.pink,
+                  onTap: () {},
+                ),
+
+                const SizedBox(height: 12),
+
+                articleCard(
+                  w: w,
+                  icon: Icons.restaurant_rounded,
+                  topic: "أهمية التغذية الصحية",
+                  subTopic: "أكلات مفيدة تساعد جسمك خلال رحلة العلاج",
+                  color: Colors.green,
+                  onTap: () {},
+                ),
+
+                const SizedBox(height: 12),
+
+                articleCard(
+                  w: w,
+                  icon: Icons.medical_services_rounded,
+                  topic: "متى أحتاج للتواصل مع الطبيب؟",
+                  subTopic: "علامات مهمة لا يجب تجاهلها أثناء المتابعة",
+                  color: Colors.blue,
+                  onTap: () {},
                 ),
 
                 const SizedBox(height: 100),
@@ -153,12 +169,101 @@ class _PatientsHomeState extends State<PatientsHome> {
                 onTap: () {
                   setState(() {
                     currentIndex = 1;
-                    Navigator.pushNamed(context, '/requestedService');
                   });
+                  Navigator.pushNamed(context, '/requestedService');
                 },
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget sectionTitle({required double w, required String title}) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 24,
+          decoration: BoxDecoration(
+            color: Colors.pink[300],
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        customText(text: title, size: w * 0.05, isCenter: false),
+      ],
+    );
+  }
+
+  Widget articleCard({
+    required double w,
+    required IconData icon,
+    required String topic,
+    required String subTopic,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              height: w * 0.14,
+              width: w * 0.14,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: color, size: w * 0.07),
+            ),
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  customText(
+                    text: topic,
+                    size: w * 0.035,
+                    bold: true,
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 4),
+                  customText(
+                    text: subTopic,
+                    size: w * 0.028,
+                    color: Colors.grey,
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: color,
+              size: w * 0.045,
+            ),
+          ],
         ),
       ),
     );
@@ -188,7 +293,7 @@ class _PatientsHomeState extends State<PatientsHome> {
           ],
         ),
         alignment: Alignment.center,
-        child: customText(text: 'طلباتى', size: w * 0.04, color: textColor),
+        child: customText(text: title, size: w * 0.04, color: textColor),
       ),
     );
   }
