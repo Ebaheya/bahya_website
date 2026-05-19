@@ -6,7 +6,6 @@ import 'package:bahya_app/helper/custom_glow_buttom.dart';
 import 'package:bahya_app/helper/custom_time_picker.dart';
 import 'package:bahya_app/helper/filter_dropdown.dart';
 import 'package:bahya_app/helper/widgets/constant.dart';
-import 'package:bahya_app/screens/patients/profile.dart';
 import 'package:flutter/material.dart';
 
 Widget customText({
@@ -118,179 +117,6 @@ Widget customLoading() {
   );
 }
 
-PreferredSizeWidget customAppBar({
-  required BuildContext context,
-  required String title,
-  required String subTitle,
-  IconData? icon,
-  GlobalKey<ScaffoldState>? scaffoldKey,
-  isHome = true,
-  void Function()? onIconPressed,
-  List<Widget>? widgets,
-  Size? preferredSize,
-}) {
-  final h = getScreenHeight(context);
-  final w = getScreenWidth(context);
-
-  return PreferredSize(
-    preferredSize: preferredSize ?? Size.fromHeight(h * 0.1),
-    child: Container(
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-        gradient: LinearGradient(
-          colors: gradientColors,
-          begin: Alignment.centerRight,
-          end: Alignment.centerLeft,
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  (icon == null && isHome == false)
-                      ? SizedBox.shrink()
-                      : Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.3),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.white.withOpacity(0.3),
-                                blurRadius: 10,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: IconButton(
-                            onPressed: () {
-                              isHome
-                                  ? showGeneralDialog(
-                                      context: context,
-                                      barrierLabel: "Profile",
-                                      barrierDismissible: true,
-                                      barrierColor: Colors.black.withOpacity(
-                                        0.2,
-                                      ),
-                                      transitionDuration: const Duration(
-                                        milliseconds: 300,
-                                      ),
-                                      pageBuilder:
-                                          (
-                                            context,
-                                            animation,
-                                            secondaryAnimation,
-                                          ) {
-                                            return const Profile();
-                                          },
-                                      transitionBuilder:
-                                          (
-                                            context,
-                                            animation,
-                                            secondaryAnimation,
-                                            child,
-                                          ) {
-                                            final curvedAnimation =
-                                                CurvedAnimation(
-                                                  parent: animation,
-                                                  curve: Curves.easeOutBack,
-                                                );
-
-                                            return BackdropFilter(
-                                              filter: ImageFilter.blur(
-                                                sigmaX: 8,
-                                                sigmaY: 8,
-                                              ),
-                                              child: SlideTransition(
-                                                position: Tween<Offset>(
-                                                  begin: const Offset(0, 0.25),
-                                                  end: Offset.zero,
-                                                ).animate(curvedAnimation),
-                                                child: FadeTransition(
-                                                  opacity: curvedAnimation,
-                                                  child: child,
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                    )
-                                  : onIconPressed != null
-                                  ? onIconPressed()
-                                  : null;
-                            },
-                            icon: Icon(
-                              isHome ? Icons.person_2_outlined : icon,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                  Row(
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          customText(
-                            text: title,
-                            size: w * 0.05,
-                            bold: true,
-                            color: Colors.white,
-                          ),
-                          customText(
-                            text: subTitle,
-                            size: w * 0.03,
-                            bold: true,
-                            color: Colors.white,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 10),
-                      isHome
-                          ? SizedBox.shrink()
-                          : widgets != null
-                          ? SizedBox.shrink()
-                          : Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.3),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.white.withOpacity(0.3),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              child: IconButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                icon: const Icon(
-                                  Icons.arrow_forward_rounded,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(height: h * 0.02),
-              if (widgets != null) ...widgets,
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
 Widget chatBotCard({required double w, required double h}) {
   return Center(
     child: Column(
@@ -374,56 +200,76 @@ Widget serviceCard({
   required Color buttonColor,
   required Color? salesBackgroundColor,
 }) {
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 10,
-          spreadRadius: 5,
-        ),
-      ],
-    ),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: primaryColor,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                spreadRadius: 5,
-              ),
-            ],
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: Container(
+      height: h * 0.24,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: primaryColor.withOpacity(0.6)),
+        boxShadow: [
+          BoxShadow(
+            color: secondaryColor.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
-          child: Icon(icon, size: w * 0.1, color: secondaryColor),
-        ),
-        const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            customText(text: title, size: w * 0.04, bold: true),
-            customText(text: description, size: w * 0.03, color: Colors.grey),
-          ],
-        ),
-        Spacer(),
-        CustomGlowButton(
-          title: "انضمى الان",
-          onPressed: onTap,
-          width: w * 0.2,
-          height: h * 0.05,
-          textSize: w * 0.025,
-          backgroundColor: buttonColor,
-          textColor: Colors.white,
-          glowColor: salesBackgroundColor,
-        ),
-      ],
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: h * 0.065,
+            width: h * 0.065,
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.75),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: secondaryColor, size: w * 0.065),
+          ),
+
+          SizedBox(height: h * 0.015),
+
+          customText(
+            text: title,
+            size: w * 0.032,
+            bold: true,
+            isCenter: true,
+            maxLines: 2,
+          ),
+
+          SizedBox(height: h * 0.008),
+
+          Expanded(
+            child: customText(
+              text: description,
+              size: w * 0.026,
+              color: Colors.grey,
+              isCenter: true,
+              maxLines: 3,
+            ),
+          ),
+
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Container(
+              height: h * 0.035,
+              width: h * 0.035,
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.8),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: buttonColor,
+                size: w * 0.03,
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -443,202 +289,246 @@ Widget serviceInfo({
   bool isTravel = false,
   bool isRequested = false,
 }) {
-  return Padding(
-    padding: const EdgeInsets.all(8.0),
-    child: Container(
+  final Color mainColor = isTravel
+      ? Colors.blue[600]!
+      : (isSupport ? Colors.purple[600]! : Colors.green[700]!);
+
+  final Color lightColor = isTravel
+      ? Colors.blue[50]!
+      : (isSupport ? Colors.purple[50]! : Colors.green[50]!);
+
+  final IconData mainIcon = isTravel
+      ? Icons.directions_bus_rounded
+      : (isSupport ? Icons.groups_rounded : Icons.menu_book_rounded);
+
+  Widget infoRow({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(bottom: h * 0.01),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            blurRadius: 5,
-            offset: const Offset(0, 3),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: h * 0.035,
+            height: h * 0.035,
+            decoration: BoxDecoration(
+              color: lightColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: mainColor, size: w * 0.04),
+          ),
+          SizedBox(width: w * 0.025),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: title,
+                    style: TextStyle(
+                      fontSize: w * 0.036,
+                      color: Colors.grey[700],
+                      fontFamily: 'ArabicCustomFont',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  TextSpan(
+                    text: value,
+                    style: TextStyle(
+                      fontSize: w * 0.035,
+                      color: mainColor,
+                      fontFamily: 'ArabicCustomFont',
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                isRequested
-                    ? Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isTravel
-                              ? Colors.blue[100]!
-                              : (isSupport
-                                    ? Colors.purple[100]!
-                                    : Colors.green[100]!),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              spreadRadius: 5,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          isTravel
-                              ? Icons.directions_bus_rounded
-                              : (isSupport
-                                    ? Icons.groups_rounded
-                                    : Icons.menu_book_rounded),
-                          size: w * 0.1,
-                          color: isTravel
-                              ? Colors.blue[400]!
-                              : (isSupport
-                                    ? Colors.purple[400]!
-                                    : Colors.green[400]!),
-                        ),
-                      )
-                    : SizedBox.shrink(),
-                Spacer(),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    customText(text: title, size: w * 0.04),
-                    SizedBox(height: h * 0.01),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_month, color: Colors.grey[600]),
-                        const SizedBox(width: 8),
-                        customText(
-                          text: isTravel
-                              ? 'موعد الانطلاق: $date'
-                              : 'التاريخ: $date',
-                          size: w * 0.035,
-                          color: Colors.grey[600],
-                        ),
-                      ],
+    );
+  }
+
+  return Padding(
+    padding: const EdgeInsets.all(8.0),
+    child: Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: h * 0.075,
+                    height: h * 0.075,
+                    decoration: BoxDecoration(
+                      color: lightColor,
+                      shape: BoxShape.circle,
                     ),
-                    SizedBox(height: h * 0.01),
-                    Row(
-                      children: [
-                        Icon(Icons.access_time, color: Colors.grey[600]),
-                        const SizedBox(width: 8),
-                        customText(
-                          text: isTravel ? 'المده: $time' : 'الوقت: $time',
-                          size: w * 0.035,
-                          color: Colors.grey[600],
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: h * 0.01),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on, color: Colors.grey[600]),
-                        const SizedBox(width: 8),
-                        customText(
-                          text: isTravel
-                              ? "المكان: $location"
-                              : "الفرع: $location",
-                          size: w * 0.035,
-                          color: Colors.grey[600],
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: h * 0.01),
-                    isTravel
-                        ? Row(
-                            children: [
-                              Icon(
-                                Icons.directions_bus,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 8),
-                              customText(
-                                text: "موقع التجمع: $meetingPlace",
-                                size: w * 0.035,
-                                color: Colors.grey[600],
-                              ),
-                            ],
-                          )
-                        : SizedBox.shrink(),
-                  ],
+                    child: Icon(mainIcon, color: mainColor, size: w * 0.075),
+                  ),
+                  // Positioned(
+                  //   top: -3,
+                  //   right: -3,
+                  //   child: Container(
+                  //     width: h * 0.027,
+                  //     height: h * 0.027,
+                  //     decoration: BoxDecoration(
+                  //       color: mainColor,
+                  //       shape: BoxShape.circle,
+                  //       border: Border.all(color: Colors.white, width: 2),
+                  //     ),
+                  //     child: Icon(
+                  //       Icons.star_rounded,
+                  //       color: Colors.white,
+                  //       size: w * 0.03,
+                  //     ),
+                  //   ),
+                  // ),
+                ],
+              ),
+
+              Expanded(
+                child: customText(
+                  text: title,
+                  size: w * 0.043,
+                  bold: true,
+                  color: const Color(0xff14213D),
+                  maxLines: 2,
                 ),
-              ],
+              ),
+            ],
+          ),
+
+          SizedBox(height: h * 0.02),
+
+          infoRow(
+            icon: Icons.calendar_month_rounded,
+            title: isTravel ? 'موعد الانطلاق: ' : 'التاريخ: ',
+            value: date,
+          ),
+
+          infoRow(
+            icon: Icons.access_time_rounded,
+            title: isTravel ? 'المده: ' : 'الوقت: ',
+            value: time,
+          ),
+
+          infoRow(
+            icon: Icons.location_on_rounded,
+            title: isTravel ? "المكان: " : "الفرع: ",
+            value: location,
+          ),
+
+          if (isTravel)
+            infoRow(
+              icon: Icons.directions_bus_rounded,
+              title: "موقع التجمع: ",
+              value: meetingPlace ?? "غير محدد",
             ),
-            SizedBox(height: h * 0.02),
-            isRequested
-                ? Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isCompleted
-                          ? Colors.green[100]!
-                          : (isUnderReview
-                                ? Colors.orange[100]!
-                                : Colors.red[100]!),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: customText(
-                      text: isCompleted
-                          ? "تمت الموافقة على طلبك"
-                          : (isUnderReview
-                                ? "طلبك قيد المراجعة"
-                                : "تم رفض طلبك"),
-                      size: w * 0.035,
-                      color: isCompleted
-                          ? Colors.green[800]
-                          : (isUnderReview
-                                ? Colors.orange[800]
-                                : Colors.red[800]!),
-                    ),
-                  )
-                : Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isTravel
-                          ? Colors.blue[100]!
-                          : (isSupport
-                                ? Colors.purple[100]!
-                                : Colors.green[100]!),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: customText(
-                      text: "متاح $availableSeats مقعد",
-                      size: w * 0.035,
-                      color: isTravel
-                          ? Colors.blue[800]
-                          : (isSupport
-                                ? Colors.purple[800]
-                                : Colors.green[800]),
-                    ),
+
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: h * 0.008),
+            child: Divider(
+              color: Colors.grey.withOpacity(0.25),
+              thickness: 1,
+              height: 1,
+            ),
+          ),
+
+          SizedBox(height: h * 0.012),
+
+          isRequested
+              ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9,
                   ),
-            SizedBox(height: h * 0.01),
-            isRequested
-                ? SizedBox.shrink()
-                : CustomGlowButton(
-                    title: "انضمام",
-                    width: double.infinity,
-                    height: h * 0.05,
-                    textSize: w * 0.035,
-                    glowColor: isTravel
-                        ? Colors.blue[300]!
-                        : (isSupport
-                              ? Colors.purple[300]!
-                              : Colors.green[300]!),
-                    backgroundColor: isTravel
-                        ? Colors.blue
-                        : (isSupport ? Colors.purple : Colors.green),
-                    textColor: Colors.white,
-                    borderRadius: 8,
-                    onPressed: () {},
+                  decoration: BoxDecoration(
+                    color: isCompleted
+                        ? Colors.green[50]
+                        : (isUnderReview ? Colors.orange[50] : Colors.red[50]),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-          ],
-        ),
+                  child: customText(
+                    text: isCompleted
+                        ? "تمت الموافقة على طلبك"
+                        : (isUnderReview ? "طلبك قيد المراجعة" : "تم رفض طلبك"),
+                    size: w * 0.033,
+                    color: isCompleted
+                        ? Colors.green[800]
+                        : (isUnderReview
+                              ? Colors.orange[800]
+                              : Colors.red[800]),
+                  ),
+                )
+              : Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9,
+                  ),
+                  decoration: BoxDecoration(
+                    color: lightColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.groups_rounded,
+                        color: mainColor,
+                        size: w * 0.045,
+                      ),
+                      Expanded(
+                        child: customText(
+                          text: "متاح $availableSeats مقعد",
+                          size: w * 0.033,
+                          color: mainColor,
+                          bold: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+          SizedBox(height: h * 0.012),
+
+          isRequested
+              ? const SizedBox.shrink()
+              : CustomGlowButton(
+                  title: "الانضمام الآن",
+                  width: double.infinity,
+                  height: h * 0.052,
+                  textSize: w * 0.035,
+                  glowColor: mainColor.withOpacity(0.45),
+                  backgroundColor: mainColor,
+                  textColor: Colors.white,
+                  borderRadius: 10,
+                  onPressed: () {},
+                ),
+        ],
       ),
     ),
   );
@@ -985,6 +875,322 @@ Widget serviceAddForm({
           title: "اضافة الخدمه",
           onPressed: () {},
           isGradient: true,
+        ),
+      ],
+    ),
+  );
+}
+
+Widget requestedServiceCard({
+  required double w,
+  required double h,
+  required String nameOfPatient,
+  required String medicalNumber,
+  required String service,
+  required String requestDate,
+  bool isTravel = false,
+  bool isSupport = false,
+}) {
+  final Color primaryColor = isTravel
+      ? Colors.blue[400]!
+      : (isSupport ? Colors.purple[400]! : Colors.green[400]!);
+
+  final Color secondaryColor = isTravel
+      ? Colors.blue[100]!
+      : (isSupport ? Colors.purple[100]! : Colors.green[100]!);
+
+  final IconData serviceIcon = isTravel
+      ? Icons.directions_bus_rounded
+      : (isSupport ? Icons.groups_rounded : Icons.menu_book_rounded);
+
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.pink.withOpacity(0.08),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: h * 0.12,
+              width: w * 0.22,
+              decoration: BoxDecoration(
+                color: secondaryColor.withOpacity(0.35),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Icon(serviceIcon, color: primaryColor, size: w * 0.1),
+            ),
+
+            SizedBox(width: w * 0.03),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  customText(
+                    text: nameOfPatient,
+                    size: w * 0.045,
+                    color: const Color(0xff7A004C),
+                  ),
+
+                  SizedBox(height: h * 0.004),
+
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "الرقم الطبي : ",
+                          style: TextStyle(
+                            fontSize: w * 0.036,
+                            color: Colors.grey[700],
+                            fontFamily: 'ArabicCustomFont',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        TextSpan(
+                          text: medicalNumber,
+                          style: TextStyle(
+                            fontSize: w * 0.035,
+                            color: const Color(0xffEA4C89),
+                            fontFamily: 'ArabicCustomFont',
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: h * 0.015),
+
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFDF4FA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xffFF69A6).withOpacity(0.25),
+                      ),
+                    ),
+
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              RichText(
+                                softWrap: true,
+                                overflow: TextOverflow.visible,
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: "الخدمه: ",
+                                      style: TextStyle(
+                                        fontSize: w * 0.035,
+                                        color: Colors.grey[700],
+                                        fontFamily: 'ArabicCustomFont',
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: service,
+                                      style: TextStyle(
+                                        fontSize: w * 0.035,
+                                        color: const Color(0xffEA4C89),
+                                        fontFamily: 'ArabicCustomFont',
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: h * 0.012,
+                                ),
+                                child: Container(
+                                  height: 1.2,
+                                  width: double.infinity,
+                                  color: Colors.pink.withOpacity(0.25),
+                                ),
+                              ),
+
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_month_rounded,
+                                    color: Colors.deepPurpleAccent,
+                                    size: w * 0.05,
+                                  ),
+
+                                  SizedBox(width: w * 0.02),
+
+                                  Expanded(
+                                    child: RichText(
+                                      softWrap: true,
+                                      overflow: TextOverflow.visible,
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: "تاريخ الطلب: ",
+                                            style: TextStyle(
+                                              fontSize: w * 0.034,
+                                              color: Colors.grey[700],
+                                              fontFamily: 'ArabicCustomFont',
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text: requestDate,
+                                            style: TextStyle(
+                                              fontSize: w * 0.034,
+                                              color: const Color(0xffEA4C89),
+                                              fontFamily: 'ArabicCustomFont',
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(width: w * 0.03),
+
+                        Center(
+                          child: Container(
+                            height: h * 0.055,
+                            width: h * 0.055,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xffFF69A6).withOpacity(0.1),
+                            ),
+                            child: Icon(
+                              Icons.workspace_premium_outlined,
+                              color: const Color(0xffEA4C89),
+                              size: w * 0.065,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        SizedBox(height: h * 0.03),
+
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: h * 0.065,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xff8E2DE2), Color(0xffFF4F9A)],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.pink.withOpacity(0.25),
+                      blurRadius: 15,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: () {},
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.white,
+                        ),
+
+                        SizedBox(width: w * 0.02),
+
+                        customText(
+                          text: "قبول الطلب",
+                          size: w * 0.04,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            SizedBox(width: w * 0.04),
+
+            Expanded(
+              child: Container(
+                height: h * 0.065,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xffFF69A6),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.pink.withOpacity(0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: () {},
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.close_rounded,
+                          color: Color(0xffFF4F9A),
+                        ),
+
+                        SizedBox(width: w * 0.02),
+
+                        customText(
+                          text: "رفض الطلب",
+                          size: w * 0.04,
+                          color: const Color(0xffB1005A),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     ),

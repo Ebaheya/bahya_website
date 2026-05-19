@@ -26,7 +26,7 @@ class AppRoute {
       case '/addService':
         return MaterialPageRoute(builder: (_) => AddService());
       default:
-        return MaterialPageRoute(builder: (_) => AdminHome());
+        return MaterialPageRoute(builder: (_) => PatientsHome());
     }
   }
 }

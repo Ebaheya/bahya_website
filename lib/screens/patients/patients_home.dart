@@ -1,5 +1,6 @@
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 
 class PatientsHome extends StatefulWidget {
@@ -39,64 +40,84 @@ class _PatientsHomeState extends State<PatientsHome> {
 
                 const SizedBox(height: 20),
 
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: customText(
-                    text: "الخدمات المجتمعية",
-                    size: w * 0.05,
-                    isCenter: false,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.pink[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    customText(
+                      text: "الخدمات المجتمعية",
+                      size: w * 0.05,
+                      isCenter: false,
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 20),
 
-                serviceCard(
-                  title: "البرامج التعليميه",
-                  description: "انضمي إلى برامجنا التعليمية",
-                  onTap: () {
-                    Navigator.pushNamed(context, '/programsScreen');
-                  },
-                  w: w,
-                  h: h,
-                  icon: Icons.menu_book_rounded,
-                  primaryColor: Colors.green[100]!,
-                  secondaryColor: Colors.green[400]!,
-                  buttonColor: Colors.green,
-                  salesBackgroundColor: Colors.green[300]!,
-                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: serviceCard(
+                        title: "مجموعات الدعم",
+                        description: "شاركي تجاربك مع من يفهمونك",
+                        onTap: () {
+                          Navigator.pushNamed(context, '/supportScreen');
+                        },
+                        w: w,
+                        h: h,
+                        icon: Icons.groups_rounded,
+                        primaryColor: Colors.purple[100]!,
+                        secondaryColor: Colors.purple[400]!,
+                        buttonColor: Colors.purple,
+                        salesBackgroundColor: Colors.purple[300]!,
+                      ),
+                    ),
 
-                const SizedBox(height: 20),
+                    const SizedBox(width: 12),
 
-                serviceCard(
-                  title: "الرحلات و النزهات",
-                  description: "استمتعى مع المحاربات",
-                  onTap: () {
-                    Navigator.pushNamed(context, '/travelScreen');
-                  },
-                  w: w,
-                  h: h,
-                  icon: Icons.directions_bus_rounded,
-                  primaryColor: Colors.blue[100]!,
-                  secondaryColor: Colors.blue[400]!,
-                  buttonColor: Colors.blue,
-                  salesBackgroundColor: Colors.blue[300]!,
-                ),
+                    Expanded(
+                      child: serviceCard(
+                        title: "الرحلات و التنزهات",
+                        description: "استمتعي مع المحاربات في رحلات مميزة",
+                        onTap: () {
+                          Navigator.pushNamed(context, '/travelScreen');
+                        },
+                        w: w,
+                        h: h,
+                        icon: Icons.directions_bus_rounded,
+                        primaryColor: Colors.blue[100]!,
+                        secondaryColor: Colors.blue[400]!,
+                        buttonColor: Colors.blue,
+                        salesBackgroundColor: Colors.blue[300]!,
+                      ),
+                    ),
 
-                const SizedBox(height: 20),
+                    const SizedBox(width: 12),
 
-                serviceCard(
-                  title: "مجموعات الدعم",
-                  description: "شاركى تجاربك مع من يفهمونك",
-                  onTap: () {
-                    Navigator.pushNamed(context, '/supportScreen');
-                  },
-                  w: w,
-                  h: h,
-                  icon: Icons.groups_rounded,
-                  primaryColor: Colors.purple[100]!,
-                  secondaryColor: Colors.purple[400]!,
-                  buttonColor: Colors.purple,
-                  salesBackgroundColor: Colors.purple[300]!,
+                    Expanded(
+                      child: serviceCard(
+                        title: "البرامج التعليمية",
+                        description: "انضمي إلى برامجنا التعليمية",
+                        onTap: () {
+                          Navigator.pushNamed(context, '/programsScreen');
+                        },
+                        w: w,
+                        h: h,
+                        icon: Icons.menu_book_rounded,
+                        primaryColor: Colors.green[100]!,
+                        secondaryColor: Colors.green[400]!,
+                        buttonColor: Colors.green,
+                        salesBackgroundColor: Colors.green[300]!,
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 100),
@@ -106,7 +127,6 @@ class _PatientsHomeState extends State<PatientsHome> {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startDocked,
-
       bottomNavigationBar: Padding(
         padding: EdgeInsets.only(left: w * 0.5, bottom: 15),
         child: Container(
@@ -126,7 +146,6 @@ class _PatientsHomeState extends State<PatientsHome> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               const SizedBox(width: 50),
-
               navButton(
                 w: w,
                 title: "طلباتي",

@@ -1,5 +1,6 @@
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 
 class ProgramsScreen extends StatelessWidget {
@@ -41,6 +42,7 @@ class ProgramsScreen extends StatelessWidget {
                 location: 'الفرع: بهيه - الشيخ زايد',
                 availableSeats: 15,
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),

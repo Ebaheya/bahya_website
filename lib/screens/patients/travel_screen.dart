@@ -1,5 +1,6 @@
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 
 class TravelScreen extends StatelessWidget {
@@ -28,6 +29,7 @@ class TravelScreen extends StatelessWidget {
                 date: 'الجمعة 15 سبتمبر 2024',
                 time: '10:00 صباحًا - 4:00 مساءً',
                 location: 'المتحف المصري، القاهرة',
+                meetingPlace: 'محطة مترو الأوبرا',
                 availableSeats: 10,
                 isTravel: true,
               ),
@@ -38,9 +40,11 @@ class TravelScreen extends StatelessWidget {
                 date: 'الأحد 20 سبتمبر 2024',
                 time: '3:00 مساءً - 6:00 مساءً',
                 location: 'حديقة الأزهر، القاهرة',
+                meetingPlace: 'محطة مترو الأزهر',
                 availableSeats: 15,
                 isTravel: true,
               ),
+             const SizedBox(height: 20),
             ],
           ),
         ),
