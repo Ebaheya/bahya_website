@@ -281,8 +281,9 @@ Widget serviceInfo({
   required String date,
   required String time,
   required String location,
+  bool forAdmin = false,
   double? availableSeats,
-  bool isCompleted = false,
+  bool isAccepted = false,
   bool isUnderReview = false,
   bool isSupport = false,
   String? meetingPlace,
@@ -418,6 +419,35 @@ Widget serviceInfo({
                   maxLines: 2,
                 ),
               ),
+              forAdmin
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isAccepted
+                            ? Colors.green[50]
+                            : (isUnderReview
+                                  ? Colors.orange[50]
+                                  : Colors.red[50]),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: customText(
+                        text: isAccepted
+                            ? "تمت الموافقة على طلبك"
+                            : (isUnderReview
+                                  ? "طلبك قيد المراجعة"
+                                  : "تم رفض طلبك"),
+                        size: w * 0.03,
+                        color: isAccepted
+                            ? Colors.green[800]
+                            : (isUnderReview
+                                  ? Colors.orange[800]
+                                  : Colors.red[800]),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ],
           ),
 
@@ -448,42 +478,51 @@ Widget serviceInfo({
               value: meetingPlace ?? "غير محدد",
             ),
 
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: h * 0.008),
-            child: Divider(
-              color: Colors.grey.withOpacity(0.25),
-              thickness: 1,
-              height: 1,
-            ),
-          ),
+          !forAdmin
+              ? Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: h * 0.008),
+                      child: Divider(
+                        color: Colors.grey.withOpacity(0.25),
+                        thickness: 1,
+                        height: 1,
+                      ),
+                    ),
 
-          SizedBox(height: h * 0.012),
+                    SizedBox(height: h * 0.012),
+                  ],
+                )
+              : const SizedBox.shrink(),
 
-          isRequested
+          isRequested && !forAdmin
               ? Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 9,
                   ),
+                  //Accepted: green, Under review: orange, Rejected: red
                   decoration: BoxDecoration(
-                    color: isCompleted
+                    color: isAccepted
                         ? Colors.green[50]
                         : (isUnderReview ? Colors.orange[50] : Colors.red[50]),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: customText(
-                    text: isCompleted
+                    text: isAccepted
                         ? "تمت الموافقة على طلبك"
                         : (isUnderReview ? "طلبك قيد المراجعة" : "تم رفض طلبك"),
                     size: w * 0.033,
-                    color: isCompleted
+                    color: isAccepted
                         ? Colors.green[800]
                         : (isUnderReview
                               ? Colors.orange[800]
                               : Colors.red[800]),
                   ),
                 )
+              : forAdmin
+              ? SizedBox.shrink()
               : Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -515,7 +554,7 @@ Widget serviceInfo({
 
           SizedBox(height: h * 0.012),
 
-          isRequested
+          isRequested || forAdmin
               ? const SizedBox.shrink()
               : CustomGlowButton(
                   title: "الانضمام الآن",
@@ -1125,7 +1164,7 @@ Widget requestedServiceCard({
           children: [
             Expanded(
               child: Container(
-                height: h * 0.065,
+                height: h * 0.055,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xff8E2DE2), Color(0xffFF4F9A)],
@@ -1170,7 +1209,7 @@ Widget requestedServiceCard({
 
             Expanded(
               child: Container(
-                height: h * 0.065,
+                height: h * 0.055,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),

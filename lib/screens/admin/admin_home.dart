@@ -13,7 +13,7 @@ class AdminHome extends StatelessWidget {
     final h = getScreenHeight(context);
     return Scaffold(
       appBar: customAppBar(
-        preferredSize: Size.fromHeight(getScreenHeight(context) * 0.28),
+        preferredSize: Size.fromHeight(getScreenHeight(context) * 0.3),
         context: context,
         title: 'لوحة إدارة الخدمات',
         subTitle: 'مساعدة المحاربات في رحلتهن',
@@ -36,6 +36,16 @@ class AdminHome extends StatelessWidget {
                   title: "انشاء خدمه جديده ",
                   onPressed: () {
                     Navigator.pushNamed(context, '/addService');
+                  },
+                  isGradient: true,
+                ),
+                SizedBox(height: h * 0.02),
+                CustomGlowButton(
+                  width: double.infinity,
+                  borderRadius: 12,
+                  title: "تاريخ الطلبات",
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/patientsSearch');
                   },
                   isGradient: true,
                 ),
@@ -110,4 +120,3 @@ class AdminHome extends StatelessWidget {
     );
   }
 }
-

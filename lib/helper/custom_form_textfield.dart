@@ -20,6 +20,8 @@ class CustomFormTextField extends StatefulWidget {
   final bool isSearch;
   final bool isRequired;
   final double? borderRadius;
+  final Icon? prefixIcon;
+  final Color? textColor;
   const CustomFormTextField({
     super.key,
     this.labelText,
@@ -37,6 +39,8 @@ class CustomFormTextField extends StatefulWidget {
     this.isSearch = false,
     this.isRequired = true,
     this.borderRadius,
+    this.prefixIcon,
+    this.textColor,
   });
 
   @override
@@ -130,7 +134,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         }
 
         if (!passwordRegex.hasMatch(text)) {
-          return 'كلمة المرور يمكن أن تحتوي فقط على حروف إنجليزية، أرقام، ورموز خاصة';  
+          return 'كلمة المرور يمكن أن تحتوي فقط على حروف إنجليزية، أرقام، ورموز خاصة';
         }
 
         break;
@@ -226,11 +230,11 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         hintText: widget.hintText,
 
         labelText: widget.labelText,
-
+        prefix: widget.prefixIcon,
         hintTextDirection: widget.textDirection,
 
         labelStyle: TextStyle(
-          color: Colors.black,
+          color: widget.textColor ?? Colors.black,
 
           fontSize: width * 0.1,
 
@@ -238,7 +242,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         ),
 
         hintStyle: TextStyle(
-          color: Colors.grey,
+          color: widget.textColor ?? Colors.grey,
 
           fontSize: width * 0.04,
 

@@ -1,5 +1,7 @@
 import 'package:bahya_app/screens/admin/add_service.dart';
 import 'package:bahya_app/screens/admin/admin_home.dart';
+import 'package:bahya_app/screens/admin/patient_requests_details.dart';
+import 'package:bahya_app/screens/admin/patients_search.dart';
 import 'package:bahya_app/screens/patients/patients_home.dart';
 import 'package:bahya_app/screens/patients/programs_screen.dart';
 import 'package:bahya_app/screens/patients/requested_service.dart';
@@ -25,8 +27,12 @@ class AppRoute {
         return MaterialPageRoute(builder: (_) => const AdminHome());
       case '/addService':
         return MaterialPageRoute(builder: (_) => AddService());
+      case '/patientsSearch':
+        return MaterialPageRoute(builder: (_) => const PatientsSearch());
+      case '/patientRequestsDetails':
+        return MaterialPageRoute(builder: (_) => const PatientRequestsDetails());
       default:
-        return MaterialPageRoute(builder: (_) => PatientsHome());
+        return MaterialPageRoute(builder: (_) => AdminHome());
     }
   }
 }

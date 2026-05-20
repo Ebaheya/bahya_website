@@ -29,7 +29,7 @@ class RequestedService extends StatelessWidget {
                  SizedBox(height: h * 0.15),
                 requestedState(w: w, h: h),
                 serviceInfo(
-                  isCompleted: true,
+                  isAccepted: true,
                   isRequested: true,
                   w: w,
                   h: h,
