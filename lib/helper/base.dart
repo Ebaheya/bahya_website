@@ -435,10 +435,10 @@ Widget serviceInfo({
                       ),
                       child: customText(
                         text: isAccepted
-                            ? "تمت الموافقة على طلبك"
+                            ? "تمت الموافقة على الطلب"
                             : (isUnderReview
-                                  ? "طلبك قيد المراجعة"
-                                  : "تم رفض طلبك"),
+                                  ? "الطلب قيد المراجعة"
+                                  : "تم رفض الطلب"),
                         size: w * 0.03,
                         color: isAccepted
                             ? Colors.green[800]
