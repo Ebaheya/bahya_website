@@ -1,4 +1,5 @@
 import 'package:bahya_app/helper/base.dart';
+import 'package:bahya_app/helper/widgets/articles.dart';
 import 'package:bahya_app/helper/widgets/constant.dart';
 import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
 import 'package:bahya_app/helper/widgets/patient_home_widgets.dart';
@@ -104,66 +105,7 @@ class _PatientsHomeState extends State<PatientsHome> {
                 sectionTitle(w: w, title: "مقالات مفيدة"),
 
                 const SizedBox(height: 14),
-
-                articleCard(
-                  w: w,
-                  icon: Icons.favorite_rounded,
-                  topic: "استدعاء الكشف مع طبيب نفسي",
-                  subTopic:
-                      "في بعض الحالات النفسية لا يكون العلاج النفسي وحده كافيًا",
-                  color: Colors.pink,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/articleDetails',
-                      arguments: {
-                        'title': "نصائح للتعامل مع القلق أثناء العلاج",
-                        'introduction':
-                            'في بعض الحالات النفسية لا يكون العلاج النفسي وحده كافيًا، وتظهر الحاجة إلى تدخل طبي دوائي تحت إشراف طبيب نفسي، خاصة عندما تكون الأعراض شديدة أو معقدة أو مؤثرة على الحياة اليومية.',
-                        'firstQuestion':
-                            'ما الفرق بين المعالج النفسي والطبيب النفسي؟',
-                        'firstAnswer':
-                            'المعالج النفسي يركز على الجلسات والتدخلات السلوكية والمعرفية وتنمية المهارات. أما الطبيب النفسي فهو طبيب مختص بتشخيص الاضطرابات النفسية ووصف الأدوية ومتابعة تأثيرها وتعديل الجرعات عند الحاجة.',
-                        'secondQuestion':
-                            'ما الأعراض التي تستدعي الكشف مع طبيب نفسي؟',
-                        'secondAnswer':
-                            'من أهم الأعراض: الهلاوس، الضلالات، التقلبات المزاجية الحادة، نوبات الهوس، الاكتئاب الشديد المصحوب بأفكار انتحارية، فقدان القدرة على أداء الوظائف اليومية، أو السلوك العدواني والاندفاعي غير المسيطر عليه.',
-                        'thirdQuestion':
-                            'ما الاضطرابات التي تحتاج غالبًا إلى علاج دوائي؟',
-                        'thirdAnswer':
-                            'تشمل الاضطرابات الذهانية مثل الفصام، والاضطراب الوجداني ثنائي القطب، والاكتئاب الشديد أو المقاوم للعلاج، والوسواس القهري الشديد، واضطرابات تعاطي المواد.',
-                        'fourthQuestion':
-                            'متى يكون التحويل للطبيب النفسي عاجلًا؟',
-                        'fourthAnswer':
-                            'يصبح التحويل عاجلًا عند ظهور أعراض ذهانية لأول مرة، أو حدوث نوبة هوس حادة، أو وجود أفكار انتحارية بخطة واضحة، أو تدهور سريع في السلوك أو الإدراك.',
-                        'conclusion':
-                            'الكشف مع طبيب نفسي لا يعني فشل العلاج النفسي، بل هو خطوة ضرورية في الحالات التي تحتاج إلى تدخل طبي متخصص. التعاون بين المعالج والطبيب يساعد على تحقيق أمان أكبر وتحسن مستقر على المدى الطويل.',
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                articleCard(
-                  w: w,
-                  icon: Icons.restaurant_rounded,
-                  topic: "أهمية التغذية الصحية",
-                  subTopic: "أكلات مفيدة تساعد جسمك خلال رحلة العلاج",
-                  color: Colors.green,
-                  onTap: () {},
-                ),
-
-                const SizedBox(height: 12),
-
-                articleCard(
-                  w: w,
-                  icon: Icons.medical_services_rounded,
-                  topic: "متى أحتاج للتواصل مع الطبيب؟",
-                  subTopic: "علامات مهمة لا يجب تجاهلها أثناء المتابعة",
-                  color: Colors.blue,
-                  onTap: () {},
-                ),
+                articles(w: w, context: context),
 
                 const SizedBox(height: 100),
               ],
