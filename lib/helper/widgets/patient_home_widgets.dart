@@ -66,10 +66,12 @@ Widget articleCard({
                   size: w * 0.035,
                   bold: true,
                   maxLines: 2,
+                  isCenter: false,
                 ),
                 const SizedBox(height: 4),
                 customText(
                   text: subTopic,
+                  isCenter: false,
                   size: w * 0.028,
                   color: Colors.grey,
                   maxLines: 2,

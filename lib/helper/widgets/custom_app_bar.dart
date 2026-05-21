@@ -10,6 +10,7 @@ PreferredSizeWidget customAppBar({
   required String title,
   required String subTitle,
   IconData? icon,
+  bool isArticle = false,
   GlobalKey<ScaffoldState>? scaffoldKey,
   isHome = true,
   void Function()? onIconPressed,
@@ -119,26 +120,27 @@ PreferredSizeWidget customAppBar({
                               ),
                             ),
                           ),
-
                     Row(
                       children: [
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            customText(
-                              text: title,
-                              size: w * 0.05,
-                              bold: true,
-                              color: Colors.white,
-                            ),
-                            customText(
-                              text: subTitle,
-                              size: w * 0.03,
-                              bold: true,
-                              color: Colors.white,
-                            ),
-                          ],
-                        ),
+                        isArticle
+                            ? SizedBox.shrink()
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  customText(
+                                    text: title,
+                                    size: w * 0.05,
+                                    bold: true,
+                                    color: Colors.white,
+                                  ),
+                                  customText(
+                                    text: subTitle,
+                                    size: w * 0.03,
+                                    bold: true,
+                                    color: Colors.white,
+                                  ),
+                                ],
+                              ),
 
                         const SizedBox(width: 10),
 
