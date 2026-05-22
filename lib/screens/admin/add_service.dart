@@ -75,7 +75,7 @@ class _AddServiceState extends State<AddService> {
                           Spacer(),
                           InkWell(
                             onTap: () {
-                              
+                              Navigator.pushNamed(context, '/all_services');
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(

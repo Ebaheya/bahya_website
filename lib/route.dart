@@ -1,5 +1,6 @@
 import 'package:bahya_app/screens/admin/add_service.dart';
 import 'package:bahya_app/screens/admin/admin_home.dart';
+import 'package:bahya_app/screens/admin/all_service.dart';
 import 'package:bahya_app/screens/admin/patient_requests_details.dart';
 import 'package:bahya_app/screens/admin/patients_search.dart';
 import 'package:bahya_app/screens/patients/artical_screen.dart';
@@ -51,6 +52,8 @@ class AppRoute {
             conclusion: args['conclusion'],
           ),
         );
+    case '/all_services':
+        return MaterialPageRoute(builder: (_) => const AllServicesScreen());
       default:
         return MaterialPageRoute(builder: (_) => AdminHome());
     }
