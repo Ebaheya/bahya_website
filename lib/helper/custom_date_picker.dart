@@ -143,7 +143,7 @@ class _CustomDatePickerFieldState extends State<CustomDatePickerField> {
         hintText: widget.hintText,
 
         labelText: widget.labelText,
-        prefixIcon: const Icon(Icons.calendar_today, color: Colors.grey),
+        prefixIcon: Icon(Icons.calendar_today, color: iconColor),
 
         labelStyle: TextStyle(
           color: Colors.black,

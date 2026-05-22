@@ -52,7 +52,7 @@ class AppRoute {
           ),
         );
       default:
-        return MaterialPageRoute(builder: (_) => PatientsHome());
+        return MaterialPageRoute(builder: (_) => AdminHome());
     }
   }
 }

@@ -134,7 +134,7 @@ class _CustomTimePickerFieldState extends State<CustomTimePickerField> {
 
         labelText: widget.labelText,
 
-        prefixIcon: const Icon(Icons.access_time_outlined, color: Colors.grey),
+        prefixIcon: Icon(Icons.access_time_outlined, color: iconColor),
 
         labelStyle: TextStyle(
           color: Colors.grey,

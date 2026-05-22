@@ -20,6 +20,8 @@ class _AddServiceState extends State<AddService> {
 
   @override
   Widget build(BuildContext context) {
+    final w = getScreenWidth(context);
+    final h = getScreenHeight(context);
     return Scaffold(
       appBar: customAppBar(
         context: context,
@@ -46,6 +48,103 @@ class _AddServiceState extends State<AddService> {
                     });
                   },
                 ),
+                SizedBox(height: getScreenHeight(context) * 0.02),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.purple.withOpacity(0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          customText(
+                            text: "الخدمات المسجله",
+                            size: w * 0.035,
+                            color: Colors.black,
+                          ),
+                          Spacer(),
+                          InkWell(
+                            onTap: () {
+                              
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withOpacity(0.10),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.remove_red_eye_outlined,
+                                    color: Colors.purple,
+                                    size: 16,
+                                  ),
+
+                                  customText(
+                                    text: "عرض الكل",
+                                    size: w * 0.03,
+                                    color: Colors.purple,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      registeredServiceTile(
+                        w: w,
+                        h: h,
+                        title: "محو أمية مستوى ثالث",
+                        location: "الرياض - حي العليا",
+                        seats: "20 مقعد",
+                        date: "20-10-2024",
+                        time: "10:00 AM",
+                        isTravel: false,
+                        isSupport: false,
+                        onMoreTap: () {},
+                      ),
+                      registeredServiceTile(
+                        w: w,
+                        h: h,
+                        title: "محو أمية مستوى ثالث",
+                        location: "الرياض - حي العليا",
+                        seats: "20 مقعد",
+                        date: "20-10-2024",
+                        time: "10:00 AM",
+                        isTravel: false,
+                        isSupport: true,
+                        onMoreTap: () {},
+                      ),
+                      registeredServiceTile(
+                        w: w,
+                        h: h,
+                        title: "محو أمية مستوى ثالث",
+                        location: "الرياض - حي العليا",
+                        seats: "20 مقعد",
+                        date: "20-10-2024",
+                        time: "10:00 AM",
+                        isTravel: true,
+                        isSupport: false,
+                        onMoreTap: () {},
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -54,4 +153,3 @@ class _AddServiceState extends State<AddService> {
     );
   }
 }
-

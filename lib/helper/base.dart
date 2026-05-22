@@ -798,59 +798,68 @@ Widget serviceAddForm({
   required bool isTravel,
   required Function(String) onChanged,
 }) {
+  final w = getScreenWidth(context);
+  final h = getScreenHeight(context);
+
   return Container(
-    padding: const EdgeInsets.all(16),
+    padding: EdgeInsets.all(w * 0.045),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(28),
       boxShadow: [
         BoxShadow(
-          color: Colors.grey.withOpacity(0.4),
-
-          blurRadius: 1,
-          offset: const Offset(0, 3),
+          color: Colors.pink.withOpacity(0.08),
+          blurRadius: 22,
+          offset: const Offset(0, 10),
         ),
       ],
     ),
     child: Column(
       children: [
         FilterDropdown(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(14),
           hint: "اختر نوع الخدمه",
           items: const [
             "خدمات تعليميه",
             "رحلات و نزهات",
             "مجموعات الدعم النفسي",
           ],
-          onChanged: (onChanged),
+          onChanged: onChanged,
         ),
-        SizedBox(height: 15),
+
+        SizedBox(height: h * 0.018),
+
         CustomFormTextField(
-          hintText: "اسم الخدمه مثال: محو الاميه  المستوى الاول",
+          hintText: "اسم الخدمه مثال: محو الاميه المستوى الاول",
           autovalidateMode: AutovalidateMode.onUserInteraction,
           keyboardType: CustomTextFieldType.text,
-
-          borderRadius: 8,
+          borderRadius: 14,
+          prefixIcon: const Icon(
+            Icons.local_offer_outlined,
+            color: Color(0xFFEA4C89),
+          ),
+          textColor: Colors.grey,
         ),
-        SizedBox(height: 15),
+
+        SizedBox(height: h * 0.018),
+
         Row(
           children: [
-            SizedBox(
-              width: getScreenWidth(context) * 0.37,
+            Expanded(
               child: CustomDatePickerField(
                 hintText: isTravel ? "تاريخ البدايه" : "تاريخ الخدمه",
                 controller: TextEditingController(),
-                borderRadius: 8,
+                borderRadius: 14,
               ),
             ),
-            const Spacer(),
 
-            SizedBox(
-              width: getScreenWidth(context) * 0.37,
+            SizedBox(width: w * 0.035),
+
+            Expanded(
               child: CustomTimePickerField(
-                borderRadius: 8,
-                labelText: "الوقت",
-                hintText: "-- : --",
+                borderRadius: 14,
+                labelText: null,
+                hintText: "الوقت",
                 controller: timeController,
                 onTimeSelected: (time) {
                   print(time.format(context));
@@ -859,7 +868,9 @@ Widget serviceAddForm({
             ),
           ],
         ),
-        SizedBox(height: 15),
+
+        SizedBox(height: h * 0.018),
+
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 400),
           switchInCurve: Curves.easeOutBack,
@@ -871,68 +882,80 @@ Widget serviceAddForm({
               child: FadeTransition(opacity: animation, child: child),
             );
           },
-
           child: isTravel
               ? Column(
                   key: const ValueKey("travelFields"),
                   children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: CustomDatePickerField(
-                        hintText: "تاريخ النهايه",
-                        controller: TextEditingController(),
-                        borderRadius: 8,
-                      ),
+                    CustomDatePickerField(
+                      hintText: "تاريخ النهايه",
+                      controller: TextEditingController(),
+                      borderRadius: 14,
                     ),
 
-                    SizedBox(height: 15),
+                    SizedBox(height: h * 0.018),
 
                     CustomFormTextField(
                       hintText: "مكان التجمع : مثال: الرياض - حي النخيل",
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       keyboardType: CustomTextFieldType.text,
-                      borderRadius: 8,
-                    ),
-
-                    SizedBox(height: 15),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: CustomTimePickerField(
-                        borderRadius: 8,
-                        labelText: "وقت الانطلاق",
-                        hintText: "-- : --",
-                        controller: timeController,
-                        onTimeSelected: (time) {
-                          print(time.format(context));
-                        },
+                      borderRadius: 14,
+                      prefixIcon: const Icon(
+                        Icons.directions_bus_rounded,
+                        color: Color(0xFFEA4C89),
                       ),
+                      textColor: Colors.grey,
                     ),
 
-                    SizedBox(height: 15),
+                    SizedBox(height: h * 0.018),
+
+                    CustomTimePickerField(
+                      borderRadius: 14,
+                      labelText: null,
+                      hintText: "وقت الانطلاق",
+                      controller: timeController,
+                      onTimeSelected: (time) {
+                        print(time.format(context));
+                      },
+                    ),
+
+                    SizedBox(height: h * 0.018),
                   ],
                 )
               : const SizedBox.shrink(),
         ),
+
         CustomFormTextField(
           hintText: "الموقع او الفرع : مثال: الرياض - حي النخيل",
           autovalidateMode: AutovalidateMode.onUserInteraction,
           keyboardType: CustomTextFieldType.text,
-
-          borderRadius: 8,
+          borderRadius: 14,
+          prefixIcon: const Icon(
+            Icons.location_on_outlined,
+            color: Color(0xFFEA4C89),
+          ),
+          textColor: Colors.grey,
         ),
-        SizedBox(height: 15),
+
+        SizedBox(height: h * 0.018),
+
         CustomFormTextField(
           hintText: "عدد المقاعد المتوفره : مثال: 10 مقاعد",
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          keyboardType: CustomTextFieldType.text,
-
-          borderRadius: 8,
+          keyboardType: CustomTextFieldType.number,
+          borderRadius: 14,
+          prefixIcon: const Icon(
+            Icons.groups_rounded,
+            color: Color(0xFFEA4C89),
+          ),
+          textColor: Colors.grey,
         ),
-        SizedBox(height: 15),
+
+        SizedBox(height: h * 0.025),
+
         CustomGlowButton(
           width: double.infinity,
-          borderRadius: 12,
+          height: h * 0.06,
+          borderRadius: 18,
           title: "اضافة الخدمه",
           onPressed: () {},
           isGradient: true,
@@ -1252,6 +1275,128 @@ Widget requestedServiceCard({
               ),
             ),
           ],
+        ),
+      ],
+    ),
+  );
+}
+
+Widget registeredServiceTile({
+  required double w,
+  required double h,
+  required String title,
+  required String location,
+  required String seats,
+  required String date,
+  required String time,
+  required bool isTravel,
+  required bool isSupport,
+  required VoidCallback onMoreTap,
+}) {
+  final Color mainColor = isTravel
+      ? Colors.blue[600]!
+      : (isSupport ? Colors.purple[600]! : Colors.green[700]!);
+
+  final Color lightColor = isTravel
+      ? Colors.blue[50]!
+      : (isSupport ? Colors.purple[50]! : Colors.green[50]!);
+
+  final IconData mainIcon = isTravel
+      ? Icons.directions_bus_rounded
+      : (isSupport ? Icons.groups_rounded : Icons.menu_book_rounded);
+
+  Widget miniInfo({required IconData icon, required String text}) {
+    return Expanded(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: mainColor, size: w * 0.035),
+          SizedBox(width: w * 0.008),
+          Flexible(
+            child: customText(
+              text: text,
+              size: w * 0.026,
+              color: Colors.grey[600],
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  return Container(
+    margin: EdgeInsets.only(bottom: h * 0.015),
+    padding: EdgeInsets.all(w * 0.03),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.grey.withOpacity(0.08)),
+      boxShadow: [
+        BoxShadow(
+          color: mainColor.withOpacity(0.3),
+          blurRadius: 12,
+          offset: const Offset(0, 5),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: h * 0.075,
+          height: h * 0.075,
+          decoration: BoxDecoration(color: lightColor, shape: BoxShape.circle),
+          child: Icon(mainIcon, color: mainColor, size: w * 0.07),
+        ),
+        SizedBox(width: 5),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              customText(
+                text: title,
+                size: w * 0.037,
+                color: Colors.black,
+                bold: true,
+                maxLines: 2,
+                isCenter: false,
+              ),
+              SizedBox(height: h * 0.006),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    color: mainColor,
+                    size: w * 0.04,
+                  ),
+                  SizedBox(width: w * 0.01),
+                  customText(
+                    text: location,
+                    size: w * 0.03,
+                    color: Colors.grey[600],
+                    maxLines: 1,
+                  ),
+                ],
+              ),
+
+              SizedBox(height: h * 0.012),
+
+              Row(
+                children: [
+                  miniInfo(icon: Icons.group_outlined, text: seats),
+                  miniInfo(icon: Icons.calendar_month_outlined, text: date),
+                  miniInfo(icon: Icons.access_time_outlined, text: time),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(width: w * 0.03),
+
+        IconButton(
+          onPressed: onMoreTap,
+          icon: Icon(Icons.more_vert, color: mainColor, size: w * 0.07),
         ),
       ],
     ),

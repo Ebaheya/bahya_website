@@ -230,7 +230,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         hintText: widget.hintText,
 
         labelText: widget.labelText,
-        prefix: widget.prefixIcon,
+        prefixIcon: widget.prefixIcon,
         hintTextDirection: widget.textDirection,
 
         labelStyle: TextStyle(
