@@ -12,13 +12,16 @@ Widget customText({
   Color? color,
   bool bold = true,
   TextAlign? align,
+  int maxLines = 1,
 }) {
   return Text(
     text,
     textAlign: isCenter ? TextAlign.center : TextAlign.start,
     textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+    maxLines: maxLines,
     style: TextStyle(
       fontSize: size,
+    
       fontFamily: 'ArabicCustomFont',
       fontWeight: bold ? FontWeight.bold : FontWeight.normal,
       color: isGradient ? null : (color ?? Colors.black),
@@ -395,3 +398,5 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> customSnackBar({
     ),
   );
 }
+
+
