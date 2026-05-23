@@ -54,7 +54,7 @@ Widget netImg(String url) {
 Widget buildTextField({
   required CustomTextFieldType keyboardType,
   required String hintText,
-  required String labelText,
+   String? labelText,
   int maxLines = 1,
   Icon? suffixIcon,
   bool obscureText = false,

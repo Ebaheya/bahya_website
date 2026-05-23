@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 enum CustomTextFieldType { email, name, password, number, phone, text, date }
 
 class CustomFormTextField extends StatefulWidget {
-  final String labelText;
+  final String? labelText;
   final String? hintText;
   final AutovalidateMode autovalidateMode;
   final bool obscureText;
@@ -22,7 +22,7 @@ class CustomFormTextField extends StatefulWidget {
 
   const CustomFormTextField({
     super.key,
-    required this.labelText,
+    this.labelText,
     this.hintText,
     required this.autovalidateMode,
     required this.keyboardType,
@@ -156,7 +156,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
       onChanged: widget.onChange,
 
       keyboardType: _mapKeyboardType(widget.keyboardType),
-
+      textAlign: TextAlign.right,
       controller: widget.controller,
 
       obscureText: _obscureText,
@@ -207,21 +207,30 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         alignLabelWithHint: true,
 
         suffixIcon: widget.obscureText
-            ? IconButton(
-                onPressed: () {
-                  setState(() {
-                    _obscureText = !_obscureText;
-                  });
-                },
-
-                icon: Icon(
-                  _obscureText ? Icons.visibility : Icons.visibility_off,
-
-                  color: Colors.grey,
+            ? Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.pink[100]!.withOpacity(0.5),
+                  ),
+                  child: InkWell(
+                    onTap: () => setState(() => _obscureText = !_obscureText),
+                    child: Icon(
+                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                      color: Colors.pink,
+                      size: width * 0.015,
+                    ),
+                  ),
                 ),
               )
             : widget.suffixIcon,
-
+        suffixIconConstraints: const BoxConstraints(
+          maxHeight: 100,
+          maxWidth: 100,
+        ),
         hintText: widget.hintText,
 
         labelText: widget.labelText,
@@ -238,7 +247,6 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
         hintStyle: TextStyle(
           color: Colors.grey,
-
           fontSize: width * 0.01,
 
           fontFamily: 'ArabicCustomFont',
@@ -261,13 +269,13 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
 
-          borderSide: const BorderSide(color: Colors.grey, width: 1.2),
+          borderSide: BorderSide(color: Colors.pink[300]!, width: 1.2),
         ),
 
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
 
-          borderSide: const BorderSide(color: Color(0xFFFF7BB0), width: 1.5),
+          borderSide: BorderSide(color: Colors.pink, width: 1.5),
         ),
 
         errorStyle: TextStyle(

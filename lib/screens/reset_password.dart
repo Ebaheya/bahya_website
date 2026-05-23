@@ -162,13 +162,17 @@ class _ResetPasswordState extends State<ResetPassword> {
                             token: widget.token,
                             newPassword: confirmPasswordController.text,
                           );
-                          authNotifier.completePasswordReset();
+
+                          await authNotifier.completePasswordReset();
+
                           customSnackBar(
                             context: context,
-                            message:
-                                'تم إعادة تعيين كلمة المرور بنجاح',
+                            message: 'تم إعادة تعيين كلمة المرور بنجاح',
                           );
-                          context.replace('/login');
+
+                          if (context.mounted) {
+                            context.go('/login');
+                          }
                         }
                         debugPrint("Password reset successful");
                       } catch (e) {

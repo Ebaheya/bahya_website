@@ -13,7 +13,7 @@ class CustomGlowButton extends StatelessWidget {
   final double? height;
   final double? borderRadius;
   final bool isGradient;
-
+  final IconData? icon;
   const CustomGlowButton({
     super.key,
     required this.title,
@@ -26,6 +26,7 @@ class CustomGlowButton extends StatelessWidget {
     this.height,
     this.borderRadius,
     this.isGradient = false,
+    this.icon,
   });
 
   @override
@@ -40,8 +41,8 @@ class CustomGlowButton extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: glowColor ?? const Color(0xFFFF7BB0).withOpacity(0.6),
-            blurRadius: 5,
-            spreadRadius: 2,
+             blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -80,11 +81,29 @@ class CustomGlowButton extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               onPressed: onPressed,
-              child: customText(
-                text: title,
-                size: textSize ?? getScreenHeight(context) * 0.02,
-                bold: true,
-                color: textColor ?? const Color(0xFFFF7BB0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  icon != null
+                      ? Row(
+                          children: [
+                            Icon(
+                              icon,
+                              color: Colors.white,
+                              size:
+                                  textSize ?? getScreenHeight(context) * 0.025,
+                            ),
+                            SizedBox(width: 10),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                  customText(
+                    text: title,
+                    size: textSize ?? getScreenHeight(context) * 0.02,
+                    bold: true,
+                    color: textColor ?? const Color(0xFFFF7BB0),
+                  ),
+                ],
               ),
             ),
     );
