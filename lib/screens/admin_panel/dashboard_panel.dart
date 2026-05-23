@@ -39,7 +39,7 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     double width = getScreenWidth(context);
-
+    double height = getScreenHeight(context);
     int crossAxisCount = 4;
 
     if (width < 1200) crossAxisCount = 3;
@@ -52,6 +52,8 @@ class _DashboardState extends State<Dashboard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           pageHeader(
+            icon: Icons.dashboard_rounded,
+            height: height ,
             width: width,
             title: "Dashboard Overview",
             subtitle: "Welcome back, here's what's happening today",

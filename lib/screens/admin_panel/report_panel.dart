@@ -11,7 +11,7 @@ class ReportsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double width = getScreenWidth(context);
-
+    double height = getScreenHeight(context);
     int crossAxisCount = 4;
     if (width < 1200) crossAxisCount = 3;
     if (width < 900) crossAxisCount = 2;
@@ -21,9 +21,11 @@ class ReportsPage extends StatelessWidget {
       child: Column(
         children: [
           pageHeader(
+              height: height,
             width: width,
             title: 'Reports Management',
             subtitle: 'Review and resolve user reports',
+            icon: Icons.report_rounded,
             widgets: [
               CustomGlowButton(
                 title: "New Report",

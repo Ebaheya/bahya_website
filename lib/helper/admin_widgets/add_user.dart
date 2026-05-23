@@ -83,8 +83,9 @@ class _AddUserDialogState extends State<AddUserDialog>
           mainAxisSize: MainAxisSize.min,
           children: [
             pageHeader(
+              icon: Icons.add_rounded,
               width: getScreenWidth(context),
-
+              height: getScreenHeight(context),
               title: "Add New User",
 
               widgets: [

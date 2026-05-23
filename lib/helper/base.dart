@@ -21,7 +21,7 @@ Widget customText({
     maxLines: maxLines,
     style: TextStyle(
       fontSize: size,
-    
+
       fontFamily: 'ArabicCustomFont',
       fontWeight: bold ? FontWeight.bold : FontWeight.normal,
       color: isGradient ? null : (color ?? Colors.black),
@@ -57,7 +57,7 @@ Widget netImg(String url) {
 Widget buildTextField({
   required CustomTextFieldType keyboardType,
   required String hintText,
-   String? labelText,
+  String? labelText,
   int maxLines = 1,
   Icon? suffixIcon,
   bool obscureText = false,
@@ -287,35 +287,91 @@ class LegendDot extends StatelessWidget {
 
 Widget pageHeader({
   required double width,
+  required double height,
   required String title,
+  required IconData? icon,
   String? subtitle,
   List<Widget>? widgets,
 }) {
   return Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(16),
+    height: height * 0.15,
+   
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      gradient: LinearGradient(colors: gradientColors),
-    ),
-    child: Row(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            customText(text: title, size: width * 0.013, color: Colors.white),
-            const SizedBox(height: 10),
-            subtitle != null
-                ? customText(
-                    text: subtitle,
-                    color: Colors.white54,
-                    size: width * 0.01,
-                  )
-                : const SizedBox.shrink(),
-          ],
+      borderRadius: BorderRadius.circular(18),
+      gradient: LinearGradient(
+        colors: gradientColors,
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.pink.withOpacity(0.18),
+          blurRadius: 24,
+          offset: const Offset(0, 10),
         ),
-        const Spacer(),
-        if (widgets != null) ...widgets,
+      ],
+    ),
+    child: Stack(
+      clipBehavior: Clip.hardEdge,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child:  Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 34,
+                ),
+              ),
+
+              const SizedBox(width: 22),
+
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  customText(
+                    text: title,
+                    size: width * 0.017,
+                    color: Colors.white,
+                    bold: true,
+                    isEnglish: true,
+                  ),
+                  const SizedBox(height: 10),
+                  if (subtitle != null)
+                    customText(
+                      text: subtitle,
+                      color: Colors.white.withOpacity(0.75),
+                      size: width * 0.01,
+                      isEnglish: true,
+                    ),
+                ],
+              ),
+
+              const Spacer(),
+
+              if (widgets != null) ...widgets,
+            ],
+          ),
+        ),
+        Positioned(
+          left: width * 0.7,
+          bottom: height * 0.001,
+          child: Icon(
+            Icons.pie_chart_rounded,
+            size: width * 0.15,
+            color: Colors.green.withOpacity(0.10),
+          ),
+        ),
       ],
     ),
   );
@@ -398,5 +454,3 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> customSnackBar({
     ),
   );
 }
-
-

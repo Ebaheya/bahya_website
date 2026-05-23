@@ -9,15 +9,17 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double width = getScreenWidth(context);
-
+    double height = getScreenHeight(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           pageHeader(
+            height: height,
             width: width,
             title: "Settings",
             subtitle: "Manage system and account settings",
+            icon: Icons.settings_rounded,
           ),
 
           const SizedBox(height: 20),

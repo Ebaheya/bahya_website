@@ -59,41 +59,4 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   }
 }
 
-//////////////////////////////////////////////////////////////
-/// Top Bar
-//////////////////////////////////////////////////////////////
-
-// class TopBar extends StatelessWidget {
-//   const TopBar({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       height: 70,
-//       color: Colors.white,
-//       padding: const EdgeInsets.symmetric(horizontal: 20),
-//       child: Row(
-//         children: [
-//           Expanded(
-//             child: TextField(
-//               decoration: InputDecoration(
-//                 hintText: "Search...",
-//                 filled: true,
-//                 fillColor: const Color(0xFFF5F6FA),
-//                 border: OutlineInputBorder(
-//                   borderRadius: BorderRadius.circular(30),
-//                   borderSide: BorderSide.none,
-//                 ),
-//               ),
-//             ),
-//           ),
-//           const SizedBox(width: 20),
-//           const CircleAvatar(child: Text("AD")),
-//           const SizedBox(width: 10),
-//           const Text("Admin User"),
-//         ],
-//       ),
-//     );
-//   }
-// }
 

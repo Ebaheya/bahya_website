@@ -20,8 +20,10 @@ class UsersPage extends StatelessWidget {
           children: [
             pageHeader(
               width: getScreenWidth(context),
+              height: getScreenHeight(context),
               title: "Users Management",
               subtitle: 'Manage and monitor all platform users',
+              icon: Icons.people_rounded,
               widgets: [
                 CustomGlowButton(
                   title: "Add User",
