@@ -14,6 +14,7 @@ class CustomFormTextField extends StatefulWidget {
   final TextEditingController? controller;
   final TextDirection textDirection;
   final Icon? suffixIcon;
+  final Icon? prefixIcon;
   final int maxLines;
   final VoidCallback? onTap;
   final Function(String)? onChange;
@@ -32,6 +33,7 @@ class CustomFormTextField extends StatefulWidget {
     this.textDirection = TextDirection.rtl,
     this.suffixIcon,
     this.maxLines = 1,
+    this.prefixIcon,
     this.onTap,
     this.onChange,
     this.isSearch = false,
@@ -156,7 +158,9 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
       onChanged: widget.onChange,
 
       keyboardType: _mapKeyboardType(widget.keyboardType),
-      textAlign: TextAlign.right,
+      textAlign: widget.textDirection == TextDirection.ltr
+          ? TextAlign.left
+          : TextAlign.right,
       controller: widget.controller,
 
       obscureText: _obscureText,
@@ -231,6 +235,8 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           maxHeight: 100,
           maxWidth: 100,
         ),
+
+        prefixIcon: widget.prefixIcon,
         hintText: widget.hintText,
 
         labelText: widget.labelText,

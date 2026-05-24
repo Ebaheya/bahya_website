@@ -103,15 +103,13 @@ class _AddUserDialogState extends State<AddUserDialog>
 
             Divider(color: Colors.grey.shade300),
 
-            const SizedBox(height: 20),
+        
 
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(16),
 
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
-
                   children: [
                     Container(
                       padding: const EdgeInsets.all(6),
@@ -159,7 +157,7 @@ class _AddUserDialogState extends State<AddUserDialog>
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
 
                     AnimatedSize(
                       duration: const Duration(milliseconds: 350),
@@ -234,11 +232,11 @@ class _AddUserDialogState extends State<AddUserDialog>
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 15),
 
                     Divider(color: Colors.grey.shade300),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 15),
 
                     Row(
                       children: [

@@ -213,6 +213,7 @@ class WebService {
       );
       if (res.statusCode == 200) {
         debugPrint("Password change successful");
+              return;
       }
       if (res.statusCode == 401) {
         throw Exception('Current password is incorrect');

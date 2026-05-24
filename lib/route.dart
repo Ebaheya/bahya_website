@@ -2,6 +2,7 @@ import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/screens/add_questionnaire.dart';
 import 'package:bahya_website/screens/admin_panel/admin_panal.dart';
+import 'package:bahya_website/screens/admin_panel/report_panel.dart';
 import 'package:bahya_website/screens/home.dart';
 import 'package:bahya_website/screens/login.dart';
 import 'package:bahya_website/screens/patient_info.dart';
@@ -20,14 +21,29 @@ class AuthNotifier extends ChangeNotifier {
   bool get isLoggedIn => _isLoggedIn;
   bool get passwordResetDone => _passwordResetDone;
   bool get isLoading => _isLoading;
+Future<void> forceLogout() async {
+    final storage = SecureStorageService();
+    await storage.clearTokens();
 
-  Future<void> checkLogin() async {
+    _isLoggedIn = false;
+    _isLoading = false;
+
+    notifyListeners();
+  }
+Future<void> checkLogin() async {
     _isLoading = true;
     notifyListeners();
-    final storage = SecureStorageService();
-    final token = await storage.getAccessToken();
 
-    _isLoggedIn = token != null && token.isNotEmpty;
+    final storage = SecureStorageService();
+
+    final accessToken = await storage.getAccessToken();
+    final refreshToken = await storage.getRefreshToken();
+
+    _isLoggedIn =
+        accessToken != null &&
+        accessToken.isNotEmpty &&
+        refreshToken != null &&
+        refreshToken.isNotEmpty;
 
     _isLoading = false;
     notifyListeners();
@@ -167,6 +183,7 @@ class AppRouter {
         path: '/volunteer_survey',
         builder: (context, state) => VolunteerPatientsScreen(),
       ),
+
     ],
   );
 }

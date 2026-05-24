@@ -1,5 +1,6 @@
 import 'package:bahya_website/helper/admin_widgets/filter_dropdown.dart';
 import 'package:bahya_website/helper/base.dart';
+import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 
@@ -13,9 +14,11 @@ class ReportsTable extends StatefulWidget {
 class _ReportsTableState extends State<ReportsTable> {
   String selectedStatus = "All Status";
 
+  final TextEditingController searchController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+    final h = getScreenHeight(context);
 
     return Container(
       width: double.infinity,
@@ -30,20 +33,17 @@ class _ReportsTableState extends State<ReportsTable> {
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: "Search reports...",
-                    hintStyle: TextStyle(
-                      fontSize: w * 0.01,
-                      fontFamily: 'ArabicCustomFont',
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF5F6FA),
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
+                child: modernInputBox(
+                  icon: Icons.search,
+                  child: CustomFormTextField(
+                    hintText: "Search by name or email",
+                    isSearch: true,
+                    isRequired: false,
+                    textDirection: TextDirection.ltr,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    keyboardType: CustomTextFieldType.text,
+                    controller: searchController,
+                    onChange: (v) => setState(() {}),
                   ),
                 ),
               ),
@@ -51,17 +51,21 @@ class _ReportsTableState extends State<ReportsTable> {
               const SizedBox(width: 10),
 
               /// Single Filter Dropdown
-              FilterDropdown(
-                hint: selectedStatus,
-                items: const [
-                  "All Status",
-                  "Pending",
-                  "Investigating",
-                  "Resolved",
-                ],
-                onChanged: (v) {
-                  setState(() => selectedStatus = v);
-                },
+              SizedBox(
+                height: h * 0.072,
+                width: w * 0.15,
+                child: FilterDropdown(
+                  hint: selectedStatus,
+                  items: const [
+                    "All Status",
+                    "Pending",
+                    "Investigating",
+                    "Resolved",
+                  ],
+                  onChanged: (v) {
+                    setState(() => selectedStatus = v);
+                  },
+                ),
               ),
             ],
           ),
@@ -81,11 +85,11 @@ class _ReportsTableState extends State<ReportsTable> {
                     dataRowHeight: 70,
 
                     columns: [
-                      _header(context, "ID"),
+                      _header(context, "Role"),
                       _header(context, "Reporter"),
-                      _header(context, "Type"),
+                      _header(context, "Title"),
                       _header(context, "Reason"),
-                      _header(context, "Priority"),
+                      // _header(context, "Priority"),
                       _header(context, "Date"),
                       _header(context, "Status"),
                       _header(context, "Actions"),
@@ -96,7 +100,7 @@ class _ReportsTableState extends State<ReportsTable> {
                         cells: [
                           DataCell(
                             customText(
-                              text: r["id"].toString(),
+                              text: r["role"].toString(),
                               size: w * 0.008,
                               isEnglish: true,
                             ),
@@ -127,10 +131,9 @@ class _ReportsTableState extends State<ReportsTable> {
                             ),
                           ),
 
-                          DataCell(
-                            _badgePriority(r["priority"].toString(), context),
-                          ),
-
+                          // DataCell(
+                          //   _badgePriority(r["priority"].toString(), context),
+                          // ),
                           DataCell(
                             customText(
                               text: r["date"].toString(),
@@ -171,28 +174,28 @@ class _ReportsTableState extends State<ReportsTable> {
   }
 
   /// Priority Badge
-  Widget _badgePriority(String text, BuildContext context) {
-    Color color;
+  // Widget _badgePriority(String text, BuildContext context) {
+  //   Color color;
 
-    switch (text) {
-      case "High":
-        color = Colors.purple;
-        break;
-      case "Medium":
-        color = Colors.blue;
-        break;
-      case "Low":
-        color = Colors.grey;
-        break;
-      case "Critical":
-        color = Colors.pink;
-        break;
-      default:
-        color = Colors.grey;
-    }
+  //   switch (text) {
+  //     case "High":
+  //       color = Colors.purple;
+  //       break;
+  //     case "Medium":
+  //       color = Colors.blue;
+  //       break;
+  //     case "Low":
+  //       color = Colors.grey;
+  //       break;
+  //     case "Critical":
+  //       color = Colors.pink;
+  //       break;
+  //     default:
+  //       color = Colors.grey;
+  //   }
 
-    return _badge(text, color, context);
-  }
+  //   return _badge(text, color, context);
+  // }
 
   /// Status Badge
   Widget _badgeStatus(String text, BuildContext context) {
@@ -255,7 +258,7 @@ class _ReportsTableState extends State<ReportsTable> {
 
 final reports = [
   {
-    "id": "#1",
+    "role": "#1",
     "reporter": "Sarah Johnson",
     "type": "Content Report",
     "reason": "Inappropriate language",
@@ -264,7 +267,7 @@ final reports = [
     "status": "Pending",
   },
   {
-    "id": "#2",
+    "role": "#2",
     "reporter": "James Martinez",
     "type": "Technical Issue",
     "reason": "Chat not loading",
@@ -273,7 +276,7 @@ final reports = [
     "status": "Resolved",
   },
   {
-    "id": "#3",
+    "role": "#3",
     "reporter": "Emma Williams",
     "type": "User Behavior",
     "reason": "Harassment concern",
@@ -282,7 +285,7 @@ final reports = [
     "status": "Pending",
   },
   {
-    "id": "#4",
+    "role": "#4",
     "reporter": "John Davis",
     "type": "Bug Report",
     "reason": "Payment error",

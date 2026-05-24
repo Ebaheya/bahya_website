@@ -26,16 +26,6 @@ class ReportsPage extends StatelessWidget {
             title: 'Reports Management',
             subtitle: 'Review and resolve user reports',
             icon: Icons.report_rounded,
-            widgets: [
-              CustomGlowButton(
-                title: "New Report",
-                onPressed: () {},
-                textSize: getScreenWidth(context) * 0.011,
-                textColor: textColor,
-                glowColor: Colors.white,
-                width: getScreenWidth(context) * 0.1,
-              ),
-            ],
           ),
           const SizedBox(height: 20),
 
@@ -43,7 +33,7 @@ class ReportsPage extends StatelessWidget {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: 4,
+            itemCount: 3,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: 16,
@@ -69,11 +59,11 @@ class ReportsPage extends StatelessWidget {
                   title: "Resolved",
                   value: 4.0,
                 ),
-                const ReportCard(
-                  icon: Icons.warning_amber_rounded,
-                  title: "Critical",
-                  value: 1.0,
-                ),
+                // const ReportCard(
+                //   icon: Icons.warning_amber_rounded,
+                //   title: "Critical",
+                //   value: 1.0,
+                // ),
               ];
               return items[index];
             },

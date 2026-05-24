@@ -2,19 +2,20 @@ import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 
 class CustomDatePickerField extends StatefulWidget {
-  final String labelText;
+  final String? labelText;
   final String hintText;
   final TextEditingController controller;
   final DateTime? initialDate;
   final Function(DateTime date)? onDateSelected;
-
+final bool showCalendarIcon;
   const CustomDatePickerField({
     super.key,
-    required this.labelText,
+     this.labelText,
     required this.hintText,
     required this.controller,
     this.initialDate,
     this.onDateSelected,
+    this.showCalendarIcon = true,
   });
 
   @override
@@ -92,9 +93,6 @@ class _CustomDatePickerFieldState extends State<CustomDatePickerField> {
               ),
             ),
 
-            //////////////////////////////////////////////////////
-            /// Buttons
-            //////////////////////////////////////////////////////
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFFEA298C),
@@ -107,14 +105,8 @@ class _CustomDatePickerFieldState extends State<CustomDatePickerField> {
               ),
             ),
 
-            //////////////////////////////////////////////////////
-            /// Icons
-            //////////////////////////////////////////////////////
             iconTheme: const IconThemeData(color: Color(0xFFEA298C)),
 
-            //////////////////////////////////////////////////////
-            /// Divider
-            //////////////////////////////////////////////////////
             dividerTheme: const DividerThemeData(
               color: Color(0xFFE9B4CB),
               thickness: 1,
@@ -162,7 +154,9 @@ class _CustomDatePickerFieldState extends State<CustomDatePickerField> {
 
         labelText: widget.labelText,
 
-        suffixIcon: const Icon(Icons.calendar_today, color: Colors.grey),
+        suffixIcon: widget.showCalendarIcon
+            ? const Icon(Icons.calendar_today, color: Colors.grey)
+            : null  ,
 
         labelStyle: TextStyle(
           color: Colors.black,
@@ -194,13 +188,13 @@ class _CustomDatePickerFieldState extends State<CustomDatePickerField> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
 
-          borderSide: const BorderSide(color: Colors.grey, width: 1.2),
+          borderSide: BorderSide(color: Colors.pink[300]!, width: 1.2),
         ),
 
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
 
-          borderSide: const BorderSide(color: Color(0xFFFF7BB0), width: 1.5),
+          borderSide: BorderSide(color: Colors.pink, width: 1.5),
         ),
 
         errorStyle: TextStyle(

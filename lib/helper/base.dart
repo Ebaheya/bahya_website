@@ -312,67 +312,53 @@ Widget pageHeader({
         ),
       ],
     ),
-    child: Stack(
-      clipBehavior: Clip.hardEdge,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
+    child: Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Row(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child:  Icon(
+              icon,
+              color: Colors.white,
+              size: 34,
+            ),
+          ),
+    
+          const SizedBox(width: 22),
+    
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child:  Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 34,
-                ),
+              customText(
+                text: title,
+                size: width * 0.017,
+                color: Colors.white,
+                bold: true,
+                isEnglish: true,
               ),
-
-              const SizedBox(width: 22),
-
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  customText(
-                    text: title,
-                    size: width * 0.017,
-                    color: Colors.white,
-                    bold: true,
-                    isEnglish: true,
-                  ),
-                  const SizedBox(height: 10),
-                  if (subtitle != null)
-                    customText(
-                      text: subtitle,
-                      color: Colors.white.withOpacity(0.75),
-                      size: width * 0.01,
-                      isEnglish: true,
-                    ),
-                ],
-              ),
-
-              const Spacer(),
-
-              if (widgets != null) ...widgets,
+              const SizedBox(height: 10),
+              if (subtitle != null)
+                customText(
+                  text: subtitle,
+                  color: Colors.white.withOpacity(0.75),
+                  size: width * 0.01,
+                  isEnglish: true,
+                ),
             ],
           ),
-        ),
-        Positioned(
-          left: width * 0.7,
-          bottom: height * 0.001,
-          child: Icon(
-            Icons.pie_chart_rounded,
-            size: width * 0.15,
-            color: Colors.green.withOpacity(0.10),
-          ),
-        ),
-      ],
+    
+          const Spacer(),
+    
+          if (widgets != null) ...widgets,
+        ],
+      ),
     ),
   );
 }
@@ -451,6 +437,40 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> customSnackBar({
         size: w * 0.01,
         color: Colors.white,
       ),
+    ),
+  );
+}
+
+Widget modernInputBox({required IconData icon, required Widget child}) {
+  return Container(
+    height: 62,
+    padding: const EdgeInsets.only(left: 14, right: 14),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: Colors.grey.withOpacity(0.14)),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.035),
+          blurRadius: 14,
+          offset: const Offset(0, 7),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: buttonColor.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Icon(icon, color: buttonColor, size: 22),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: child),
+      ],
     ),
   );
 }

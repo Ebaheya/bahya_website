@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/data/local/data_secure.dart';
+import 'package:bahya_website/route.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -116,21 +117,21 @@ Future<void> logout({required String refreshToken}) async {
 void setupInterceptors(Dio dio) {
   dio.interceptors.add(
     InterceptorsWrapper(
-      //////////////////////////////////////////////////////////
-      /// REQUEST
-      //////////////////////////////////////////////////////////
       onRequest: (options, handler) async {
         final storage = SecureStorageService();
 
-        /// Public endpoints
-        final publicEndpoints = ['/auth/login', '/auth/refresh', '/health'];
+        final publicEndpoints = [
+          '/auth/login',
+          '/auth/refresh',
+          '/auth/forgot-password',
+          '/auth/reset-password',
+          '/health',
+        ];
 
-        /// Check if endpoint is public
         final isPublic = publicEndpoints.any(
           (endpoint) => options.path.endsWith(endpoint),
         );
 
-        /// Add token only for protected routes
         if (!isPublic) {
           final token = await storage.getAccessToken();
 
@@ -142,29 +143,21 @@ void setupInterceptors(Dio dio) {
         handler.next(options);
       },
 
-      //////////////////////////////////////////////////////////
-      /// ERROR
-      //////////////////////////////////////////////////////////
       onError: (DioException e, ErrorInterceptorHandler handler) async {
         final storage = SecureStorageService();
-
-        /// Original request
         final request = e.requestOptions;
 
-        /// Public endpoints
-        final publicEndpoints = ['/auth/login', '/auth/refresh', '/health'];
+        final publicEndpoints = [
+          '/auth/login',
+          '/auth/refresh',
+          '/auth/forgot-password',
+          '/auth/reset-password',
+          '/health',
+        ];
 
-        /// Prevent refresh on public routes
         final isPublic = publicEndpoints.any(
           (endpoint) => request.path.endsWith(endpoint),
         );
-
-        ////////////////////////////////////////////////////////
-        /// Skip if:
-        /// - request already retried
-        /// - request is public
-        /// - not unauthorized
-        ////////////////////////////////////////////////////////
 
         if (e.response?.statusCode != 401 ||
             request.extra['retried'] == true ||
@@ -173,56 +166,35 @@ void setupInterceptors(Dio dio) {
         }
 
         try {
-          //////////////////////////////////////////////////////
-          /// Get refresh token
-          //////////////////////////////////////////////////////
-
           final refreshToken = await storage.getRefreshToken();
 
-          /// No refresh token
           if (refreshToken == null || refreshToken.isEmpty) {
-            await storage.clearTokens();
-
+            await logoutAndRedirect();
             return handler.next(e);
           }
-
-          //////////////////////////////////////////////////////
-          /// Refresh request
-          //////////////////////////////////////////////////////
 
           final refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
 
           final refreshResponse = await refreshDio.post(
             '/auth/refresh',
-
             data: {"refreshToken": refreshToken},
           );
 
-          //////////////////////////////////////////////////////
-          /// Success
-          //////////////////////////////////////////////////////
-
           if (refreshResponse.statusCode == 200) {
             final newAccess = refreshResponse.data['accessToken'];
-
             final newRefresh = refreshResponse.data['refreshToken'];
 
-            ////////////////////////////////////////////////////
-            /// Save new tokens
-            ////////////////////////////////////////////////////
+            if (newAccess == null || newRefresh == null) {
+              await logoutAndRedirect();
+              return handler.next(e);
+            }
 
             await storage.saveTokens(
               accessToken: newAccess,
-
               refreshToken: newRefresh,
             );
 
-            ////////////////////////////////////////////////////
-            /// Retry original request
-            ////////////////////////////////////////////////////
-
             request.headers['Authorization'] = 'Bearer $newAccess';
-
             request.extra['retried'] = true;
 
             final response = await dio.fetch(request);
@@ -230,21 +202,12 @@ void setupInterceptors(Dio dio) {
             return handler.resolve(response);
           }
 
-          //////////////////////////////////////////////////////
-          /// Refresh failed
-          //////////////////////////////////////////////////////
-
-          await storage.clearTokens();
-
+          await logoutAndRedirect();
           return handler.next(e);
         } catch (refreshError) {
-          //////////////////////////////////////////////////////
-          /// Refresh crashed
-          //////////////////////////////////////////////////////
-
-          await storage.clearTokens();
-
           debugPrint('Refresh Token Error: $refreshError');
+
+          await logoutAndRedirect();
 
           return handler.next(e);
         }
@@ -253,6 +216,15 @@ void setupInterceptors(Dio dio) {
   );
 }
 
+Future<void> logoutAndRedirect() async {
+  final storage = SecureStorageService();
+
+  await storage.clearTokens();
+  await authNotifier.forceLogout();
+
+  AppRouter.router.go('/login');
+  
+}
 // final response = await safeRequest((token) {
 //   return dio.get(
 //     '/profile',
