@@ -24,6 +24,11 @@ function normalizeHighRiskSeverity(severity: string): NotificationSeverity {
   return severity === 'CRITICAL' ? 'CRITICAL' : 'HIGH';
 }
 
+function loggableError(err: unknown): { name?: string; message: string } {
+  if (err instanceof Error) return { name: err.name, message: err.message };
+  return { message: String(err) };
+}
+
 export async function emitFormAssigned(input: FormAssignedNotificationInput): Promise<void> {
   try {
     await NotificationModel.create({
@@ -50,7 +55,7 @@ export async function emitFormAssigned(input: FormAssignedNotificationInput): Pr
         patientId: input.patientId,
         recipientRole: input.recipientRole,
         recipientUserId: input.recipientUserId,
-        err,
+        err: loggableError(err),
       },
       'notification emit failed'
     );
@@ -84,7 +89,7 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
         type: 'HIGH_RISK',
         patientId: input.patientId,
         severity: input.severity,
-        err,
+        err: loggableError(err),
       },
       'notification emit failed'
     );

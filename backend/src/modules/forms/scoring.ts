@@ -59,6 +59,27 @@ function choiceMap(question: ScoringQuestion): Map<string, ScoringChoice> {
   return new Map((question.choices ?? []).map((choice) => [choice.id, choice]));
 }
 
+function minQuestionScore(question: ScoringQuestion): number {
+  if (question.type === 'SCALE') {
+    validateScaleQuestion(question);
+    return question.scaleMin ?? 0;
+  }
+
+  const scores = (question.choices ?? []).map((choice) => choice.score);
+  if (scores.length === 0) return 0;
+
+  if (question.type === 'SINGLE_SELECT') {
+    const minSelected = Math.min(...scores);
+    return question.required === false ? Math.min(0, minSelected) : minSelected;
+  }
+
+  const negativeSum = scores.filter((score) => score < 0).reduce((sum, score) => sum + score, 0);
+  if (negativeSum < 0) return negativeSum;
+
+  const minSelected = Math.min(...scores);
+  return question.required === false ? Math.min(0, minSelected) : minSelected;
+}
+
 function maxQuestionScore(question: ScoringQuestion): number {
   if (question.type === 'SCALE') {
     validateScaleQuestion(question);
@@ -66,9 +87,18 @@ function maxQuestionScore(question: ScoringQuestion): number {
   }
 
   const scores = (question.choices ?? []).map((choice) => choice.score);
-  if (question.type === 'SINGLE_SELECT') return Math.max(0, ...scores);
+  if (scores.length === 0) return 0;
 
-  return scores.filter((score) => score > 0).reduce((sum, score) => sum + score, 0);
+  if (question.type === 'SINGLE_SELECT') {
+    const maxSelected = Math.max(...scores);
+    return question.required === false ? Math.max(0, maxSelected) : maxSelected;
+  }
+
+  const positiveSum = scores.filter((score) => score > 0).reduce((sum, score) => sum + score, 0);
+  if (positiveSum > 0) return positiveSum;
+
+  const maxSelected = Math.max(...scores);
+  return question.required === false ? Math.max(0, maxSelected) : maxSelected;
 }
 
 function findAnswer(question: ScoringQuestion, answersByQuestion: Map<string, ScoringAnswer>) {
@@ -90,6 +120,9 @@ function assertKnownChoice(question: ScoringQuestion, choiceId: string, choices:
 function assertStepAligned(question: ScoringQuestion, value: number): void {
   const min = question.scaleMin ?? 0;
   const step = question.scaleStep ?? 1;
+  if (!Number.isInteger(value)) {
+    throw new ScoringValidationError('FORM_SCALE_OUT_OF_RANGE', 'Scale answer must be an integer');
+  }
   if ((value - min) % step !== 0) {
     throw new ScoringValidationError('FORM_SCALE_OUT_OF_RANGE', 'Scale answer is not aligned to step');
   }
@@ -105,6 +138,9 @@ export function validateScaleQuestion(question: ScoringQuestion): void {
     question.scaleMax === undefined ||
     question.scaleStep === null ||
     question.scaleStep === undefined ||
+    !Number.isInteger(question.scaleMin) ||
+    !Number.isInteger(question.scaleMax) ||
+    !Number.isInteger(question.scaleStep) ||
     question.scaleMin >= question.scaleMax ||
     question.scaleStep <= 0
   ) {
@@ -132,6 +168,12 @@ export function achievableTotal(questions: ScoringQuestion[], subscale?: string 
     .reduce((total, question) => total + maxQuestionScore(question), 0);
 }
 
+export function achievableMin(questions: ScoringQuestion[], subscale?: string | null): number {
+  return questions
+    .filter((question) => subscale === undefined || (question.subscale ?? null) === subscale)
+    .reduce((total, question) => total + minQuestionScore(question), 0);
+}
+
 export function validateRangesCoverAchievableTotal(
   questions: ScoringQuestion[],
   ranges: ScoreRange[]
@@ -147,19 +189,26 @@ export function validateRangesCoverAchievableTotal(
   }
 
   for (const [key, groupedRanges] of groups) {
-    const subscale = key === '' ? null : key;
+    const subscale = key === '' ? undefined : key;
+    const rangeFloor = achievableMin(questions, subscale);
     const expectedMax = achievableTotal(questions, subscale);
     const sorted = [...groupedRanges].sort((a, b) => a.minScore - b.minScore || a.maxScore - b.maxScore);
-    let expectedMin = 0;
+    let expectedMin = rangeFloor;
+    let previousMax: number | null = null;
 
     for (const range of sorted) {
-      if (range.minScore < expectedMin) {
+      if (previousMax !== null && range.minScore <= previousMax) {
         throw new ScoringValidationError('FORM_RANGES_OVERLAP', 'Score ranges cannot overlap');
       }
+      previousMax = range.maxScore;
+
+      if (range.maxScore < rangeFloor) continue;
+      if (range.minScore > expectedMax) break;
+
       if (range.minScore > expectedMin) {
         throw new ScoringValidationError('FORM_RANGES_GAP', 'Score ranges must cover every achievable score');
       }
-      expectedMin = range.maxScore + 1;
+      expectedMin = Math.max(expectedMin, range.maxScore + 1);
     }
 
     if (expectedMin <= expectedMax) {
@@ -213,12 +262,13 @@ export function scoreFormSubmission(
       if (question.type === 'SINGLE_SELECT' && selectedChoiceIds.length !== 1) {
         throw new ScoringValidationError('FORM_INVALID_CHOICE_COUNT', 'Single-select questions require exactly one choice');
       }
-      if (question.type === 'MULTI_SELECT' && question.required !== false && selectedChoiceIds.length === 0) {
+      const uniqueChoiceIds = question.type === 'MULTI_SELECT' ? [...new Set(selectedChoiceIds)] : selectedChoiceIds;
+      if (question.type === 'MULTI_SELECT' && question.required !== false && uniqueChoiceIds.length === 0) {
         throw new ScoringValidationError('FORM_MISSING_REQUIRED_ANSWER', 'Multi-select answer is missing');
       }
 
       const choices = choiceMap(question);
-      score = selectedChoiceIds.reduce(
+      score = uniqueChoiceIds.reduce(
         (sum, choiceId) => sum + assertKnownChoice(question, choiceId, choices).score,
         0
       );

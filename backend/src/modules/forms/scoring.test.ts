@@ -1,8 +1,10 @@
 import {
   ScoringValidationError,
+  achievableMin,
   achievableTotal,
   scoreFormSubmission,
   validateRangesCoverAchievableTotal,
+  validateQuestionStructure,
   validateScaleQuestion,
   type ScoreRange,
   type ScoringQuestion,
@@ -86,6 +88,7 @@ describe('scoring engine', () => {
   });
 
   it('validates range coverage and rejects gaps and overlaps', () => {
+    expect(achievableMin(questions)).toBe(1);
     expect(achievableTotal(questions)).toBe(16);
     expect(() =>
       validateRangesCoverAchievableTotal(questions, [
@@ -113,5 +116,126 @@ describe('scoring engine', () => {
         [{ questionId: 'scale', value: 3 }]
       )
     ).toThrow(new ScoringValidationError('FORM_SCALE_OUT_OF_RANGE', 'Scale answer is not aligned to step'));
+  });
+
+  it('validates ranges against negative achievable scores', () => {
+    const negativeQuestions: ScoringQuestion[] = [
+      {
+        id: 'single-negative',
+        type: 'SINGLE_SELECT',
+        choices: [
+          { id: 'single-negative-2', score: -2 },
+          { id: 'single-positive-1', score: 1 },
+        ],
+      },
+      {
+        id: 'multi-negative',
+        type: 'MULTI_SELECT',
+        choices: [
+          { id: 'multi-negative-3', score: -3 },
+          { id: 'multi-positive-5', score: 5 },
+        ],
+      },
+    ];
+
+    expect(achievableMin(negativeQuestions)).toBe(-5);
+    expect(achievableTotal(negativeQuestions)).toBe(6);
+    expect(() =>
+      validateRangesCoverAchievableTotal(negativeQuestions, [
+        { label: 'Below baseline', minScore: -5, maxScore: -1 },
+        { label: 'At or above baseline', minScore: 0, maxScore: 6 },
+      ])
+    ).not.toThrow();
+  });
+
+  it('maps negative runtime scores into covered ranges', () => {
+    const result = scoreFormSubmission(
+      [
+        {
+          id: 'single-negative',
+          type: 'SINGLE_SELECT',
+          choices: [
+            { id: 'single-negative-2', score: -2 },
+            { id: 'single-positive-1', score: 1 },
+          ],
+        },
+        {
+          id: 'multi-negative',
+          type: 'MULTI_SELECT',
+          choices: [
+            { id: 'multi-negative-3', score: -3 },
+            { id: 'multi-positive-5', score: 5 },
+          ],
+        },
+      ],
+      [
+        { questionId: 'single-negative', choiceIds: ['single-negative-2'] },
+        { questionId: 'multi-negative', choiceIds: ['multi-negative-3'] },
+      ],
+      [
+        { label: 'Below baseline', minScore: -5, maxScore: -1 },
+        { label: 'At or above baseline', minScore: 0, maxScore: 6 },
+      ]
+    );
+
+    expect(result.totalScore).toBe(-5);
+    expect(result.interpretation?.label).toBe('Below baseline');
+  });
+
+  it('validates ranges for non-zero scale floors', () => {
+    const scaleOnly: ScoringQuestion[] = [
+      { id: 'scale', type: 'SCALE', scaleMin: 5, scaleMax: 10, scaleStep: 1 },
+    ];
+
+    expect(achievableMin(scaleOnly)).toBe(5);
+    expect(achievableTotal(scaleOnly)).toBe(10);
+    expect(() =>
+      validateRangesCoverAchievableTotal(scaleOnly, [{ label: 'Elevated', minScore: 5, maxScore: 10 }])
+    ).not.toThrow();
+  });
+
+  it('deduplicates multi-select choices before scoring', () => {
+    const result = scoreFormSubmission(
+      [
+        {
+          id: 'multi',
+          type: 'MULTI_SELECT',
+          choices: [{ id: 'choice', score: 2 }],
+        },
+      ],
+      [{ questionId: 'multi', choiceIds: ['choice', 'choice'] }]
+    );
+
+    expect(result.totalScore).toBe(2);
+  });
+
+  it('rejects missing required answers and unknown choices', () => {
+    expect(() => scoreFormSubmission(questions, [])).toThrow(
+      new ScoringValidationError('FORM_MISSING_REQUIRED_ANSWER', 'Required answer is missing')
+    );
+
+    expect(() =>
+      scoreFormSubmission([questions[0]], [{ questionId: 'single', choiceIds: ['missing-choice'] }])
+    ).toThrow(new ScoringValidationError('FORM_INVALID_CHOICE', 'Unknown choice missing-choice for question single'));
+  });
+
+  it('rejects invalid question structures and scale values', () => {
+    expect(() => validateQuestionStructure({ id: 'empty', type: 'SINGLE_SELECT', choices: [] })).toThrow(
+      new ScoringValidationError('FORM_QUESTION_NO_CHOICES', 'Select questions require choices')
+    );
+
+    expect(() =>
+      scoreFormSubmission(
+        [{ id: 'scale', type: 'SCALE', scaleMin: 0, scaleMax: 10, scaleStep: 1 }],
+        [{ questionId: 'scale', value: 11 }]
+      )
+    ).toThrow(new ScoringValidationError('FORM_SCALE_OUT_OF_RANGE', 'Scale answer is outside the allowed range'));
+
+    expect(() =>
+      scoreFormSubmission(
+        [{ id: 'scale', type: 'SCALE', scaleMin: 0, scaleMax: 10, scaleStep: 1 }],
+        [{ questionId: 'scale', value: 1.5 }]
+      )
+    ).toThrow(new ScoringValidationError('FORM_SCALE_OUT_OF_RANGE', 'Scale answer must be an integer'));
   });
 });
