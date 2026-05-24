@@ -6,6 +6,7 @@ import 'package:bahya_app/screens/admin/patients_search.dart';
 import 'package:bahya_app/screens/patients/artical_screen.dart';
 import 'package:bahya_app/screens/patients/patients_home.dart';
 import 'package:bahya_app/screens/patients/programs_screen.dart';
+import 'package:bahya_app/screens/patients/questionnair_screen.dart';
 import 'package:bahya_app/screens/patients/requested_service.dart';
 import 'package:bahya_app/screens/patients/support_screen.dart';
 import 'package:bahya_app/screens/patients/travel_screen.dart';
@@ -52,8 +53,10 @@ class AppRoute {
             conclusion: args['conclusion'],
           ),
         );
-    case '/all_services':
+      case '/all_services':
         return MaterialPageRoute(builder: (_) => const AllServicesScreen());
+      case '/questionnaire_screen':
+        return MaterialPageRoute(builder: (_) => const QuestionnaireScreen());
       default:
         return MaterialPageRoute(builder: (_) => AdminHome());
     }

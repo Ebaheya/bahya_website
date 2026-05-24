@@ -50,6 +50,16 @@ class AdminHome extends StatelessWidget {
                   isGradient: true,
                 ),
                 SizedBox(height: h * 0.02),
+                CustomGlowButton(
+                  width: double.infinity,
+                  borderRadius: 12,
+                  title: "ديزاين المرضى",
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/patientsHome');
+                  },
+                  isGradient: true,
+                ),
+                SizedBox(height: h * 0.02),
                 Row(
                   children: [
                     customText(text: "الطلبات الوارده", size: w * 0.035),
