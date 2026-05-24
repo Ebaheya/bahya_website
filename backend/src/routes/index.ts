@@ -2,6 +2,9 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import { prisma } from '../config/prisma';
 import { authRouter } from '../modules/auth/auth.routes';
+import { assessmentRouter } from '../modules/assessments/assessment.routes';
+import { assignmentRouter } from '../modules/forms/assignment.routes';
+import { formRouter } from '../modules/forms/form.routes';
 import { patientRouter } from '../modules/patients/patient.routes';
 import { userRouter } from '../modules/users/user.routes';
 
@@ -47,5 +50,8 @@ apiRouter.get('/health', async (_req, res) => {
 });
 
 apiRouter.use('/auth', authRouter);
+apiRouter.use('/forms', formRouter);
+apiRouter.use('/form-assignments', assignmentRouter);
+apiRouter.use('/assessments', assessmentRouter);
 apiRouter.use('/patients', patientRouter);
 apiRouter.use('/users', userRouter);
