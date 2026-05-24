@@ -194,7 +194,22 @@ describe('scoring engine', () => {
     ).not.toThrow();
   });
 
-  it('deduplicates multi-select choices before scoring', () => {
+  it('rejects duplicate multi-select choices', () => {
+    expect(() =>
+      scoreFormSubmission(
+        [
+          {
+            id: 'multi',
+            type: 'MULTI_SELECT',
+            choices: [{ id: 'choice', score: 2 }],
+          },
+        ],
+        [{ questionId: 'multi', choiceIds: ['choice', 'choice'] }]
+      )
+    ).toThrow(new ScoringValidationError('FORM_DUPLICATE_CHOICE', 'Multi-select answers cannot repeat choices'));
+  });
+
+  it('scores unique multi-select choices once', () => {
     const result = scoreFormSubmission(
       [
         {
@@ -203,7 +218,7 @@ describe('scoring engine', () => {
           choices: [{ id: 'choice', score: 2 }],
         },
       ],
-      [{ questionId: 'multi', choiceIds: ['choice', 'choice'] }]
+      [{ questionId: 'multi', choiceIds: ['choice'] }]
     );
 
     expect(result.totalScore).toBe(2);

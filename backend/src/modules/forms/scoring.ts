@@ -263,6 +263,9 @@ export function scoreFormSubmission(
         throw new ScoringValidationError('FORM_INVALID_CHOICE_COUNT', 'Single-select questions require exactly one choice');
       }
       const uniqueChoiceIds = question.type === 'MULTI_SELECT' ? [...new Set(selectedChoiceIds)] : selectedChoiceIds;
+      if (question.type === 'MULTI_SELECT' && uniqueChoiceIds.length !== selectedChoiceIds.length) {
+        throw new ScoringValidationError('FORM_DUPLICATE_CHOICE', 'Multi-select answers cannot repeat choices');
+      }
       if (question.type === 'MULTI_SELECT' && question.required !== false && uniqueChoiceIds.length === 0) {
         throw new ScoringValidationError('FORM_MISSING_REQUIRED_ANSWER', 'Multi-select answer is missing');
       }
