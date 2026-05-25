@@ -1,6 +1,11 @@
 import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../../utils/httpError';
-import { createFormSchema, formIdParamSchema, listFormsQuerySchema } from './form.schema';
+import {
+  createFormSchema,
+  formIdParamSchema,
+  formVersionParamSchema,
+  listFormsQuerySchema,
+} from './form.schema';
 import * as formService from './form.service';
 import {
   assignmentIdParamSchema,
@@ -25,6 +30,38 @@ export async function getById(req: Request, res: Response, next: NextFunction): 
     const { id } = formIdParamSchema.parse(req.params);
     const form = await formService.getForm(id);
     res.status(200).json(form);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.user) throw AppError.unauthorized();
+    const { id } = formIdParamSchema.parse(req.params);
+    const input = createFormSchema.parse(req.body);
+    const form = await formService.updateForm(id, input, req.user.id, req);
+    res.status(200).json(form);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listVersions(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = formIdParamSchema.parse(req.params);
+    const versions = await formService.listVersions(id);
+    res.status(200).json(versions);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getVersion(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id, version } = formVersionParamSchema.parse(req.params);
+    const formVersion = await formService.getVersion(id, version);
+    res.status(200).json(formVersion);
   } catch (err) {
     next(err);
   }

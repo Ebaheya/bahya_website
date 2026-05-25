@@ -28,9 +28,9 @@ function questionCreateData(question: CreateFormInput['questions'][number]) {
     type: question.type as FormQuestionType,
     subscale: nullIfMissing(question.subscale),
     required: question.required,
-    scaleMin: question.type === 'SCALE' ? question.scaleMin ?? null : null,
-    scaleMax: question.type === 'SCALE' ? question.scaleMax ?? null : null,
-    scaleStep: question.type === 'SCALE' ? question.scaleStep ?? null : null,
+    scaleMin: question.type === 'SCALE' ? (question.scaleMin ?? null) : null,
+    scaleMax: question.type === 'SCALE' ? (question.scaleMax ?? null) : null,
+    scaleStep: question.type === 'SCALE' ? (question.scaleStep ?? null) : null,
     choices:
       question.type === 'SCALE'
         ? undefined
@@ -41,6 +41,23 @@ function questionCreateData(question: CreateFormInput['questions'][number]) {
               score: choice.score,
             })),
           },
+  };
+}
+
+function scoreRangeCreateData(range: CreateFormInput['scoreRanges'][number]) {
+  return {
+    subscale: nullIfMissing(range.subscale),
+    label: range.label,
+    minScore: range.minScore,
+    maxScore: range.maxScore,
+    note: nullIfMissing(range.note),
+  };
+}
+
+function versionStructureCreateData(input: CreateFormInput) {
+  return {
+    questions: { create: input.questions.map(questionCreateData) },
+    scoreRanges: { create: input.scoreRanges.map(scoreRangeCreateData) },
   };
 }
 
@@ -72,16 +89,7 @@ export async function createForm(input: CreateFormInput, actorId: string, req?: 
             create: {
               version: 1,
               status: 'DRAFT',
-              questions: { create: input.questions.map(questionCreateData) },
-              scoreRanges: {
-                create: input.scoreRanges.map((range) => ({
-                  subscale: nullIfMissing(range.subscale),
-                  label: range.label,
-                  minScore: range.minScore,
-                  maxScore: range.maxScore,
-                  note: nullIfMissing(range.note),
-                })),
-              },
+              ...versionStructureCreateData(input),
             },
           },
         },
@@ -120,6 +128,104 @@ export async function getForm(id: string) {
   const form = await prisma.formTemplate.findUnique({ where: { id }, include: formInclude });
   if (!form) throw AppError.notFound('Form not found');
   return form;
+}
+
+export async function updateForm(
+  id: string,
+  input: CreateFormInput,
+  actorId: string,
+  req?: Request
+) {
+  try {
+    const form = await prisma.$transaction(async (tx) => {
+      const existing = await tx.formTemplate.findUnique({
+        where: { id },
+        include: {
+          currentVersion: {
+            select: { id: true, version: true, _count: { select: { submissions: true } } },
+          },
+        },
+      });
+      if (!existing || !existing.currentVersion) throw AppError.notFound('Form not found');
+
+      const templateData = {
+        key: input.key,
+        name: input.name,
+        description: nullIfMissing(input.description),
+        category: nullIfMissing(input.category),
+        scoringType: input.scoringType,
+        interpretationMode: input.interpretationMode,
+      };
+
+      let currentVersionId = existing.currentVersion.id;
+      if (existing.currentVersion._count.submissions === 0) {
+        await tx.formQuestion.deleteMany({ where: { versionId: currentVersionId } });
+        await tx.formScoreRange.deleteMany({ where: { versionId: currentVersionId } });
+        await tx.formVersion.update({
+          where: { id: currentVersionId },
+          data: versionStructureCreateData(input),
+        });
+      } else {
+        const version = await tx.formVersion.create({
+          data: {
+            templateId: id,
+            version: existing.currentVersion.version + 1,
+            status: 'PUBLISHED',
+            publishedAt: new Date(),
+            ...versionStructureCreateData(input),
+          },
+          select: { id: true },
+        });
+        currentVersionId = version.id;
+      }
+
+      return tx.formTemplate.update({
+        where: { id },
+        data: { ...templateData, currentVersionId },
+        include: formInclude,
+      });
+    });
+
+    await writeAudit({
+      actorId,
+      action: 'FORM_UPDATED',
+      entityType: 'FormTemplate',
+      entityId: form.id,
+      newValues: {
+        key: form.key,
+        name: form.name,
+        currentVersionId: form.currentVersionId,
+      },
+      req,
+    });
+
+    return form;
+  } catch (err) {
+    if (isUniqueConstraintError(err)) {
+      throw new AppError(409, 'FORM_KEY_EXISTS', 'Form key already exists');
+    }
+    throw err;
+  }
+}
+
+export async function listVersions(id: string) {
+  const form = await prisma.formTemplate.findUnique({ where: { id }, select: { id: true } });
+  if (!form) throw AppError.notFound('Form not found');
+
+  return prisma.formVersion.findMany({
+    where: { templateId: id },
+    include: formVersionInclude,
+    orderBy: { version: 'desc' },
+  });
+}
+
+export async function getVersion(id: string, version: number) {
+  const formVersion = await prisma.formVersion.findUnique({
+    where: { templateId_version: { templateId: id, version } },
+    include: formVersionInclude,
+  });
+  if (!formVersion) throw AppError.notFound('Form version not found');
+  return formVersion;
 }
 
 export async function listForms(query: ListFormsQuery) {

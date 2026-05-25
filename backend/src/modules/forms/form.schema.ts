@@ -13,7 +13,9 @@ const answerChoiceSchema = z
   .object({
     order: z.number().int().min(1),
     label: z.string().trim().min(1).max(300),
-    score: z.number({ required_error: 'FORM_CHOICE_MISSING_SCORE' }).int('FORM_CHOICE_MISSING_SCORE'),
+    score: z
+      .number({ required_error: 'FORM_CHOICE_MISSING_SCORE' })
+      .int('FORM_CHOICE_MISSING_SCORE'),
   })
   .strict();
 
@@ -136,6 +138,14 @@ export const formIdParamSchema = z
   })
   .strict();
 
+export const formVersionParamSchema = z
+  .object({
+    id: z.string().uuid(),
+    version: z.coerce.number().int().min(1),
+  })
+  .strict();
+
 export type CreateFormInput = z.infer<typeof createFormSchema>;
 export type ListFormsQuery = z.infer<typeof listFormsQuerySchema>;
 export type FormIdParam = z.infer<typeof formIdParamSchema>;
+export type FormVersionParam = z.infer<typeof formVersionParamSchema>;
