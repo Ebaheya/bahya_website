@@ -1,4 +1,5 @@
 import { prisma } from '../../config/prisma';
+import { AppError } from '../../utils/httpError';
 import { writeAudit } from '../../middleware/audit';
 import * as assessmentService from './assessment.service';
 
@@ -231,6 +232,66 @@ describe('createAssessment', () => {
       )
     ).rejects.toMatchObject({ statusCode: 409, code: 'ASSESSMENT_ALREADY_CREATED' });
     expect(lostClaimTx.assessment.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects an assessment whose patient or templateKey does not match the submission', async () => {
+    const mismatchPatientTx = transactionFor();
+    const mismatchTemplateTx = transactionFor();
+    prismaMock.$transaction
+      .mockImplementationOnce(async (callback) => callback(mismatchPatientTx))
+      .mockImplementationOnce(async (callback) => callback(mismatchTemplateTx));
+
+    // submission belongs to patient-1 / PHQ9; doctor passes a different patient
+    await expect(
+      assessmentService.createAssessment(
+        {
+          patientId: 'patient-2',
+          submissionId: 'submission-1',
+          templateKey: 'PHQ9',
+          status: 'MODERATE',
+        },
+        'doctor-1',
+        'DOCTOR'
+      )
+    ).rejects.toMatchObject({ statusCode: 400, code: 'ASSESSMENT_SUBMISSION_MISMATCH' });
+    expect(mismatchPatientTx.formAssignment.updateMany).not.toHaveBeenCalled();
+    expect(mismatchPatientTx.assessment.create).not.toHaveBeenCalled();
+
+    // ...or a templateKey that does not match the submission's template
+    await expect(
+      assessmentService.createAssessment(
+        {
+          patientId: 'patient-1',
+          submissionId: 'submission-1',
+          templateKey: 'GAD7',
+          status: 'MODERATE',
+        },
+        'doctor-1',
+        'DOCTOR'
+      )
+    ).rejects.toMatchObject({ statusCode: 400, code: 'ASSESSMENT_SUBMISSION_MISMATCH' });
+    expect(mismatchTemplateTx.assessment.create).not.toHaveBeenCalled();
+  });
+
+  it('returns the created assessment even when the post-commit audit fails', async () => {
+    const tx = transactionFor();
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+    writeAuditMock.mockRejectedValue(new AppError(503, 'AUDIT_UNAVAILABLE', 'Audit store down'));
+
+    await expect(
+      assessmentService.createAssessment(
+        {
+          patientId: 'patient-1',
+          submissionId: 'submission-1',
+          templateKey: 'PHQ9',
+          status: 'MODERATE',
+        },
+        'doctor-1',
+        'DOCTOR'
+      )
+    ).resolves.toMatchObject({ id: 'assessment-1', score: 12 });
+    // the source assignment was still flipped to REVIEWED inside the committed tx
+    expect(tx.formAssignment.updateMany).toHaveBeenCalled();
   });
 
   it.each(['ADMIN', 'VOLUNTEER', 'PATIENT'] as const)(

@@ -1,5 +1,6 @@
 import { Prisma, type Role } from '@prisma/client';
 import type { Request } from 'express';
+import { logger } from '../../config/logger';
 import { prisma } from '../../config/prisma';
 import { writeAudit } from '../../middleware/audit';
 import { AppError } from '../../utils/httpError';
@@ -157,19 +158,31 @@ export async function createAssessment(
     });
   });
 
-  await writeAudit({
-    actorId: doctorId,
-    action: 'ASSESSMENT_CREATED',
-    entityType: 'Assessment',
-    entityId: assessment.id,
-    newValues: {
-      patientId: assessment.patientId,
-      submissionId: assessment.submissionId,
-      templateKey: assessment.templateKey,
-      status: assessment.status,
-    },
-    req,
-  });
+  // Post-commit audit. The assessment is already persisted and the source
+  // assignment is REVIEWED, so this MUST NOT fail the request. ASSESSMENT_CREATED
+  // is best-effort tier today, but guard defensively so it stays safe even if it
+  // is later promoted to STRICT_AUDIT_ACTIONS (which would otherwise throw 503
+  // after commit — the bug fixed in the sibling submission flow).
+  try {
+    await writeAudit({
+      actorId: doctorId,
+      action: 'ASSESSMENT_CREATED',
+      entityType: 'Assessment',
+      entityId: assessment.id,
+      newValues: {
+        patientId: assessment.patientId,
+        submissionId: assessment.submissionId,
+        templateKey: assessment.templateKey,
+        status: assessment.status,
+      },
+      req,
+    });
+  } catch (err) {
+    logger.error(
+      { metric: 'assessment_audit_failure', assessmentId: assessment.id, err },
+      'assessment audit failed after commit'
+    );
+  }
 
   return assessment;
 }
