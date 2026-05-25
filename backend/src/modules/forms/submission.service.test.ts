@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
+import { AppError } from '../../utils/httpError';
 import { writeAudit } from '../../middleware/audit';
 import { emitHighRiskAlert } from '../notifications/notification.service';
 import { submitAssignmentSchema } from './submission.schema';
@@ -231,6 +232,40 @@ describe('submit', () => {
     });
     expect(result).not.toHaveProperty('totalScore');
     expect(result).not.toHaveProperty('interpretation');
+  });
+
+  it('still returns confirmation when post-commit high-risk escalation fails', async () => {
+    const tx = submitTx();
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+    // HIGH_RISK_ALERT_CREATED is strict-tier and writeAudit throws 503 on an
+    // audit-store outage. The submission is already committed, so submit must
+    // not fail and must not leak the high-risk outcome to the filler.
+    writeAuditMock.mockImplementation(async ({ action }: { action: string }) => {
+      if (action === 'HIGH_RISK_ALERT_CREATED') {
+        throw new AppError(503, 'AUDIT_UNAVAILABLE', 'Audit store unavailable');
+      }
+    });
+
+    const result = await submissionService.submit(
+      'assignment-1',
+      {
+        answers: [
+          { questionId: 'question-select', choiceIds: ['choice-1', 'choice-2'] },
+          { questionId: 'question-scale', value: 10 },
+        ],
+      },
+      'patient-user-1',
+      'PATIENT',
+      undefined,
+      new Date('2026-05-25T12:00:00Z')
+    );
+
+    expect(result).toEqual({
+      submissionId: 'submission-1',
+      status: 'SUBMITTED',
+      submittedAt: new Date('2026-05-25T12:00:00Z'),
+    });
+    expect(tx.formSubmission.create).toHaveBeenCalled();
   });
 
   it('validates but does not automatically score a manual form', async () => {

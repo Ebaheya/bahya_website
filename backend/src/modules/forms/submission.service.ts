@@ -1,5 +1,6 @@
 import { Prisma, type Role } from '@prisma/client';
 import type { Request } from 'express';
+import { logger } from '../../config/logger';
 import { prisma } from '../../config/prisma';
 import { writeAudit } from '../../middleware/audit';
 import { AppError } from '../../utils/httpError';
@@ -258,21 +259,34 @@ export async function submit(
     };
   });
 
+  // Post-commit escalation. The submission is already persisted and the
+  // assignment is SUBMITTED, so this MUST NOT fail the request — including when
+  // the strict-tier HIGH_RISK_ALERT_CREATED audit throws on an audit-store
+  // outage (T025/FR-034a). A thrown 503 here would also indirectly leak the
+  // high-risk outcome to the filler, breaking the confirmation-only contract
+  // (FR-034b). Swallow and log instead.
   if (committed.topBand) {
-    await emitHighRiskAlert({
-      patientId: committed.patientId,
-      submissionId: committed.submission.id,
-      severity: committed.topBand.label.toUpperCase(),
-      templateKey: committed.templateKey,
-    });
-    await writeAudit({
-      actorId,
-      action: 'HIGH_RISK_ALERT_CREATED',
-      entityType: 'FormSubmission',
-      entityId: committed.submission.id,
-      newValues: { templateKey: committed.templateKey, band: committed.topBand.label },
-      req,
-    });
+    try {
+      await emitHighRiskAlert({
+        patientId: committed.patientId,
+        submissionId: committed.submission.id,
+        severity: committed.topBand.label.toUpperCase(),
+        templateKey: committed.templateKey,
+      });
+      await writeAudit({
+        actorId,
+        action: 'HIGH_RISK_ALERT_CREATED',
+        entityType: 'FormSubmission',
+        entityId: committed.submission.id,
+        newValues: { templateKey: committed.templateKey, band: committed.topBand.label },
+        req,
+      });
+    } catch (err) {
+      logger.error(
+        { metric: 'high_risk_escalation_failure', submissionId: committed.submission.id, err },
+        'high-risk escalation failed after submission commit'
+      );
+    }
   }
 
   await writeAudit({
