@@ -11,6 +11,13 @@ const Color surveyPurple = Color(0xFF8E3FD1);
 const Color surveyDark = Color(0xFF3B1038);
 const Color surveyCard = Color(0xFFFFFBFE);
 
+class QuestionItem {
+  final int id;
+  final GlobalKey<QuestionnaireBodyState> key;
+  bool isDeleting;
+
+  QuestionItem({required this.id, required this.key, this.isDeleting = false});
+}
 class AnswerItemModel {
   final TextEditingController answerController = TextEditingController();
   final TextEditingController scoreController = TextEditingController(
@@ -105,33 +112,54 @@ class AnimatedRemove extends StatefulWidget {
   State<AnimatedRemove> createState() => _AnimatedRemoveState();
 }
 
-class _AnimatedRemoveState extends State<AnimatedRemove> {
-  double value = 1;
+class _AnimatedRemoveState extends State<AnimatedRemove>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController controller;
+  late final Animation<double> fadeAnimation;
+  late final Animation<double> sizeAnimation;
+  late final Animation<Offset> slideAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    Future.delayed(Duration.zero, () {
-      if (mounted) setState(() => value = 0);
-    });
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
 
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) widget.onAnimationEnd();
-    });
+    fadeAnimation = Tween<double>(
+      begin: 1,
+      end: 0,
+    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
+
+    sizeAnimation = Tween<double>(
+      begin: 1,
+      end: 0,
+    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
+
+    slideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0, -0.04),
+    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
+
+    controller.forward().whenComplete(widget.onAnimationEnd);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: value,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeIn,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeIn,
-        transform: Matrix4.translationValues((1 - value) * 35, 0, 0),
-        child: widget.child,
+    return SizeTransition(
+      sizeFactor: sizeAnimation,
+      axisAlignment: -1,
+      child: FadeTransition(
+        opacity: fadeAnimation,
+        child: SlideTransition(position: slideAnimation, child:  widget.child),
       ),
     );
   }
@@ -511,8 +539,7 @@ void removeAnswer(int index) {
     if (answers.length <= 2) return;
 
     setState(() {
-      answers[index].dispose();
-      answers.removeAt(index);
+   answers[index].isDeleting = true;
     });
   }
 void deleteAnswerAfterAnimation(int index) {

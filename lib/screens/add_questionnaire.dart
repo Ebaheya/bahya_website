@@ -17,9 +17,11 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
 
   final TextEditingController surveyTitleController = TextEditingController();
 
-  final List<int> questions = [DateTime.now().millisecondsSinceEpoch];
-  final List<GlobalKey<QuestionnaireBodyState>> questionKeys = [
-    GlobalKey<QuestionnaireBodyState>(),
+  final List<QuestionItem> questions = [
+    QuestionItem(
+      id: DateTime.now().millisecondsSinceEpoch,
+      key: GlobalKey<QuestionnaireBodyState>(),
+    ),
   ];
 
   final GlobalKey<DiagnosisSectionState> diagnosisKey =
@@ -44,8 +46,12 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
     }
 
     setState(() {
-      questions.add(DateTime.now().millisecondsSinceEpoch);
-      questionKeys.add(GlobalKey<QuestionnaireBodyState>());
+      questions.add(
+        QuestionItem(
+          id: DateTime.now().millisecondsSinceEpoch,
+          key: GlobalKey<QuestionnaireBodyState>(),
+        ),
+      );
     });
   }
 
@@ -61,11 +67,16 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
     }
 
     setState(() {
-      questions.removeAt(index);
-      questionKeys.removeAt(index);
+      questions[index].isDeleting = true;
     });
   }
+void deleteQuestionAfterAnimation(int index) {
+    if (index < 0 || index >= questions.length) return;
 
+    setState(() {
+      questions.removeAt(index);
+    });
+  }
   int _minScore(List<int> scores) {
     return scores.reduce((a, b) => a < b ? a : b);
   }
@@ -88,8 +99,8 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
     int formMinScore = 0;
     int formMaxScore = 0;
 
-    for (int i = 0; i < questionKeys.length; i++) {
-      final state = questionKeys[i].currentState;
+    for (int i = 0; i < questions.length; i++) {
+      final state = questions[i].key.currentState;
 
       if (state == null) {
         return 'حدث خطأ أثناء قراءة بيانات السؤال ${i + 1}.';
@@ -247,18 +258,32 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                     SurveyTitleCard(controller: surveyTitleController),
                     SizedBox(height: h * 0.025),
 
-                    ...List.generate(questions.length, (index) {
+                 ...List.generate(questions.length, (index) {
+                      final question = questions[index];
+
                       return Padding(
-                        key: ValueKey(questions[index]),
+                        key: ValueKey(question.id),
                         padding: EdgeInsets.only(bottom: h * 0.025),
-                        child: AnimatedAdd(
-                          child: QuestionnaireBody(
-                            key: questionKeys[index],
-                            questionIndex: index + 1,
-                            canDeleteQuestion: questions.length > 1,
-                            onDeleteQuestion: () => removeQuestion(index),
-                          ),
-                        ),
+                        child: question.isDeleting
+                            ? AnimatedRemove(
+                                onAnimationEnd: () =>
+                                    deleteQuestionAfterAnimation(index),
+                                child: QuestionnaireBody(
+                                  key: question.key,
+                                  questionIndex: index + 1,
+                                  canDeleteQuestion: false,
+                                  onDeleteQuestion: () {},
+                                ),
+                              )
+                            : AnimatedAdd(
+                                key: ValueKey(question.id),
+                                child: QuestionnaireBody(
+                                  key: question.key,
+                                  questionIndex: index + 1,
+                                  canDeleteQuestion: questions.length > 1,
+                                  onDeleteQuestion: () => removeQuestion(index),
+                                ),
+                              ),
                       );
                     }),
 
