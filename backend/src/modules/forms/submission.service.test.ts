@@ -318,6 +318,123 @@ describe('submit', () => {
     expect(emitHighRiskAlertMock).not.toHaveBeenCalled();
   });
 
+  it('escalates with CRITICAL severity even when the top band is not labelled "Critical"', async () => {
+    const severe = assignment({
+      formVersion: {
+        id: 'version-1',
+        questions: assignment().formVersion.questions,
+        scoreRanges: [
+          { subscale: null, label: 'Mild', minScore: 0, maxScore: 9, note: null },
+          { subscale: null, label: 'Severe', minScore: 10, maxScore: 15, note: null },
+        ],
+      },
+    });
+    const tx = submitTx(severe);
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await submissionService.submit(
+      'assignment-1',
+      {
+        answers: [
+          { questionId: 'question-select', choiceIds: ['choice-1', 'choice-2'] },
+          { questionId: 'question-scale', value: 10 },
+        ],
+      },
+      'patient-user-1',
+      'PATIENT'
+    );
+
+    expect(emitHighRiskAlertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'CRITICAL', submissionId: 'submission-1' })
+    );
+  });
+
+  it('does not escalate when the matched band is the only band in its group', async () => {
+    const singleBand = assignment({
+      formVersion: {
+        id: 'version-1',
+        questions: assignment().formVersion.questions,
+        scoreRanges: [{ subscale: null, label: 'Any', minScore: 0, maxScore: 15, note: null }],
+      },
+    });
+    const tx = submitTx(singleBand);
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await submissionService.submit(
+      'assignment-1',
+      {
+        answers: [
+          { questionId: 'question-select', choiceIds: ['choice-1', 'choice-2'] },
+          { questionId: 'question-scale', value: 10 },
+        ],
+      },
+      'patient-user-1',
+      'PATIENT'
+    );
+
+    expect(emitHighRiskAlertMock).not.toHaveBeenCalled();
+  });
+
+  it('escalates on a top subscale band even when the overall total is mid-range', async () => {
+    const subscaled = assignment({
+      formVersion: {
+        id: 'version-1',
+        questions: [
+          {
+            id: 'qa',
+            order: 1,
+            text: 'A1',
+            type: 'SCALE',
+            subscale: 'A',
+            required: true,
+            scaleMin: 0,
+            scaleMax: 10,
+            scaleStep: 1,
+            choices: [],
+          },
+          {
+            id: 'qd',
+            order: 2,
+            text: 'D1',
+            type: 'SCALE',
+            subscale: 'D',
+            required: true,
+            scaleMin: 0,
+            scaleMax: 10,
+            scaleStep: 1,
+            choices: [],
+          },
+        ],
+        scoreRanges: [
+          { subscale: null, label: 'Overall-low', minScore: 0, maxScore: 15, note: null },
+          { subscale: null, label: 'Overall-high', minScore: 16, maxScore: 20, note: null },
+          { subscale: 'A', label: 'A-normal', minScore: 0, maxScore: 7, note: null },
+          { subscale: 'A', label: 'A-abnormal', minScore: 8, maxScore: 10, note: null },
+          { subscale: 'D', label: 'D-normal', minScore: 0, maxScore: 7, note: null },
+          { subscale: 'D', label: 'D-abnormal', minScore: 8, maxScore: 10, note: null },
+        ],
+      },
+    });
+    const tx = submitTx(subscaled);
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await submissionService.submit(
+      'assignment-1',
+      {
+        answers: [
+          { questionId: 'qa', value: 9 },
+          { questionId: 'qd', value: 2 },
+        ],
+      },
+      'patient-user-1',
+      'PATIENT'
+    );
+
+    expect(emitHighRiskAlertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'CRITICAL' })
+    );
+  });
+
   it('rejects invalid scale values and answers for questions outside the pinned version', async () => {
     const txForScale = submitTx();
     const txForStep = submitTx();

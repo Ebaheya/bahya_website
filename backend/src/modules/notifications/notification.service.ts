@@ -16,12 +16,8 @@ export interface FormAssignedNotificationInput {
 export interface HighRiskAlertInput {
   patientId: string;
   submissionId?: string;
-  severity: string;
+  severity: Extract<NotificationSeverity, 'HIGH' | 'CRITICAL'>;
   templateKey?: string;
-}
-
-function normalizeHighRiskSeverity(severity: string): NotificationSeverity {
-  return severity === 'CRITICAL' ? 'CRITICAL' : 'HIGH';
 }
 
 function loggableError(err: unknown): { name?: string; message: string } {
@@ -73,7 +69,7 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
       message: input.templateKey
         ? `A high-risk ${input.templateKey} submission needs review.`
         : 'A high-risk form submission needs review.',
-      severity: normalizeHighRiskSeverity(input.severity),
+      severity: input.severity,
       reason: input.submissionId ?? null,
       doctorNote: null,
       status: 'UNREAD',

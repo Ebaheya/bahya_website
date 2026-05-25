@@ -117,7 +117,13 @@ function findTopBand(
       const sameGroup = ranges.filter(
         (range) => (range.subscale ?? null) === (candidate.subscale ?? null)
       );
-      return candidate.maxScore === Math.max(...sameGroup.map((range) => range.maxScore));
+      // A single-band group is a catch-all, not a high-risk threshold — every
+      // score lands in it, so it must not escalate. Only the highest band of a
+      // group with more than one band counts as the top (high-risk) band.
+      return (
+        sameGroup.length > 1 &&
+        candidate.maxScore === Math.max(...sameGroup.map((range) => range.maxScore))
+      );
     }) ?? null
   );
 }
@@ -270,7 +276,9 @@ export async function submit(
       await emitHighRiskAlert({
         patientId: committed.patientId,
         submissionId: committed.submission.id,
-        severity: committed.topBand.label.toUpperCase(),
+        // The top band is the highest-risk band by construction; the alert
+        // severity is fixed rather than guessed from the free-form band label.
+        severity: 'CRITICAL',
         templateKey: committed.templateKey,
       });
       await writeAudit({
