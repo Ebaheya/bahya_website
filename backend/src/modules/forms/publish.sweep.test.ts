@@ -59,7 +59,12 @@ describe('runDueAssignmentsSweep', () => {
       })
     );
     expect(prismaMock.formAssignment.updateMany).toHaveBeenCalledWith({
-      where: { id: 'assignment-1', status: 'SCHEDULED', publishAt: { lte: now } },
+      where: {
+        id: 'assignment-1',
+        status: 'SCHEDULED',
+        publishAt: { lte: now },
+        template: { is: { isActive: true } },
+      },
       data: { status: 'PUBLISHED' },
     });
     expect(emitFormAssignedMock).toHaveBeenCalledWith(
@@ -81,5 +86,19 @@ describe('runDueAssignmentsSweep', () => {
     await expect(runDueAssignmentsSweep()).resolves.toBe(0);
 
     expect(emitFormAssignedMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not promote or notify when a template is deactivated before the claim', async () => {
+    prismaMock.formAssignment.findMany.mockResolvedValue([dueAssignment]);
+    prismaMock.formAssignment.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(runDueAssignmentsSweep()).resolves.toBe(0);
+
+    expect(prismaMock.formAssignment.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ template: { is: { isActive: true } } }),
+      })
+    );
+    expect(emitFormAssignedMock).not.toHaveBeenCalled();
   });
 });

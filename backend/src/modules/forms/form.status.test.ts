@@ -59,7 +59,16 @@ function publishTransaction(isActive: boolean) {
       findMany: jest.fn(),
     },
     user: { findUnique: jest.fn() },
-    formAssignment: { create: jest.fn().mockResolvedValue({ id: 'assignment-1' }) },
+    formAssignment: {
+      createManyAndReturn: jest.fn().mockResolvedValue([
+        {
+          id: 'assignment-1',
+          patientId: 'patient-1',
+          assignedToUserId: null,
+          target: 'SINGLE_PATIENT',
+        },
+      ]),
+    },
   };
 }
 

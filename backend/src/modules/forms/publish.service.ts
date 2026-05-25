@@ -122,32 +122,37 @@ export async function publishForm(
       ];
     }
 
-    return Promise.all(
-      recipients.map(async (recipient) => {
-        const assignment = await tx.formAssignment.create({
-          data: {
-            templateId: template.id,
-            formVersionId: template.currentVersion!.id,
-            patientId: recipient.patientId,
-            assignedToUserId: recipient.assignedToUserId,
-            assignedById: actorId,
-            target: recipient.target,
-            status,
-            publishAt,
-          },
-          select: { id: true },
-        });
-
-        return {
-          id: assignment.id,
-          patientId: recipient.patientId,
-          patientUserId: recipient.patientUserId,
-          target: recipient.target,
-          assignedToUserId: recipient.assignedToUserId,
-          formName: template.name,
-        };
-      })
+    const recipientUserByPatient = new Map(
+      recipients.map((recipient) => [recipient.patientId, recipient.patientUserId])
     );
+
+    if (recipients.length === 0) return [];
+
+    // Single bulk insert (one round trip) rather than one create per recipient:
+    // an ALL_PATIENTS fan-out otherwise serializes N inserts on the interactive
+    // transaction's connection and can exceed its timeout for large cohorts.
+    const created = await tx.formAssignment.createManyAndReturn({
+      data: recipients.map((recipient) => ({
+        templateId: template.id,
+        formVersionId: template.currentVersion!.id,
+        patientId: recipient.patientId,
+        assignedToUserId: recipient.assignedToUserId,
+        assignedById: actorId,
+        target: recipient.target,
+        status,
+        publishAt,
+      })),
+      select: { id: true, patientId: true, assignedToUserId: true, target: true },
+    });
+
+    return created.map((assignment) => ({
+      id: assignment.id,
+      patientId: assignment.patientId,
+      patientUserId: recipientUserByPatient.get(assignment.patientId)!,
+      target: assignment.target,
+      assignedToUserId: assignment.assignedToUserId,
+      formName: template.name,
+    }));
   });
 
   if (status === 'PUBLISHED') {
@@ -255,8 +260,16 @@ export async function runDueAssignmentsSweep(now = new Date()): Promise<number> 
     if (dueAssignments.length === 0) break;
 
     for (const assignment of dueAssignments) {
+      // Re-assert template.isActive in the claim itself: if the form is
+      // deactivated between the findMany above and this write, the guard matches
+      // 0 rows and the assignment stays SCHEDULED rather than being published.
       const claimed = await prisma.formAssignment.updateMany({
-        where: { id: assignment.id, status: 'SCHEDULED', publishAt: { lte: now } },
+        where: {
+          id: assignment.id,
+          status: 'SCHEDULED',
+          publishAt: { lte: now },
+          template: { is: { isActive: true } },
+        },
         data: { status: 'PUBLISHED' },
       });
       if (claimed.count !== 1) continue;
