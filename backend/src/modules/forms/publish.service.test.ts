@@ -1,0 +1,239 @@
+import { prisma } from '../../config/prisma';
+import { writeAudit } from '../../middleware/audit';
+import { emitFormAssigned } from '../notifications/notification.service';
+import { publishFormSchema } from './publish.schema';
+import * as publishService from './publish.service';
+
+jest.mock('../../config/prisma', () => ({
+  prisma: {
+    $transaction: jest.fn(),
+    formTemplate: { findUnique: jest.fn() },
+    formAssignment: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+  },
+}));
+
+jest.mock('../../middleware/audit', () => ({
+  writeAudit: jest.fn(),
+}));
+
+jest.mock('../notifications/notification.service', () => ({
+  emitFormAssigned: jest.fn(),
+}));
+
+const prismaMock = prisma as unknown as {
+  $transaction: jest.Mock;
+  formTemplate: { findUnique: jest.Mock };
+  formAssignment: {
+    findMany: jest.Mock;
+    findUnique: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+  };
+};
+const writeAuditMock = writeAudit as jest.Mock;
+const emitFormAssignedMock = emitFormAssigned as jest.Mock;
+
+const template = {
+  id: 'form-1',
+  name: 'PHQ-9',
+  isActive: true,
+  currentVersion: {
+    id: 'version-1',
+    status: 'PUBLISHED',
+    questions: [{ id: 'question-1' }],
+  },
+};
+
+function transactionTx() {
+  return {
+    formTemplate: { findUnique: jest.fn().mockResolvedValue(template) },
+    patient: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+    },
+    user: { findUnique: jest.fn() },
+    formAssignment: { create: jest.fn() },
+  };
+}
+
+describe('publish request validation', () => {
+  it('requires target-specific identifiers and transforms scheduled dates', () => {
+    expect(
+      publishFormSchema.parse({
+        target: 'ALL_PATIENTS',
+        publishAt: '2026-06-01T08:00:00Z',
+      }).publishAt
+    ).toEqual(new Date('2026-06-01T08:00:00Z'));
+
+    expect(
+      publishFormSchema.safeParse({
+        target: 'VOLUNTEER_FOR_PATIENT',
+        patientId: 'e2108357-5e7d-49d5-aad1-d6b0914e7cf7',
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe('publishForm', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    writeAuditMock.mockResolvedValue(undefined);
+    emitFormAssignedMock.mockResolvedValue(undefined);
+  });
+
+  it('publishes immediately to one patient, pins the version, notifies, and audits', async () => {
+    const tx = transactionTx();
+    tx.patient.findUnique.mockResolvedValue({ id: 'patient-1', userId: 'patient-user-1' });
+    tx.formAssignment.create.mockResolvedValue({ id: 'assignment-1' });
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      publishService.publishForm(
+        'form-1',
+        publishFormSchema.parse({
+          target: 'SINGLE_PATIENT',
+          patientId: 'e2108357-5e7d-49d5-aad1-d6b0914e7cf7',
+        }),
+        'doctor-1',
+        undefined,
+        new Date('2026-05-25T12:00:00Z')
+      )
+    ).resolves.toEqual({ assignmentsCreated: 1, assignmentIds: ['assignment-1'] });
+
+    expect(tx.formAssignment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        templateId: 'form-1',
+        formVersionId: 'version-1',
+        patientId: 'patient-1',
+        assignedById: 'doctor-1',
+        target: 'SINGLE_PATIENT',
+        status: 'PUBLISHED',
+        publishAt: null,
+      }),
+      select: { id: true },
+    });
+    expect(emitFormAssignedMock).toHaveBeenCalledWith({
+      assignmentId: 'assignment-1',
+      patientId: 'patient-1',
+      recipientRole: 'PATIENT',
+      recipientUserId: 'patient-user-1',
+      formName: 'PHQ-9',
+    });
+    expect(writeAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: 'doctor-1',
+        action: 'FORM_PUBLISHED',
+        entityId: 'form-1',
+      })
+    );
+  });
+
+  it('fans out only the active patient snapshot returned by the transaction', async () => {
+    const tx = transactionTx();
+    tx.patient.findMany.mockResolvedValue([
+      { id: 'patient-1', userId: 'user-1' },
+      { id: 'patient-2', userId: 'user-2' },
+    ]);
+    tx.formAssignment.create
+      .mockResolvedValueOnce({ id: 'assignment-1' })
+      .mockResolvedValueOnce({ id: 'assignment-2' });
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      publishService.publishForm(
+        'form-1',
+        publishFormSchema.parse({ target: 'ALL_PATIENTS' }),
+        'doctor-1'
+      )
+    ).resolves.toEqual({
+      assignmentsCreated: 2,
+      assignmentIds: ['assignment-1', 'assignment-2'],
+    });
+
+    expect(tx.patient.findMany).toHaveBeenCalledWith({
+      where: { user: { is: { role: 'PATIENT', isActive: true } } },
+      select: { id: true, userId: true },
+    });
+    expect(tx.formAssignment.create).toHaveBeenCalledTimes(2);
+    expect(emitFormAssignedMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('schedules a volunteer assignment without notifying before visibility', async () => {
+    const tx = transactionTx();
+    tx.patient.findUnique.mockResolvedValue({ id: 'patient-1', userId: 'patient-user-1' });
+    tx.user.findUnique.mockResolvedValue({ id: 'volunteer-1', role: 'VOLUNTEER' });
+    tx.formAssignment.create.mockResolvedValue({ id: 'assignment-1' });
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+    const publishAt = '2026-06-01T08:00:00Z';
+
+    await publishService.publishForm(
+      'form-1',
+      publishFormSchema.parse({
+        target: 'VOLUNTEER_FOR_PATIENT',
+        patientId: 'e2108357-5e7d-49d5-aad1-d6b0914e7cf7',
+        volunteerId: '57a9983a-ae0a-4e58-89cb-53ee15bb0f57',
+        publishAt,
+      }),
+      'doctor-1',
+      undefined,
+      new Date('2026-05-25T12:00:00Z')
+    );
+
+    expect(tx.formAssignment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        assignedToUserId: 'volunteer-1',
+        target: 'VOLUNTEER_FOR_PATIENT',
+        status: 'SCHEDULED',
+        publishAt: new Date(publishAt),
+      }),
+      select: { id: true },
+    });
+    expect(emitFormAssignedMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects an inactive or unpublished form', async () => {
+    const tx = transactionTx();
+    tx.formTemplate.findUnique.mockResolvedValue({ ...template, isActive: false });
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      publishService.publishForm(
+        'form-1',
+        publishFormSchema.parse({ target: 'ALL_PATIENTS' }),
+        'doctor-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 409, code: 'FORM_NOT_PUBLISHABLE' });
+    expect(tx.formAssignment.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('cancelAssignment', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('cancels a published assignment and rejects a submitted assignment', async () => {
+    const cancelled = { id: 'assignment-1', status: 'CANCELLED' };
+    prismaMock.formAssignment.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    prismaMock.formAssignment.findUnique
+      .mockResolvedValueOnce(cancelled)
+      .mockResolvedValueOnce({ id: 'assignment-2', status: 'SUBMITTED' });
+
+    await expect(publishService.cancelAssignment('assignment-1')).resolves.toMatchObject({
+      status: 'CANCELLED',
+    });
+    await expect(publishService.cancelAssignment('assignment-2')).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'FORM_ASSIGNMENT_FINALIZED',
+    });
+    expect(prismaMock.formAssignment.updateMany).toHaveBeenCalledWith({
+      where: { id: 'assignment-1', status: { in: ['SCHEDULED', 'PUBLISHED'] } },
+      data: { status: 'CANCELLED' },
+    });
+  });
+});
