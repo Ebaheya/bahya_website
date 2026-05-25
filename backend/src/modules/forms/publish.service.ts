@@ -7,6 +7,7 @@ import {
   emitFormAssigned,
   type FormAssignedNotificationInput,
 } from '../notifications/notification.service';
+import { FORM_ERROR } from './form.errors';
 import type { ListAssignmentsQuery, PublishFormInput } from './publish.schema';
 
 const DUE_SWEEP_BATCH_SIZE = 500;
@@ -71,7 +72,7 @@ export async function publishForm(
       template.currentVersion.status !== 'PUBLISHED' ||
       template.currentVersion.questions.length === 0
     ) {
-      throw new AppError(409, 'FORM_NOT_PUBLISHABLE', 'Form is not publishable');
+      throw new AppError(409, FORM_ERROR.NOT_PUBLISHABLE, 'Form is not publishable');
     }
 
     let recipients: Array<{
@@ -106,7 +107,7 @@ export async function publishForm(
           select: { id: true, role: true },
         });
         if (!volunteer || volunteer.role !== 'VOLUNTEER') {
-          throw new AppError(400, 'FORM_INVALID_VOLUNTEER', 'Assigned user must be a volunteer');
+          throw new AppError(400, FORM_ERROR.INVALID_VOLUNTEER, 'Assigned user must be a volunteer');
         }
         assignedToUserId = volunteer.id;
       }
@@ -205,7 +206,7 @@ export async function cancelAssignment(assignmentId: string) {
     if (assignment.status === 'SUBMITTED' || assignment.status === 'REVIEWED') {
       throw new AppError(
         409,
-        'FORM_ASSIGNMENT_FINALIZED',
+        FORM_ERROR.ASSIGNMENT_FINALIZED,
         'A submitted assignment cannot be cancelled'
       );
     }
@@ -218,7 +219,7 @@ export async function cancelAssignment(assignmentId: string) {
       data: { status: 'CANCELLED' },
     });
     if (cancelled.count !== 1) {
-      throw new AppError(409, 'FORM_ASSIGNMENT_FINALIZED', 'Assignment cannot be cancelled');
+      throw new AppError(409, FORM_ERROR.ASSIGNMENT_FINALIZED, 'Assignment cannot be cancelled');
     }
 
     return { ...assignment, status: 'CANCELLED' as const };

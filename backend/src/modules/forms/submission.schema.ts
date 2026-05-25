@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { FORM_ERROR } from './form.errors';
 
 const submissionAnswerSchema = z
   .object({
@@ -13,7 +14,7 @@ const submissionAnswerSchema = z
     if (hasChoices === hasValue) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'FORM_ANSWER_SHAPE_INVALID',
+        message: FORM_ERROR.ANSWER_SHAPE_INVALID,
       });
     }
   });
@@ -29,7 +30,7 @@ export const submitAssignmentSchema = z
       if (seen.has(answer.questionId)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'FORM_DUPLICATE_QUESTION_ANSWER',
+          message: FORM_ERROR.DUPLICATE_QUESTION_ANSWER,
         });
         return;
       }

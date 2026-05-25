@@ -1,3 +1,5 @@
+import { FORM_ERROR, type FormErrorCode } from './form.errors';
+
 export type FormQuestionType = 'SINGLE_SELECT' | 'MULTI_SELECT' | 'SCALE';
 
 export interface ScoringChoice {
@@ -49,7 +51,7 @@ export interface ScoringResult {
 }
 
 export class ScoringValidationError extends Error {
-  constructor(public readonly code: string, message: string) {
+  constructor(public readonly code: FormErrorCode, message: string) {
     super(message);
     this.name = 'ScoringValidationError';
   }
@@ -104,7 +106,7 @@ function maxQuestionScore(question: ScoringQuestion): number {
 function findAnswer(question: ScoringQuestion, answersByQuestion: Map<string, ScoringAnswer>) {
   const answer = answersByQuestion.get(question.id);
   if (!answer && question.required !== false) {
-    throw new ScoringValidationError('FORM_MISSING_REQUIRED_ANSWER', 'Required answer is missing');
+    throw new ScoringValidationError(FORM_ERROR.MISSING_REQUIRED_ANSWER, 'Required answer is missing');
   }
   return answer;
 }
@@ -112,7 +114,7 @@ function findAnswer(question: ScoringQuestion, answersByQuestion: Map<string, Sc
 function assertKnownChoice(question: ScoringQuestion, choiceId: string, choices: Map<string, ScoringChoice>) {
   const choice = choices.get(choiceId);
   if (!choice) {
-    throw new ScoringValidationError('FORM_INVALID_CHOICE', `Unknown choice ${choiceId} for question ${question.id}`);
+    throw new ScoringValidationError(FORM_ERROR.INVALID_CHOICE, `Unknown choice ${choiceId} for question ${question.id}`);
   }
   return choice;
 }
@@ -121,10 +123,10 @@ function assertStepAligned(question: ScoringQuestion, value: number): void {
   const min = question.scaleMin ?? 0;
   const step = question.scaleStep ?? 1;
   if (!Number.isInteger(value)) {
-    throw new ScoringValidationError('FORM_SCALE_OUT_OF_RANGE', 'Scale answer must be an integer');
+    throw new ScoringValidationError(FORM_ERROR.SCALE_OUT_OF_RANGE, 'Scale answer must be an integer');
   }
   if ((value - min) % step !== 0) {
-    throw new ScoringValidationError('FORM_SCALE_OUT_OF_RANGE', 'Scale answer is not aligned to step');
+    throw new ScoringValidationError(FORM_ERROR.SCALE_OUT_OF_RANGE, 'Scale answer is not aligned to step');
   }
 }
 
@@ -144,7 +146,7 @@ export function validateScaleQuestion(question: ScoringQuestion): void {
     question.scaleMin >= question.scaleMax ||
     question.scaleStep <= 0
   ) {
-    throw new ScoringValidationError('FORM_SCALE_INVALID_RANGE', 'Scale questions require min < max and step > 0');
+    throw new ScoringValidationError(FORM_ERROR.SCALE_INVALID_RANGE, 'Scale questions require min < max and step > 0');
   }
 }
 
@@ -152,13 +154,13 @@ export function validateQuestionStructure(question: ScoringQuestion): void {
   if (question.type === 'SCALE') {
     validateScaleQuestion(question);
     if ((question.choices ?? []).length > 0) {
-      throw new ScoringValidationError('FORM_SCALE_HAS_CHOICES', 'Scale questions cannot have choices');
+      throw new ScoringValidationError(FORM_ERROR.SCALE_HAS_CHOICES, 'Scale questions cannot have choices');
     }
     return;
   }
 
   if ((question.choices ?? []).length === 0) {
-    throw new ScoringValidationError('FORM_QUESTION_NO_CHOICES', 'Select questions require choices');
+    throw new ScoringValidationError(FORM_ERROR.QUESTION_NO_CHOICES, 'Select questions require choices');
   }
 }
 
@@ -182,7 +184,7 @@ export function validateRangesCoverAchievableTotal(
 
   for (const range of ranges) {
     if (range.minScore > range.maxScore) {
-      throw new ScoringValidationError('FORM_RANGES_INVALID', 'Range minScore cannot exceed maxScore');
+      throw new ScoringValidationError(FORM_ERROR.RANGES_INVALID, 'Range minScore cannot exceed maxScore');
     }
     const key = range.subscale ?? '';
     groups.set(key, [...(groups.get(key) ?? []), range]);
@@ -198,7 +200,7 @@ export function validateRangesCoverAchievableTotal(
 
     for (const range of sorted) {
       if (previousMax !== null && range.minScore <= previousMax) {
-        throw new ScoringValidationError('FORM_RANGES_OVERLAP', 'Score ranges cannot overlap');
+        throw new ScoringValidationError(FORM_ERROR.RANGES_OVERLAP, 'Score ranges cannot overlap');
       }
       previousMax = range.maxScore;
 
@@ -206,13 +208,13 @@ export function validateRangesCoverAchievableTotal(
       if (range.minScore > expectedMax) break;
 
       if (range.minScore > expectedMin) {
-        throw new ScoringValidationError('FORM_RANGES_GAP', 'Score ranges must cover every achievable score');
+        throw new ScoringValidationError(FORM_ERROR.RANGES_GAP, 'Score ranges must cover every achievable score');
       }
       expectedMin = Math.max(expectedMin, range.maxScore + 1);
     }
 
     if (expectedMin <= expectedMax) {
-      throw new ScoringValidationError('FORM_RANGES_GAP', 'Score ranges must cover every achievable score');
+      throw new ScoringValidationError(FORM_ERROR.RANGES_GAP, 'Score ranges must cover every achievable score');
     }
   }
 }
@@ -250,24 +252,24 @@ export function scoreFormSubmission(
     let score = 0;
     if (question.type === 'SCALE') {
       if (answer.value === undefined) {
-        throw new ScoringValidationError('FORM_MISSING_REQUIRED_ANSWER', 'Scale answer value is missing');
+        throw new ScoringValidationError(FORM_ERROR.MISSING_REQUIRED_ANSWER, 'Scale answer value is missing');
       }
       if (answer.value < (question.scaleMin ?? 0) || answer.value > (question.scaleMax ?? 0)) {
-        throw new ScoringValidationError('FORM_SCALE_OUT_OF_RANGE', 'Scale answer is outside the allowed range');
+        throw new ScoringValidationError(FORM_ERROR.SCALE_OUT_OF_RANGE, 'Scale answer is outside the allowed range');
       }
       assertStepAligned(question, answer.value);
       score = answer.value;
     } else {
       const selectedChoiceIds = answer.choiceIds ?? [];
       if (question.type === 'SINGLE_SELECT' && selectedChoiceIds.length !== 1) {
-        throw new ScoringValidationError('FORM_INVALID_CHOICE_COUNT', 'Single-select questions require exactly one choice');
+        throw new ScoringValidationError(FORM_ERROR.INVALID_CHOICE_COUNT, 'Single-select questions require exactly one choice');
       }
       const uniqueChoiceIds = question.type === 'MULTI_SELECT' ? [...new Set(selectedChoiceIds)] : selectedChoiceIds;
       if (question.type === 'MULTI_SELECT' && uniqueChoiceIds.length !== selectedChoiceIds.length) {
-        throw new ScoringValidationError('FORM_DUPLICATE_CHOICE', 'Multi-select answers cannot repeat choices');
+        throw new ScoringValidationError(FORM_ERROR.DUPLICATE_CHOICE, 'Multi-select answers cannot repeat choices');
       }
       if (question.type === 'MULTI_SELECT' && question.required !== false && uniqueChoiceIds.length === 0) {
-        throw new ScoringValidationError('FORM_MISSING_REQUIRED_ANSWER', 'Multi-select answer is missing');
+        throw new ScoringValidationError(FORM_ERROR.MISSING_REQUIRED_ANSWER, 'Multi-select answer is missing');
       }
 
       const choices = choiceMap(question);

@@ -5,6 +5,7 @@ import { prisma } from '../../config/prisma';
 import { writeAudit } from '../../middleware/audit';
 import { AppError } from '../../utils/httpError';
 import { emitHighRiskAlert } from '../notifications/notification.service';
+import { FORM_ERROR } from './form.errors';
 import {
   mapScoreRange,
   scoreFormSubmission,
@@ -70,7 +71,7 @@ function ensureFillerAccess(
   now: Date
 ): void {
   if (assignment.submission || assignment.status === 'SUBMITTED') {
-    throw new AppError(409, 'FORM_ALREADY_SUBMITTED', 'This form has already been submitted');
+    throw new AppError(409, FORM_ERROR.ALREADY_SUBMITTED, 'This form has already been submitted');
   }
   if (!isVisible(assignment, now) || !canFill(assignment, actorId, role)) {
     throw AppError.notFound('Form assignment not found');
@@ -214,7 +215,7 @@ export async function submit(
     const ranges = asScoreRanges(assignment);
     const questionIds = new Set(questions.map((question) => question.id));
     if (input.answers.some((answer) => !questionIds.has(answer.questionId))) {
-      throw new AppError(400, 'FORM_INVALID_QUESTION', 'Answer references an unknown question');
+      throw new AppError(400, FORM_ERROR.INVALID_QUESTION, 'Answer references an unknown question');
     }
     let scoring;
     try {
@@ -234,7 +235,7 @@ export async function submit(
       data: { status: 'SUBMITTED' },
     });
     if (claimed.count !== 1) {
-      throw new AppError(409, 'FORM_ALREADY_SUBMITTED', 'This form has already been submitted');
+      throw new AppError(409, FORM_ERROR.ALREADY_SUBMITTED, 'This form has already been submitted');
     }
 
     const submission = await tx.formSubmission.create({

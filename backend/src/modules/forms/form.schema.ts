@@ -6,6 +6,7 @@ import {
   type ScoreRange,
   type ScoringQuestion,
 } from './scoring';
+import { FORM_ERROR } from './form.errors';
 
 const nullableText = z.string().trim().min(1).max(500).nullable().optional();
 
@@ -14,8 +15,8 @@ const answerChoiceSchema = z
     order: z.number().int().min(1),
     label: z.string().trim().min(1).max(300),
     score: z
-      .number({ required_error: 'FORM_CHOICE_MISSING_SCORE' })
-      .int('FORM_CHOICE_MISSING_SCORE'),
+      .number({ required_error: FORM_ERROR.CHOICE_MISSING_SCORE })
+      .int(FORM_ERROR.CHOICE_MISSING_SCORE),
   })
   .strict();
 
@@ -74,7 +75,7 @@ export const createFormSchema = z
       .trim()
       .min(2)
       .max(80)
-      .regex(/^[A-Z0-9_][A-Z0-9_-]*$/i, 'FORM_KEY_INVALID'),
+      .regex(/^[A-Z0-9_][A-Z0-9_-]*$/i, FORM_ERROR.KEY_INVALID),
     name: z.string().trim().min(1).max(200),
     description: nullableText,
     category: z.string().trim().min(1).max(120).nullable().optional(),

@@ -15,6 +15,7 @@ developers and engineers exercising the API in Postman.
 - [Scripts](#scripts)
 - [Architecture](#architecture)
 - [Database](#database)
+- [Dynamic assessment forms](#dynamic-assessment-forms)
 - [Tests](#tests)
 - [Postman](#postman)
 - [Authentication](#authentication)
@@ -102,6 +103,7 @@ refuses to start if required values are missing.
 | `npm run prisma:generate` | Regenerate Prisma Client |
 | `npm run prisma:migrate` | Create and apply a development migration |
 | `npm run audit:migrate` | Migrate audit data to MongoDB |
+| `npm run seed:forms` | Seed the seven default dynamic assessment forms |
 | `npm run lint` | Run ESLint over `src/` |
 | `npm run format` | Format backend source with Prettier |
 | `npm test` | Run Jest unit and integration tests |
@@ -117,6 +119,9 @@ src/
     email/       password-reset email service and templates
     patients/    routes, controller, service, schemas, JSONB validators
     users/       admin user management
+    forms/       form authoring, publishing, assignments, scoring, submissions
+    assessments/ doctor review and official assessment authorship
+    notifications/ form assignment and high-risk alerts
   routes/        /api/v1 router and health probe
   utils/         passwords, tokens, http errors
   app.ts         Express wiring
@@ -138,8 +143,40 @@ Relational models in Prisma (`prisma/schema.prisma`):
 - `Patient` — demographics + JSONB blocks (`medicalHistory`, `socialStatus`, `financials`)
 - `PasswordResetToken` — single-use, time-bounded reset tokens
 
+Additional relational models for dynamic assessments are `FormTemplate`,
+`FormVersion`, `FormQuestion`, `FormChoice`, `FormScoreRange`,
+`FormAssignment`, `FormSubmission`, and `Assessment`.
+
 MongoDB stores audit log entries and timeline source data (assessments,
 interventions). The `/health` probe checks both stores.
+
+## Dynamic assessment forms
+
+After applying Prisma migrations, seed the default form catalog idempotently:
+
+```bash
+npm run seed:forms
+```
+
+The seed includes `PHQ9`, `PHQ4`, `DT`, `HADS`, `PTSD`, `QOL`, and `MACS`.
+Doctors and admins author and publish forms under `/api/v1/forms`; patients
+and volunteers fill assigned forms under `/api/v1/form-assignments`; doctors
+create official assessments under `/api/v1/assessments`.
+
+Published form versions are immutable. Updating a published form creates a
+new published version so existing assignments and submissions remain pinned
+to their original structure. Forms and assignments use status transitions
+(`isActive` and `CANCELLED`) rather than lifecycle delete endpoints.
+
+Form-specific errors retain the standard error envelope and status contract:
+
+| Status | Form error codes | Meaning |
+|---|---|---|
+| `400` | `FORM_*_INVALID`, `FORM_*_OUT_OF_RANGE`, `FORM_*_MISSING_*`, `FORM_VERSION_EMPTY` | Request or scoring validation failed |
+| `401` | `UNAUTHORIZED` | Missing or invalid access token |
+| `403` | `FORBIDDEN` | Authenticated role cannot perform the operation |
+| `404` | `NOT_FOUND` | Form, assignment, or accessible target is not visible/found |
+| `409` | `FORM_KEY_EXISTS`, `FORM_KEY_IMMUTABLE`, `FORM_VERSION_CONFLICT`, `FORM_VERSION_NOT_DRAFT`, `FORM_NOT_PUBLISHABLE`, `FORM_ALREADY_SUBMITTED`, `FORM_ASSIGNMENT_FINALIZED` | Lifecycle or concurrent-operation conflict |
 
 ## Tests
 
@@ -147,12 +184,14 @@ interventions). The `/health` probe checks both stores.
 npm run build
 npm run lint
 npm test -- --runInBand
+npm test -- --runInBand --runTestsByPath tests/integration/forms-workflow.test.ts
 npx jest --testPathPatterns=validators --runInBand
 ```
 
 Integration tests live in `tests/integration/` and exercise the API against a
 real PostgreSQL + MongoDB pair. For an end-to-end happy path that mirrors
-manual QA, follow `../specs/003-patient-module/quickstart.md`.
+manual QA, run `tests/integration/forms-workflow.test.ts` against seeded local
+stores and follow `../specs/004-dynamic-assessment-forms/quickstart.md`.
 
 ---
 

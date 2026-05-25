@@ -4,6 +4,7 @@ import { logger } from '../../config/logger';
 import { prisma } from '../../config/prisma';
 import { writeAudit } from '../../middleware/audit';
 import { AppError } from '../../utils/httpError';
+import { FORM_ERROR } from './form.errors';
 import type { CreateFormInput, ListFormsQuery } from './form.schema';
 
 const formVersionInclude = {
@@ -73,7 +74,7 @@ export async function createForm(input: CreateFormInput, actorId: string, req?: 
         where: { key: input.key },
         select: { id: true },
       });
-      if (existing) throw new AppError(409, 'FORM_KEY_EXISTS', 'Form key already exists');
+      if (existing) throw new AppError(409, FORM_ERROR.KEY_EXISTS, 'Form key already exists');
 
       const created = await tx.formTemplate.create({
         data: {
@@ -119,7 +120,7 @@ export async function createForm(input: CreateFormInput, actorId: string, req?: 
     return form;
   } catch (err) {
     if (isUniqueConstraintError(err)) {
-      throw new AppError(409, 'FORM_KEY_EXISTS', 'Form key already exists');
+      throw new AppError(409, FORM_ERROR.KEY_EXISTS, 'Form key already exists');
     }
     throw err;
   }
@@ -194,7 +195,7 @@ export async function updateForm(
       // M2: `key` is the stable identity used by the seed (upsert-by-key) and is
       // denormalized onto Assessment.templateKey, so it must not change on edit.
       if (input.key !== existing.key) {
-        throw new AppError(409, 'FORM_KEY_IMMUTABLE', 'Form key cannot be changed');
+        throw new AppError(409, FORM_ERROR.KEY_IMMUTABLE, 'Form key cannot be changed');
       }
 
       const templateData = {
@@ -225,7 +226,7 @@ export async function updateForm(
         if (input.questions.length === 0) {
           throw new AppError(
             400,
-            'FORM_VERSION_EMPTY',
+            FORM_ERROR.VERSION_EMPTY,
             'Cannot publish a version with zero questions'
           );
         }
@@ -276,7 +277,7 @@ export async function updateForm(
       // is (templateId, version) — a concurrent edit that already created N+1.
       throw new AppError(
         409,
-        'FORM_VERSION_CONFLICT',
+        FORM_ERROR.VERSION_CONFLICT,
         'Form was modified concurrently; please retry'
       );
     }
@@ -347,10 +348,10 @@ export async function publishVersion(id: string) {
 
   if (!form || !form.currentVersion) throw AppError.notFound('Form not found');
   if (form.currentVersion.status !== 'DRAFT') {
-    throw new AppError(409, 'FORM_VERSION_NOT_DRAFT', 'Only draft versions can be published');
+    throw new AppError(409, FORM_ERROR.VERSION_NOT_DRAFT, 'Only draft versions can be published');
   }
   if (form.currentVersion.questions.length === 0) {
-    throw new AppError(400, 'FORM_VERSION_EMPTY', 'Cannot publish a version with zero questions');
+    throw new AppError(400, FORM_ERROR.VERSION_EMPTY, 'Cannot publish a version with zero questions');
   }
 
   await prisma.formVersion.update({
