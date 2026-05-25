@@ -142,14 +142,19 @@ export async function updateForm(
         where: { id },
         include: {
           currentVersion: {
-            select: { id: true, version: true, _count: { select: { submissions: true } } },
+            select: { id: true, version: true, status: true },
           },
         },
       });
       if (!existing || !existing.currentVersion) throw AppError.notFound('Form not found');
 
+      // M2: `key` is the stable identity used by the seed (upsert-by-key) and is
+      // denormalized onto Assessment.templateKey, so it must not change on edit.
+      if (input.key !== existing.key) {
+        throw new AppError(409, 'FORM_KEY_IMMUTABLE', 'Form key cannot be changed');
+      }
+
       const templateData = {
-        key: input.key,
         name: input.name,
         description: nullIfMissing(input.description),
         category: nullIfMissing(input.category),
@@ -157,8 +162,14 @@ export async function updateForm(
         interpretationMode: input.interpretationMode,
       };
 
+      // C1 + H1: only a DRAFT current version may be edited in place. A DRAFT is
+      // never published, so nothing can be pinned to it — publishForm requires a
+      // PUBLISHED version, and a submission requires a published assignment. Any
+      // PUBLISHED version is immutable: editing clones its structure into version
+      // N+1 so already-assigned and already-submitted forms keep the exact
+      // structure they were given (spec in-flight-assignment invariant).
       let currentVersionId = existing.currentVersion.id;
-      if (existing.currentVersion._count.submissions === 0) {
+      if (existing.currentVersion.status === 'DRAFT') {
         await tx.formQuestion.deleteMany({ where: { versionId: currentVersionId } });
         await tx.formScoreRange.deleteMany({ where: { versionId: currentVersionId } });
         await tx.formVersion.update({
@@ -166,10 +177,22 @@ export async function updateForm(
           data: versionStructureCreateData(input),
         });
       } else {
+        // L1: a published version must satisfy the same >=1 question gate as
+        // publishVersion (FR-024).
+        if (input.questions.length === 0) {
+          throw new AppError(400, 'FORM_VERSION_EMPTY', 'Cannot publish a version with zero questions');
+        }
+        // M1: number the new version from MAX(version)+1 rather than
+        // currentVersion.version+1, so it is correct even if currentVersionId is
+        // ever repointed to a non-max version.
+        const max = await tx.formVersion.aggregate({
+          where: { templateId: id },
+          _max: { version: true },
+        });
         const version = await tx.formVersion.create({
           data: {
             templateId: id,
-            version: existing.currentVersion.version + 1,
+            version: (max._max.version ?? 0) + 1,
             status: 'PUBLISHED',
             publishedAt: new Date(),
             ...versionStructureCreateData(input),
@@ -202,7 +225,9 @@ export async function updateForm(
     return form;
   } catch (err) {
     if (isUniqueConstraintError(err)) {
-      throw new AppError(409, 'FORM_KEY_EXISTS', 'Form key already exists');
+      // `key` is immutable on update, so the only unique constraint that can fire
+      // is (templateId, version) — a concurrent edit that already created N+1.
+      throw new AppError(409, 'FORM_VERSION_CONFLICT', 'Form was modified concurrently; please retry');
     }
     throw err;
   }
