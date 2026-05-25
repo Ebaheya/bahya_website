@@ -23,6 +23,9 @@ class _AddServiceState extends State<AddService> {
     final w = getScreenWidth(context);
     final h = getScreenHeight(context);
     return Scaffold(
+            extendBody: true,
+      extendBodyBehindAppBar: true,
+      backgroundColor: backgroundColor,
       appBar: customAppBar(
         context: context,
         title: 'اضافة خدمه جديده',

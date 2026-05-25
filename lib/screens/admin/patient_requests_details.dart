@@ -11,6 +11,9 @@ class PatientRequestsDetails extends StatelessWidget {
     final w = getScreenWidth(context);
     final h = getScreenHeight(context);
     return Scaffold(
+            extendBody: true,
+      extendBodyBehindAppBar: true,
+      backgroundColor: backgroundColor,
       appBar: customAppBar(
         context: context,
         title: 'تفاصيل طلب المريضة',

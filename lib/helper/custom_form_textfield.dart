@@ -266,13 +266,13 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(widget.borderRadius ?? 30),
 
-          borderSide: const BorderSide(color: Color(0xFFFF7BB0), width: 1.5),
+          borderSide: BorderSide(color: Colors.pink[300]!, width: 1.5),
         ),
 
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(widget.borderRadius ?? 30),
 
-          borderSide: const BorderSide(color: Color(0xFFFF7BB0), width: 1.5),
+          borderSide: BorderSide(color: Colors.pink, width: 1.5),
         ),
 
         errorStyle: TextStyle(

@@ -12,6 +12,9 @@ class AdminHome extends StatelessWidget {
     final w = getScreenWidth(context);
     final h = getScreenHeight(context);
     return Scaffold(
+            extendBody: true,
+      extendBodyBehindAppBar: true,
+      backgroundColor: backgroundColor,
       appBar: customAppBar(
         preferredSize: Size.fromHeight(getScreenHeight(context) * 0.3),
         context: context,

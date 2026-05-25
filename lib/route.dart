@@ -1,3 +1,4 @@
+import 'package:bahya_app/screens/admin/add_category.dart';
 import 'package:bahya_app/screens/admin/add_service.dart';
 import 'package:bahya_app/screens/admin/admin_home.dart';
 import 'package:bahya_app/screens/admin/all_service.dart';
@@ -57,8 +58,10 @@ class AppRoute {
         return MaterialPageRoute(builder: (_) => const AllServicesScreen());
       case '/questionnaire_screen':
         return MaterialPageRoute(builder: (_) => const QuestionnaireScreen());
+      case '/create_category':
+        return MaterialPageRoute(builder: (_) => CreateCategoryScreen());
       default:
-        return MaterialPageRoute(builder: (_) => AdminHome());
+        return MaterialPageRoute(builder: (_) => CreateCategoryScreen());
     }
   }
 }

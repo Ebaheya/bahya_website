@@ -12,6 +12,9 @@ class PatientsSearch extends StatelessWidget {
     final h = getScreenHeight(context);
     final w = getScreenWidth(context);
     return Scaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: true,
+      backgroundColor: backgroundColor,
       appBar: customAppBar(
         context: context,
         preferredSize: Size.fromHeight(h * 0.2),

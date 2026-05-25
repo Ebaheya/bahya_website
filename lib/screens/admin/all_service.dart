@@ -106,6 +106,8 @@ class _AllServicesScreenState extends State<AllServicesScreen> {
     final h = getScreenHeight(context);
 
     return Scaffold(
+            extendBody: true,
+      extendBodyBehindAppBar: true,
       appBar: customAppBar(
         context: context,
         preferredSize: Size.fromHeight(h * 0.12),
