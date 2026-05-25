@@ -1,12 +1,9 @@
 import 'package:bahya_website/helper/base.dart';
-import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:bahya_website/helper/widgets/DiagnosisRangeWidget.dart';
 import 'package:bahya_website/helper/widgets/questionnaire_body.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class AddQuestionnaire extends StatefulWidget {
   const AddQuestionnaire({super.key});
@@ -16,60 +13,196 @@ class AddQuestionnaire extends StatefulWidget {
 }
 
 class _AddQuestionnaireState extends State<AddQuestionnaire> {
-  static const int _maxQuestions = 20;
+  static const int maxQuestions = 20;
 
-  final FocusNode _keyboardFocusNode = FocusNode();
-  late List<TextEditingController> _scoreControllers;
+  final TextEditingController surveyTitleController = TextEditingController();
 
-  String? _selectedDiagnosis;
+  final List<int> questions = [DateTime.now().millisecondsSinceEpoch];
+  final List<GlobalKey<QuestionnaireBodyState>> questionKeys = [
+    GlobalKey<QuestionnaireBodyState>(),
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-
-    _scoreControllers = [TextEditingController(text: "0")];
-    _selectedDiagnosis = diagnosisCategories.first;
-  }
+  final GlobalKey<DiagnosisSectionState> diagnosisKey =
+      GlobalKey<DiagnosisSectionState>();
 
   @override
   void dispose() {
-    for (final c in _scoreControllers) {
-      c.dispose();
-    }
-    _keyboardFocusNode.dispose();
+    surveyTitleController.dispose();
     super.dispose();
   }
 
-  void _addQuestion() {
-    if (_scoreControllers.length >= _maxQuestions) {
+  void addQuestion() {
+    if (questions.length >= maxQuestions) {
       customDialog(
         context: context,
         title: 'تنبيه',
         message:
-            'لا يمكن إضافة أكثر من $_maxQuestions سؤالاً في الاستبيان الواحد.',
+            'لا يمكن إضافة أكثر من $maxQuestions سؤالاً في الاستبيان الواحد.',
+        isInfo: true,
       );
       return;
     }
 
     setState(() {
-      _scoreControllers.add(TextEditingController(text: "0"));
+      questions.add(DateTime.now().millisecondsSinceEpoch);
+      questionKeys.add(GlobalKey<QuestionnaireBodyState>());
     });
   }
 
-  void _removeQuestion(int index) {
-    if (_scoreControllers.length == 1) {
+  void removeQuestion(int index) {
+    if (questions.length == 1) {
       customDialog(
         context: context,
         title: 'تنبيه',
         message: 'يجب أن يحتوي الاستبيان على سؤال واحد على الأقل.',
+        isInfo: true,
       );
       return;
     }
 
     setState(() {
-      _scoreControllers[index].dispose();
-      _scoreControllers.removeAt(index);
+      questions.removeAt(index);
+      questionKeys.removeAt(index);
     });
+  }
+
+  int _minScore(List<int> scores) {
+    return scores.reduce((a, b) => a < b ? a : b);
+  }
+
+  int _maxScore(List<int> scores) {
+    return scores.reduce((a, b) => a > b ? a : b);
+  }
+
+  String? validateBeforeSave() {
+    final title = surveyTitleController.text.trim();
+
+    if (title.isEmpty) {
+      return 'اكتب عنوان الاستبيان أولاً.';
+    }
+
+    if (questions.isEmpty) {
+      return 'يجب إضافة سؤال واحد على الأقل.';
+    }
+
+    int formMinScore = 0;
+    int formMaxScore = 0;
+
+    for (int i = 0; i < questionKeys.length; i++) {
+      final state = questionKeys[i].currentState;
+
+      if (state == null) {
+        return 'حدث خطأ أثناء قراءة بيانات السؤال ${i + 1}.';
+      }
+
+      final question = state.getQuestionData();
+
+      if (question.questionText.trim().isEmpty) {
+        return 'اكتب نص السؤال رقم ${i + 1}.';
+      }
+
+      if (question.answers.length < 2) {
+        return 'السؤال رقم ${i + 1} يجب أن يحتوي على إجابتين على الأقل.';
+      }
+
+      final scores = <int>[];
+
+      for (int j = 0; j < question.answers.length; j++) {
+        final answer = question.answers[j];
+
+        if (answer.answerText.trim().isEmpty) {
+          return 'اكتب نص الإجابة رقم ${j + 1} في السؤال رقم ${i + 1}.';
+        }
+
+        if (answer.score < 0 || answer.score > 100) {
+          return 'سكور الإجابة رقم ${j + 1} في السؤال رقم ${i + 1} يجب أن يكون من 0 إلى 100.';
+        }
+
+        scores.add(answer.score);
+      }
+
+      if (question.questionType == QuestionType.single) {
+        formMinScore += _minScore(scores);
+        formMaxScore += _maxScore(scores);
+      } else {
+        formMinScore += 0;
+        formMaxScore += scores.fold(0, (sum, score) => sum + score);
+      }
+    }
+
+    final diagnosisState = diagnosisKey.currentState;
+
+    if (diagnosisState == null) {
+      return 'حدث خطأ أثناء قراءة بيانات التشخيص.';
+    }
+
+    final ranges = diagnosisState.getDiagnosisRanges();
+
+    if (ranges.isEmpty) {
+      return 'يجب إضافة تشخيص واحد على الأقل.';
+    }
+
+    if (formMaxScore > formMinScore && ranges.length < 2) {
+      return 'يجب تقسيم التشخيص إلى نطاقين على الأقل، ولا تجعل كل النتائج تذهب لتشخيص واحد.';
+    }
+
+    for (int i = 0; i < ranges.length; i++) {
+      final range = ranges[i];
+
+      if (range.diagnosis.trim().isEmpty) {
+        return 'اكتب اسم التشخيص رقم ${i + 1}.';
+      }
+
+      if (range.from > range.to) {
+        return 'في التشخيص رقم ${i + 1}، قيمة "من" يجب أن تكون أقل من أو تساوي "إلى".';
+      }
+    }
+
+    ranges.sort((a, b) => a.from.compareTo(b.from));
+
+    if (ranges.first.from != formMinScore) {
+      return 'أول تشخيص يجب أن يبدأ من $formMinScore حسب أقل سكور ممكن للفورم.';
+    }
+
+    if (ranges.last.to != formMaxScore) {
+      return 'آخر تشخيص يجب أن ينتهي عند $formMaxScore حسب أعلى سكور ممكن للفورم.';
+    }
+
+    for (int i = 0; i < ranges.length - 1; i++) {
+      final current = ranges[i];
+      final next = ranges[i + 1];
+
+      if (current.to >= next.from) {
+        return 'يوجد تداخل بين التشخيص "${current.diagnosis}" و "${next.diagnosis}".';
+      }
+
+      if (current.to + 1 != next.from) {
+        return 'يوجد فراغ في التشخيص بين ${current.to} و ${next.from}.';
+      }
+    }
+
+    return null;
+  }
+
+  void saveSurvey() {
+    final error = validateBeforeSave();
+
+    if (error != null) {
+      customDialog(
+        context: context,
+        title: 'تنبيه',
+        message: error,
+        isError: true,
+      );
+      return;
+    }
+
+    customDialog(
+      isSuccess: true,
+      context: context,
+      title: 'تم الحفظ',
+      message: 'تم حفظ الاستبيان بنجاح.',
+    );
   }
 
   @override
@@ -83,133 +216,70 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
         title: 'إضافة استبيان جديد',
         isHomeBar: false,
       ),
-
-      body: RawKeyboardListener(
-        focusNode: _keyboardFocusNode,
-        autofocus: true,
-        onKey: (event) {
-          if (event is! RawKeyDownEvent) return;
-          if (_scoreControllers.isEmpty) return;
-
-          int current = int.tryParse(_scoreControllers.first.text) ?? 0;
-
-          if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            setState(() {
-              _scoreControllers.first.text = (current + 1).toString();
-            });
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            setState(() {
-              _scoreControllers.first.text = (current - 1).toString();
-            });
-          }
-        },
+      body: Container(
+        width: double.infinity,
+        color: backgroundColor,
         child: SingleChildScrollView(
           child: Center(
             child: Padding(
-              padding: EdgeInsets.all(h * 0.05),
+              padding: EdgeInsets.symmetric(
+                horizontal: w * 0.04,
+                vertical: h * 0.035,
+              ),
               child: Container(
-                padding: EdgeInsets.all(h * 0.02),
+                width: w * 0.92,
+                padding: EdgeInsets.all(w * 0.025),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withOpacity(.88),
+                  borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.10),
-                      spreadRadius: 1,
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
+                      color: Colors.black.withOpacity(.05),
+                      blurRadius: 28,
+                      offset: const Offset(0, 12),
                     ),
                   ],
                 ),
-                width: w * 0.95,
                 child: Column(
                   children: [
-                    Column(
-                      children: [
-                        customText(
-                          text: "إنشاء استبيان جديد",
-                          size: h * 0.025,
-                          color: const Color(0xFF831843),
-                          bold: true,
-                          isCenter: false,
-                        ),
-                        SizedBox(height: h * 0.03),
-                        customText(
-                          text: "قم بإضافة الأسئلة والإجابات",
-                          size: h * 0.02,
-                          color: const Color(0xFFED4EA1),
-                          bold: true,
-                          isCenter: false,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: h * 0.03),
-                    Directionality(
-                      textDirection: TextDirection.rtl,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          customText(
-                            text: "عنوان الاستبيان",
-                            size: h * 0.018,
-                            color: Colors.black,
-                            bold: true,
-                            isCenter: false,
-                          ),
-                          SizedBox(height: h * 0.01),
-                          buildTextField(
-                            keyboardType: CustomTextFieldType.text,
-                            hintText: "مثال استبيان الصحة النفسية",
-                            labelText: "اسم النموذج",
-                            textDirection: TextDirection.rtl,
-                          ),
-                        ],
-                      ),
-                    ),
+                    const QuestionnairePageHeader(),
+                    SizedBox(height: h * 0.035),
+                    SurveyTitleCard(controller: surveyTitleController),
+                    SizedBox(height: h * 0.025),
 
-                    SizedBox(height: h * 0.03),
-
-                    ...List.generate(_scoreControllers.length, (index) {
-                      return AnimatedAdd(
-                        key: ValueKey(_scoreControllers[index]),
-                        h: h,
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            bottom: index == _scoreControllers.length - 1
-                                ? h * 0.03
-                                : h * 0.02,
-                          ),
+                    ...List.generate(questions.length, (index) {
+                      return Padding(
+                        key: ValueKey(questions[index]),
+                        padding: EdgeInsets.only(bottom: h * 0.025),
+                        child: AnimatedAdd(
                           child: QuestionnaireBody(
-                            h: h,
-                            w: w,
-                            scoreController: _scoreControllers[index],
+                            key: questionKeys[index],
                             questionIndex: index + 1,
-                            onDeleteQuestion: () => _removeQuestion(index),
+                            canDeleteQuestion: questions.length > 1,
+                            onDeleteQuestion: () => removeQuestion(index),
                           ),
                         ),
                       );
                     }),
 
                     CustomGlowButton(
-                      width: w * 0.7,
                       title: 'إنشاء سؤال جديد',
-                      onPressed: _addQuestion,
+                      onPressed: addQuestion,
+                      icon: Icons.add,
+                      isGradient: true,
                     ),
 
-                    SizedBox(height: h * 0.04),
+                    SizedBox(height: h * 0.03),
 
-                    DiagnosisRangeWidget(h: h, w: w, onDelete: () {}),
-                    SizedBox(height: h * 0.04),
+                    DiagnosisSection(key: diagnosisKey),
+
+                    SizedBox(height: h * 0.03),
+
                     CustomGlowButton(
-                      width: w,
-                      title: 'حفظ الاستبيان',
-                      onPressed: () {
-                        customDialog(
-                          context: context,
-                          title: 'تم الحفظ',
-                          message: 'تم حفظ الاستبيان بنجاح.',
-                        );
-                      },
+                      title: "حفظ الاستبيان",
+                      onPressed: saveSurvey,
+                      isGradient: true,
+                      icon: Icons.save_outlined,
                     ),
                   ],
                 ),

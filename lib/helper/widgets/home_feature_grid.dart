@@ -108,14 +108,7 @@ class _FeatureCardState extends State<FeatureCard> {
                     size: h * 0.012,
                     color: const Color(0xFFE91E63),
                   ),
-                  const Spacer(),
-                  Align(
-                    alignment: Alignment.bottomLeft,
-                    child: Image.asset(
-                      'assets/icons/breastCancerIcon.png',
-                      height: h * 0.03,
-                    ),
-                  ),
+                  
                 ],
               ),
             ),

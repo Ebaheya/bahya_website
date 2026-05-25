@@ -12,7 +12,7 @@ get getScreenWidth =>
 get getScreenHeight =>
     (BuildContext context) => MediaQuery.of(context).size.height;
 
-Color? backgroundColor = Colors.grey[200];
+Color? backgroundColor = const Color(0xFFFFF7FD);
 Color? salesBackgroundColor = Colors.deepPurple;
 
 final List<DiagnosisPoint> chartData = <DiagnosisPoint>[
@@ -51,7 +51,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'جدولة ونشر النماذج',
     icon: Icons.event_note,
     onTap: () {
-      context.go('/publish_schedule');
+      context.push('/publish_schedule');
     },
   ),
   FeatureItem(
@@ -59,7 +59,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'إنشاء نماذج أسئلة',
     icon: Icons.edit_note,
     onTap: () {
-      context.go('/add_questionnaire');
+      context.push('/add_questionnaire');
     },
   ),
   FeatureItem(
@@ -67,7 +67,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'عرض وإدارة بيانات',
     icon: Icons.people_alt,
     onTap: () {
-      context.go('/patient_info');
+      context.push('/patient_info');
     },
   ),
   FeatureItem(
@@ -75,7 +75,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'الوصول للنماذج المحفوظة',
     icon: Icons.folder_open,
     onTap: () {
-      context.go('/questionnaire_filler');
+      context.push('/questionnaire_filler');
     },
   ),
 ];

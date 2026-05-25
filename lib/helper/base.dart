@@ -2,6 +2,7 @@ import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:go_router/go_router.dart';
 
 Widget customText({
   required String text,
@@ -161,7 +162,7 @@ PreferredSizeWidget customAppBar({
                         SizedBox(width: w * 0.02),
                       ],
                     )
-                  : const SizedBox.shrink(),
+                  : SizedBox.shrink(),
 
               Row(
                 children: [
@@ -182,7 +183,11 @@ PreferredSizeWidget customAppBar({
                   ),
                   if (!isHomeBar)
                     IconButton(
-                      onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        }
+                      },
                       icon: const Icon(
                         Icons.arrow_forward_ios,
                         color: Colors.white,

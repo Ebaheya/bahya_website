@@ -87,6 +87,7 @@ class _LoginPageState extends State<LoginPage> {
                             keyboardType: CustomTextFieldType.email,
                             hintText: 'البريد الالكترونى',
                             labelText: 'البريد الالكترونى ',
+                            textDirection: TextDirection.rtl,
                           ),
                           buildTextField(
                             controller: passwordController,
@@ -94,6 +95,7 @@ class _LoginPageState extends State<LoginPage> {
                             obscureText: true,
                             hintText: 'أدخل كلمة المرور',
                             labelText: 'كلمة المرور',
+                            textDirection: TextDirection.rtl,
                           ),
                           const SizedBox(height: 16),
                           CustomGlowButton(

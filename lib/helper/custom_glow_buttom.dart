@@ -14,6 +14,7 @@ class CustomGlowButton extends StatelessWidget {
   final double? borderRadius;
   final bool isGradient;
   final IconData? icon;
+
   const CustomGlowButton({
     super.key,
     required this.title,
@@ -33,19 +34,25 @@ class CustomGlowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(borderRadius ?? 30);
 
+    final buttonTextSize = textSize ?? getScreenHeight(context) * 0.02;
+
+    final iconSize = textSize ?? getScreenHeight(context) * 0.025;
+
     return Container(
       height: height ?? getScreenHeight(context) * 0.06,
       width: width ?? getScreenWidth(context) * 0.25,
+
       decoration: BoxDecoration(
         borderRadius: radius,
         boxShadow: [
           BoxShadow(
             color: glowColor ?? const Color(0xFFFF7BB0).withOpacity(0.6),
-             blurRadius: 8,
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
       ),
+
       child: isGradient
           ? ClipRRect(
               borderRadius: radius,
@@ -59,14 +66,33 @@ class CustomGlowButton extends StatelessWidget {
                       end: Alignment.bottomRight,
                     ),
                   ),
+
                   child: InkWell(
+                    borderRadius: radius,
                     onTap: onPressed,
+
                     child: Center(
-                      child: customText(
-                        text: title,
-                        size: textSize ?? getScreenHeight(context) * 0.02,
-                        bold: true,
-                        color: Colors.white,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+
+                        mainAxisSize: MainAxisSize.min,
+
+                        children: [
+                          customText(
+                            text: title,
+                            size: buttonTextSize,
+                            bold: true,
+                            color: textColor ?? Colors.white,
+                          ),
+                          if (icon != null) ...[
+                            const SizedBox(width: 10),
+                            Icon(
+                              icon,
+                              color: textColor ?? Colors.white,
+                              size: iconSize,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
@@ -76,33 +102,37 @@ class CustomGlowButton extends StatelessWidget {
           : ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: backgroundColor ?? Colors.white,
+
                 foregroundColor: textColor ?? const Color(0xFFFF7BB0),
+
                 shape: RoundedRectangleBorder(borderRadius: radius),
+
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
+
               onPressed: onPressed,
+
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+
+                mainAxisSize: MainAxisSize.min,
+
                 children: [
-                  icon != null
-                      ? Row(
-                          children: [
-                            Icon(
-                              icon,
-                              color: Colors.white,
-                              size:
-                                  textSize ?? getScreenHeight(context) * 0.025,
-                            ),
-                            SizedBox(width: 10),
-                          ],
-                        )
-                      : const SizedBox.shrink(),
                   customText(
                     text: title,
-                    size: textSize ?? getScreenHeight(context) * 0.02,
+                    size: buttonTextSize,
                     bold: true,
                     color: textColor ?? const Color(0xFFFF7BB0),
                   ),
+                  if (icon != null) ...[
+                    const SizedBox(width: 10),
+                    Icon(
+                      icon,
+                      color: textColor ?? const Color(0xFFFF7BB0),
+
+                      size: iconSize,
+                    ),
+                  ],
                 ],
               ),
             ),
