@@ -152,31 +152,174 @@ interventions). The `/health` probe checks both stores.
 
 ## Dynamic assessment forms
 
+Doctors and admins author **scored assessment forms** — questions with scored
+answer choices and interpretation bands — then publish them to patients or to
+a volunteer filling on a patient's behalf. The recipient fills and submits the
+form; the server recomputes the score and interpretation, stores the
+submission, and (for a top-band score) raises a high-risk doctor alert. The
+filler sees a confirmation only — never the score. A doctor later reviews the
+submission and authors an official `Assessment`.
+
+The feature spans three routers, all mounted under `/api/v1`:
+
+- `forms/` — authoring, versioning, publishing, lifecycle (`/forms`)
+- `forms/` assignments — filling and submission (`/form-assignments`)
+- `assessments/` — doctor review and official assessment authorship (`/assessments`)
+
+### Roles and access
+
+Every route is `authenticate` (JWT + PostgreSQL role re-validation) then
+`authorize(role)`:
+
+- **Doctor, Admin** — author, version, publish, deactivate forms; list
+  assignments; cancel assignments; read the review queue and submissions.
+- **Doctor only** — create an official `Assessment` (`POST /assessments`).
+- **Patient** — see and submit only forms assigned to their own account.
+- **Volunteer** — see and submit only forms assigned to them, on behalf of the
+  linked patient. Volunteers cannot author, edit, or publish.
+
+A deactivated (inactive) patient sees and submits nothing; prior submissions
+stay readable to staff.
+
+### Rate limits
+
+All three routers carry a per-user (per authenticated user id) limiter on a
+60-second window, with two tighter buckets for expensive actions:
+
+| Scope | Limit |
+|---|---|
+| All `/forms`, `/form-assignments`, `/assessments` routes (baseline) | 120 req/min/user |
+| `POST /form-assignments/:id/submit` | 20 req/min/user |
+| `POST /forms/:id/publish` | 10 req/min/user |
+
+Exceeding a bucket returns `429` with standard `RateLimit-*` headers.
+
+### Endpoints by lifecycle
+
+**Authoring & versioning** (`/forms`, Doctor + Admin):
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/forms` | Create a custom form (template + v1 DRAFT) |
+| `GET` | `/forms` | List templates (`q`, `isActive`, `isDefault`, `category`, paginated) |
+| `GET` | `/forms/:id` | Template + current version (questions, choices, scores, ranges) |
+| `PUT` | `/forms/:id` | Edit structure (in-place if DRAFT; clone to version N+1 if published) |
+| `GET` | `/forms/:id/versions` | List all versions (newest first) |
+| `GET` | `/forms/:id/versions/:version` | Fetch a specific historical version |
+| `POST` | `/forms/:id/publish-version` | Promote the current DRAFT version to PUBLISHED (assignable) |
+| `PATCH` | `/forms/:id/status` | Activate / deactivate the template |
+
+**Publishing & scheduling** (`/forms`, `/form-assignments`, Doctor + Admin):
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/forms/:id/publish` | Publish to a target (single patient / all active patients / volunteer-for-patient), optional future `publishAt` |
+| `GET` | `/forms/:id/assignments` | List assignments for a template (paginated) |
+| `PATCH` | `/form-assignments/:id/cancel` | Cancel a not-yet-submitted assignment |
+
+`publishAt` in the future creates `SCHEDULED` assignments that stay invisible
+until a background due-sweep promotes them to `PUBLISHED` and notifies the
+recipient; a past or null `publishAt` publishes immediately. `ALL_PATIENTS`
+fans out one assignment per active patient, resolved at publish time.
+
+**Filling & submitting** (`/form-assignments`, Patient + Volunteer):
+
+| Method | Path | Roles | Purpose |
+|---|---|---|---|
+| `GET` | `/form-assignments/my` | Patient, Volunteer | My visible assigned forms |
+| `GET` | `/form-assignments/:id` | Patient (owner), Volunteer (assignee), Doctor, Admin | Assignment + form structure to render (fillers get scores stripped) |
+| `POST` | `/form-assignments/:id/submit` | Patient (owner), Volunteer (assignee) | Submit answers; returns confirmation only |
+
+**Doctor review & assessment** (`/assessments`):
+
+| Method | Path | Roles | Purpose |
+|---|---|---|---|
+| `GET` | `/assessments/submissions/pending` | Doctor, Admin | Submissions awaiting review |
+| `GET` | `/assessments/submissions/:id` | Doctor, Admin | Submission detail (answers + computed score/interpretation) |
+| `POST` | `/assessments` | **Doctor only** | Create official assessment (from a submission or direct); flips the assignment to `REVIEWED` |
+| `GET` | `/assessments/patient/:patientId` | Doctor, Admin, Patient (owner) | List a patient's assessments |
+| `GET` | `/assessments/:id` | Doctor, Admin, Patient (owner) | Assessment detail |
+
+### Scoring and interpretation
+
+Scoring is server-side and ignores any client-supplied score. Question types
+and their contribution to the total:
+
+- **SINGLE_SELECT** — the score of the one selected choice.
+- **MULTI_SELECT** — the **sum** of all selected choices' scores (no upper
+  limit; at least one when required).
+- **SCALE** — the chosen numeric value directly (author defines integer
+  `scaleMin < scaleMax` and `scaleStep > 0`; values must be in range and
+  step-aligned).
+
+The form total is the sum of all question scores. Questions may be grouped
+into **subscales** (e.g. HADS anxiety `A` and depression `D`); each subscale
+total is computed independently. **Score ranges** map a total to an
+interpretation label (e.g. Normal/Mild/Moderate/Severe/Critical). When ranges
+are defined they must cover every achievable total with no gaps and no
+overlaps, validated at authoring time.
+
+When a submission lands in the **top band of a multi-band group**, the server
+emits a high-risk doctor alert (`HIGH_RISK` notification +
+`HIGH_RISK_ALERT_CREATED` audit) at submission time. A single-band group is a
+catch-all and never escalates.
+
+**Manual** forms (`scoringType: "MANUAL"`, `interpretationMode: "MANUAL"`)
+store the answers with no automatic total, subscale totals, or interpretation;
+the reviewing doctor assigns the score and severity during review.
+
+In all cases the filler receives a confirmation (`submissionId`, `status`,
+`submittedAt`) only — the computed score and interpretation are doctor-only.
+
+### Versioning and lifecycle
+
+Published form versions are immutable. Editing a DRAFT version updates it in
+place; editing a PUBLISHED version clones the structure into version N+1 and
+repoints `currentVersion`, so in-flight assignments and past submissions stay
+pinned to the exact version they were answered against. The template `key` is
+immutable once created. Forms and assignments use status transitions
+(`isActive`, and assignment `SCHEDULED`/`PUBLISHED`/`SUBMITTED`/`REVIEWED`/
+`CANCELLED`) rather than delete endpoints; deactivated forms cannot be
+published or sent out, but their past submissions remain readable.
+
+### Seeded default forms
+
 After applying Prisma migrations, seed the default form catalog idempotently:
 
 ```bash
 npm run seed:forms
 ```
 
-The seed includes `PHQ9`, `PHQ4`, `DT`, `HADS`, `PTSD`, `QOL`, and `MACS`.
-Doctors and admins author and publish forms under `/api/v1/forms`; patients
-and volunteers fill assigned forms under `/api/v1/form-assignments`; doctors
-create official assessments under `/api/v1/assessments`.
+The seed inserts seven recognized clinical instruments (idempotent
+upsert-by-`key`). Five are automatically scored with interpretation ranges and
+two ship as manual-review forms:
 
-Published form versions are immutable. Updating a published form creates a
-new published version so existing assignments and submissions remain pinned
-to their original structure. Forms and assignments use status transitions
-(`isActive` and `CANCELLED`) rather than lifecycle delete endpoints.
+| Key | Name | Scoring | Notes |
+|---|---|---|---|
+| `PHQ9` | Patient Health Questionnaire-9 | Scored (RANGE) | 9 SINGLE_SELECT, bands 0–4/5–9/10–14/15–19/20–27 |
+| `PHQ4` | Patient Health Questionnaire-4 | Scored (RANGE) | 4 SINGLE_SELECT, bands 0–2/3–5/6–8/9–12 |
+| `DT` | Distress Thermometer | Scored (RANGE) | Single SCALE 0–10, bands 0–3/4–6/7–10 |
+| `HADS` | Hospital Anxiety and Depression Scale | Scored (RANGE) | 14 SINGLE_SELECT split into subscales `A` and `D`, each 0–7/8–10/11–21 |
+| `PTSD` | PTSD Checklist | Scored (RANGE) | 20 SINGLE_SELECT, bands 0–10/11–30/31–50/51–80 |
+| `QOL` | Quality of Life | **Manual** | Manual interpretation; no automatic total |
+| `MACS` | Mental Adjustment to Cancer Scale | **Manual** | Manual interpretation; no automatic total |
+
+### Errors
 
 Form-specific errors retain the standard error envelope and status contract:
 
 | Status | Form error codes | Meaning |
 |---|---|---|
-| `400` | `FORM_*_INVALID`, `FORM_*_OUT_OF_RANGE`, `FORM_*_MISSING_*`, `FORM_VERSION_EMPTY` | Request or scoring validation failed |
+| `400` | `FORM_KEY_INVALID`, `FORM_QUESTION_NO_CHOICES`, `FORM_CHOICE_MISSING_SCORE`, `FORM_SCALE_INVALID_RANGE`, `FORM_SCALE_HAS_CHOICES`, `FORM_SCALE_OUT_OF_RANGE`, `FORM_RANGES_INVALID`, `FORM_RANGES_OVERLAP`, `FORM_RANGES_GAP`, `FORM_VERSION_EMPTY`, `FORM_ANSWER_SHAPE_INVALID`, `FORM_DUPLICATE_QUESTION_ANSWER`, `FORM_DUPLICATE_CHOICE`, `FORM_INVALID_CHOICE`, `FORM_INVALID_CHOICE_COUNT`, `FORM_INVALID_QUESTION`, `FORM_INVALID_VOLUNTEER`, `FORM_MISSING_REQUIRED_ANSWER` | Request or scoring validation failed |
 | `401` | `UNAUTHORIZED` | Missing or invalid access token |
 | `403` | `FORBIDDEN` | Authenticated role cannot perform the operation |
 | `404` | `NOT_FOUND` | Form, assignment, or accessible target is not visible/found |
 | `409` | `FORM_KEY_EXISTS`, `FORM_KEY_IMMUTABLE`, `FORM_VERSION_CONFLICT`, `FORM_VERSION_NOT_DRAFT`, `FORM_NOT_PUBLISHABLE`, `FORM_ALREADY_SUBMITTED`, `FORM_ASSIGNMENT_FINALIZED` | Lifecycle or concurrent-operation conflict |
+
+`FORM_RANGES_INVALID` is raised when a score range's `minScore` exceeds its
+`maxScore`. The full as-built endpoint, request/response, and error reference
+lives in
+[`specs/004-dynamic-assessment-forms/contracts/forms-api.md`](../specs/004-dynamic-assessment-forms/contracts/forms-api.md).
 
 ## Tests
 
