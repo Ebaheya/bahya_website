@@ -1,5 +1,6 @@
 import { Prisma, type FormQuestionType } from '@prisma/client';
 import type { Request } from 'express';
+import { logger } from '../../config/logger';
 import { prisma } from '../../config/prisma';
 import { writeAudit } from '../../middleware/audit';
 import { AppError } from '../../utils/httpError';
@@ -130,6 +131,48 @@ export async function getForm(id: string) {
   return form;
 }
 
+export async function setStatus(id: string, isActive: boolean, actorId: string, req?: Request) {
+  const existing = await prisma.formTemplate.findUnique({
+    where: { id },
+    select: { id: true, isActive: true },
+  });
+  if (!existing) throw AppError.notFound('Form not found');
+
+  if (existing.isActive === isActive) {
+    return getForm(id);
+  }
+
+  const form = await prisma.formTemplate.update({
+    where: { id },
+    data: { isActive },
+    include: formInclude,
+  });
+
+  // Post-commit audit. The status change is already persisted, so a failed audit
+  // write MUST NOT fail the request — guard defensively so it stays safe even if
+  // FORM_ACTIVATED/FORM_DEACTIVATED are later promoted to STRICT_AUDIT_ACTIONS
+  // (which would otherwise throw 503 after commit). Both directions are audited:
+  // activation and deactivation are both sensitive lifecycle actions.
+  try {
+    await writeAudit({
+      actorId,
+      action: isActive ? 'FORM_ACTIVATED' : 'FORM_DEACTIVATED',
+      entityType: 'FormTemplate',
+      entityId: form.id,
+      oldValues: { isActive: existing.isActive },
+      newValues: { isActive },
+      req,
+    });
+  } catch (err) {
+    logger.error(
+      { metric: 'form_status_audit_failure', formId: form.id, err },
+      'form status-change audit failed after commit'
+    );
+  }
+
+  return form;
+}
+
 export async function updateForm(
   id: string,
   input: CreateFormInput,
@@ -180,7 +223,11 @@ export async function updateForm(
         // L1: a published version must satisfy the same >=1 question gate as
         // publishVersion (FR-024).
         if (input.questions.length === 0) {
-          throw new AppError(400, 'FORM_VERSION_EMPTY', 'Cannot publish a version with zero questions');
+          throw new AppError(
+            400,
+            'FORM_VERSION_EMPTY',
+            'Cannot publish a version with zero questions'
+          );
         }
         // M1: number the new version from MAX(version)+1 rather than
         // currentVersion.version+1, so it is correct even if currentVersionId is
@@ -227,7 +274,11 @@ export async function updateForm(
     if (isUniqueConstraintError(err)) {
       // `key` is immutable on update, so the only unique constraint that can fire
       // is (templateId, version) — a concurrent edit that already created N+1.
-      throw new AppError(409, 'FORM_VERSION_CONFLICT', 'Form was modified concurrently; please retry');
+      throw new AppError(
+        409,
+        'FORM_VERSION_CONFLICT',
+        'Form was modified concurrently; please retry'
+      );
     }
     throw err;
   }

@@ -51,7 +51,11 @@ describe('runDueAssignmentsSweep', () => {
 
     expect(prismaMock.formAssignment.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { status: 'SCHEDULED', publishAt: { lte: now } },
+        where: {
+          status: 'SCHEDULED',
+          publishAt: { lte: now },
+          template: { is: { isActive: true } },
+        },
       })
     );
     expect(prismaMock.formAssignment.updateMany).toHaveBeenCalledWith({

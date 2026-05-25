@@ -145,7 +145,14 @@ export const formVersionParamSchema = z
   })
   .strict();
 
+export const setFormStatusSchema = z
+  .object({
+    isActive: z.boolean(),
+  })
+  .strict();
+
 export type CreateFormInput = z.infer<typeof createFormSchema>;
 export type ListFormsQuery = z.infer<typeof listFormsQuerySchema>;
 export type FormIdParam = z.infer<typeof formIdParamSchema>;
 export type FormVersionParam = z.infer<typeof formVersionParamSchema>;
+export type SetFormStatusInput = z.infer<typeof setFormStatusSchema>;

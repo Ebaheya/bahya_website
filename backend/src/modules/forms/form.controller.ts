@@ -5,6 +5,7 @@ import {
   formIdParamSchema,
   formVersionParamSchema,
   listFormsQuerySchema,
+  setFormStatusSchema,
 } from './form.schema';
 import * as formService from './form.service';
 import {
@@ -41,6 +42,18 @@ export async function update(req: Request, res: Response, next: NextFunction): P
     const { id } = formIdParamSchema.parse(req.params);
     const input = createFormSchema.parse(req.body);
     const form = await formService.updateForm(id, input, req.user.id, req);
+    res.status(200).json(form);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function setStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.user) throw AppError.unauthorized();
+    const { id } = formIdParamSchema.parse(req.params);
+    const { isActive } = setFormStatusSchema.parse(req.body);
+    const form = await formService.setStatus(id, isActive, req.user.id, req);
     res.status(200).json(form);
   } catch (err) {
     next(err);

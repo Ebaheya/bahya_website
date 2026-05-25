@@ -233,7 +233,14 @@ export async function runDueAssignmentsSweep(now = new Date()): Promise<number> 
   // loads the whole table into memory at once.
   for (;;) {
     const dueAssignments = await prisma.formAssignment.findMany({
-      where: { status: 'SCHEDULED', publishAt: { lte: now } },
+      // A form deactivated after scheduling must not be sent out: skip
+      // assignments whose template is no longer active (FR-024 / US7). They stay
+      // SCHEDULED and can be cancelled, or re-fire if the form is reactivated.
+      where: {
+        status: 'SCHEDULED',
+        publishAt: { lte: now },
+        template: { is: { isActive: true } },
+      },
       select: {
         id: true,
         patientId: true,
