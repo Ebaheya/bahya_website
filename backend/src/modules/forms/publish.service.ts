@@ -7,7 +7,9 @@ import {
   emitFormAssigned,
   type FormAssignedNotificationInput,
 } from '../notifications/notification.service';
-import type { PublishFormInput } from './publish.schema';
+import type { ListAssignmentsQuery, PublishFormInput } from './publish.schema';
+
+const DUE_SWEEP_BATCH_SIZE = 500;
 
 const assignmentInclude = {
   patient: { select: { id: true, userId: true } },
@@ -170,70 +172,98 @@ export async function publishForm(
   };
 }
 
-export async function listAssignments(templateId: string) {
+export async function listAssignments(templateId: string, query: ListAssignmentsQuery) {
   const template = await prisma.formTemplate.findUnique({
     where: { id: templateId },
     select: { id: true },
   });
   if (!template) throw AppError.notFound('Form not found');
 
-  return prisma.formAssignment.findMany({
-    where: { templateId },
-    include: assignmentInclude,
-    orderBy: { createdAt: 'desc' },
-  });
+  const skip = (query.page - 1) * query.pageSize;
+  const [data, total] = await Promise.all([
+    prisma.formAssignment.findMany({
+      where: { templateId },
+      include: assignmentInclude,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: query.pageSize,
+    }),
+    prisma.formAssignment.count({ where: { templateId } }),
+  ]);
+
+  return { data, total, page: query.page, pageSize: query.pageSize };
 }
 
 export async function cancelAssignment(assignmentId: string) {
-  const cancelled = await prisma.formAssignment.updateMany({
-    where: { id: assignmentId, status: { in: ['SCHEDULED', 'PUBLISHED'] } },
-    data: { status: 'CANCELLED' },
+  return prisma.$transaction(async (tx) => {
+    const assignment = await tx.formAssignment.findUnique({
+      where: { id: assignmentId },
+      include: assignmentInclude,
+    });
+    if (!assignment) throw AppError.notFound('Form assignment not found');
+    if (assignment.status === 'CANCELLED') return assignment;
+    if (assignment.status === 'SUBMITTED' || assignment.status === 'REVIEWED') {
+      throw new AppError(
+        409,
+        'FORM_ASSIGNMENT_FINALIZED',
+        'A submitted assignment cannot be cancelled'
+      );
+    }
+
+    // Status-guarded write: if a concurrent sweep/submit flipped the row between
+    // the read above and this update, the guard matches 0 rows and we reject
+    // rather than returning a stale view.
+    const cancelled = await tx.formAssignment.updateMany({
+      where: { id: assignmentId, status: { in: ['SCHEDULED', 'PUBLISHED'] } },
+      data: { status: 'CANCELLED' },
+    });
+    if (cancelled.count !== 1) {
+      throw new AppError(409, 'FORM_ASSIGNMENT_FINALIZED', 'Assignment cannot be cancelled');
+    }
+
+    return { ...assignment, status: 'CANCELLED' as const };
   });
-  const assignment = await prisma.formAssignment.findUnique({
-    where: { id: assignmentId },
-    include: assignmentInclude,
-  });
-  if (!assignment) throw AppError.notFound('Form assignment not found');
-  if (cancelled.count === 1 || assignment.status === 'CANCELLED') return assignment;
-  if (assignment.status === 'SUBMITTED' || assignment.status === 'REVIEWED') {
-    throw new AppError(
-      409,
-      'FORM_ASSIGNMENT_FINALIZED',
-      'A submitted assignment cannot be cancelled'
-    );
-  }
-  throw new AppError(409, 'FORM_ASSIGNMENT_FINALIZED', 'Assignment cannot be cancelled');
 }
 
 export async function runDueAssignmentsSweep(now = new Date()): Promise<number> {
-  const dueAssignments = await prisma.formAssignment.findMany({
-    where: { status: 'SCHEDULED', publishAt: { lte: now } },
-    select: {
-      id: true,
-      patientId: true,
-      assignedToUserId: true,
-      target: true,
-      patient: { select: { userId: true } },
-      template: { select: { name: true } },
-    },
-  });
-
   const promoted: VisibleAssignment[] = [];
-  for (const assignment of dueAssignments) {
-    const claimed = await prisma.formAssignment.updateMany({
-      where: { id: assignment.id, status: 'SCHEDULED', publishAt: { lte: now } },
-      data: { status: 'PUBLISHED' },
-    });
-    if (claimed.count !== 1) continue;
 
-    promoted.push({
-      id: assignment.id,
-      patientId: assignment.patientId,
-      patientUserId: assignment.patient.userId,
-      target: assignment.target,
-      assignedToUserId: assignment.assignedToUserId,
-      formName: assignment.template.name,
+  // Drain due assignments in bounded batches. Claiming a row flips it out of the
+  // SCHEDULED set, so each query advances the cursor and a large backlog never
+  // loads the whole table into memory at once.
+  for (;;) {
+    const dueAssignments = await prisma.formAssignment.findMany({
+      where: { status: 'SCHEDULED', publishAt: { lte: now } },
+      select: {
+        id: true,
+        patientId: true,
+        assignedToUserId: true,
+        target: true,
+        patient: { select: { userId: true } },
+        template: { select: { name: true } },
+      },
+      take: DUE_SWEEP_BATCH_SIZE,
     });
+    if (dueAssignments.length === 0) break;
+
+    for (const assignment of dueAssignments) {
+      const claimed = await prisma.formAssignment.updateMany({
+        where: { id: assignment.id, status: 'SCHEDULED', publishAt: { lte: now } },
+        data: { status: 'PUBLISHED' },
+      });
+      if (claimed.count !== 1) continue;
+
+      promoted.push({
+        id: assignment.id,
+        patientId: assignment.patientId,
+        patientUserId: assignment.patient.userId,
+        target: assignment.target,
+        assignedToUserId: assignment.assignedToUserId,
+        formName: assignment.template.name,
+      });
+    }
+
+    if (dueAssignments.length < DUE_SWEEP_BATCH_SIZE) break;
   }
 
   await notifyVisibleAssignments(promoted);

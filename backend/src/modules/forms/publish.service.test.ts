@@ -13,6 +13,7 @@ jest.mock('../../config/prisma', () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
+      count: jest.fn(),
     },
   },
 }));
@@ -33,6 +34,7 @@ const prismaMock = prisma as unknown as {
     findUnique: jest.Mock;
     update: jest.Mock;
     updateMany: jest.Mock;
+    count: jest.Mock;
   };
 };
 const writeAuditMock = writeAudit as jest.Mock;
@@ -215,14 +217,22 @@ describe('publishForm', () => {
 describe('cancelAssignment', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('cancels a published assignment and rejects a submitted assignment', async () => {
-    const cancelled = { id: 'assignment-1', status: 'CANCELLED' };
-    prismaMock.formAssignment.updateMany
-      .mockResolvedValueOnce({ count: 1 })
-      .mockResolvedValueOnce({ count: 0 });
-    prismaMock.formAssignment.findUnique
-      .mockResolvedValueOnce(cancelled)
-      .mockResolvedValueOnce({ id: 'assignment-2', status: 'SUBMITTED' });
+  it('cancels a published assignment atomically and rejects a submitted assignment', async () => {
+    const txCancel = {
+      formAssignment: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'assignment-1', status: 'PUBLISHED' }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const txSubmitted = {
+      formAssignment: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'assignment-2', status: 'SUBMITTED' }),
+        updateMany: jest.fn(),
+      },
+    };
+    prismaMock.$transaction
+      .mockImplementationOnce(async (callback) => callback(txCancel))
+      .mockImplementationOnce(async (callback) => callback(txSubmitted));
 
     await expect(publishService.cancelAssignment('assignment-1')).resolves.toMatchObject({
       status: 'CANCELLED',
@@ -231,9 +241,25 @@ describe('cancelAssignment', () => {
       statusCode: 409,
       code: 'FORM_ASSIGNMENT_FINALIZED',
     });
-    expect(prismaMock.formAssignment.updateMany).toHaveBeenCalledWith({
+    expect(txCancel.formAssignment.updateMany).toHaveBeenCalledWith({
       where: { id: 'assignment-1', status: { in: ['SCHEDULED', 'PUBLISHED'] } },
       data: { status: 'CANCELLED' },
+    });
+    expect(txSubmitted.formAssignment.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects when the row is finalized between read and guarded write', async () => {
+    const tx = {
+      formAssignment: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'assignment-3', status: 'PUBLISHED' }),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+    };
+    prismaMock.$transaction.mockImplementationOnce(async (callback) => callback(tx));
+
+    await expect(publishService.cancelAssignment('assignment-3')).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'FORM_ASSIGNMENT_FINALIZED',
     });
   });
 });

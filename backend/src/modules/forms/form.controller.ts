@@ -2,7 +2,11 @@ import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../../utils/httpError';
 import { createFormSchema, formIdParamSchema, listFormsQuerySchema } from './form.schema';
 import * as formService from './form.service';
-import { assignmentIdParamSchema, publishFormSchema } from './publish.schema';
+import {
+  assignmentIdParamSchema,
+  listAssignmentsQuerySchema,
+  publishFormSchema,
+} from './publish.schema';
 import * as publishService from './publish.service';
 
 export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -69,7 +73,8 @@ export async function listAssignments(
 ): Promise<void> {
   try {
     const { id } = formIdParamSchema.parse(req.params);
-    const assignments = await publishService.listAssignments(id);
+    const query = listAssignmentsQuerySchema.parse(req.query);
+    const assignments = await publishService.listAssignments(id, query);
     res.status(200).json(assignments);
   } catch (err) {
     next(err);
