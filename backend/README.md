@@ -175,7 +175,8 @@ Every route is `authenticate` (JWT + PostgreSQL role re-validation) then
 `authorize(role)`:
 
 - **Doctor, Admin** — author, version, publish, deactivate forms; list
-  assignments; cancel assignments; read the review queue and submissions.
+  active volunteers for delegated assignments; list assignments; cancel
+  assignments; read the review queue and submissions.
 - **Doctor only** — create an official `Assessment` (`POST /assessments`).
 - **Patient** — see and submit only forms assigned to their own account.
 - **Volunteer** — see and submit only forms assigned to them, on behalf of the
@@ -217,6 +218,7 @@ Exceeding a bucket returns `429` with standard `RateLimit-*` headers.
 | Method | Path | Purpose |
 |---|---|---|
 | `POST` | `/forms/:id/publish` | Publish to a target (single patient / all active patients / volunteer-for-patient), optional future `publishAt` |
+| `GET` | `/volunteers` | List active volunteers for delegated assignment selection |
 | `GET` | `/forms/:id/assignments` | List assignments for a template (paginated) |
 | `PATCH` | `/form-assignments/:id/cancel` | Cancel a not-yet-submitted assignment |
 
@@ -385,7 +387,7 @@ the same Postman environment:
 | `patientToken` | Patient `POST /auth/login` response |
 | `volunteerToken` | Volunteer `POST /auth/login` response, when testing delegated filling |
 | `patientId` | Patient create/list response |
-| `volunteerId` | User create/list response |
+| `volunteerId` | `GET /volunteers` response (`data[].id`) |
 | `formId` | `POST /forms` or `GET /forms` response |
 | `assignmentId` | `POST /forms/:id/publish` response |
 | `submissionId` | `POST /form-assignments/:id/submit` response |
@@ -1209,6 +1211,57 @@ to send them a fresh link without going through `/auth/forgot-password`.
 
 ---
 
+### Volunteer Options
+
+This minimal lookup supports assigning a form to a volunteer without giving
+doctors access to admin user management. All `/volunteers` endpoints require
+an authenticated `DOCTOR` or `ADMIN` token and return active volunteers only.
+
+#### `GET /volunteers`
+
+Search active volunteers for the `VOLUNTEER_FOR_PATIENT` publishing target.
+
+**Auth:** Bearer token. **Roles:** DOCTOR, ADMIN.
+
+**Query parameters**
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `q` | string | — | Optional case-insensitive substring match on `fullName` |
+| `page` | int | `1` | 1-indexed |
+| `pageSize` | int | `20` | Max `100` |
+
+```http
+GET {{baseUrl}}/volunteers?q=amira&page=1&pageSize=20
+Authorization: Bearer {{doctorToken}}
+```
+
+**Response 200**
+
+```json
+{
+  "data": [
+    {
+      "id": "volunteer-user-uuid",
+      "fullName": "Amira Hassan"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "total": 1
+}
+```
+
+The response intentionally excludes email, status controls, and other admin
+user fields.
+
+**Errors**
+
+- `400 VALIDATION_ERROR` — bad query parameters
+- `403 FORBIDDEN` — caller is not DOCTOR or ADMIN
+
+---
+
 ### Forms
 
 Forms are versioned questionnaires authored by staff and later published as
@@ -1485,6 +1538,9 @@ body below.
 ```
 
 **Volunteer filling for a patient**
+
+Set `{{volunteerId}}` from `GET /volunteers`; doctors do not need access to
+the admin-only `/users` API.
 
 ```json
 {

@@ -7,6 +7,7 @@ import { assignmentRouter } from '../modules/forms/assignment.routes';
 import { formRouter } from '../modules/forms/form.routes';
 import { patientRouter } from '../modules/patients/patient.routes';
 import { userRouter } from '../modules/users/user.routes';
+import { volunteerRouter } from '../modules/users/volunteer.routes';
 
 export const apiRouter = Router();
 
@@ -55,3 +56,4 @@ apiRouter.use('/form-assignments', assignmentRouter);
 apiRouter.use('/assessments', assessmentRouter);
 apiRouter.use('/patients', patientRouter);
 apiRouter.use('/users', userRouter);
+apiRouter.use('/volunteers', volunteerRouter);

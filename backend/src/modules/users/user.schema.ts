@@ -31,7 +31,16 @@ export const listUsersQuerySchema = z
   })
   .strict();
 
+export const listVolunteerOptionsQuerySchema = z
+  .object({
+    q: z.string().trim().min(1).max(120).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .strict();
+
 export type UserIdParam = z.infer<typeof userIdParamSchema>;
 export type PatchUserInput = z.infer<typeof patchUserSchema>;
 export type PatchUserStatusInput = z.infer<typeof patchUserStatusSchema>;
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
+export type ListVolunteerOptionsQuery = z.infer<typeof listVolunteerOptionsQuerySchema>;

@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../../utils/httpError';
 import {
+  listVolunteerOptionsQuerySchema,
   listUsersQuerySchema,
   patchUserSchema,
   patchUserStatusSchema,
@@ -16,6 +17,20 @@ export async function list(
   try {
     const query = listUsersQuerySchema.parse(req.query);
     const result = await userService.listUsers(query);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listVolunteerOptions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const query = listVolunteerOptionsQuerySchema.parse(req.query);
+    const result = await userService.listVolunteerOptions(query);
     res.status(200).json(result);
   } catch (err) {
     next(err);
