@@ -92,7 +92,7 @@ describe('default assessment form definitions', () => {
     expect(byKey.get('PHQ9')?.questions).toHaveLength(9);
     expect(byKey.get('PHQ9')?.scoreRanges).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ label: 'Critical', minScore: 20, maxScore: 27 }),
+        expect.objectContaining({ label: 'حرج', minScore: 20, maxScore: 27 }),
       ])
     );
     expect(byKey.get('PHQ4')?.scoreRanges).toEqual(
@@ -106,7 +106,7 @@ describe('default assessment form definitions', () => {
     });
     expect(byKey.get('DT')?.scoreRanges).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ label: 'Severe', minScore: 7, maxScore: 10 }),
+        expect.objectContaining({ label: 'شديد', minScore: 7, maxScore: 10 }),
       ])
     );
 
@@ -117,13 +117,13 @@ describe('default assessment form definitions', () => {
       expect.arrayContaining([
         expect.objectContaining({
           subscale: 'A',
-          label: 'Red-flag referral',
+          label: 'إحالة طارئة',
           minScore: 11,
           maxScore: 21,
         }),
         expect.objectContaining({
           subscale: 'D',
-          label: 'Red-flag referral',
+          label: 'إحالة طارئة',
           minScore: 11,
           maxScore: 21,
         }),
@@ -132,7 +132,7 @@ describe('default assessment form definitions', () => {
     expect(byKey.get('PTSD')?.questions).toHaveLength(20);
     expect(byKey.get('PTSD')?.scoreRanges).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ label: 'Severe', minScore: 51, maxScore: 80 }),
+        expect.objectContaining({ label: 'شديد', minScore: 51, maxScore: 80 }),
       ])
     );
 
