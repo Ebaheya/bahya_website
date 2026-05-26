@@ -97,17 +97,19 @@ describe('assessment review queue and access', () => {
     );
   });
 
-  it('allows a patient to read only assessments belonging to their patient record', async () => {
-    prismaMock.assessment.findUnique
-      .mockResolvedValueOnce({ id: 'assessment-1', patient: { userId: 'patient-user-1' } })
-      .mockResolvedValueOnce({ id: 'assessment-2', patient: { userId: 'patient-user-2' } });
-
+  it('rejects patients from official assessment detail reads without loading clinical data', async () => {
     await expect(
       assessmentService.getById('assessment-1', 'patient-user-1', 'PATIENT')
-    ).resolves.toMatchObject({ id: 'assessment-1' });
+    ).rejects.toMatchObject({ statusCode: 403 });
+    expect(prismaMock.assessment.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('rejects patients from official assessment lists without loading clinical data', async () => {
     await expect(
-      assessmentService.getById('assessment-2', 'patient-user-1', 'PATIENT')
-    ).rejects.toMatchObject({ statusCode: 404 });
+      assessmentService.listByPatient('patient-1', 'patient-user-1', 'PATIENT')
+    ).rejects.toMatchObject({ statusCode: 403 });
+    expect(prismaMock.patient.findUnique).not.toHaveBeenCalled();
+    expect(prismaMock.assessment.findMany).not.toHaveBeenCalled();
   });
 });
 

@@ -14,7 +14,7 @@ assessmentRouter.get('/submissions/:id', authorize('DOCTOR', 'ADMIN'), controlle
 assessmentRouter.post('/', authorize('DOCTOR'), controller.create);
 assessmentRouter.get(
   '/patient/:patientId',
-  authorize('DOCTOR', 'ADMIN', 'PATIENT'),
+  authorize('DOCTOR', 'ADMIN'),
   controller.listByPatient
 );
-assessmentRouter.get('/:id', authorize('DOCTOR', 'ADMIN', 'PATIENT'), controller.getById);
+assessmentRouter.get('/:id', authorize('DOCTOR', 'ADMIN'), controller.getById);

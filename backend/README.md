@@ -243,8 +243,8 @@ fans out one assignment per active patient, resolved at publish time.
 | `GET` | `/assessments/submissions/pending` | Doctor, Admin | Submissions awaiting review |
 | `GET` | `/assessments/submissions/:id` | Doctor, Admin | Submission detail (answers + computed score/interpretation) |
 | `POST` | `/assessments` | **Doctor only** | Create official assessment (from a submission or direct); flips the assignment to `REVIEWED` |
-| `GET` | `/assessments/patient/:patientId` | Doctor, Admin, Patient (owner) | List a patient's assessments |
-| `GET` | `/assessments/:id` | Doctor, Admin, Patient (owner) | Assessment detail |
+| `GET` | `/assessments/patient/:patientId` | Doctor, Admin | List a patient's official assessments |
+| `GET` | `/assessments/:id` | Doctor, Admin | Official assessment detail |
 
 ### Scoring and interpretation
 
@@ -1854,7 +1854,10 @@ Authorization: Bearer {{doctorToken}}
 
 Assessments are the official clinical record created after a doctor reviews a submitted form, or created directly when no form submission is needed.
 
-**Auth:** `Bearer {{doctorToken}}` for review and creation; `Bearer {{patientToken}}` for a patient's own official results.
+**Auth:** `Bearer {{doctorToken}}` for official assessment review, creation, and reads.
+
+Official assessments are clinical staff-only records. Patients must not read
+official assessment scores, interpretations, severity labels, or doctor notes.
 
 **Rate limit:** `120` requests per minute per user.
 
@@ -1963,11 +1966,11 @@ Creating an assessment linked to a submission changes its assignment status to `
 
 List official assessments for one patient.
 
-**Roles:** `DOCTOR`, `ADMIN`, or the patient who owns the records.
+**Roles:** `DOCTOR`, `ADMIN`.
 
 ```http
 GET {{baseUrl}}/assessments/patient/{{patientId}}
-Authorization: Bearer {{patientToken}}
+Authorization: Bearer {{doctorToken}}
 ```
 
 ```json
@@ -1986,11 +1989,11 @@ Authorization: Bearer {{patientToken}}
 
 Retrieve one official assessment.
 
-**Roles:** `DOCTOR`, `ADMIN`, or the patient who owns the record.
+**Roles:** `DOCTOR`, `ADMIN`.
 
 ```http
 GET {{baseUrl}}/assessments/{{assessmentId}}
-Authorization: Bearer {{patientToken}}
+Authorization: Bearer {{doctorToken}}
 ```
 
 **Common error:** `404 NOT_FOUND` for missing or inaccessible records.
@@ -2008,9 +2011,11 @@ Use this order in Postman to test the frontend workflow:
 5. Call `POST /form-assignments/{{assignmentId}}/submit` and save `submissionId`.
 6. Switch back to `doctorToken` and call `GET /assessments/submissions/{{submissionId}}` to review server-computed results.
 7. Call `POST /assessments` and save `assessmentId`.
-8. Switch to `patientToken` and call `GET /assessments/{{assessmentId}}` to display the official assessment record.
+8. Continue with `doctorToken` and call `GET /assessments/{{assessmentId}}` to inspect the official assessment record.
 
-The filler-facing endpoints never return option scores, total score, or computed interpretation. Use assessment records, not local scoring, for patient-visible results.
+The filler-facing endpoints never return option scores, total score, or
+computed interpretation. Official assessment records are available only to
+doctors and admins, not to patients.
 
 ---
 

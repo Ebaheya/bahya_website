@@ -34,12 +34,6 @@ function ensureReviewerReadRole(role: Role): void {
   }
 }
 
-function ensureAssessmentReadAccess(patientUserId: string, actorId: string, role: Role): void {
-  if (role === 'DOCTOR' || role === 'ADMIN') return;
-  if (role === 'PATIENT' && patientUserId === actorId) return;
-  throw AppError.notFound('Assessment not found');
-}
-
 export async function listPendingSubmissions(role: Role) {
   ensureReviewerReadRole(role);
   return prisma.formSubmission.findMany({
@@ -187,18 +181,8 @@ export async function createAssessment(
   return assessment;
 }
 
-export async function listByPatient(patientId: string, actorId: string, role: Role) {
-  if (role === 'PATIENT') {
-    const patient = await prisma.patient.findUnique({
-      where: { id: patientId },
-      select: { userId: true },
-    });
-    if (!patient || patient.userId !== actorId) {
-      throw AppError.notFound('Patient not found');
-    }
-  } else if (role !== 'DOCTOR' && role !== 'ADMIN') {
-    throw AppError.forbidden('Insufficient role');
-  }
+export async function listByPatient(patientId: string, _actorId: string, role: Role) {
+  ensureReviewerReadRole(role);
 
   return prisma.assessment.findMany({
     where: { patientId },
@@ -210,7 +194,9 @@ export async function listByPatient(patientId: string, actorId: string, role: Ro
   });
 }
 
-export async function getById(assessmentId: string, actorId: string, role: Role) {
+export async function getById(assessmentId: string, _actorId: string, role: Role) {
+  ensureReviewerReadRole(role);
+
   const assessment = await prisma.assessment.findUnique({
     where: { id: assessmentId },
     include: {
@@ -220,6 +206,5 @@ export async function getById(assessmentId: string, actorId: string, role: Role)
     },
   });
   if (!assessment) throw AppError.notFound('Assessment not found');
-  ensureAssessmentReadAccess(assessment.patient.userId, actorId, role);
   return assessment;
 }
