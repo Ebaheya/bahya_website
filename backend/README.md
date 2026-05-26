@@ -948,14 +948,32 @@ Example: `GET /patients?q=sara&page=1&pageSize=20`
 
 ```json
 {
-  "data": [ { "id": "...", "fullName": "Sara Patient", "...": "..." } ],
+  "data": [
+    {
+      "id": "...",
+      "fullName": "Sara Patient",
+      "...": "...",
+      "latestAssessments": [
+        { "templateKey": "PHQ9", "score": 12, "status": "MODERATE", "createdAt": "2026-05-20T09:00:00.000Z" },
+        { "templateKey": "PHQ4", "score": 3,  "status": "MILD",     "createdAt": "2026-05-18T09:00:00.000Z" }
+      ]
+    }
+  ],
   "page": 1,
   "pageSize": 20,
   "total": 1
 }
 ```
 
-For `VOLUNTEER` callers, every item in `data` has its `financials` field
+Each item carries `latestAssessments` — the most recent official assessment
+per `templateKey` for that patient (newest first within each key), computed in
+one query for the whole page. Clients render per-instrument scores (e.g.
+`PHQ9`, `PHQ4`) and use `status` as the diagnosis/severity label; an empty
+array means the patient has no official assessments yet.
+
+`latestAssessments` is clinical data: it is present only for `DOCTOR` and
+`ADMIN` callers and is stripped for `CALL_CENTER` and `VOLUNTEER`. For
+`VOLUNTEER` callers, every item in `data` also has its `financials` field
 removed.
 
 **Errors**
@@ -1381,6 +1399,13 @@ pm.environment.set("formId", form.id);
 
 Creates a custom template with a version 1 `DRAFT`. A draft cannot be
 assigned until promoted with `POST /forms/:id/publish-version`.
+
+`key` is optional. When omitted (or sent empty), the server derives a stable
+unique key from `name` — ASCII alphanumerics uppercased plus a random suffix
+(e.g. `FRONTEND_DISTRESS_CHECK_3F9A1C22`). Non-Latin names (e.g. Arabic) that
+slugify to nothing fall back to `FORM_<random>`. This lets the authoring UI
+submit a title without asking the author to invent a key. On `PUT /forms/:id`,
+`key` is still required and immutable.
 
 **Request body**
 
