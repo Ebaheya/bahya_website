@@ -51,14 +51,14 @@ class _PatientInfoState extends State<PatientInfo> {
                     ),
                     child: Column(
                       children: [
-                        arabicText(
+                        customText(
                           text: "قائمة المرضى المسجلين",
                           size: h * 0.02,
                           color: const Color(0xFF831843),
                           bold: true,
                           isCenter: false,
                         ),
-                        arabicText(
+                        customText(
                           text:
                               "عرض شامل لبيانات المرضى ونتائج التقييمات النفسية",
                           size: h * 0.015,

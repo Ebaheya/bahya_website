@@ -4,11 +4,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-
 class DiagnosisPoint {
   final String label;
   final double percent;
-  final double count; 
+  final double count;
   DiagnosisPoint(this.label, this.percent, this.count);
 }
 
@@ -31,7 +30,7 @@ class DiagnosisComparisonChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
-      child: ScrollConfiguration( 
+      child: ScrollConfiguration(
         behavior: const MaterialScrollBehavior().copyWith(
           dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
         ),
@@ -101,7 +100,7 @@ class DiagnosisComparisonChart extends StatelessWidget {
                           final i = value.toInt();
                           if (i < 0 || i >= data.length)
                             return const SizedBox.shrink();
-                          return arabicText(
+                          return customText(
                             text: data[i].label,
                             size: getScreenHeight(context) * 0.013,
                             bold: true,
@@ -142,6 +141,7 @@ class DiagnosisComparisonChart extends StatelessWidget {
       ),
     );
   }
+
   double _calcMaxY() {
     final maxCount = data.fold<double>(0, (p, e) => e.count > p ? e.count : p);
     final maxPercent = data.fold<double>(

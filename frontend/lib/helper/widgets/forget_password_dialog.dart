@@ -1,3 +1,4 @@
+import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
@@ -7,6 +8,8 @@ import 'package:flutter/material.dart';
 enum ContactMethod { email, phone }
 
 void forgetPasswordDialog(BuildContext context) {
+  final TextEditingController emailController = TextEditingController();
+  final h = getScreenHeight(context);
   showGeneralDialog(
     context: context,
     barrierDismissible: true,
@@ -37,10 +40,7 @@ void forgetPasswordDialog(BuildContext context) {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           IconButton(
-                            icon: const Icon(
-                              Icons.close,
-                              color: Color(0xFF7A104F),
-                            ),
+                            icon: Icon(Icons.close, color: iconColor),
                             onPressed: () => Navigator.of(
                               context,
                               rootNavigator: true,
@@ -52,61 +52,42 @@ void forgetPasswordDialog(BuildContext context) {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          arabicText(
+                          customText(
                             text: 'استرجاع كلمة المرور',
-                            size: getScreenHeight(context) * 0.025,
-                            color: const Color(0xFF7A104F),
+                            size: h * 0.025,
+                            color: textColor,
                             bold: true,
                           ),
                           const SizedBox(width: 8),
-                          const Icon(
+                          Icon(
                             Icons.favorite_border,
-                            color: Color(0xFFE91E63),
+                            color: iconColor,
                             size: 28,
                           ),
                         ],
                       ),
 
                       const SizedBox(height: 8),
-                      arabicText(
+                      customText(
                         text:
                             'من فضلك املأ البيانات التالية وسنتواصل معك قريباً',
-                        size: getScreenHeight(context) * 0.018,
-                        color: const Color(0xFFE91E63),
+                        size: h * 0.018,
+                        color: textColor,
                         bold: false,
                       ),
                       const SizedBox(height: 24),
-
                       buildTextField(
-                        keyboardType: CustomTextFieldType.text,
-                        hintText: 'أدخل اسمك الكامل',
-                        labelText: 'اسم الشخص',
-                        suffixIcon: const Icon(
-                          Icons.person_outline,
-                          color: Color(0xFFE91E63),
-                        ),
-                      ),
-                      buildTextField(
+                        controller: emailController,
                         keyboardType: CustomTextFieldType.email,
                         hintText: 'example@email.com',
                         labelText: 'البريد الإلكتروني',
-                        suffixIcon: const Icon(
+                        suffixIcon: Icon(
                           Icons.email_outlined,
-                          color: Color(0xFFE91E63),
+                          color: iconColor,
                         ),
                       ),
-                      buildTextField(
-                        keyboardType: CustomTextFieldType.phone,
-                        hintText: '020xxxxxxxxxx',
-                        labelText: 'رقم الهاتف',
-                        suffixIcon: const Icon(
-                          Icons.phone,
-                          color: Color(0xFFE91E63),
-                        ),
-                      ),
-
                       const SizedBox(height: 12),
-                      arabicText(
+                      customText(
                         text: 'طريقة التواصل المفضلة:',
                         size: 14,
                         isCenter: false,
@@ -139,12 +120,41 @@ void forgetPasswordDialog(BuildContext context) {
                           Expanded(
                             child: CustomGlowButton(
                               title: 'تأكيد',
-                              backgroundColor: const Color(0xFFFF7BB0),
+                              backgroundColor: buttonColor,
                               textColor: Colors.white,
-                              onPressed: () => Navigator.of(
-                                context,
-                                rootNavigator: true,
-                              ).pop(),
+                              onPressed: () async {
+                                if (emailController.text.isEmpty) {
+                                  customSnackBar(
+                                    context: context,
+                                    message: 'يرجى إدخال البريد الإلكتروني',
+                                  );
+                                  return;
+                                } else {
+                                  try {
+                                    await WebService().forgetPassword(
+                                      email: emailController.text.trim(),
+                                    );
+
+                                    if (!context.mounted) return;
+
+                                    customSnackBar(
+                                      context: context,
+                                      message:
+                                          'تم إرسال تعليمات استرجاع كلمة المرور إلى بريدك الإلكتروني',
+                                    );
+                                    Navigator.of(
+                                      context,
+                                      rootNavigator: true,
+                                    ).pop();
+                                  } catch (error) {
+                                    if (!context.mounted) return;
+                                    customSnackBar(
+                                      context: context,
+                                      message: 'حدث خطأ: $error',
+                                    );
+                                  }
+                                }
+                              },
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -199,23 +209,18 @@ Widget _contactOption({
     decoration: BoxDecoration(
       color: selected ? const Color(0xFFFFE6F0) : const Color(0xFFF8F8F8),
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(
-        color: selected ? const Color(0xFFE91E63) : Colors.grey.shade300,
-      ),
+      border: Border.all(color: selected ? iconColor : Colors.grey.shade300),
     ),
     child: Row(
       children: [
-        Icon(
-          icon,
-          color: selected ? const Color(0xFFE91E63) : Colors.grey.shade600,
-        ),
+        Icon(icon, color: selected ? iconColor : Colors.grey.shade600),
         const SizedBox(width: 8),
         Expanded(
-          child: arabicText(
+          child: customText(
             isCenter: false,
             text: title,
             size: getScreenHeight(context) * 0.015,
-            color: selected ? const Color(0xFFE91E63) : Colors.grey.shade700,
+            color: selected ? iconColor : Colors.grey.shade700,
             bold: true,
           ),
         ),
@@ -223,7 +228,7 @@ Widget _contactOption({
           value: value,
           groupValue: groupValue,
           onChanged: onChanged,
-          activeColor: const Color(0xFFE91E63),
+          activeColor: iconColor,
         ),
       ],
     ),

@@ -25,7 +25,7 @@ Widget answersDetails({required BuildContext context}) {
             children: [
               heartSign(iconSize: 30, containerSize: 40),
               SizedBox(width: w * 0.02),
-              arabicText(
+              customText(
                 text: "تفاصيل الإجابات",
                 size: h * 0.025,
                 bold: true,
@@ -52,25 +52,25 @@ Widget answersDetails({required BuildContext context}) {
                     children: [
                       Column(
                         children: [
-                          arabicText(
+                          customText(
                             text: "اسم المريضة",
                             size: h * 0.017,
                             color: const Color(0xFF4B2142),
                           ),
                           SizedBox(height: h * 0.01),
-                          arabicText(
+                          customText(
                             text: "حسناء أحمد",
                             size: h * 0.016,
                             color: Colors.black,
                           ),
                           SizedBox(height: h * 0.02),
-                          arabicText(
+                          customText(
                             text: "تاريخ الإجابة",
                             size: h * 0.017,
                             color: const Color(0xFF4B2142),
                           ),
                           SizedBox(height: h * 0.01),
-                          arabicText(
+                          customText(
                             text: "11-06-2024",
                             size: h * 0.015,
                             color: Colors.black,
@@ -80,25 +80,25 @@ Widget answersDetails({required BuildContext context}) {
 
                       Column(
                         children: [
-                          arabicText(
+                          customText(
                             text: "اسم الفورم",
                             size: h * 0.017,
                             color: const Color(0xFF4B2142),
                           ),
                           SizedBox(height: h * 0.01),
-                          arabicText(
+                          customText(
                             text: "استبيان PHQ-9",
                             size: h * 0.015,
                             color: Colors.black,
                           ),
                           SizedBox(height: h * 0.02),
-                          arabicText(
+                          customText(
                             text: "السكور الكلي",
                             size: h * 0.017,
                             color: const Color(0xFF4B2142),
                           ),
                           SizedBox(height: h * 0.01),
-                          arabicText(
+                          customText(
                             text: "8",
                             size: h * 0.015,
                             color: Colors.black,
@@ -115,7 +115,7 @@ Widget answersDetails({required BuildContext context}) {
           SizedBox(height: h * 0.03),
           FormSelector(h: h, w: w, forms: formsList, onSelect: (form) {}),
           SizedBox(height: h * 0.03),
-          arabicText(
+          customText(
             text: "الإجابات التفصيلية",
             size: h * 0.025,
             bold: true,
@@ -137,7 +137,7 @@ Widget answersDetails({required BuildContext context}) {
             ),
           ),
           SizedBox(height: h * 0.03),
-          arabicText(
+          customText(
             text: "التشخيص:  قلق متوسط",
             size: h * 0.02,
             bold: true,
@@ -176,7 +176,7 @@ Widget answerOfQuestion(double h) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          arabicText(
+          customText(
             text:
                 "السؤال 1: هل شعرت بقلة الاهتمام أو المتعة في القيام بالأشياء؟",
             size: h * 0.018,
@@ -187,7 +187,7 @@ Widget answerOfQuestion(double h) {
 
           SizedBox(height: 8),
 
-          arabicText(
+          customText(
             text: "الإجابة: أكثر من نصف الأيام",
             size: h * 0.018,
             color: Colors.black,
@@ -204,7 +204,7 @@ Widget answerOfQuestion(double h) {
                   color: const Color(0xFFE7C2F5),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: arabicText(
+                child: customText(
                   text: "السكور: 2",
                   size: h * 0.017,
                   color: const Color(0xFF7A004C),
@@ -277,7 +277,7 @@ class _FormSelectorState extends State<FormSelector> {
                     size: widget.h * 0.02,
                   ),
                   SizedBox(width: 8),
-                  arabicText(
+                  customText(
                     text: form,
                     size: widget.h * 0.018,
                     color: const Color(0xFF7A004C),

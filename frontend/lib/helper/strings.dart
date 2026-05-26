@@ -3,14 +3,16 @@ import 'package:bahya_website/helper/widgets/diagnosis_patients_dialog.dart';
 import 'package:bahya_website/helper/widgets/home_feature_grid.dart';
 import 'package:bahya_website/helper/widgets/state_card.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+const String baseUrl = "http://127.0.0.1:3000/api/v1";
 get getScreenWidth =>
     (BuildContext context) => MediaQuery.of(context).size.width;
 
 get getScreenHeight =>
     (BuildContext context) => MediaQuery.of(context).size.height;
 
-Color? backgroundColor = Colors.grey[200];
+Color? backgroundColor = const Color(0xFFFFF7FD);
 Color? salesBackgroundColor = Colors.deepPurple;
 
 final List<DiagnosisPoint> chartData = <DiagnosisPoint>[
@@ -49,7 +51,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'جدولة ونشر النماذج',
     icon: Icons.event_note,
     onTap: () {
-      Navigator.pushNamed(context, '/publish_schedule');
+      context.push('/publish_schedule');
     },
   ),
   FeatureItem(
@@ -57,7 +59,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'إنشاء نماذج أسئلة',
     icon: Icons.edit_note,
     onTap: () {
-      Navigator.pushNamed(context, '/add_questionnaire');
+      context.push('/add_questionnaire');
     },
   ),
   FeatureItem(
@@ -65,7 +67,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'عرض وإدارة بيانات',
     icon: Icons.people_alt,
     onTap: () {
-      Navigator.pushNamed(context, '/patient_info');
+      context.push('/patient_info');
     },
   ),
   FeatureItem(
@@ -73,7 +75,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     subtitle: 'الوصول للنماذج المحفوظة',
     icon: Icons.folder_open,
     onTap: () {
-      Navigator.pushNamed(context, '/questionnaire_filler');
+      context.push('/questionnaire_filler');
     },
   ),
 ];
@@ -220,14 +222,12 @@ final List<String> diagnosisCategories = const [
   'حالة تحتاج تقييم متخصص',
 ];
 
-
 final formsList = [
   "استبيان PHQ-9",
   "استبيان GAD-7",
   "استبيان النوم",
   "استبيان القلق",
 ];
-
 
 final List<Map<String, String>> scheduled = const [
   {"form": "PHQ-9", "date": "2025-10-25", "repeat": "يومي", "hour": "10:00 AM"},
@@ -244,7 +244,6 @@ final List<Map<String, String>> scheduled = const [
     "hour": "09:00 AM",
   },
 ];
-
 
 final Map<String, dynamic> anxietyForm = {
   "title": "تقييم القلق العام",
@@ -274,3 +273,8 @@ final Map<String, dynamic> anxietyForm = {
     },
   ],
 };
+
+Color textColor = const Color(0xFF831843);
+List<Color> gradientColors = const [Color(0xFF8A2BE2), Color(0xFFFF69B4)];
+Color iconColor = Color(0xFFE91E63);
+Color buttonColor = Color(0xFFFF7BB0);

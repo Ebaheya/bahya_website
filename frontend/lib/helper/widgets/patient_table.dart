@@ -113,7 +113,7 @@ class _PatientTableRowItemState extends State<PatientTableRowItem> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            arabicText(
+                            customText(
                               text: "عرض التطور",
                               size: h * 0.015,
                               bold: true,
@@ -135,7 +135,7 @@ class _PatientTableRowItemState extends State<PatientTableRowItem> {
                     flex: 4,
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: arabicText(
+                      child: customText(
                         text: widget.diagnosis,
                         size: h * 0.015,
                         color: const Color(0xFF4B2142),
@@ -149,7 +149,7 @@ class _PatientTableRowItemState extends State<PatientTableRowItem> {
                       child: CircleAvatar(
                         radius: h * 0.016,
                         backgroundColor: getColor(widget.phq9),
-                        child: arabicText(
+                        child: customText(
                           text: widget.phq9.toString(),
                           size: h * 0.015,
                           bold: true,
@@ -165,7 +165,7 @@ class _PatientTableRowItemState extends State<PatientTableRowItem> {
                       child: CircleAvatar(
                         radius: h * 0.016,
                         backgroundColor: getColor(widget.phq4),
-                        child: arabicText(
+                        child: customText(
                           text: widget.phq4.toString(),
                           size: h * 0.015,
                           bold: true,
@@ -177,7 +177,7 @@ class _PatientTableRowItemState extends State<PatientTableRowItem> {
 
                   Expanded(
                     flex: 4,
-                    child: arabicText(
+                    child: customText(
                       text: widget.address,
                       size: h * 0.015,
                       color: const Color(0xFF4B2142),
@@ -186,7 +186,7 @@ class _PatientTableRowItemState extends State<PatientTableRowItem> {
 
                   Expanded(
                     flex: 1,
-                    child: arabicText(
+                    child: customText(
                       text: widget.age.toString(),
                       size: h * 0.015,
                     ),
@@ -196,7 +196,7 @@ class _PatientTableRowItemState extends State<PatientTableRowItem> {
                     flex: 3,
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: arabicText(
+                      child: customText(
                         text: widget.name,
                         size: h * 0.015,
                         bold: true,
@@ -225,7 +225,7 @@ class PatientTableHeader extends StatelessWidget {
       return Expanded(
         flex: flex,
         child: Center(
-          child: arabicText(
+          child: customText(
             text: text,
             size: h * 0.015,
             isCenter: true,
