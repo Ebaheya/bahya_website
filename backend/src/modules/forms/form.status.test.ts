@@ -55,7 +55,11 @@ function publishTransaction(isActive: boolean) {
   return {
     formTemplate: { findUnique: jest.fn().mockResolvedValue(template(isActive)) },
     patient: {
-      findUnique: jest.fn().mockResolvedValue({ id: 'patient-1', userId: 'patient-user-1' }),
+      findUnique: jest.fn().mockResolvedValue({
+        id: 'patient-1',
+        userId: 'patient-user-1',
+        user: { isActive: true },
+      }),
       findMany: jest.fn(),
     },
     user: { findUnique: jest.fn() },

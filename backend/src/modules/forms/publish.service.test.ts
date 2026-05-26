@@ -90,7 +90,11 @@ describe('publishForm', () => {
 
   it('publishes immediately to one patient, pins the version, notifies, and audits', async () => {
     const tx = transactionTx();
-    tx.patient.findUnique.mockResolvedValue({ id: 'patient-1', userId: 'patient-user-1' });
+    tx.patient.findUnique.mockResolvedValue({
+      id: 'patient-1',
+      userId: 'patient-user-1',
+      user: { isActive: true },
+    });
     tx.formAssignment.createManyAndReturn.mockResolvedValue([
       { id: 'assignment-1', patientId: 'patient-1', assignedToUserId: null, target: 'SINGLE_PATIENT' },
     ]);
@@ -197,8 +201,12 @@ describe('publishForm', () => {
 
   it('schedules a volunteer assignment without notifying before visibility', async () => {
     const tx = transactionTx();
-    tx.patient.findUnique.mockResolvedValue({ id: 'patient-1', userId: 'patient-user-1' });
-    tx.user.findUnique.mockResolvedValue({ id: 'volunteer-1', role: 'VOLUNTEER' });
+    tx.patient.findUnique.mockResolvedValue({
+      id: 'patient-1',
+      userId: 'patient-user-1',
+      user: { isActive: true },
+    });
+    tx.user.findUnique.mockResolvedValue({ id: 'volunteer-1', role: 'VOLUNTEER', isActive: true });
     tx.formAssignment.createManyAndReturn.mockResolvedValue([
       {
         id: 'assignment-1',
@@ -235,6 +243,58 @@ describe('publishForm', () => {
       select: { id: true, patientId: true, assignedToUserId: true, target: true },
     });
     expect(emitFormAssignedMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects a direct assignment to an inactive patient', async () => {
+    const tx = transactionTx();
+    tx.patient.findUnique.mockResolvedValue({
+      id: 'patient-1',
+      userId: 'patient-user-1',
+      user: { isActive: false },
+    });
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      publishService.publishForm(
+        'form-1',
+        publishFormSchema.parse({
+          target: 'SINGLE_PATIENT',
+          patientId: 'e2108357-5e7d-49d5-aad1-d6b0914e7cf7',
+        }),
+        'doctor-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
+
+    expect(tx.formAssignment.createManyAndReturn).not.toHaveBeenCalled();
+  });
+
+  it('rejects a delegated assignment to an inactive volunteer', async () => {
+    const tx = transactionTx();
+    tx.patient.findUnique.mockResolvedValue({
+      id: 'patient-1',
+      userId: 'patient-user-1',
+      user: { isActive: true },
+    });
+    tx.user.findUnique.mockResolvedValue({
+      id: 'volunteer-1',
+      role: 'VOLUNTEER',
+      isActive: false,
+    });
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      publishService.publishForm(
+        'form-1',
+        publishFormSchema.parse({
+          target: 'VOLUNTEER_FOR_PATIENT',
+          patientId: 'e2108357-5e7d-49d5-aad1-d6b0914e7cf7',
+          volunteerId: '57a9983a-ae0a-4e58-89cb-53ee15bb0f57',
+        }),
+        'doctor-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 400, code: 'FORM_INVALID_VOLUNTEER' });
+
+    expect(tx.formAssignment.createManyAndReturn).not.toHaveBeenCalled();
   });
 
   it('rejects an inactive or unpublished form', async () => {

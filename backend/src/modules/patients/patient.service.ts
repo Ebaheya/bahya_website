@@ -8,6 +8,7 @@ import { AppError } from '../../utils/httpError';
 import { hashPassword } from '../../utils/passwords';
 import type {
   CreatePatientInput,
+  ListPatientOptionsQuery,
   PatchPatientInput,
   QueryPatientsInput,
 } from './patient.schema';
@@ -360,6 +361,41 @@ export async function listPatients(query: QueryPatientsInput) {
 
   return {
     data: patients.map(sanitizePatientResponse),
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+  };
+}
+
+export async function listPatientOptions(query: ListPatientOptionsQuery) {
+  const where: Prisma.PatientWhereInput = {
+    user: {
+      is: {
+        role: 'PATIENT',
+        isActive: true,
+        ...(query.q
+          ? {
+              fullName: { contains: query.q, mode: 'insensitive' },
+            }
+          : {}),
+      },
+    },
+  };
+  const skip = (query.page - 1) * query.pageSize;
+
+  const [patients, total] = await prisma.$transaction([
+    prisma.patient.findMany({
+      where,
+      select: { id: true, user: { select: { fullName: true } } },
+      orderBy: { user: { fullName: 'asc' } },
+      skip,
+      take: query.pageSize,
+    }),
+    prisma.patient.count({ where }),
+  ]);
+
+  return {
+    data: patients.map((patient) => ({ id: patient.id, fullName: patient.user.fullName })),
     page: query.page,
     pageSize: query.pageSize,
     total,

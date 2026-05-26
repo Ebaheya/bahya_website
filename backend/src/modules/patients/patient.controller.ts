@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../../utils/httpError';
 import {
   createPatientSchema,
+  listPatientOptionsQuerySchema,
   patientIdParamSchema,
   patientTimelineQuerySchema,
   patchPatientSchema,
@@ -62,6 +63,21 @@ export async function list(
     const data = result.data.map((patient) => patientService.projectForRole(patient, role));
 
     res.status(200).json({ ...result, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listOptions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const query = listPatientOptionsQuerySchema.parse(req.query);
+    const result = await patientService.listPatientOptions(query);
+
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }

@@ -96,17 +96,17 @@ export async function publishForm(
     } else {
       const patient = await tx.patient.findUnique({
         where: { id: input.patientId },
-        select: { id: true, userId: true },
+        select: { id: true, userId: true, user: { select: { isActive: true } } },
       });
-      if (!patient) throw AppError.notFound('Patient not found');
+      if (!patient || !patient.user.isActive) throw AppError.notFound('Patient not found');
 
       let assignedToUserId: string | null = null;
       if (input.target === 'VOLUNTEER_FOR_PATIENT') {
         const volunteer = await tx.user.findUnique({
           where: { id: input.volunteerId },
-          select: { id: true, role: true },
+          select: { id: true, role: true, isActive: true },
         });
-        if (!volunteer || volunteer.role !== 'VOLUNTEER') {
+        if (!volunteer || volunteer.role !== 'VOLUNTEER' || !volunteer.isActive) {
           throw new AppError(400, FORM_ERROR.INVALID_VOLUNTEER, 'Assigned user must be a volunteer');
         }
         assignedToUserId = volunteer.id;

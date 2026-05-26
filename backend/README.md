@@ -218,6 +218,7 @@ Exceeding a bucket returns `429` with standard `RateLimit-*` headers.
 | Method | Path | Purpose |
 |---|---|---|
 | `POST` | `/forms/:id/publish` | Publish to a target (single patient / all active patients / volunteer-for-patient), optional future `publishAt` |
+| `GET` | `/patients/options` | List active patients for assignment selection |
 | `GET` | `/volunteers` | List active volunteers for delegated assignment selection |
 | `GET` | `/forms/:id/assignments` | List assignments for a template (paginated) |
 | `PATCH` | `/form-assignments/:id/cancel` | Cancel a not-yet-submitted assignment |
@@ -386,7 +387,7 @@ the same Postman environment:
 | `doctorToken` | Doctor `POST /auth/login` response |
 | `patientToken` | Patient `POST /auth/login` response |
 | `volunteerToken` | Volunteer `POST /auth/login` response, when testing delegated filling |
-| `patientId` | Patient create/list response |
+| `patientId` | `GET /patients/options` response (`data[].id`) |
 | `volunteerId` | `GET /volunteers` response (`data[].id`) |
 | `formId` | `POST /forms` or `GET /forms` response |
 | `assignmentId` | `POST /forms/:id/publish` response |
@@ -962,6 +963,49 @@ removed.
 - `400 VALIDATION_ERROR` — bad query parameters
 - `403 FORBIDDEN` — caller's role is not in the allow-list
 
+#### `GET /patients/options`
+
+Minimal active-patient lookup for assigning a form without loading clinical
+or demographic patient data.
+
+**Auth:** Bearer token. **Roles:** ADMIN, DOCTOR.
+
+**Query parameters**
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `q` | string | — | Optional case-insensitive substring match on `fullName` |
+| `page` | int | `1` | 1-indexed |
+| `pageSize` | int | `20` | Max `100` |
+
+```http
+GET {{baseUrl}}/patients/options?q=sara&page=1&pageSize=20
+Authorization: Bearer {{doctorToken}}
+```
+
+**Response 200**
+
+```json
+{
+  "data": [
+    {
+      "id": "patient-uuid",
+      "fullName": "Sara Patient"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "total": 1
+}
+```
+
+The response returns active patient records only.
+
+**Errors**
+
+- `400 VALIDATION_ERROR` — bad query parameters
+- `403 FORBIDDEN` — caller is not DOCTOR or ADMIN
+
 #### `GET /patients/:id`
 
 Fetches a single patient by patient id.
@@ -1527,6 +1571,8 @@ body below.
 
 **Single patient**
 
+Set `{{patientId}}` from `GET /patients/options`.
+
 ```json
 { "target": "SINGLE_PATIENT", "patientId": "{{patientId}}", "publishAt": null }
 ```
@@ -1539,8 +1585,8 @@ body below.
 
 **Volunteer filling for a patient**
 
-Set `{{volunteerId}}` from `GET /volunteers`; doctors do not need access to
-the admin-only `/users` API.
+Set `{{patientId}}` from `GET /patients/options` and `{{volunteerId}}` from
+`GET /volunteers`; doctors do not need access to the admin-only `/users` API.
 
 ```json
 {
@@ -1583,11 +1629,13 @@ pm.environment.set("assignmentId", body.assignmentIds[0]);
 - A future publication remains hidden until the scheduled sweep publishes it.
 - `ALL_PATIENTS` may return `assignmentsCreated: 0` when there are no active
   patient users.
+- A selected patient or volunteer must still be active when the publish
+  request is processed.
 
 **Errors**
 
-- `400 FORM_INVALID_VOLUNTEER` - supplied user is not a volunteer.
-- `404 NOT_FOUND` - supplied patient or template cannot be found.
+- `400 FORM_INVALID_VOLUNTEER` - supplied user is not an active volunteer.
+- `404 NOT_FOUND` - supplied patient is inactive, or the patient or template cannot be found.
 - `409 FORM_NOT_PUBLISHABLE` - form is inactive, not published, or empty.
 
 #### `GET /forms/:id/assignments`
