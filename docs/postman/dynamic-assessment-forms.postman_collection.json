@@ -1,0 +1,413 @@
+{
+  "info": {
+    "name": "Mental Health Clinic API - Dynamic Assessment Forms",
+    "description": "New + changed endpoints for feature 004-dynamic-assessment-forms.\nForms authoring/versioning/publishing, form assignments + submissions, doctor review queue + official assessments, volunteer & patient option lookups.\n\nReuses environment variables: baseUrl, accessToken, refreshToken, email, password, patientId, userId.\nAdds: formId, formVersion, assignmentId, submissionId, assessmentId, volunteerId (auto-captured by test scripts where possible).\n\nAll routes are mounted under {{baseUrl}}/api/v1.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{accessToken}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "formId", "value": "" },
+    { "key": "formVersion", "value": "1" },
+    { "key": "assignmentId", "value": "" },
+    { "key": "submissionId", "value": "" },
+    { "key": "assessmentId", "value": "" },
+    { "key": "volunteerId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Forms",
+      "description": "Authoring, versioning and publishing of scored assessment forms. Role: DOCTOR or ADMIN.",
+      "item": [
+        {
+          "name": "Create Form",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.id) {",
+                  "    pm.collectionVariables.set('formId', body.id);",
+                  "    pm.environment.set('formId', body.id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"PHQ9_CUSTOM\",\n  \"name\": \"PHQ-9 Custom\",\n  \"description\": \"Depression screening\",\n  \"category\": \"Depression\",\n  \"scoringType\": \"SUM\",\n  \"interpretationMode\": \"RANGE\",\n  \"questions\": [\n    {\n      \"order\": 1,\n      \"text\": \"Little interest or pleasure in doing things\",\n      \"type\": \"SINGLE_SELECT\",\n      \"subscale\": null,\n      \"required\": true,\n      \"choices\": [\n        { \"order\": 1, \"label\": \"Not at all\", \"score\": 0 },\n        { \"order\": 2, \"label\": \"Several days\", \"score\": 1 },\n        { \"order\": 3, \"label\": \"More than half the days\", \"score\": 2 },\n        { \"order\": 4, \"label\": \"Nearly every day\", \"score\": 3 }\n      ]\n    },\n    {\n      \"order\": 2,\n      \"text\": \"Rate your distress today (0-10)\",\n      \"type\": \"SCALE\",\n      \"subscale\": null,\n      \"required\": true,\n      \"scaleMin\": 0,\n      \"scaleMax\": 10,\n      \"scaleStep\": 1\n    }\n  ],\n  \"scoreRanges\": [\n    { \"subscale\": null, \"label\": \"Minimal\", \"minScore\": 0, \"maxScore\": 4, \"note\": null },\n    { \"subscale\": null, \"label\": \"Mild\", \"minScore\": 5, \"maxScore\": 9, \"note\": null },\n    { \"subscale\": null, \"label\": \"Moderate\", \"minScore\": 10, \"maxScore\": 13, \"note\": null }\n  ]\n}"
+            },
+            "description": "`key` is optional — auto-derived from `name` when omitted.\nquestion.type: SINGLE_SELECT | MULTI_SELECT | SCALE (SCALE uses scaleMin/scaleMax/scaleStep instead of choices).\nscoringType: SUM | MANUAL. interpretationMode: RANGE | MANUAL | NONE."
+          }
+        },
+        {
+          "name": "List Forms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/forms?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "forms"],
+              "query": [
+                { "key": "q", "value": "phq", "disabled": true },
+                { "key": "isActive", "value": "true", "disabled": true },
+                { "key": "isDefault", "value": "true", "disabled": true },
+                { "key": "category", "value": "Depression", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Form By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}"] }
+          }
+        },
+        {
+          "name": "Update Form",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"PHQ9_CUSTOM\",\n  \"name\": \"PHQ-9 Custom (revised)\",\n  \"description\": \"Depression screening - revised wording\",\n  \"category\": \"Depression\",\n  \"scoringType\": \"SUM\",\n  \"interpretationMode\": \"RANGE\",\n  \"questions\": [\n    {\n      \"order\": 1,\n      \"text\": \"Little interest or pleasure in doing things\",\n      \"type\": \"SINGLE_SELECT\",\n      \"required\": true,\n      \"choices\": [\n        { \"order\": 1, \"label\": \"Not at all\", \"score\": 0 },\n        { \"order\": 2, \"label\": \"Several days\", \"score\": 1 }\n      ]\n    }\n  ],\n  \"scoreRanges\": [\n    { \"label\": \"Minimal\", \"minScore\": 0, \"maxScore\": 1, \"note\": null }\n  ]\n}"
+            },
+            "description": "Full replace. Editing a form that already has submissions creates a new version (historical submissions preserved)."
+          }
+        },
+        {
+          "name": "Activate / Deactivate Form",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}", "status"] },
+            "body": { "mode": "raw", "raw": "{\n  \"isActive\": false\n}" }
+          }
+        },
+        {
+          "name": "Publish Draft Version",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/publish-version", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}", "publish-version"] },
+            "description": "No body. Locks the current draft as an immutable published version."
+          }
+        },
+        {
+          "name": "Publish Form - SINGLE_PATIENT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  const a = Array.isArray(body.assignments) ? body.assignments[0] : (body.assignment || body);",
+                  "  if (a && a.id) {",
+                  "    pm.collectionVariables.set('assignmentId', a.id);",
+                  "    pm.environment.set('assignmentId', a.id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}", "publish"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"SINGLE_PATIENT\",\n  \"patientId\": \"{{patientId}}\",\n  \"publishAt\": null\n}"
+            },
+            "description": "publishAt: omit/null = visible immediately; ISO-8601 future date = scheduled."
+          }
+        },
+        {
+          "name": "Publish Form - ALL_PATIENTS",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}", "publish"] },
+            "body": { "mode": "raw", "raw": "{\n  \"target\": \"ALL_PATIENTS\",\n  \"publishAt\": null\n}" },
+            "description": "Fans out one assignment + notification per active patient (tighter rate limit)."
+          }
+        },
+        {
+          "name": "Publish Form - VOLUNTEER_FOR_PATIENT",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}", "publish"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"VOLUNTEER_FOR_PATIENT\",\n  \"patientId\": \"{{patientId}}\",\n  \"volunteerId\": \"{{volunteerId}}\",\n  \"publishAt\": \"2026-06-01T09:00:00Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Form Assignments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/assignments?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "forms", "{{formId}}", "assignments"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Form Versions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/versions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}", "versions"] }
+          }
+        },
+        {
+          "name": "Get Form Version",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/versions/{{formVersion}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}", "versions", "{{formVersion}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Form Assignments",
+      "description": "Recipient-facing form filling + submission, and doctor/admin assignment management.",
+      "item": [
+        {
+          "name": "My Assigned Forms",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const list = Array.isArray(body) ? body : (body.items || body.data || []);",
+                  "if (list && list[0] && list[0].id) {",
+                  "  pm.collectionVariables.set('assignmentId', list[0].id);",
+                  "  pm.environment.set('assignmentId', list[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/form-assignments/my", "host": ["{{baseUrl}}"], "path": ["api", "v1", "form-assignments", "my"] },
+            "description": "Role: PATIENT or VOLUNTEER. Forms assigned to the logged-in user."
+          }
+        },
+        {
+          "name": "Get Assignment By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/form-assignments/{{assignmentId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "form-assignments", "{{assignmentId}}"] },
+            "description": "Role: PATIENT, VOLUNTEER, DOCTOR, ADMIN. Returns the assignment + its form version (questions/choices) to render."
+          }
+        },
+        {
+          "name": "Submit Assignment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  const sid = body.submissionId || body.id;",
+                  "  if (sid) {",
+                  "    pm.collectionVariables.set('submissionId', sid);",
+                  "    pm.environment.set('submissionId', sid);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/form-assignments/{{assignmentId}}/submit", "host": ["{{baseUrl}}"], "path": ["api", "v1", "form-assignments", "{{assignmentId}}", "submit"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    { \"questionId\": \"00000000-0000-0000-0000-000000000000\", \"choiceIds\": [\"00000000-0000-0000-0000-000000000000\"] },\n    { \"questionId\": \"00000000-0000-0000-0000-000000000000\", \"value\": 7 }\n  ]\n}"
+            },
+            "description": "Role: PATIENT or VOLUNTEER. Each answer has EITHER choiceIds (select questions) OR value (scale) — never both, never neither. Replace the placeholder UUIDs with real questionId/choiceId from the assignment's form version. Computes scores and may raise a high-risk doctor alert."
+          }
+        },
+        {
+          "name": "Cancel Assignment",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/form-assignments/{{assignmentId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "v1", "form-assignments", "{{assignmentId}}", "cancel"] },
+            "description": "Role: DOCTOR or ADMIN."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assessments",
+      "description": "Doctor review queue over submissions + official Assessment authorship. Reads: DOCTOR/ADMIN. Create: DOCTOR only.",
+      "item": [
+        {
+          "name": "List Pending Submissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/assessments/submissions/pending", "host": ["{{baseUrl}}"], "path": ["api", "v1", "assessments", "submissions", "pending"] },
+            "description": "Doctor review queue."
+          }
+        },
+        {
+          "name": "Get Submission Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/assessments/submissions/{{submissionId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "assessments", "submissions", "{{submissionId}}"] }
+          }
+        },
+        {
+          "name": "Create Official Assessment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.id) {",
+                  "    pm.collectionVariables.set('assessmentId', body.id);",
+                  "    pm.environment.set('assessmentId', body.id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/assessments", "host": ["{{baseUrl}}"], "path": ["api", "v1", "assessments"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"submissionId\": \"{{submissionId}}\",\n  \"templateKey\": \"PHQ9\",\n  \"score\": 12,\n  \"status\": \"MODERATE\",\n  \"doctorNote\": \"Follow up in 2 weeks\"\n}"
+            },
+            "description": "Role: DOCTOR only. status: NORMAL | MILD | MODERATE | SEVERE | CRITICAL. submissionId, score, doctorNote are optional/nullable."
+          }
+        },
+        {
+          "name": "List Patient Assessments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/assessments/patient/{{patientId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "assessments", "patient", "{{patientId}}"] }
+          }
+        },
+        {
+          "name": "Get Assessment By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/assessments/{{assessmentId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "assessments", "{{assessmentId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Volunteers",
+      "description": "Lookup list of volunteers for the publish VOLUNTEER_FOR_PATIENT target. Role: DOCTOR or ADMIN.",
+      "item": [
+        {
+          "name": "List Volunteer Options",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const list = Array.isArray(body) ? body : (body.items || body.data || []);",
+                  "if (list && list[0] && list[0].id) {",
+                  "  pm.collectionVariables.set('volunteerId', list[0].id);",
+                  "  pm.environment.set('volunteerId', list[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/volunteers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "volunteers"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients (additions)",
+      "description": "New patient endpoint added by this feature. Add this request to your existing Patients folder.",
+      "item": [
+        {
+          "name": "Get Patient Options (active selector)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const list = Array.isArray(body) ? body : (body.items || body.data || []);",
+                  "if (list && list[0] && list[0].id) {",
+                  "  pm.collectionVariables.set('patientId', list[0].id);",
+                  "  pm.environment.set('patientId', list[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/patients/options", "host": ["{{baseUrl}}"], "path": ["api", "v1", "patients", "options"] },
+            "description": "Role: ADMIN or DOCTOR. Active-patient picker used to populate publish patientId."
+          }
+        }
+      ]
+    }
+  ]
+}
