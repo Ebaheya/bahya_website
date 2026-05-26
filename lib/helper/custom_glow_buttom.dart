@@ -34,13 +34,13 @@ class CustomGlowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(borderRadius ?? 30);
 
-    final buttonTextSize = textSize ?? getScreenHeight(context) * 0.02;
+    final buttonTextSize = textSize ?? getScreenWidth(context) * 0.01;
 
-    final iconSize = textSize ?? getScreenHeight(context) * 0.025;
+    final iconSize = textSize ?? getScreenWidth(context) * 0.015;
 
     return Container(
-      height: height ?? getScreenHeight(context) * 0.06,
-      width: width ?? getScreenWidth(context) * 0.25,
+      height: height ?? getScreenHeight(context) * 0.05,
+      width: width ?? getScreenWidth(context) * 0.2,
 
       decoration: BoxDecoration(
         borderRadius: radius,
@@ -78,20 +78,22 @@ class CustomGlowButton extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
 
                         children: [
+                           if (icon != null) ...[
+                        
+                            Icon(
+                              icon,
+                              color: textColor ?? Colors.white,
+                              size: iconSize,
+                            ),
+                                const SizedBox(width: 10),
+                          ],
                           customText(
                             text: title,
                             size: buttonTextSize,
                             bold: true,
                             color: textColor ?? Colors.white,
                           ),
-                          if (icon != null) ...[
-                            const SizedBox(width: 10),
-                            Icon(
-                              icon,
-                              color: textColor ?? Colors.white,
-                              size: iconSize,
-                            ),
-                          ],
+                         
                         ],
                       ),
                     ),
@@ -118,21 +120,23 @@ class CustomGlowButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
 
                 children: [
-                  customText(
-                    text: title,
-                    size: buttonTextSize,
-                    bold: true,
-                    color: textColor ?? const Color(0xFFFF7BB0),
-                  ),
                   if (icon != null) ...[
-                    const SizedBox(width: 10),
+                  
                     Icon(
                       icon,
                       color: textColor ?? const Color(0xFFFF7BB0),
 
                       size: iconSize,
                     ),
+                      const SizedBox(width: 10),
                   ],
+                  customText(
+                    text: title,
+                    size: buttonTextSize,
+                    bold: true,
+                    color: textColor ?? const Color(0xFFFF7BB0),
+                  ),
+                  
                 ],
               ),
             ),

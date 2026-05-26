@@ -197,7 +197,7 @@ class HomeDrawer extends StatelessWidget {
                                 title: 'Admin panel',
                                 onTap: () {
                                   Navigator.pop(context);
-                                  context.go('/admin');
+                                  context.push('/admin');
                                 },
                               ),
 

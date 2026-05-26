@@ -55,4 +55,27 @@ class AppRepository {
       throw Exception('Unexpected error : $e');
     }
   }
+
+  Future<void> createForm({
+    required String formName,
+    required List<Map<String, dynamic>> questions,
+    required List<Map<String, dynamic>> diagnoses,
+  }) async {
+    try {
+  final body = {
+     "key": formName.trim().toUpperCase().replaceAll(' ', '_'),
+    "name": formName,
+    "scoringType": "SUM",
+    "interpretationMode": "RANGE",
+    "questions": questions,
+    "scoreRanges": diagnoses,
+  };
+  
+  await webService.createForm(body: body);
+} on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get user');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
 }

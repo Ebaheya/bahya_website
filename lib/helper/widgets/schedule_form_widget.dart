@@ -1,234 +1,231 @@
-import 'package:bahya_website/helper/massage_dialog.dart';
-import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
-import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
+import 'package:bahya_website/helper/strings.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-class ScheduleFormWidget extends StatefulWidget {
-  const ScheduleFormWidget({super.key});
+Widget scheduleLabel({required BuildContext context, required String title}) {
+  final h = getScreenHeight(context);
 
-  @override
-  State<ScheduleFormWidget> createState() => _ScheduleFormWidgetState();
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Container(
+        width: 12,
+        height: 12,
+        decoration: const BoxDecoration(
+          color: Color(0xFFE5007D),
+          shape: BoxShape.circle,
+        ),
+      ),
+      const SizedBox(width: 8),
+      customText(
+        text: title,
+        size: h * 0.022,
+        bold: true,
+        color: const Color(0xFF2B2B2B),
+      ),
+    ],
+  );
 }
 
-class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
-  String? selectedForm;
-  String repeat = "لا يتكرر";
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
+Widget scheduleDropdown({
+  required BuildContext context,
+  required String? value,
+  required String hint,
+  required List<String> items,
+  required IconData icon,
+  required ValueChanged<String?> onChanged,
+}) {
+  final h = getScreenHeight(context);
 
-  @override
-  Widget build(BuildContext context) {
-    final h = getScreenHeight(context);
-    final w = getScreenWidth(context);
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 18),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFFF2C9E0)),
+    ),
+    child: DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: value,
+        isExpanded: true,
+        icon: const Icon(Icons.keyboard_arrow_down_rounded),
+        borderRadius: BorderRadius.circular(16),
+        dropdownColor: Colors.white,
+        hint: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF7B1FA2), size: 22),
+            const SizedBox(width: 10),
+            customText(text: hint, size: h * 0.018, color: Colors.black38),
+          ],
+        ),
+        selectedItemBuilder: (context) {
+          return items.map((e) {
+            return Center(
+              child: customText(
+                text: e,
+                size: h * 0.019,
+                bold: true,
+                color: const Color(0xFF2B2B2B),
+              ),
+            );
+          }).toList();
+        },
+        items: items.map((e) {
+          return DropdownMenuItem<String>(
+            alignment: Alignment.centerRight,
+            value: e,
+            child: customText(
+              text: e,
+              size: h * 0.019,
+              color: const Color(0xFF2B2B2B),
+            ),
+          );
+        }).toList(),
+        onChanged: onChanged,
+      ),
+    ),
+  );
+}
 
-    return Container(
-      width: w * 0.9,
-      padding: EdgeInsets.all(h * 0.03),
+Widget schedulePickerField({
+  required BuildContext context,
+  required String text,
+  required IconData icon,
+  required VoidCallback onTap,
+}) {
+  final h = getScreenHeight(context);
+
+  return InkWell(
+    borderRadius: BorderRadius.circular(16),
+    onTap: onTap,
+    child: Container(
+      height: 62,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 20,
-            offset: Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF2C9E0)),
       ),
-      child: Column(
+      child: Row(
         children: [
-          customText(
-            text: "جدولة نشر النموذج",
-            size: h * 0.03,
-            bold: true,
-            color: const Color(0xFF7A004C),
-          ),
-          SizedBox(height: h * 0.01),
+          Icon(icon, color: const Color(0xFF7B1FA2)),
+          const Spacer(),
+          customText(text: text, size: h * 0.018, color: Colors.black45),
+        ],
+      ),
+    ),
+  );
+}
 
-          customText(
-            text: "حدد النموذج والوقت المناسب للنشر",
-            size: h * 0.02,
-            color: const Color(0xFFE40070),
-          ),
-          SizedBox(height: h * 0.03),
+Widget scheduleSingleLineInput({
+  required BuildContext context,
+  required TextEditingController controller,
+  required String hint,
+  required IconData icon,
+}) {
+  final w = getScreenWidth(context);
+  final h = getScreenHeight(context);
+  return Container(
+    height: h * 0.045,
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFFF2C9E0)),
+    ),
+    child: Center(
+      child: CustomFormTextField(
+        bordered: false,
+        isRequired: false,
+        showInlineError: false,
+        autovalidateMode: AutovalidateMode.disabled,
+        keyboardType: CustomTextFieldType.number,
+        controller: controller,
+        hintText: hint,
+        prefixIcon: Icon(icon, color: Colors.purple, size: w * 0.013),
+      ),
+    ),
+  );
+}
 
-          DropdownButtonFormField(
-            decoration: fieldStyle(),
-            hint: customText(
-              text: "اختر نموذج من القائمة",
-              size: h * 0.018,
-              isCenter: false,
-              bold: true,
-              color: Colors.black54,
+Widget scheduleCodeInputSection({
+  required BuildContext context,
+  required String title,
+  required String hint,
+  required TextEditingController controller,
+  required List<String> codes,
+  required VoidCallback onAdd,
+  required void Function(String code) onRemove,
+}) {
+  final h = getScreenHeight(context);
+  final w = getScreenWidth(context);
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      scheduleLabel(context: context, title: title),
+      const SizedBox(height: 20),
+      Row(
+        children: [
+          Expanded(
+            child: scheduleSingleLineInput(
+              context: context,
+              controller: controller,
+              hint: hint,
+              icon: Icons.badge_outlined,
             ),
-            style: TextStyle(
-              fontSize: h * 0.018,
-              color: const Color(0xFFE40070),
-              fontFamily: "ArabicCustomFont",
-              fontWeight: FontWeight.bold,
-            ),
-            items: ["PHQ-9", "PHQ-4", "GAD-7", "استبيان النوم"]
-                .map(
-                  (e) => DropdownMenuItem(
-                    value: e,
-                    child: customText(text: e, size: h * 0.018),
-                  ),
-                )
-                .toList(),
-            onChanged: (v) => setState(() => selectedForm = v),
           ),
-
-          SizedBox(height: h * 0.03),
-
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  readOnly: true,
-                  decoration: fieldStyle().copyWith(
-                    hintText: selectedTime == null
-                        ? "--:--"
-                        : selectedTime!.format(context),
-                    suffixIcon: const Icon(Icons.access_time),
-                  ),
-                  onTap: pickCustomTime,
-                ),
-              ),
-              SizedBox(width: w * 0.03),
-              Expanded(
-                child: TextField(
-                  readOnly: true,
-                  decoration: fieldStyle().copyWith(
-                    hintText: selectedDate == null
-                        ? "mm/dd/yyyy"
-                        : "${selectedDate!.year}-${selectedDate!.month}-${selectedDate!.day}",
-                    suffixIcon: const Icon(Icons.calendar_today),
-                  ),
-                  onTap: pickCustomDate,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: h * 0.03),
-
-          DropdownButtonFormField(
-            decoration: fieldStyle(),
-            value: repeat,
-            items: ["لا يتكرر", "يومي", "أسبوعي", "شهري"]
-                .map(
-                  (e) => DropdownMenuItem(
-                    value: e,
-                    child: customText(text: e, size: h * 0.018),
-                  ),
-                )
-                .toList(),
-            onChanged: (v) => setState(() => repeat = v!),
-          ),
-
-          SizedBox(height: h * 0.04),
-
+          const SizedBox(width: 16),
           CustomGlowButton(
-            title: "جدولة النشر",
-            width: w * 0.5,
-            onPressed: () {
-              customDialog(
-                context: context,
-                title: "جدولة النشر",
-                message: "تم جدولة نشر النموذج بنجاح.",
-              );
-            },
+            title: "إضافة",
+            onPressed: onAdd,
+            icon: Icons.add_rounded,
+            textColor: Colors.white,
+            backgroundColor: Colors.pinkAccent,
+            glowColor: Colors.pinkAccent.withOpacity(0.6),
+            width: w * 0.2,
           ),
         ],
       ),
-    );
-  }
-
-  InputDecoration fieldStyle() {
-    return InputDecoration(
-      filled: true,
-      fillColor: const Color(0xFFF6EEF9),
-      border: OutlineInputBorder(
-        borderSide: BorderSide.none,
-        borderRadius: BorderRadius.circular(10),
-      ),
-    );
-  }
-
-  Future pickCustomDate() async {
-    final d = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Colors.pink[200]!,
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF7A004C),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: Color(0xFFEA298C)),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (d != null) setState(() => selectedDate = d);
-  }
-
-  Future pickCustomTime() async {
-    final t = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      builder: (context, child) {
-        final h = getScreenHeight(context);
-        return Theme(
-          data: Theme.of(context).copyWith(
-            timePickerTheme: TimePickerThemeData(
-              backgroundColor: const Color(0xFFFFF1FA),
-
-              hourMinuteColor: const Color(0xFFFFE4F4),
-              hourMinuteTextColor: const Color(0xFF7A004C),
-
-              hourMinuteTextStyle: TextStyle(
-                fontSize: h * 0.04,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF7A004C),
-                fontFamily: "ArabicCustomFont",
+      if (codes.isNotEmpty) ...[
+        const SizedBox(height: 18),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: codes.map((code) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEEF4),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFFFBCD4)),
               ),
-
-              dialHandColor: const Color(0xFFFFE4F4),
-              dialBackgroundColor: Colors.white,
-              dialTextColor: Colors.black,
-              entryModeIconColor: const Color(0xFF7A004C),
-
-              dayPeriodColor: const Color(0xFFFFE4F4),
-              dayPeriodTextColor: const Color(0xFF7A004C),
-              dayPeriodBorderSide: const BorderSide(color: Color(0xFFEA298C)),
-              dayPeriodTextStyle: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: h * 0.018,
-                fontFamily: "ArabicCustomFont",
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  customText(
+                    text: code,
+                    size: h * 0.017,
+                    bold: true,
+                    color: const Color(0xFF7B1FA2),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () => onRemove(code),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: Color(0xFFE5007D),
+                    ),
+                  ),
+                ],
               ),
-
-              confirmButtonStyle: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFEA298C),
-              ),
-              cancelButtonStyle: TextButton.styleFrom(
-                foregroundColor: Colors.grey[800],
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (t != null) setState(() => selectedTime = t);
-  }
+            );
+          }).toList(),
+        ),
+      ],
+    ],
+  );
 }

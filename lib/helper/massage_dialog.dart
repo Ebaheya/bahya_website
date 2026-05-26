@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:bahya_website/helper/base.dart';
+import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 
 void customDialog({
@@ -33,7 +34,7 @@ void customDialog({
     barrierLabel: '',
     barrierColor: Colors.black.withOpacity(.55),
     transitionDuration: const Duration(milliseconds: 220),
-    pageBuilder: (_, __, ___) {
+    pageBuilder: (dialogContext, __, ___) {
       return Center(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
@@ -64,10 +65,8 @@ void customDialog({
                     alignment: Alignment.topRight,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(20),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        onClose?.call();
-                      },
+                      onTap: () {  onClose != null ? onClose() : Navigator.of(dialogContext).pop();
+                       },
                       child: Container(
                         width: 34,
                         height: 34,
@@ -86,7 +85,6 @@ void customDialog({
                       ),
                     ),
                   ),
-
                   Container(
                     width: 82,
                     height: 82,
@@ -117,31 +115,23 @@ void customDialog({
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 18),
-
                   customText(
                     text: title,
                     size: 28,
                     bold: true,
                     color: const Color(0xFF3B1038),
                   ),
-
                   const SizedBox(height: 8),
-
                   Container(
                     width: 80,
                     height: 3,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF4F93), Color(0xFFB02CFF)],
-                      ),
+                      gradient: LinearGradient(colors: gradientColors),
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   customText(
                     text: message,
                     size: 15,
@@ -149,9 +139,7 @@ void customDialog({
                     bold: true,
                     color: Colors.grey.shade600,
                   ),
-
                   const SizedBox(height: 24),
-
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -173,8 +161,9 @@ void customDialog({
                       ),
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.of(context).pop();
-                          onClose?.call();
+                          onClose != null
+                              ? onClose()
+                              : Navigator.of(dialogContext).pop();
                         },
                         style: ElevatedButton.styleFrom(
                           elevation: 0,

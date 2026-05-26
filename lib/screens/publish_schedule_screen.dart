@@ -1,5 +1,5 @@
 import 'package:bahya_website/helper/base.dart';
-import 'package:bahya_website/helper/widgets/schedule_form_widget.dart';
+import 'package:bahya_website/helper/widgets/schedule_form.dart';
 import 'package:bahya_website/helper/widgets/scheduled_list_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/strings.dart';

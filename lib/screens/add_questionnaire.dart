@@ -1,3 +1,4 @@
+import 'package:bahya_website/data/api/repo/repo.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
@@ -15,7 +16,10 @@ class AddQuestionnaire extends StatefulWidget {
 class _AddQuestionnaireState extends State<AddQuestionnaire> {
   static const int maxQuestions = 20;
 
+  final AppRepository formRepository = AppRepository();
   final TextEditingController surveyTitleController = TextEditingController();
+
+  bool isSaving = false;
 
   final List<QuestionItem> questions = [
     QuestionItem(
@@ -70,13 +74,15 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
       questions[index].isDeleting = true;
     });
   }
-void deleteQuestionAfterAnimation(int index) {
+
+  void deleteQuestionAfterAnimation(int index) {
     if (index < 0 || index >= questions.length) return;
 
     setState(() {
       questions.removeAt(index);
     });
   }
+
   int _minScore(List<int> scores) {
     return scores.reduce((a, b) => a < b ? a : b);
   }
@@ -195,7 +201,53 @@ void deleteQuestionAfterAnimation(int index) {
     return null;
   }
 
-  void saveSurvey() {
+  List<Map<String, dynamic>> buildQuestionsBody() {
+    final questionsBody = <Map<String, dynamic>>[];
+
+    for (int i = 0; i < questions.length; i++) {
+      final state = questions[i].key.currentState;
+      if (state == null) continue;
+
+      final question = state.getQuestionData();
+
+      questionsBody.add({
+        "order": i + 1,
+        "text": question.questionText,
+        "type": question.questionType == QuestionType.single
+            ? "SINGLE_SELECT"
+            : "MULTI_SELECT",
+        "required": true,
+        "choices": List.generate(question.answers.length, (answerIndex) {
+          final answer = question.answers[answerIndex];
+
+          return {
+            "order": answerIndex + 1,
+            "label": answer.answerText,
+            "score": answer.score,
+          };
+        }),
+      });
+    }
+
+    return questionsBody;
+  }
+
+  List<Map<String, dynamic>> buildScoreRangesBody() {
+    final diagnosisState = diagnosisKey.currentState;
+    if (diagnosisState == null) return [];
+
+    final ranges = diagnosisState.getDiagnosisRanges();
+
+    return ranges.map((range) {
+      return {
+        "label": range.diagnosis,
+        "minScore": range.from,
+        "maxScore": range.to,
+      };
+    }).toList();
+  }
+
+  Future<void> saveSurvey() async {
     final error = validateBeforeSave();
 
     if (error != null) {
@@ -208,12 +260,42 @@ void deleteQuestionAfterAnimation(int index) {
       return;
     }
 
-    customDialog(
-      isSuccess: true,
-      context: context,
-      title: 'تم الحفظ',
-      message: 'تم حفظ الاستبيان بنجاح.',
-    );
+    if (isSaving) return;
+
+    setState(() => isSaving = true);
+
+    try {
+      final questionsBody = buildQuestionsBody();
+      final scoreRangesBody = buildScoreRangesBody();
+      await formRepository.createForm(
+        formName: surveyTitleController.text.trim(),
+        questions: questionsBody,
+        diagnoses: scoreRangesBody,
+      );
+
+      if (!mounted) return;
+
+      customDialog(
+        context: context,
+        title: 'تم الحفظ',
+        message: 'تم حفظ الاستبيان بنجاح.',
+        isSuccess: true,
+      );
+    } catch (e) {
+
+      if (!mounted) return;
+
+      customDialog(
+        context: context,
+        title: 'خطأ',
+        message: 'حدث خطأ أثناء حفظ الاستبيان، حاول مرة أخرى.',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isSaving = false);
+      }
+    }
   }
 
   @override
@@ -231,82 +313,92 @@ void deleteQuestionAfterAnimation(int index) {
         width: double.infinity,
         color: backgroundColor,
         child: SingleChildScrollView(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: w * 0.04,
-                vertical: h * 0.035,
-              ),
-              child: Container(
-                width: w * 0.92,
-                padding: EdgeInsets.all(w * 0.025),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(.88),
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(.05),
-                      blurRadius: 28,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: w * 0.04,
+                  vertical: h * 0.035,
                 ),
-                child: Column(
-                  children: [
-                    const QuestionnairePageHeader(),
-                    SizedBox(height: h * 0.035),
-                    SurveyTitleCard(controller: surveyTitleController),
-                    SizedBox(height: h * 0.025),
-
-                 ...List.generate(questions.length, (index) {
-                      final question = questions[index];
-
-                      return Padding(
-                        key: ValueKey(question.id),
-                        padding: EdgeInsets.only(bottom: h * 0.025),
-                        child: question.isDeleting
-                            ? AnimatedRemove(
-                                onAnimationEnd: () =>
-                                    deleteQuestionAfterAnimation(index),
-                                child: QuestionnaireBody(
-                                  key: question.key,
-                                  questionIndex: index + 1,
-                                  canDeleteQuestion: false,
-                                  onDeleteQuestion: () {},
+                child: Container(
+                  width: w * 0.92,
+                  padding: EdgeInsets.all(w * 0.025),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(.88),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(.05),
+                        blurRadius: 28,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      const QuestionnairePageHeader(),
+            
+                      SizedBox(height: h * 0.035),
+            
+                      SurveyTitleCard(controller: surveyTitleController),
+            
+                      SizedBox(height: h * 0.025),
+            
+                      ...List.generate(questions.length, (index) {
+                        final question = questions[index];
+            
+                        return Padding(
+                          key: ValueKey(question.id),
+                          padding: EdgeInsets.only(bottom: h * 0.025),
+                          child: question.isDeleting
+                              ? AnimatedRemove(
+                                  onAnimationEnd: () =>
+                                      deleteQuestionAfterAnimation(index),
+                                  child: QuestionnaireBody(
+                                    key: question.key,
+                                    questionIndex: index + 1,
+                                    canDeleteQuestion: false,
+                                    onDeleteQuestion: () {},
+                                  ),
+                                )
+                              : AnimatedAdd(
+                                  key: ValueKey(question.id),
+                                  child: QuestionnaireBody(
+                                    key: question.key,
+                                    questionIndex: index + 1,
+                                    canDeleteQuestion: questions.length > 1,
+                                    onDeleteQuestion: () => removeQuestion(index),
+                                  ),
                                 ),
-                              )
-                            : AnimatedAdd(
-                                key: ValueKey(question.id),
-                                child: QuestionnaireBody(
-                                  key: question.key,
-                                  questionIndex: index + 1,
-                                  canDeleteQuestion: questions.length > 1,
-                                  onDeleteQuestion: () => removeQuestion(index),
-                                ),
-                              ),
-                      );
-                    }),
-
-                    CustomGlowButton(
-                      title: 'إنشاء سؤال جديد',
-                      onPressed: addQuestion,
-                      icon: Icons.add,
-                      isGradient: true,
-                    ),
-
-                    SizedBox(height: h * 0.03),
-
-                    DiagnosisSection(key: diagnosisKey),
-
-                    SizedBox(height: h * 0.03),
-
-                    CustomGlowButton(
-                      title: "حفظ الاستبيان",
-                      onPressed: saveSurvey,
-                      isGradient: true,
-                      icon: Icons.save_outlined,
-                    ),
-                  ],
+                        );
+                      }),
+            
+                      CustomGlowButton(
+                        title: 'إنشاء سؤال جديد',
+                        onPressed: addQuestion,
+                        icon: Icons.add,
+                        isGradient: true,
+                      ),
+            
+                      SizedBox(height: h * 0.03),
+            
+                      DiagnosisSection(key: diagnosisKey),
+            
+                      SizedBox(height: h * 0.03),
+            
+                      CustomGlowButton(
+                        title: isSaving ? "جاري الحفظ..." : "حفظ الاستبيان",
+                        onPressed: () {
+                          if (!isSaving) {
+                            saveSurvey();
+                          }
+                        },
+                        isGradient: true,
+                        icon: Icons.save_outlined,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

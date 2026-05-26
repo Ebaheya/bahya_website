@@ -32,8 +32,7 @@ class CustomFormTextField extends StatefulWidget {
   final bool isSearch;
   final bool isRequired;
   final bool showInlineError;
-
-  // يخلي hint/text في النص
+  final bool bordered;
   final bool centerHint;
 
   const CustomFormTextField({
@@ -55,6 +54,7 @@ class CustomFormTextField extends StatefulWidget {
     this.isRequired = true,
     this.showInlineError = true,
     this.centerHint = false,
+    this.bordered = true,
   });
 
   @override
@@ -93,104 +93,93 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     }
   }
 
-  String? _validate(String? value) {
+String? _validate(String? value) {
     final text = value?.trim() ?? '';
 
+    String? error;
+
     if (widget.isRequired && text.isEmpty) {
-      floatingError = widget.keyboardType == CustomTextFieldType.score
-          ? 'هذا الحقل مطلوب'
-          : null;
-
-      return widget.keyboardType == CustomTextFieldType.score &&
-              widget.showInlineError
-          ? ''
-          : 'هذا الحقل مطلوب';
-    }
-
-    if (!widget.isRequired && text.isEmpty) {
+      error = 'هذا الحقل مطلوب';
+    } else if (!widget.isRequired && text.isEmpty) {
       floatingError = null;
       return null;
+    } else {
+      switch (widget.keyboardType) {
+        case CustomTextFieldType.email:
+          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$').hasMatch(text)) {
+            error = 'أدخل بريدًا إلكترونيًا صالحًا';
+          }
+          break;
+
+        case CustomTextFieldType.name:
+          if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(text)) {
+            error = 'أدخل اسمًا صالحًا';
+          }
+          break;
+
+        case CustomTextFieldType.number:
+          if (!RegExp(r'^\d+$').hasMatch(text)) {
+            error = 'أدخل أرقامًا فقط';
+          }
+          break;
+
+        case CustomTextFieldType.phone:
+          if (!RegExp(r'^\d{11}$').hasMatch(text)) {
+            error = 'أدخل رقم هاتف مكون من 11 رقمًا';
+          }
+          break;
+
+        case CustomTextFieldType.password:
+          final passwordRegex = RegExp(
+            r'^[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_+=/\\[\];`~\-]+$',
+          );
+
+          if (text.length < 8) {
+            error = 'Password must be at least 8 characters';
+          } else if (!passwordRegex.hasMatch(text)) {
+            error =
+                'Password can contain only English letters, numbers, and special characters';
+          }
+          break;
+
+        case CustomTextFieldType.date:
+          if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(text)) {
+            error = 'أدخل تاريخًا صالحًا (mm/dd/yyyy)';
+          }
+          break;
+
+        case CustomTextFieldType.title:
+          if (text.length > 25) {
+            error = 'العنوان لا يمكن أن يتجاوز 25 حرفًا';
+          }
+          break;
+
+        case CustomTextFieldType.score:
+          final score = int.tryParse(text);
+
+          if (score == null) {
+            error = 'أدخل أرقامًا فقط';
+          } else if (score < 0 || score > 100) {
+            error = 'السكور يجب أن يكون من 0 إلى 100';
+          }
+          break;
+
+        case CustomTextFieldType.diagnose:
+          if (text.length > 50) {
+            error = 'التشخيص لا يمكن أن يتجاوز 50 حرف';
+          }
+          break;
+
+        case CustomTextFieldType.text:
+          break;
+      }
     }
 
-    switch (widget.keyboardType) {
-      case CustomTextFieldType.email:
-        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$');
-        if (!emailRegex.hasMatch(text)) {
-          return 'أدخل بريدًا إلكترونيًا صالحًا';
-        }
-        break;
+    floatingError = error;
 
-      case CustomTextFieldType.name:
-        if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(text)) {
-          return 'أدخل اسمًا صالحًا';
-        }
-        break;
+    if (error == null) return null;
 
-      case CustomTextFieldType.number:
-        if (!RegExp(r'^\d+$').hasMatch(text)) {
-          return 'أدخل أرقامًا فقط';
-        }
-        break;
-
-      case CustomTextFieldType.phone:
-        if (!RegExp(r'^\d{11}$').hasMatch(text)) {
-          return 'أدخل رقم هاتف مكون من 11 رقمًا';
-        }
-        break;
-
-      case CustomTextFieldType.password:
-        final passwordRegex = RegExp(
-          r'^[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_+=/\\[\];`~\-]+$',
-        );
-
-        if (text.length < 8) {
-          return 'Password must be at least 8 characters';
-        }
-
-        if (!passwordRegex.hasMatch(text)) {
-          return 'Password can contain only English letters, numbers, and special characters';
-        }
-        break;
-
-      case CustomTextFieldType.text:
-        break;
-
-      case CustomTextFieldType.date:
-        if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(text)) {
-          return 'أدخل تاريخًا صالحًا (mm/dd/yyyy)';
-        }
-        break;
-
-      case CustomTextFieldType.title:
-        if (text.length > 25) {
-          return 'العنوان لا يمكن أن يتجاوز 25 حرفًا';
-        }
-        break;
-
-      case CustomTextFieldType.score:
-        final score = int.tryParse(text);
-
-        if (score == null) {
-          floatingError = 'أدخل أرقامًا فقط';
-          return widget.showInlineError ? '' : floatingError;
-        }
-
-        if (score < 0 || score > 100) {
-          floatingError = 'السكور يجب أن يكون من 0 إلى 100';
-          return widget.showInlineError ? '' : floatingError;
-        }
-
-        floatingError = null;
-        break;
-
-      case CustomTextFieldType.diagnose:
-        if (text.length > 50) {
-          return 'التشخيص لا يمكن أن يتجاوز 50 حرف';
-        }
-        break;
-    }
-
-    return null;
+    return widget.showInlineError ? '' : error;
   }
 
   List<TextInputFormatter> _inputFormatters() {
@@ -340,28 +329,52 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
               vertical: 14,
               horizontal: 12,
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              borderSide: widget.isSearch
-                  ? BorderSide.none
-                  : const BorderSide(color: Colors.grey, width: 1.2),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              borderSide: BorderSide(color: Colors.pink.shade300, width: 1.2),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              borderSide: const BorderSide(color: Colors.pink, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              borderSide: BorderSide(color: Colors.red.shade400, width: 1.2),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              borderSide: BorderSide(color: Colors.red.shade500, width: 1.5),
-            ),
+           border: widget.bordered
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    borderSide: BorderSide.none,
+                  )
+                : InputBorder.none,
+
+            enabledBorder: widget.bordered
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    borderSide: BorderSide(
+                      color: Colors.pink.shade300,
+                      width: 1.2,
+                    ),
+                  )
+                : InputBorder.none,
+
+            focusedBorder: widget.bordered
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    borderSide: const BorderSide(
+                      color: Colors.pink,
+                      width: 1.5,
+                    ),
+                  )
+                : InputBorder.none,
+
+            errorBorder: widget.bordered
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    borderSide: BorderSide(
+                      color: Colors.red.shade400,
+                      width: 1.2,
+                    ),
+                  )
+                : InputBorder.none,
+
+            focusedErrorBorder: widget.bordered
+                ? OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    borderSide: BorderSide(
+                      color: Colors.red.shade500,
+                      width: 1.5,
+                    ),
+                  )
+                : InputBorder.none,
             errorStyle: TextStyle(
               fontFamily: 'ArabicCustomFont',
               fontSize: isScore && widget.showInlineError ? 0 : width * 0.01,

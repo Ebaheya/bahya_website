@@ -228,4 +228,23 @@ class WebService {
       throw Exception('Unexpected error');
     }
   }
+Future<void> createForm({required Map<String, dynamic> body}) async {
+    try {
+      final res = await dio.post('/forms', data: body);
+
+      if (res.statusCode == 201 || res.statusCode == 200) {
+        log("Form created successfully: ${res.data}");
+        return;
+      }
+
+      throw Exception('Failed to create form');
+    } on DioException catch (e) {
+      debugPrint("DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to create form');
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      throw Exception('Unexpected error');
+    }
+  }
+
 }
