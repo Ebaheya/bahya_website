@@ -1,9 +1,15 @@
+import 'package:bahya_app/data/models/patient_forms_models.dart';
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/widgets/questionnaire.dart';
+import 'package:bahya_app/logic/cubit/patient_forms_cubit.dart';
+import 'package:bahya_app/logic/cubit/patient_forms_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
-  const QuestionnaireScreen({super.key});
+  const QuestionnaireScreen({super.key, required this.assignmentId});
+
+  final String assignmentId;
 
   @override
   State<QuestionnaireScreen> createState() => _QuestionnaireScreenState();
@@ -20,154 +26,102 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   final Color textColor = const Color(0xFF8A1748);
   final Color bgColor = const Color(0xFFFFF6FC);
 
-  final List<QuestionModel> questions = [
-    QuestionModel(
-      question: 'هل تشعرين بالقلق أغلب الوقت؟',
-      options: ['نعم', 'لا', 'أحيانًا'],
-    ),
-    QuestionModel(
-      question: 'هل تعانين من صعوبة في النوم؟',
-      options: ['نعم', 'لا', 'أحيانًا'],
-    ),
-    QuestionModel(
-      question: 'ما الأعراض التي تشعرين بها؟',
-      options: ['توتر', 'حزن', 'إرهاق', 'فقدان شهية'],
-      multiSelect: true,
-    ),
-    QuestionModel(question: 'هل لديك ألم جسدي مستمر؟', options: ['نعم', 'لا']),
-    QuestionModel(
-      question: 'هل تتناولين أدوية حاليًا؟',
-      options: ['نعم', 'لا'],
-    ),
-    QuestionModel(
-      question: 'اختاري الأشياء التي تؤثر على حالتك النفسية',
-      options: ['العلاج', 'الأسرة', 'العمل', 'النوم', 'الألم'],
-      multiSelect: true,
-    ),
-  ];
-
-  late List<Set<int>> answers;
-
   @override
   void initState() {
     super.initState();
-    answers = List.generate(questions.length, (_) => <int>{});
+
+    Future.microtask(() {
+      context.read<PatientFormsCubit>().loadAssignmentDetails(
+        widget.assignmentId,
+      );
+    });
   }
 
-  int get totalPages => (questions.length / questionsPerPage).ceil();
+  @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
 
-  bool get isCurrentPageCompleted {
+  int totalPages(List<FormQuestionModel> questions) {
+    if (questions.isEmpty) return 1;
+    return (questions.length / questionsPerPage).ceil();
+  }
+
+  bool isCurrentPageCompleted(List<FormQuestionModel> questions) {
+    final cubit = context.read<PatientFormsCubit>();
+
     final start = currentPage * questionsPerPage;
     final end = (start + questionsPerPage > questions.length)
         ? questions.length
         : start + questionsPerPage;
 
     for (int i = start; i < end; i++) {
-      if (answers[i].isEmpty) return false;
+      final question = questions[i];
+
+      if (!question.required) continue;
+
+      final answer = cubit.answers[question.id];
+
+      if (answer == null) return false;
+
+      if (question.type == "SCALE") {
+        if (answer["value"] == null) return false;
+      } else {
+        final choiceIds = List<String>.from(answer["choiceIds"] ?? []);
+        if (choiceIds.isEmpty) return false;
+      }
     }
 
     return true;
   }
 
-  bool get isAllCompleted {
-    return answers.every((answer) => answer.isNotEmpty);
+  bool isAllCompleted(List<FormQuestionModel> questions) {
+    final cubit = context.read<PatientFormsCubit>();
+
+    for (final question in questions) {
+      if (!question.required) continue;
+
+      final answer = cubit.answers[question.id];
+
+      if (answer == null) return false;
+
+      if (question.type == "SCALE") {
+        if (answer["value"] == null) return false;
+      } else {
+        final choiceIds = List<String>.from(answer["choiceIds"] ?? []);
+        if (choiceIds.isEmpty) return false;
+      }
+    }
+
+    return true;
   }
 
-  void nextPage() {
-    if (!isCurrentPageCompleted) return;
+  void nextPage(List<FormQuestionModel> questions) {
+    if (!isCurrentPageCompleted(questions)) return;
 
-    if (currentPage < totalPages - 1) {
+    if (currentPage < totalPages(questions) - 1) {
       pageController.nextPage(
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOut,
       );
     } else {
-      submit();
+      submit(questions);
     }
   }
 
-  void submit() {
-    if (!isAllCompleted) return;
+  Future<void> submit(List<FormQuestionModel> questions) async {
+    if (!isAllCompleted(questions)) return;
 
-    debugPrint('Submitted Answers: $answers');
-  }
+    await context.read<PatientFormsCubit>().submitCurrentAssignment();
 
-  @override
-  Widget build(BuildContext context) {
-    final w = MediaQuery.sizeOf(context).width;
-    final h = MediaQuery.sizeOf(context).height;
+    if (!mounted) return;
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            questionnaireHeader(
-              currentPage: currentPage,
-              totalPages: totalPages,
-              w: w,
-              h: h,
-            ),
-            Expanded(
-              child: PageView.builder(
-                controller: pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: totalPages,
-                onPageChanged: (index) {
-                  setState(() {
-                    currentPage = index;
-                  });
-                },
-                itemBuilder: (context, pageIndex) {
-                  final start = pageIndex * questionsPerPage;
-                  final end = (start + questionsPerPage > questions.length)
-                      ? questions.length
-                      : start + questionsPerPage;
+    final state = context.read<PatientFormsCubit>().state;
 
-                  final pageQuestions = questions.sublist(start, end);
-
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      children: List.generate(pageQuestions.length, (index) {
-                        final realIndex = start + index;
-
-                        return QuestionCard(
-                          number: realIndex + 1,
-                          question: questions[realIndex],
-                          selectedAnswers: answers[realIndex],
-                          pink: pink,
-                          purple: purple,
-                          w: w,
-                          textColor: textColor,
-                          onSelect: (optionIndex) {
-                            setState(() {
-                              if (questions[realIndex].multiSelect) {
-                                if (answers[realIndex].contains(optionIndex)) {
-                                  answers[realIndex].remove(optionIndex);
-                                } else {
-                                  answers[realIndex].add(optionIndex);
-                                }
-                              } else {
-                                answers[realIndex]
-                                  ..clear()
-                                  ..add(optionIndex);
-                              }
-                            });
-                          },
-                        );
-                      }),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            bottomButton(w: w),
-          ],
-        ),
-      ),
-    );
+    if (state.submitResponse != null) {
+      Navigator.pushReplacementNamed(context, '/patientsHome');
+    }
   }
 
   void previousPage() {
@@ -179,10 +133,204 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     }
   }
 
-  Widget bottomButton({required double w}) {
-    final bool enabled = currentPage == totalPages - 1
-        ? isAllCompleted
-        : isCurrentPageCompleted;
+  QuestionModel buildUiQuestion(FormQuestionModel question) {
+    if (question.type == "SCALE") {
+      final min = question.scaleMin ?? 0;
+      final max = question.scaleMax ?? 10;
+
+      return QuestionModel(
+        question: question.text,
+        options: List.generate(
+          max - min + 1,
+          (index) => (min + index).toString(),
+        ),
+      );
+    }
+
+    return QuestionModel(
+      question: question.text,
+      options: question.choices.map((e) => e.label).toList(),
+      multiSelect: question.type == "MULTI_SELECT",
+    );
+  }
+
+  Set<int> selectedIndexes(FormQuestionModel question) {
+    final cubit = context.read<PatientFormsCubit>();
+    final answer = cubit.answers[question.id];
+
+    if (answer == null) return <int>{};
+
+    if (question.type == "SCALE") {
+      final min = question.scaleMin ?? 0;
+      final value = answer["value"];
+
+      if (value == null) return <int>{};
+
+      return {value - min};
+    }
+
+    final choiceIds = List<String>.from(answer["choiceIds"] ?? []);
+
+    final indexes = <int>{};
+
+    for (int i = 0; i < question.choices.length; i++) {
+      if (choiceIds.contains(question.choices[i].id)) {
+        indexes.add(i);
+      }
+    }
+
+    return indexes;
+  }
+
+  void selectAnswer({
+    required FormQuestionModel question,
+    required int optionIndex,
+  }) {
+    final cubit = context.read<PatientFormsCubit>();
+
+    if (question.type == "SCALE") {
+      final min = question.scaleMin ?? 0;
+
+      cubit.setScaleAnswer(questionId: question.id, value: min + optionIndex);
+    } else if (question.type == "SINGLE_SELECT") {
+      final choice = question.choices[optionIndex];
+
+      cubit.setSingleChoiceAnswer(questionId: question.id, choiceId: choice.id);
+    } else if (question.type == "MULTI_SELECT") {
+      final choice = question.choices[optionIndex];
+
+      cubit.toggleMultiChoiceAnswer(
+        questionId: question.id,
+        choiceId: choice.id,
+      );
+    }
+
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    final h = MediaQuery.sizeOf(context).height;
+
+    return BlocConsumer<PatientFormsCubit, PatientFormsState>(
+      listener: (context, state) {
+        if (state.error != null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.error!)));
+        }
+      },
+      builder: (context, state) {
+        if (state.isLoadingDetails) {
+          return Scaffold(
+            backgroundColor: bgColor,
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final details = state.selectedAssignment;
+
+        if (details == null) {
+          return Scaffold(
+            backgroundColor: bgColor,
+            body: Center(
+              child: customText(
+                text: "لا يوجد نموذج متاح حالياً",
+                size: w * 0.045,
+                color: textColor,
+              ),
+            ),
+          );
+        }
+
+        final questions = details.formVersion.questions;
+        final pages = totalPages(questions);
+
+        return PopScope(
+          canPop: false,
+          child: Scaffold(
+            backgroundColor: bgColor,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  questionnaireHeader(
+                    currentPage: currentPage,
+                    totalPages: pages,
+                    w: w,
+                    h: h,
+                  ),
+                  Expanded(
+                    child: PageView.builder(
+                      controller: pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: pages,
+                      onPageChanged: (index) {
+                        setState(() {
+                          currentPage = index;
+                        });
+                      },
+                      itemBuilder: (context, pageIndex) {
+                        final start = pageIndex * questionsPerPage;
+                        final end =
+                            (start + questionsPerPage > questions.length)
+                            ? questions.length
+                            : start + questionsPerPage;
+
+                        final pageQuestions = questions.sublist(start, end);
+
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.all(18),
+                          child: Column(
+                            children: List.generate(pageQuestions.length, (
+                              index,
+                            ) {
+                              final realIndex = start + index;
+                              final question = questions[realIndex];
+
+                              return QuestionCard(
+                                number: realIndex + 1,
+                                question: buildUiQuestion(question),
+                                selectedAnswers: selectedIndexes(question),
+                                pink: pink,
+                                purple: purple,
+                                w: w,
+                                textColor: textColor,
+                                onSelect: (optionIndex) {
+                                  selectAnswer(
+                                    question: question,
+                                    optionIndex: optionIndex,
+                                  );
+                                },
+                              );
+                            }),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  bottomButton(
+                    w: w,
+                    questions: questions,
+                    isSubmitting: state.isSubmitting,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget bottomButton({
+    required double w,
+    required List<FormQuestionModel> questions,
+    required bool isSubmitting,
+  }) {
+    final bool enabled = currentPage == totalPages(questions) - 1
+        ? isAllCompleted(questions)
+        : isCurrentPageCompleted(questions);
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -215,7 +363,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                     key: const ValueKey("back_button"),
                     padding: const EdgeInsets.only(right: 12),
                     child: GestureDetector(
-                      onTap: previousPage,
+                      onTap: isSubmitting ? null : previousPage,
                       child: Container(
                         height: 58,
                         width: 58,
@@ -241,10 +389,11 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                   )
                 : const SizedBox(key: ValueKey("empty_back_button")),
           ),
-
           Expanded(
             child: GestureDetector(
-              onTap: enabled ? nextPage : null,
+              onTap: enabled && !isSubmitting
+                  ? () => nextPage(questions)
+                  : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 height: 58,
@@ -265,13 +414,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                       : [],
                 ),
                 child: Center(
-                  child: customText(
-                    text: currentPage == totalPages - 1
-                        ? 'إنهاء و إرسال'
-                        : 'التالي',
-                    size: w * 0.045,
-                    color: enabled ? Colors.white : Colors.grey[600],
-                  ),
+                  child: isSubmitting
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : customText(
+                          text: currentPage == totalPages(questions) - 1
+                              ? 'إنهاء و إرسال'
+                              : 'التالي',
+                          size: w * 0.045,
+                          color: enabled ? Colors.white : Colors.grey[600],
+                        ),
                 ),
               ),
             ),

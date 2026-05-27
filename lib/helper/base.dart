@@ -174,7 +174,9 @@ Widget chatBotCard({required double w, required double h}) {
               SizedBox(height: 20),
               CustomGlowButton(
                 title: "تحدثى الان",
-                onPressed: () {},
+                onPressed: () {
+                  
+                },
                 width: w * 0.8,
                 textSize: w * 0.04,
                 height: h * 0.06,
