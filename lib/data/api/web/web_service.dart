@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:bahya_website/data/api/models/patient_model.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/service/Login_service.dart';
 import 'package:dio/dio.dart';
@@ -206,14 +207,11 @@ class WebService {
     try {
       final res = await dio.patch(
         '/auth/change-password',
-        data: {
-          "currentPassword": currentPassword,
-          "newPassword": newPassword,
-        },
+        data: {"currentPassword": currentPassword, "newPassword": newPassword},
       );
       if (res.statusCode == 200) {
         debugPrint("Password change successful");
-              return;
+        return;
       }
       if (res.statusCode == 401) {
         throw Exception('Current password is incorrect');
@@ -228,7 +226,8 @@ class WebService {
       throw Exception('Unexpected error');
     }
   }
-Future<void> createForm({required Map<String, dynamic> body}) async {
+
+  Future<void> createForm({required Map<String, dynamic> body}) async {
     try {
       final res = await dio.post('/forms', data: body);
 
@@ -247,4 +246,115 @@ Future<void> createForm({required Map<String, dynamic> body}) async {
     }
   }
 
+  Future<Map<String, dynamic>> getForms() async {
+    try {
+      return await dio.get('/forms').then((res) => res.data);
+    } on DioException catch (e) {
+      debugPrint("DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to get all user info');
+    } catch (e) {
+      debugPrint("Unexpected error: $e");
+      throw Exception('Unexpected error');
+    }
+  }
+
+  Future<void> publishFormVersion({required String formId}) async {
+    try {
+      await dio.post('/forms/$formId/publish-version');
+    } on DioException catch (e) {
+      debugPrint(
+        "Publish version DioException: ${e.response?.data ?? e.message}",
+      );
+      throw Exception(e.response?.data ?? 'Failed to publish form version');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<void> publishForm({
+    required String formId,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      await dio.post('/forms/$formId/publish', data: body);
+    } on DioException catch (e) {
+      debugPrint("Publish DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to publish form');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getPatientOptions({
+    String? search,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await dio.get(
+      '/patients',
+      queryParameters: {
+        if (search != null && search.trim().isNotEmpty) 'q': search.trim(),
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getVolunteerOptions({
+    String? search,
+    int page = 1,
+    int pageSize = 5,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/volunteers',
+        queryParameters: {
+          if (search != null && search.trim().isNotEmpty) 'q': search.trim(),
+          'page': page,
+          'pageSize': pageSize,
+        },
+      );
+
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("Publish DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to publish form');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getFormAssignments({
+    required String formId,
+    int page = 1,
+    int pageSize = 100,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/forms/$formId/assignments',
+        queryParameters: {'page': page, 'pageSize': pageSize},
+      );
+
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("Publish DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to publish form');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getPatientById(String patientId) async {
+    try {
+       final response = await dio.get('/patients/$patientId');
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("Publish DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to publish form');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
 }

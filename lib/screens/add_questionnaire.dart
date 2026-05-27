@@ -91,7 +91,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
     return scores.reduce((a, b) => a > b ? a : b);
   }
 
-  String? validateBeforeSave() {
+String? validateBeforeSave() {
     final title = surveyTitleController.text.trim();
 
     if (title.isEmpty) {
@@ -100,6 +100,10 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
 
     if (questions.isEmpty) {
       return 'يجب إضافة سؤال واحد على الأقل.';
+    }
+
+    if (questions.length < 2) {
+      return 'يجب أن يحتوي الاستبيان على سؤالين على الأقل حتى يكون التشخيص أدق.';
     }
 
     int formMinScore = 0;
@@ -138,13 +142,14 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
         scores.add(answer.score);
       }
 
-      if (question.questionType == QuestionType.single) {
-        formMinScore += _minScore(scores);
-        formMaxScore += _maxScore(scores);
-      } else {
-        formMinScore += 0;
-        formMaxScore += scores.fold(0, (sum, score) => sum + score);
-      }
+      final int questionMinScore = _minScore(scores);
+
+      final int questionMaxScore = question.questionType == QuestionType.single
+          ? _maxScore(scores)
+          : scores.fold<int>(0, (sum, score) => sum + score);
+
+      formMinScore += questionMinScore;
+      formMaxScore += questionMaxScore;
     }
 
     final diagnosisState = diagnosisKey.currentState;
@@ -157,10 +162,6 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
 
     if (ranges.isEmpty) {
       return 'يجب إضافة تشخيص واحد على الأقل.';
-    }
-
-    if (formMaxScore > formMinScore && ranges.length < 2) {
-      return 'يجب تقسيم التشخيص إلى نطاقين على الأقل، ولا تجعل كل النتائج تذهب لتشخيص واحد.';
     }
 
     for (int i = 0; i < ranges.length; i++) {
@@ -200,7 +201,6 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
 
     return null;
   }
-
   List<Map<String, dynamic>> buildQuestionsBody() {
     final questionsBody = <Map<String, dynamic>>[];
 

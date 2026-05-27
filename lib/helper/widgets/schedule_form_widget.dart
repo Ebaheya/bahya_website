@@ -153,6 +153,7 @@ Widget scheduleSingleLineInput({
 Widget scheduleCodeInputSection({
   required BuildContext context,
   required String title,
+  bool showAddButton = true,
   required String hint,
   required TextEditingController controller,
   required List<String> codes,
@@ -178,15 +179,18 @@ Widget scheduleCodeInputSection({
             ),
           ),
           const SizedBox(width: 16),
-          CustomGlowButton(
-            title: "إضافة",
-            onPressed: onAdd,
-            icon: Icons.add_rounded,
-            textColor: Colors.white,
-            backgroundColor: Colors.pinkAccent,
-            glowColor: Colors.pinkAccent.withOpacity(0.6),
-            width: w * 0.2,
-          ),
+if (showAddButton) ...[
+            const SizedBox(width: 16),
+            CustomGlowButton(
+              title: "إضافة",
+              onPressed: onAdd,
+              icon: Icons.add_rounded,
+              textColor: Colors.white,
+              backgroundColor: Colors.pinkAccent,
+              glowColor: Colors.pinkAccent.withOpacity(0.6),
+              width: w * 0.2,
+            ),
+          ],
         ],
       ),
       if (codes.isNotEmpty) ...[

@@ -479,3 +479,51 @@ Widget modernInputBox({required IconData icon, required Widget child}) {
     ),
   );
 }
+
+class ScheduleInfoBlock extends StatelessWidget {
+  final String title;
+  final String value;
+  final String? subValue;
+  final bool isTime;
+
+  const ScheduleInfoBlock({
+    super.key,
+    required this.title,
+    required this.value,
+    this.subValue,
+    this.isTime = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final h = getScreenHeight(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        customText(
+          text: title,
+          size: h * 0.018,
+          color: Colors.grey.shade600,
+          bold: true,
+        ),
+        SizedBox(height: h * 0.007),
+        customText(
+          text: value,
+          size: isTime ? h * 0.032 : h * 0.018,
+          bold: true,
+          color: isTime ? const Color(0xFF8A0057) : const Color(0xFF333333),
+        ),
+        if (subValue != null) ...[
+          SizedBox(height: h * 0.003),
+          customText(
+            text: subValue!,
+            size: h * 0.017,
+            bold: true,
+            color: const Color(0xFFE5005F),
+          ),
+        ],
+      ],
+    );
+  }
+}

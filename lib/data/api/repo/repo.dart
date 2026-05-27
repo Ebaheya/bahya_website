@@ -1,3 +1,7 @@
+import 'package:bahya_website/data/api/models/form_assignment_model.dart';
+import 'package:bahya_website/data/api/models/form_model.dart';
+import 'package:bahya_website/data/api/models/options_model.dart';
+import 'package:bahya_website/data/api/models/patient_model.dart';
 import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/data/api/models/user_model.dart';
 import 'package:dio/dio.dart';
@@ -62,17 +66,123 @@ class AppRepository {
     required List<Map<String, dynamic>> diagnoses,
   }) async {
     try {
-  final body = {
-     "key": formName.trim().toUpperCase().replaceAll(' ', '_'),
-    "name": formName,
-    "scoringType": "SUM",
-    "interpretationMode": "RANGE",
-    "questions": questions,
-    "scoreRanges": diagnoses,
-  };
-  
-  await webService.createForm(body: body);
-} on DioException catch (e) {
+      final body = {
+        "key": formName.trim().toUpperCase().replaceAll(' ', '_'),
+        "name": formName,
+        "scoringType": "SUM",
+        "interpretationMode": "RANGE",
+        "questions": questions,
+        "scoreRanges": diagnoses,
+      };
+
+      await webService.createForm(body: body);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get user');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<FormsResponseModel> getForms() async {
+    try {
+      final response = await webService.getForms();
+
+      return FormsResponseModel.fromJson(response);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get user');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<void> publishForm({
+    required String formId,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      await webService.publishForm(formId: formId, body: body);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get user');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<void> publishFormVersion({required String formId}) async {
+    try {
+      await webService.publishFormVersion(formId: formId);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get user');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<OptionsResponseModel> getPatientOptions({
+    String? search,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await webService.getPatientOptions(
+        search: search,
+        page: page,
+        pageSize: pageSize,
+      );
+
+      return OptionsResponseModel.fromJson(response);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get user');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<OptionsResponseModel> getVolunteerOptions({
+    String? search,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await webService.getVolunteerOptions(
+        search: search,
+        page: page,
+        pageSize: pageSize,
+      );
+
+      return OptionsResponseModel.fromJson(response);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get user');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<FormAssignmentsResponse> getFormAssignments({
+    required String formId,
+    int page = 1,
+    int pageSize = 100,
+  }) async {
+    try {
+      final json = await webService.getFormAssignments(
+        formId: formId,
+        page: page,
+        pageSize: pageSize,
+      );
+
+      return FormAssignmentsResponse.fromJson(json);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get user');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<PatientModel> getPatientById(String patientId) async {
+    try {
+      final json = await webService.getPatientById(patientId);
+      return PatientModel.fromJson(json);
+    } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Failed to get user');
     } catch (e) {
       throw Exception('Unexpected error : $e');
