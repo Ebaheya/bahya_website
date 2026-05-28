@@ -2,13 +2,14 @@ import 'package:bahya_website/bloc/cubit/publish_schedule_cubit.dart';
 import 'package:bahya_website/bloc/states/publish_schedule_state.dart';
 import 'package:bahya_website/data/api/models/form_model.dart';
 import 'package:bahya_website/data/api/models/options_model.dart';
+import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_date_picker.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/custom_time_picker.dart';
-import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/schedule_form_widget.dart';
+import 'package:bahya_website/logic/schedule_form_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,6 +23,8 @@ class ScheduleFormWidget extends StatefulWidget {
 }
 
 class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
+  final WebService web = WebService();
+
   FormModel? selectedForm;
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
@@ -40,6 +43,8 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
 
   final List<String> targetItems = ["المرضى", "المتطوعين"];
   final List<String> patientPublishItems = ["مريض واحد", "كل المرضى"];
+
+  ScheduleFormLogic get logic => ScheduleFormLogic(context: context, web: web);
 
   @override
   void dispose() {
@@ -76,304 +81,303 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.publish_rounded,
-                  color: const Color(0xFFE40070),
-                  size: w * 0.04,
-                ),
-                SizedBox(height: h * 0.02),
-                customText(
-                  text: "نشر النموذج",
-                  size: w * 0.025,
-                  bold: true,
-                  color: textColor,
-                ),
+                _header(w, h),
                 SizedBox(height: h * 0.04),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(w * 0.025),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFFCFE),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFF5D7EA)),
-                  ),
-                  child: Column(
-                    children: [
-                      scheduleLabel(
-                        context: context,
-                        title: "اختر نموذجًا للنشر",
-                      ),
-                      const SizedBox(height: 20),
-                      scheduleDropdown(
-                        context: context,
-                        value: selectedForm?.name,
-                        hint: "اختر نموذج من القائمة",
-                        items: widget.forms
-                            .map((e) => e.name ?? "")
-                            .where((name) => name.isNotEmpty)
-                            .toList(),
-                        icon: Icons.description_outlined,
-                        onChanged: (v) {
-                          setState(() {
-                            selectedForm = widget.forms.firstWhere(
-                              (form) => form.name == v,
-                            );
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 30),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                scheduleLabel(
-                                  context: context,
-                                  title: "وقت النشر",
-                                ),
-                                const SizedBox(height: 20),
-                                schedulePickerField(
-                                  context: context,
-                                  text: selectedTime == null
-                                      ? "اختياري"
-                                      : selectedTime!.format(context),
-                                  icon: Icons.access_time_rounded,
-                                  onTap: pickCustomTime,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 70),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                scheduleLabel(
-                                  context: context,
-                                  title: "تاريخ النشر",
-                                ),
-                                const SizedBox(height: 20),
-                                schedulePickerField(
-                                  context: context,
-                                  text: selectedDate == null
-                                      ? "اختياري"
-                                      : "${selectedDate!.year}-${selectedDate!.month}-${selectedDate!.day}",
-                                  icon: Icons.calendar_month_rounded,
-                                  onTap: pickCustomDate,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                      scheduleLabel(context: context, title: "الفئة المستهدفة"),
-                      const SizedBox(height: 20),
-                      scheduleDropdown(
-                        context: context,
-                        value: targetType,
-                        hint: "اختر المرضى أو المتطوعين",
-                        items: targetItems,
-                        icon: Icons.group_outlined,
-                        onChanged: (v) {
-                          setState(() {
-                            targetType = v;
-                            patientPublishType = null;
-                            selectedSinglePatient = null;
-                            selectedPatients.clear();
-                            selectedVolunteers.clear();
-                            patientSearchController.clear();
-                            volunteerSearchController.clear();
-                          });
-
-                          context.read<PublishScheduleCubit>().searchPatients(
-                            "",
-                          );
-                          context.read<PublishScheduleCubit>().searchVolunteers(
-                            "",
-                          );
-                        },
-                      ),
-                      if (targetType == "المرضى") ...[
-                        const SizedBox(height: 30),
-                        scheduleLabel(context: context, title: "نوع النشر"),
-                        const SizedBox(height: 20),
-                        scheduleDropdown(
-                          context: context,
-                          value: patientPublishType,
-                          hint: "اختر نوع النشر",
-                          items: patientPublishItems,
-                          icon: Icons.person_outline,
-                          onChanged: (v) {
-                            setState(() {
-                              patientPublishType = v;
-                              selectedSinglePatient = null;
-                              patientSearchController.clear();
-                            });
-
-                            context.read<PublishScheduleCubit>().searchPatients(
-                              "",
-                            );
-                          },
-                        ),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 350),
-                          transitionBuilder: (child, animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: SizeTransition(
-                                sizeFactor: animation,
-                                axisAlignment: -1,
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: patientPublishType == "مريض واحد"
-                              ? Padding(
-                                  key: const ValueKey("single_patient"),
-                                  padding: const EdgeInsets.only(top: 30),
-                                  child: Column(
-                                    children: [
-                                      searchSelectUserField(
-                                        title: "اختيار المريض",
-                                        hint: "ابحث باسم المريض",
-                                        controller: patientSearchController,
-                                        options: state.patientOptions,
-                                        isLoading: state.isSearchingPatients,
-                                        onSearch: (v) {
-                                          context
-                                              .read<PublishScheduleCubit>()
-                                              .searchPatients(v);
-                                        },
-                                        onSelect: (patient) {
-                                          setState(() {
-                                            selectedSinglePatient = patient;
-                                            patientSearchController.clear();
-                                          });
-
-                                          context
-                                              .read<PublishScheduleCubit>()
-                                              .searchPatients("");
-                                        },
-                                      ),
-                                      selectedUsersChips(
-                                        users: selectedSinglePatient == null
-                                            ? []
-                                            : [selectedSinglePatient!],
-                                        onRemove: (_) {
-                                          setState(() {
-                                            selectedSinglePatient = null;
-                                            patientSearchController.clear();
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-                      ],
-                      if (targetType == "المتطوعين") ...[
-                        const SizedBox(height: 30),
-                        searchSelectUserField(
-                          title: "اختيار المتطوع",
-                          hint: "ابحث باسم المتطوع",
-                          controller: volunteerSearchController,
-                          options: state.volunteerOptions,
-                          isLoading: state.isSearchingVolunteers,
-                          onSearch: (v) {
-                            context
-                                .read<PublishScheduleCubit>()
-                                .searchVolunteers(v);
-                          },
-                          onSelect: (volunteer) {
-                            if (selectedVolunteers.any(
-                              (e) => e.id == volunteer.id,
-                            )) {
-                              showError("هذا المتطوع تم اختياره بالفعل.");
-                              return;
-                            }
-
-                            setState(() {
-                              selectedVolunteers.add(volunteer);
-                              volunteerSearchController.clear();
-                            });
-
-                            context
-                                .read<PublishScheduleCubit>()
-                                .searchVolunteers("");
-                          },
-                        ),
-                        selectedUsersChips(
-                          users: selectedVolunteers,
-                          onRemove: (user) {
-                            setState(() {
-                              selectedVolunteers.remove(user);
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 30),
-                        searchSelectUserField(
-                          title: "اختيار المريض",
-                          hint: "ابحث باسم المريض",
-                          controller: patientSearchController,
-                          options: state.patientOptions,
-                          isLoading: state.isSearchingPatients,
-                          onSearch: (v) {
-                            context.read<PublishScheduleCubit>().searchPatients(
-                              v,
-                            );
-                          },
-                          onSelect: (patient) {
-                            if (selectedPatients.any(
-                              (e) => e.id == patient.id,
-                            )) {
-                              showError("هذا المريض تم اختياره بالفعل.");
-                              return;
-                            }
-
-                            setState(() {
-                              selectedPatients.add(patient);
-                              patientSearchController.clear();
-                            });
-
-                            context.read<PublishScheduleCubit>().searchPatients(
-                              "",
-                            );
-                          },
-                        ),
-                        selectedUsersChips(
-                          users: selectedPatients,
-                          onRemove: (user) {
-                            setState(() {
-                              selectedPatients.remove(user);
-                            });
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 35),
-                      CustomGlowButton(
-                        title: state.isPublishing
-                            ? "جاري النشر..."
-                            : "نشر النموذج",
-                        onPressed: () {
-                          if (!state.isPublishing) {
-                            publishForm();
-                          }
-                        },
-                        icon: Icons.schedule_send_rounded,
-                        isGradient: true,
-                        width: double.infinity,
-                      ),
-                    ],
-                  ),
-                ),
+                _publishCard(state),
+                SizedBox(height: h * 0.04),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _header(double w, double h) {
+    return Column(
+      children: [
+        Icon(
+          Icons.publish_rounded,
+          color: const Color(0xFFE40070),
+          size: w * 0.04,
+        ),
+        SizedBox(height: h * 0.02),
+        customText(
+          text: "نشر النموذج",
+          size: w * 0.025,
+          bold: true,
+          color: textColor,
+        ),
+      ],
+    );
+  }
+
+  Widget _publishCard(PublishScheduleState state) {
+    final w = getScreenWidth(context);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(w * 0.025),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFCFE),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF5D7EA)),
+      ),
+      child: Column(
+        children: [
+          scheduleLabel(context: context, title: "اختر نموذجًا للنشر"),
+          const SizedBox(height: 20),
+          scheduleDropdown(
+            context: context,
+            value: selectedForm?.name,
+            hint: "اختر نموذج من القائمة",
+            items: widget.forms
+                .where((form) => form.isActive == true)
+                .map((e) => e.name)
+                .where((name) => name.isNotEmpty)
+                .toList(),
+            icon: Icons.description_outlined,
+            onChanged: (v) {
+              setState(() {
+                selectedForm = widget.forms.firstWhere(
+                  (form) => form.name == v,
+                );
+              });
+            },
+          ),
+          const SizedBox(height: 30),
+          _dateTimeRow(),
+          const SizedBox(height: 30),
+          scheduleLabel(context: context, title: "الفئة المستهدفة"),
+          const SizedBox(height: 20),
+          scheduleDropdown(
+            context: context,
+            value: targetType,
+            hint: "اختر المرضى أو المتطوعين",
+            items: targetItems,
+            icon: Icons.group_outlined,
+            onChanged: (v) {
+              setState(() {
+                targetType = v;
+                patientPublishType = null;
+                selectedSinglePatient = null;
+                selectedPatients.clear();
+                selectedVolunteers.clear();
+                patientSearchController.clear();
+                volunteerSearchController.clear();
+              });
+
+              context.read<PublishScheduleCubit>().searchPatients("");
+              context.read<PublishScheduleCubit>().searchVolunteers("");
+            },
+          ),
+          if (targetType == "المرضى") _patientsTargetSection(state),
+          if (targetType == "المتطوعين") _volunteersTargetSection(state),
+          const SizedBox(height: 35),
+          CustomGlowButton(
+            title: state.isPublishing ? "جاري النشر..." : "نشر النموذج",
+            onPressed: () {
+              if (!state.isPublishing) {
+                publishForm();
+              }
+            },
+            icon: Icons.schedule_send_rounded,
+            isGradient: true,
+            width: double.infinity,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dateTimeRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              scheduleLabel(context: context, title: "وقت النشر"),
+              const SizedBox(height: 20),
+              schedulePickerField(
+                context: context,
+                text: selectedTime == null
+                    ? "اختياري"
+                    : selectedTime!.format(context),
+                icon: Icons.access_time_rounded,
+                onTap: pickCustomTime,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 70),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              scheduleLabel(context: context, title: "تاريخ النشر"),
+              const SizedBox(height: 20),
+              schedulePickerField(
+                context: context,
+                text: selectedDate == null
+                    ? "اختياري"
+                    : "${selectedDate!.year}-${selectedDate!.month}-${selectedDate!.day}",
+                icon: Icons.calendar_month_rounded,
+                onTap: pickCustomDate,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _patientsTargetSection(PublishScheduleState state) {
+    return Column(
+      children: [
+        const SizedBox(height: 30),
+        scheduleLabel(context: context, title: "نوع النشر"),
+        const SizedBox(height: 20),
+        scheduleDropdown(
+          context: context,
+          value: patientPublishType,
+          hint: "اختر نوع النشر",
+          items: patientPublishItems,
+          icon: Icons.person_outline,
+          onChanged: (v) {
+            setState(() {
+              patientPublishType = v;
+              selectedSinglePatient = null;
+              patientSearchController.clear();
+            });
+
+            context.read<PublishScheduleCubit>().searchPatients("");
+          },
+        ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 350),
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SizeTransition(
+                sizeFactor: animation,
+                axisAlignment: -1,
+                child: child,
+              ),
+            );
+          },
+          child: patientPublishType == "مريض واحد"
+              ? Padding(
+                  key: const ValueKey("single_patient"),
+                  padding: const EdgeInsets.only(top: 30),
+                  child: Column(
+                    children: [
+                      searchSelectUserField(
+                        title: "اختيار المريض",
+                        hint: "ابحث باسم المريض",
+                        controller: patientSearchController,
+                        options: state.patientOptions,
+                        isLoading: state.isSearchingPatients,
+                        onSearch: (v) {
+                          context.read<PublishScheduleCubit>().searchPatients(
+                            v,
+                          );
+                        },
+                        onSelect: (patient) {
+                          setState(() {
+                            selectedSinglePatient = patient;
+                            patientSearchController.clear();
+                          });
+
+                          context.read<PublishScheduleCubit>().searchPatients(
+                            "",
+                          );
+                        },
+                      ),
+                      selectedUsersChips(
+                        users: selectedSinglePatient == null
+                            ? []
+                            : [selectedSinglePatient!],
+                        onRemove: (_) {
+                          setState(() {
+                            selectedSinglePatient = null;
+                            patientSearchController.clear();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Widget _volunteersTargetSection(PublishScheduleState state) {
+    return Column(
+      children: [
+        const SizedBox(height: 30),
+        searchSelectUserField(
+          title: "اختيار المتطوع",
+          hint: "ابحث باسم المتطوع",
+          controller: volunteerSearchController,
+          options: state.volunteerOptions,
+          isLoading: state.isSearchingVolunteers,
+          onSearch: (v) {
+            context.read<PublishScheduleCubit>().searchVolunteers(v);
+          },
+          onSelect: (volunteer) {
+            if (selectedVolunteers.any((e) => e.id == volunteer.id)) {
+              logic.showError("هذا المتطوع تم اختياره بالفعل.");
+              return;
+            }
+
+            setState(() {
+              selectedVolunteers.add(volunteer);
+              volunteerSearchController.clear();
+            });
+
+            context.read<PublishScheduleCubit>().searchVolunteers("");
+          },
+        ),
+        selectedUsersChips(
+          users: selectedVolunteers,
+          onRemove: (user) {
+            setState(() => selectedVolunteers.remove(user));
+          },
+        ),
+        const SizedBox(height: 30),
+        searchSelectUserField(
+          title: "اختيار المريض",
+          hint: "ابحث باسم المريض",
+          controller: patientSearchController,
+          options: state.patientOptions,
+          isLoading: state.isSearchingPatients,
+          onSearch: (v) {
+            context.read<PublishScheduleCubit>().searchPatients(v);
+          },
+          onSelect: (patient) {
+            if (selectedPatients.any((e) => e.id == patient.id)) {
+              logic.showError("هذا المريض تم اختياره بالفعل.");
+              return;
+            }
+
+            setState(() {
+              selectedPatients.add(patient);
+              patientSearchController.clear();
+            });
+
+            context.read<PublishScheduleCubit>().searchPatients("");
+          },
+        ),
+        selectedUsersChips(
+          users: selectedPatients,
+          onRemove: (user) {
+            setState(() => selectedPatients.remove(user));
+          },
+        ),
+      ],
     );
   }
 
@@ -430,9 +434,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
                       color: Color(0xFFE5007D),
                     ),
                     onPressed: () {
-                      setState(() {
-                        controller.clear();
-                      });
+                      setState(() => controller.clear());
                       onSearch("");
                     },
                   )
@@ -607,130 +609,43 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
     );
   }
 
-  String? buildPublishAt() {
-    if (selectedDate == null || selectedTime == null) return null;
-
-    final dateTime = DateTime(
-      selectedDate!.year,
-      selectedDate!.month,
-      selectedDate!.day,
-      selectedTime!.hour,
-      selectedTime!.minute,
-    );
-
-    return dateTime.toUtc().toIso8601String();
-  }
-
-  Future<bool> publishOne(Map<String, dynamic> body) async {
-    debugPrint("Publish body: $body");
-
-    return await context.read<PublishScheduleCubit>().publishForm(
-      form: selectedForm!,
-      body: body,
-    );
-  }
-
   Future<void> publishForm() async {
-    if (selectedForm == null) {
-      showError("اختر نموذجًا للنشر.");
-      return;
-    }
+    await logic.publishForm(
+      selectedForm: selectedForm,
+      selectedDate: selectedDate,
+      selectedTime: selectedTime,
+      targetType: targetType,
+      patientPublishType: patientPublishType,
+      selectedSinglePatient: selectedSinglePatient,
+      selectedPatients: selectedPatients,
+      selectedVolunteers: selectedVolunteers,
+      onSuccess: afterSuccess,
+    );
+  }
 
-    if (targetType == null) {
-      showError("اختر الفئة المستهدفة.");
-      return;
-    }
+  Future<void> cancelPublish(FormModel form) async {
+    await logic.cancelPublish(
+      form: form,
+      onSuccess: () {
+        context.read<PublishScheduleCubit>().loadForms();
+      },
+    );
+  }
 
-    if (targetType == "المرضى") {
-      if (patientPublishType == null) {
-        showError("اختر نوع النشر للمرضى.");
-        return;
-      }
-
-      if (patientPublishType == "مريض واحد") {
-        if (selectedSinglePatient == null) {
-          showError("اختر المريض أولاً.");
-          return;
-        }
-
-        final body = {
-          "target": "SINGLE_PATIENT",
-          "patientId": selectedSinglePatient!.id,
-          "publishAt": buildPublishAt(),
-        };
-
-        final success = await publishOne(body);
-        if (!mounted) return;
-
-        if (success) afterSuccess();
-        return;
-      }
-
-      // حالة كل المرضى ALL_PATIENTS
-      final body = {"target": "ALL_PATIENTS", "publishAt": buildPublishAt()};
-      final success = await publishOne(body);
-      if (!mounted) return;
-
-      if (success) afterSuccess();
-      return;
-    }
-
-    if (targetType == "المتطوعين") {
-      if (selectedPatients.isEmpty) {
-        showError("اختر مريض واحد على الأقل.");
-        return;
-      }
-
-      if (selectedVolunteers.isEmpty) {
-        showError("اختر متطوع واحد على الأقل.");
-        return;
-      }
-
-      if (selectedPatients.length != selectedVolunteers.length) {
-        showError("عدد المرضى يجب أن يساوي عدد المتطوعين.");
-        return;
-      }
-
-      bool allSuccess = true;
-
-      // نقوم بعمل النشر للكل أولاً وننتظر حتى تنتهي العمليات
-      for (int i = 0; i < selectedPatients.length; i++) {
-        final body = {
-          "target": "VOLUNTEER_FOR_PATIENT",
-          "patientId": selectedPatients[i].id,
-          "volunteerId": selectedVolunteers[i].id,
-          "publishAt": buildPublishAt(),
-        };
-
-        final success = await publishOne(body);
-        if (!success) {
-          allSuccess = false;
-        }
-      }
-
-      if (!mounted) return;
-
-      // استدعاء بعد النجاح لمرة واحدة فقط خارج الـ Loop
-      if (allSuccess) {
-        afterSuccess();
-      } else {
-        showError("حدث خطأ أثناء نشر بعض النماذج.");
-      }
-    }
+  Future<void> activateForm(FormModel form) async {
+    await logic.activateInactiveForm(
+      form: form,
+      onSuccess: () {
+        context.read<PublishScheduleCubit>().loadForms();
+      },
+    );
   }
 
   void afterSuccess() {
     if (!mounted) return;
 
-    // 1. إظهار الديالوج أولاً
-    customDialog(
-      context: context,
-      title: "تم النشر",
-      message: "تم نشر النموذج بنجاح.",
-      isSuccess: true,
-    );
+    logic.showPublishSuccess();
 
-    // 2. تحديث الحالة وتصفير البيانات بعد الديالوج مباشرة دون تداخل
     setState(() {
       selectedForm = null;
       selectedDate = null;
@@ -743,15 +658,8 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
       patientSearchController.clear();
       volunteerSearchController.clear();
     });
-  }
 
-  void showError(String message) {
-    customDialog(
-      context: context,
-      title: "تنبيه",
-      message: message,
-      isError: true,
-    );
+    context.read<PublishScheduleCubit>().loadForms();
   }
 
   Future pickCustomTime() async {

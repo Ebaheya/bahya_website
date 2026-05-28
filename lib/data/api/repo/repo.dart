@@ -118,13 +118,13 @@ class AppRepository {
     }
   }
 
-  Future<OptionsResponseModel> getPatientOptions({
+  Future<OptionsResponseModel> getPatient({
     String? search,
     int page = 1,
     int pageSize = 20,
   }) async {
     try {
-      final response = await webService.getPatientOptions(
+      final response = await webService.getPatient(
         search: search,
         page: page,
         pageSize: pageSize,
@@ -138,13 +138,13 @@ class AppRepository {
     }
   }
 
-  Future<OptionsResponseModel> getVolunteerOptions({
+  Future<OptionsResponseModel> getVolunteer({
     String? search,
     int page = 1,
     int pageSize = 20,
   }) async {
     try {
-      final response = await webService.getVolunteerOptions(
+      final response = await webService.getVolunteer(
         search: search,
         page: page,
         pageSize: pageSize,
@@ -187,5 +187,115 @@ class AppRepository {
     } catch (e) {
       throw Exception('Unexpected error : $e');
     }
+  }
+
+  Future<FormModel> getFormById(String formId) async {
+    try {
+      final json = await webService.getFormById(formId);
+      return FormModel.fromJson(json);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get form');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<FormModel> updateForm({
+    required String formId,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final json = await webService.updateForm(formId: formId, body: body);
+
+      return FormModel.fromJson(json);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to update form');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> createAssessment({
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final json = await webService.createAssessment(body: body);
+      return Map<String, dynamic>.from(json);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to create assessment');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getPendingSubmissions() async {
+    try {
+      final json = await webService.getPendingSubmissions();
+
+      return (json['data'] as List? ?? [])
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get pending submissions');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getSubmissionById(String submissionId) async {
+    try {
+      final json = await webService.getSubmissionById(submissionId);
+      return Map<String, dynamic>.from(json);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get submission');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getPatientAssessments(
+    String patientId,
+  ) async {
+    try {
+      final json = await webService.getPatientAssessments(patientId);
+
+      if (json is List) {
+        return json.map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+
+      return (json['data'] as List? ?? [])
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get patient assessments');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getAssessmentById(String assessmentId) async {
+    try {
+      final json = await webService.getAssessmentById(assessmentId);
+      return Map<String, dynamic>.from(json);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get assessment');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getFormByIdRaw(String formId) async {
+    return await webService.getFormById(formId);
+  }
+
+  Future<void> updateFormRaw({
+    required String formId,
+    required Map<String, dynamic> body,
+  }) async {
+    await webService.updateForm(formId: formId, body: body);
+  }
+
+  Future<void> deleteForm({required String formId}) async {
+    await webService.deleteForm(formId: formId);
   }
 }

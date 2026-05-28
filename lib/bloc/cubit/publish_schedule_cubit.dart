@@ -9,23 +9,34 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
 
   PublishScheduleCubit(this.repo) : super(const PublishScheduleState());
 
+  static const Duration republishDelay = Duration(hours: 6);
+
   Future<void> loadForms() async {
     emit(state.copyWith(isLoading: true, error: null));
 
     try {
       final response = await repo.getForms();
 
-      final draftForms = response.data
-          .where((e) => e.currentVersion?.status == "DRAFT")
+      final activeForms = response.data
+          .where((e) => e.isActive == true)
           .toList();
 
-      final publishedForms = response.data
-          .where((e) => e.currentVersion?.status == "PUBLISHED")
+      final draftForms = activeForms
+          .where(
+            (e) => e.currentVersion?.status.trim().toUpperCase() == "DRAFT",
+          )
+          .toList();
+
+      final publishedForms = activeForms
+          .where(
+            (e) => e.currentVersion?.status.trim().toUpperCase() == "PUBLISHED",
+          )
           .toList();
 
       emit(
         state.copyWith(
           isLoading: false,
+          activeForms: activeForms,
           draftForms: draftForms,
           publishedForms: publishedForms,
           error: null,
@@ -49,7 +60,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
     emit(state.copyWith(isSearchingPatients: true, error: null));
 
     try {
-      final response = await repo.getPatientOptions(search: search);
+      final response = await repo.getPatient(search: search);
 
       emit(
         state.copyWith(
@@ -76,7 +87,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
     emit(state.copyWith(isSearchingVolunteers: true, error: null));
 
     try {
-      final response = await repo.getVolunteerOptions(search: search);
+      final response = await repo.getVolunteer(search: search);
 
       emit(
         state.copyWith(
@@ -100,6 +111,39 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
   }) async {
     if (state.isPublishing) return false;
 
+    if (form.isActive != true) {
+      emit(
+        state.copyWith(
+          isPublishing: false,
+          error: "هذا النموذج غير مفعّل. فعّله أولاً قبل النشر.",
+        ),
+      );
+      return false;
+    }
+
+    final lastCreatedAt = state.lastPublishedAtByFormId[form.id];
+
+    if (lastCreatedAt != null) {
+      final now = DateTime.now().toUtc();
+      final difference = now.difference(lastCreatedAt.toUtc());
+
+      if (difference < republishDelay) {
+        final remaining = republishDelay - difference;
+        final hours = remaining.inHours;
+        final minutes = remaining.inMinutes.remainder(60);
+
+        emit(
+          state.copyWith(
+            isPublishing: false,
+            error:
+                "لا يمكن إعادة نشر نفس النموذج الآن. انتظر ${hours} ساعة و ${minutes} دقيقة.",
+          ),
+        );
+
+        return false;
+      }
+    }
+
     emit(state.copyWith(isPublishing: true, error: null));
 
     try {
@@ -117,7 +161,22 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
 
       await repo.publishForm(formId: form.id, body: body);
 
-      emit(state.copyWith(isPublishing: false, error: null));
+      final updatedLastPublished = Map<String, DateTime>.from(
+        state.lastPublishedAtByFormId,
+      );
+
+      updatedLastPublished[form.id] = DateTime.now().toUtc();
+
+      emit(
+        state.copyWith(
+          isPublishing: false,
+          error: null,
+          lastPublishedAtByFormId: updatedLastPublished,
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 700));
+      await loadForms();
 
       return true;
     } catch (e) {
@@ -136,15 +195,27 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
       emit(state.copyWith(isLoadingAssignments: true, error: null));
 
       final List<ScheduledItemModel> items = [];
+      final Map<String, DateTime> lastPublishedMap = {};
 
-      for (final form in state.publishedForms) {
-        final formId = form.id;
+      for (final form in state.activeForms) {
+        if (form.id.isEmpty) continue;
 
-        if (formId.isEmpty) continue;
-
-        final response = await repo.getFormAssignments(formId: formId);
+        final response = await repo.getFormAssignments(
+          formId: form.id,
+          pageSize: 100,
+        );
 
         for (final assignment in response.data) {
+          final createdAt = _extractCreatedAt(assignment);
+
+          if (createdAt != null) {
+            final oldDate = lastPublishedMap[form.id];
+
+            if (oldDate == null || createdAt.isAfter(oldDate)) {
+              lastPublishedMap[form.id] = createdAt;
+            }
+          }
+
           items.add(
             ScheduledItemModel(
               form: form.name,
@@ -161,9 +232,16 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
         }
       }
 
+      items.sort((a, b) {
+        final aKey = "${a.date} ${a.hour}";
+        final bKey = "${b.date} ${b.hour}";
+        return bKey.compareTo(aKey);
+      });
+
       emit(
         state.copyWith(
           publishedAssignments: items,
+          lastPublishedAtByFormId: lastPublishedMap,
           isLoadingAssignments: false,
         ),
       );
@@ -175,6 +253,18 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
         ),
       );
     }
+  }
+
+  DateTime? _extractCreatedAt(dynamic assignment) {
+    try {
+      final createdAt = assignment.createdAt;
+
+      if (createdAt != null && createdAt.toString().trim().isNotEmpty) {
+        return DateTime.parse(createdAt.toString()).toUtc();
+      }
+    } catch (_) {}
+
+    return null;
   }
 
   String _mapTargetToArabic(String target) {
@@ -190,7 +280,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
     }
   }
 
-Future<List<String>> _buildPatientNames(dynamic assignment) async {
+  Future<List<String>> _buildPatientNames(dynamic assignment) async {
     if (assignment.target == "ALL_PATIENTS") return ["كل المرضى"];
 
     final name = assignment.patient?.fullName;
@@ -207,6 +297,7 @@ Future<List<String>> _buildPatientNames(dynamic assignment) async {
 
     try {
       final patient = await repo.getPatientById(patientId.toString());
+
       return patient.fullName.trim().isEmpty
           ? ["غير محدد"]
           : [patient.fullName];

@@ -55,8 +55,8 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     },
   ),
   FeatureItem(
-    title: 'إضافة أسئلة',
-    subtitle: 'إنشاء نماذج أسئلة',
+    title: 'إضافة أسئلة ',
+    subtitle: 'إنشاء نماذج أسئلة و تعديلها',
     icon: Icons.edit_note,
     onTap: () {
       context.push('/add_questionnaire');
@@ -78,6 +78,7 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
       context.push('/questionnaire_filler');
     },
   ),
+
 ];
 
 final demoPatients = <PatientDiagnosisItem>[

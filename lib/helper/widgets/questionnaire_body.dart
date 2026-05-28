@@ -15,15 +15,28 @@ class QuestionItem {
   final int id;
   final GlobalKey<QuestionnaireBodyState> key;
   bool isDeleting;
+  final Map<String, dynamic>? initialData;
 
-  QuestionItem({required this.id, required this.key, this.isDeleting = false});
+  QuestionItem({
+    required this.id,
+    required this.key,
+    this.isDeleting = false,
+    this.initialData,
+  });
 }
+
 class AnswerItemModel {
-  final TextEditingController answerController = TextEditingController();
-  final TextEditingController scoreController = TextEditingController(
-    text: '0',
-  );
-bool isDeleting = false;
+  final TextEditingController answerController;
+  final TextEditingController scoreController;
+  bool isDeleting;
+
+  AnswerItemModel({
+    String answer = '',
+    String score = '0',
+    this.isDeleting = false,
+  }) : answerController = TextEditingController(text: answer),
+       scoreController = TextEditingController(text: score);
+
   void dispose() {
     answerController.dispose();
     scoreController.dispose();
@@ -62,10 +75,20 @@ class DiagnosisRangeValidationData {
 }
 
 class DiagnosisItemModel {
-  final TextEditingController fromController = TextEditingController(text: '0');
-  final TextEditingController toController = TextEditingController(text: '100');
-  final TextEditingController diagnosisController = TextEditingController();
-bool isDeleting = false;
+  final TextEditingController fromController;
+  final TextEditingController toController;
+  final TextEditingController diagnosisController;
+  bool isDeleting;
+
+  DiagnosisItemModel({
+    String from = '0',
+    String to = '100',
+    String diagnosis = '',
+    this.isDeleting = false,
+  }) : fromController = TextEditingController(text: from),
+       toController = TextEditingController(text: to),
+       diagnosisController = TextEditingController(text: diagnosis);
+
   void dispose() {
     fromController.dispose();
     toController.dispose();
@@ -159,7 +182,7 @@ class _AnimatedRemoveState extends State<AnimatedRemove>
       axisAlignment: -1,
       child: FadeTransition(
         opacity: fadeAnimation,
-        child: SlideTransition(position: slideAnimation, child:  widget.child),
+        child: SlideTransition(position: slideAnimation, child: widget.child),
       ),
     );
   }
@@ -201,6 +224,7 @@ class LabeledInput extends StatelessWidget {
   final int maxLines;
   final double w;
   final bool isTitle;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -249,59 +273,6 @@ class AddOutlineButton extends StatelessWidget {
         textStyle: const TextStyle(
           fontFamily: 'ArabicCustomFont',
           fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-}
-
-class GradientMainButton extends StatelessWidget {
-  const GradientMainButton({
-    super.key,
-    required this.title,
-    required this.onPressed,
-    this.icon,
-  });
-
-  final String title;
-  final VoidCallback onPressed;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [surveyPink, surveyPurple]),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: surveyPink.withOpacity(.22),
-              blurRadius: 18,
-              offset: const Offset(0, 7),
-            ),
-          ],
-        ),
-        child: ElevatedButton.icon(
-          onPressed: onPressed,
-          icon: Icon(icon ?? Icons.add_circle_outline_rounded),
-          label: Text(title),
-          style: ElevatedButton.styleFrom(
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            textStyle: const TextStyle(
-              fontFamily: 'ArabicCustomFont',
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-          ),
         ),
       ),
     );
@@ -376,6 +347,7 @@ class QuestionTypeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
@@ -494,11 +466,13 @@ class QuestionnaireBody extends StatefulWidget {
     required this.questionIndex,
     required this.canDeleteQuestion,
     required this.onDeleteQuestion,
+    this.initialData,
   });
 
   final int questionIndex;
   final bool canDeleteQuestion;
   final VoidCallback onDeleteQuestion;
+  final Map<String, dynamic>? initialData;
 
   @override
   State<QuestionnaireBody> createState() => QuestionnaireBodyState();
@@ -508,7 +482,51 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
   QuestionType questionType = QuestionType.multiple;
   final TextEditingController questionController = TextEditingController();
 
-  final List<AnswerItemModel> answers = [AnswerItemModel(), AnswerItemModel()];
+  final List<AnswerItemModel> answers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+
+  void _loadInitialData() {
+    final data = widget.initialData;
+
+    if (data == null) {
+      answers.addAll([AnswerItemModel(), AnswerItemModel()]);
+      return;
+    }
+
+    questionController.text = data["text"]?.toString() ?? "";
+
+    final type = data["type"]?.toString() ?? "MULTI_SELECT";
+
+    questionType = type == "SINGLE_SELECT"
+        ? QuestionType.single
+        : QuestionType.multiple;
+
+    final choices = data["choices"] as List? ?? [];
+
+    if (choices.isEmpty) {
+      answers.addAll([AnswerItemModel(), AnswerItemModel()]);
+      return;
+    }
+
+    for (final choice in choices) {
+      answers.add(
+        AnswerItemModel(
+          answer: choice["label"]?.toString() ?? "",
+          score: choice["score"]?.toString() ?? "0",
+        ),
+      );
+    }
+
+    if (answers.length < 2) {
+      answers.add(AnswerItemModel());
+    }
+  }
+
   QuestionValidationData getQuestionData() {
     return QuestionValidationData(
       questionText: questionController.text.trim(),
@@ -525,9 +543,11 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
   @override
   void dispose() {
     questionController.dispose();
+
     for (final answer in answers) {
       answer.dispose();
     }
+
     super.dispose();
   }
 
@@ -535,14 +555,15 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
     setState(() => answers.add(AnswerItemModel()));
   }
 
-void removeAnswer(int index) {
+  void removeAnswer(int index) {
     if (answers.length <= 2) return;
 
     setState(() {
-   answers[index].isDeleting = true;
+      answers[index].isDeleting = true;
     });
   }
-void deleteAnswerAfterAnimation(int index) {
+
+  void deleteAnswerAfterAnimation(int index) {
     if (index < 0 || index >= answers.length) return;
 
     final removedAnswer = answers[index];
@@ -553,9 +574,11 @@ void deleteAnswerAfterAnimation(int index) {
 
     removedAnswer.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Container(
@@ -625,7 +648,7 @@ void deleteAnswerAfterAnimation(int index) {
               w: w,
             ),
             const SizedBox(height: 12),
-...List.generate(
+            ...List.generate(
               answers.length,
               (index) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -651,36 +674,6 @@ void deleteAnswerAfterAnimation(int index) {
             const SizedBox(height: 8),
             AddOutlineButton(title: 'إضافة خيار', onPressed: addAnswer),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class NumberInput extends StatelessWidget {
-  const NumberInput({super.key, required this.label, required this.controller});
-
-  final String label;
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      textAlign: TextAlign.center,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Colors.white,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade200),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: surveyPurple),
         ),
       ),
     );
@@ -775,11 +768,47 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
     }).toList();
   }
 
+  void setDiagnosisRangesFromApi(List<dynamic> ranges) {
+    for (final item in diagnosisItems) {
+      item.dispose();
+    }
+
+    diagnosisItems.clear();
+
+    for (final range in ranges) {
+      diagnosisItems.add(
+        DiagnosisItemModel(
+          from: range["minScore"]?.toString() ?? "0",
+          to: range["maxScore"]?.toString() ?? "100",
+          diagnosis: range["label"]?.toString() ?? "",
+        ),
+      );
+    }
+
+    if (diagnosisItems.isEmpty) {
+      diagnosisItems.add(DiagnosisItemModel());
+    }
+
+    setState(() {});
+  }
+
+  void resetRanges() {
+    for (final item in diagnosisItems) {
+      item.dispose();
+    }
+
+    diagnosisItems.clear();
+    diagnosisItems.add(DiagnosisItemModel());
+
+    setState(() {});
+  }
+
   @override
   void dispose() {
     for (final item in diagnosisItems) {
       item.dispose();
     }
+
     super.dispose();
   }
 
@@ -787,14 +816,15 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
     setState(() => diagnosisItems.add(DiagnosisItemModel()));
   }
 
-void removeDiagnosis(int index) {
+  void removeDiagnosis(int index) {
     if (diagnosisItems.length == 1) return;
 
     setState(() {
       diagnosisItems[index].isDeleting = true;
     });
   }
-void deleteDiagnosisAfterAnimation(int index) {
+
+  void deleteDiagnosisAfterAnimation(int index) {
     if (index < 0 || index >= diagnosisItems.length) return;
 
     final removedItem = diagnosisItems[index];
@@ -805,9 +835,11 @@ void deleteDiagnosisAfterAnimation(int index) {
 
     removedItem.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Container(
@@ -838,7 +870,7 @@ void deleteDiagnosisAfterAnimation(int index) {
               size: w * 0.009,
             ),
             const SizedBox(height: 22),
-...List.generate(
+            ...List.generate(
               diagnosisItems.length,
               (index) => Padding(
                 padding: const EdgeInsets.only(bottom: 14),
@@ -880,6 +912,7 @@ class QuestionnairePageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+
     return Column(
       children: [
         Icon(Icons.assignment_add, size: w * 0.04, color: Colors.pink),
@@ -908,6 +941,7 @@ class SurveyTitleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Container(

@@ -20,6 +20,12 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
   final TextEditingController surveyTitleController = TextEditingController();
 
   bool isSaving = false;
+  bool isLoadingForms = false;
+  bool isEditMode = false;
+
+  String? editingFormId;
+
+  List<Map<String, dynamic>> availableForms = [];
 
   final List<QuestionItem> questions = [
     QuestionItem(
@@ -32,9 +38,40 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
       GlobalKey<DiagnosisSectionState>();
 
   @override
+  void initState() {
+    super.initState();
+    loadAvailableForms();
+  }
+
+  @override
   void dispose() {
     surveyTitleController.dispose();
     super.dispose();
+  }
+
+  Future<void> loadAvailableForms() async {
+    setState(() => isLoadingForms = true);
+
+    try {
+      final response = await formRepository.getForms();
+
+      availableForms = response.data.map((form) {
+        return {"id": form.id, "name": form.name, "key": form.key};
+      }).toList();
+    } catch (e) {
+      if (!mounted) return;
+
+      customDialog(
+        context: context,
+        title: 'خطأ',
+        message: 'حدث خطأ أثناء تحميل النماذج.',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isLoadingForms = false);
+      }
+    }
   }
 
   void addQuestion() {
@@ -91,7 +128,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
     return scores.reduce((a, b) => a > b ? a : b);
   }
 
-String? validateBeforeSave() {
+  String? validateBeforeSave() {
     final title = surveyTitleController.text.trim();
 
     if (title.isEmpty) {
@@ -201,6 +238,7 @@ String? validateBeforeSave() {
 
     return null;
   }
+
   List<Map<String, dynamic>> buildQuestionsBody() {
     final questionsBody = <Map<String, dynamic>>[];
 
@@ -267,22 +305,44 @@ String? validateBeforeSave() {
     try {
       final questionsBody = buildQuestionsBody();
       final scoreRangesBody = buildScoreRangesBody();
-      await formRepository.createForm(
-        formName: surveyTitleController.text.trim(),
-        questions: questionsBody,
-        diagnoses: scoreRangesBody,
-      );
+
+      if (isEditMode && editingFormId != null) {
+        final body = {
+          "key": surveyTitleController.text.trim().toUpperCase().replaceAll(
+            ' ',
+            '_',
+          ),
+          "name": surveyTitleController.text.trim(),
+          "scoringType": "SUM",
+          "interpretationMode": "RANGE",
+          "questions": questionsBody,
+          "scoreRanges": scoreRangesBody,
+        };
+
+        await formRepository.updateFormRaw(formId: editingFormId!, body: body);
+      } else {
+        await formRepository.createForm(
+          formName: surveyTitleController.text.trim(),
+          questions: questionsBody,
+          diagnoses: scoreRangesBody,
+        );
+      }
 
       if (!mounted) return;
 
+      await loadAvailableForms();
+
       customDialog(
         context: context,
-        title: 'تم الحفظ',
-        message: 'تم حفظ الاستبيان بنجاح.',
+        title: isEditMode ? 'تم التعديل' : 'تم الحفظ',
+        message: isEditMode
+            ? 'تم تعديل الاستبيان بنجاح.'
+            : 'تم حفظ الاستبيان بنجاح.',
         isSuccess: true,
       );
-    } catch (e) {
 
+      resetEditor();
+    } catch (e) {
       if (!mounted) return;
 
       customDialog(
@@ -298,6 +358,125 @@ String? validateBeforeSave() {
     }
   }
 
+  Future<void> editForm(String formId) async {
+    try {
+      final json = await formRepository.getFormByIdRaw(formId);
+
+      final formName = json["name"]?.toString() ?? "";
+      final currentVersion = json["currentVersion"] ?? {};
+      final apiQuestions = currentVersion["questions"] as List? ?? [];
+      final apiRanges = currentVersion["scoreRanges"] as List? ?? [];
+
+      setState(() {
+        isEditMode = true;
+        editingFormId = formId;
+        surveyTitleController.text = formName;
+
+        questions.clear();
+
+        for (int i = 0; i < apiQuestions.length; i++) {
+          questions.add(
+            QuestionItem(
+              id: DateTime.now().millisecondsSinceEpoch + i,
+              key: GlobalKey<QuestionnaireBodyState>(),
+              initialData: apiQuestions[i],
+            ),
+          );
+        }
+
+        if (questions.isEmpty) {
+          questions.add(
+            QuestionItem(
+              id: DateTime.now().millisecondsSinceEpoch,
+              key: GlobalKey<QuestionnaireBodyState>(),
+            ),
+          );
+        }
+
+        diagnosisKey.currentState?.setDiagnosisRangesFromApi(apiRanges);
+      });
+
+      customDialog(
+        context: context,
+        title: 'وضع التعديل',
+        message: 'تم تحميل الاستبيان للتعديل.',
+        isInfo: true,
+      );
+    } catch (e) {
+      customDialog(
+        context: context,
+        title: 'خطأ',
+        message: 'حدث خطأ أثناء تحميل الاستبيان للتعديل.',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> deleteForm(String formId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('حذف الاستبيان'),
+          content: const Text('هل أنت متأكد من حذف هذا الاستبيان؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('حذف', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await formRepository.deleteForm(formId: formId);
+      await loadAvailableForms();
+
+      if (editingFormId == formId) {
+        resetEditor();
+      }
+
+      customDialog(
+        context: context,
+        title: 'تم الحذف',
+        message: 'تم حذف الاستبيان بنجاح.',
+        isSuccess: true,
+      );
+    } catch (e) {
+      customDialog(
+        context: context,
+        title: 'خطأ',
+        message: 'حدث خطأ أثناء حذف الاستبيان.',
+        isError: true,
+      );
+    }
+  }
+
+  void resetEditor() {
+    setState(() {
+      isEditMode = false;
+      editingFormId = null;
+      surveyTitleController.clear();
+
+      questions.clear();
+      questions.add(
+        QuestionItem(
+          id: DateTime.now().millisecondsSinceEpoch,
+          key: GlobalKey<QuestionnaireBodyState>(),
+        ),
+      );
+
+      diagnosisKey.currentState?.resetRanges();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final h = getScreenHeight(context);
@@ -306,7 +485,7 @@ String? validateBeforeSave() {
     return Scaffold(
       appBar: customAppBar(
         context: context,
-        title: 'إضافة استبيان جديد',
+        title: isEditMode ? 'تعديل استبيان' : 'إضافة استبيان جديد',
         isHomeBar: false,
       ),
       body: Container(
@@ -338,16 +517,13 @@ String? validateBeforeSave() {
                   child: Column(
                     children: [
                       const QuestionnairePageHeader(),
-            
                       SizedBox(height: h * 0.035),
-            
                       SurveyTitleCard(controller: surveyTitleController),
-            
                       SizedBox(height: h * 0.025),
-            
+
                       ...List.generate(questions.length, (index) {
                         final question = questions[index];
-            
+
                         return Padding(
                           key: ValueKey(question.id),
                           padding: EdgeInsets.only(bottom: h * 0.025),
@@ -360,6 +536,7 @@ String? validateBeforeSave() {
                                     questionIndex: index + 1,
                                     canDeleteQuestion: false,
                                     onDeleteQuestion: () {},
+                                    initialData: question.initialData,
                                   ),
                                 )
                               : AnimatedAdd(
@@ -368,35 +545,61 @@ String? validateBeforeSave() {
                                     key: question.key,
                                     questionIndex: index + 1,
                                     canDeleteQuestion: questions.length > 1,
-                                    onDeleteQuestion: () => removeQuestion(index),
+                                    onDeleteQuestion: () =>
+                                        removeQuestion(index),
+                                    initialData: question.initialData,
                                   ),
                                 ),
                         );
                       }),
-            
+
                       CustomGlowButton(
                         title: 'إنشاء سؤال جديد',
                         onPressed: addQuestion,
                         icon: Icons.add,
                         isGradient: true,
                       ),
-            
+
                       SizedBox(height: h * 0.03),
-            
+
                       DiagnosisSection(key: diagnosisKey),
-            
+
                       SizedBox(height: h * 0.03),
-            
-                      CustomGlowButton(
-                        title: isSaving ? "جاري الحفظ..." : "حفظ الاستبيان",
-                        onPressed: () {
-                          if (!isSaving) {
-                            saveSurvey();
-                          }
-                        },
-                        isGradient: true,
-                        icon: Icons.save_outlined,
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (isEditMode)
+                          CustomGlowButton(
+                            title: 'إلغاء التعديل',
+                            onPressed: resetEditor,
+                            // textColor: Colors.white,
+                            height: h * 0.033,
+                            width: w * 0.07,
+                            textSize: w * 0.0075,
+                               icon: Icons.close,
+                            ),
+                            SizedBox(width: 12),
+                          CustomGlowButton(
+                            title: isSaving
+                                ? "جاري الحفظ..."
+                                : isEditMode
+                                ? "حفظ التعديلات"
+                                : "حفظ الاستبيان",
+                            onPressed: () {
+                              if (!isSaving) {
+                                saveSurvey();
+                              }
+                            },
+                            isGradient: true,
+                            icon: Icons.save_outlined,
+                          ),
+                        ],
                       ),
+
+                      SizedBox(height: h * 0.05),
+
+                      _availableFormsWidget(h, w),
                     ],
                   ),
                 ),
@@ -407,4 +610,135 @@ String? validateBeforeSave() {
       ),
     );
   }
+
+  Widget _availableFormsWidget(double h, double w) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.95),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.pink.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+                  const Icon(Icons.list_alt_rounded, color: Color(0xFFE40070)),
+           
+              SizedBox(width: 10),
+             customText(
+                text: 'النماذج المتاحة',
+                size: w * 0.015,
+                bold: true,
+                color: textColor,
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+          if (isLoadingForms)
+            customLoading()
+          else if (availableForms.isEmpty)
+            customText(
+              text: 'لا توجد نماذج محفوظة حتى الآن.',
+              size: w * 0.02,
+              color: Colors.grey,
+              bold: true,
+            )
+          else
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: availableForms.map((form) {
+                final bool active = editingFormId == form["id"];
+
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  width: 320,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: active
+                        ? const Color(0xFFFFEAF5)
+                        : const Color(0xFFFFF7FC),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: active
+                          ?  Colors.pink
+                          : Colors.pink.shade100,
+                      width: active ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.description_rounded,
+                        color: Colors.pink,
+                      ),
+                      const SizedBox(height: 8),
+                      customText(
+                        text: form["name"].toString(),
+                        size: h * 0.018,
+                        bold: true,
+                        color: const Color(0xFF7A004C),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomGlowButton(
+                              title: 'تعديل',
+                              onPressed: () => editForm(form["id"]),
+                              icon: Icons.edit,
+                              height: h * 0.035,
+                              textSize: w  * 0.01,
+                              textColor: Colors.white,
+                              backgroundColor:  Colors.pink,
+                            ),
+                          ),
+                            const SizedBox(width: 10),
+                          Expanded(
+                            child: CustomGlowButton(
+                              title: 'حذف',
+                              onPressed: () => deleteForm(form["id"]),
+                              icon: Icons.delete_outline,
+                                  textSize: w * 0.01,
+                                    height: h * 0.035,
+                                    textColor: Colors.pink,
+
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class QuestionItem {
+  final int id;
+  final GlobalKey<QuestionnaireBodyState> key;
+  bool isDeleting;
+  final Map<String, dynamic>? initialData;
+
+  QuestionItem({
+    required this.id,
+    required this.key,
+    this.isDeleting = false,
+    this.initialData,
+  });
 }

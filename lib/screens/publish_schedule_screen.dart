@@ -52,14 +52,18 @@ class PublishScheduleScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         SizedBox(height: h * 0.04),
-                        ScheduleFormWidget(forms: state.draftForms),
+
+                        ScheduleFormWidget(forms: state.activeForms),
+
                         SizedBox(height: h * 0.04),
+
                         ScheduledListWidget(
                           scheduled: const [],
                           publishedForms: state.publishedForms,
-                           publishedAssignments: state.publishedAssignments,
+                          publishedAssignments: state.publishedAssignments,
                           isLoadingAssignments: state.isLoadingAssignments,
                         ),
+
                         SizedBox(height: h * 0.04),
                       ],
                     ),

@@ -1,6 +1,4 @@
 import 'dart:developer';
-
-import 'package:bahya_website/data/api/models/patient_model.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/service/Login_service.dart';
 import 'package:dio/dio.dart';
@@ -285,7 +283,7 @@ class WebService {
     }
   }
 
-  Future<Map<String, dynamic>> getPatientOptions({
+  Future<Map<String, dynamic>> getPatient({
     String? search,
     int page = 1,
     int pageSize = 20,
@@ -302,7 +300,7 @@ class WebService {
     return response.data;
   }
 
-  Future<Map<String, dynamic>> getVolunteerOptions({
+  Future<Map<String, dynamic>> getVolunteer({
     String? search,
     int page = 1,
     int pageSize = 5,
@@ -348,7 +346,7 @@ class WebService {
 
   Future<Map<String, dynamic>> getPatientById(String patientId) async {
     try {
-       final response = await dio.get('/patients/$patientId');
+      final response = await dio.get('/patients/$patientId');
       return response.data;
     } on DioException catch (e) {
       debugPrint("Publish DioException: ${e.response?.data ?? e.message}");
@@ -357,4 +355,121 @@ class WebService {
       throw Exception('Unexpected error : $e');
     }
   }
+  
+  Future<Map<String, dynamic>> getFormById(String formId) async {
+    try {
+      final response = await dio.get('/forms/$formId');
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("Get form DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to get form');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateForm({
+    required String formId,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final response = await dio.put('/forms/$formId', data: body);
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("Update form DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to update form');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> createAssessment({
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final response = await dio.post('/assessments', data: body);
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint(
+        "Create assessment DioException: ${e.response?.data ?? e.message}",
+      );
+      throw Exception(e.response?.data ?? 'Failed to create assessment');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getPendingSubmissions() async {
+    try {
+      final response = await dio.get('/assessments/submissions/pending');
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint(
+        "Pending submissions DioException: ${e.response?.data ?? e.message}",
+      );
+      throw Exception(e.response?.data ?? 'Failed to get pending submissions');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getSubmissionById(String submissionId) async {
+    try {
+      final response = await dio.get('/assessments/submissions/$submissionId');
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("Submission DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to get submission');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<dynamic> getPatientAssessments(String patientId) async {
+    try {
+      final response = await dio.get('/assessments/patient/$patientId');
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint(
+        "Patient assessments DioException: ${e.response?.data ?? e.message}",
+      );
+      throw Exception(e.response?.data ?? 'Failed to get patient assessments');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getAssessmentById(String assessmentId) async {
+    try {
+      final response = await dio.get('/assessments/$assessmentId');
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("Assessment DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to get assessment');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+Future<void> deleteForm({required String formId}) async {
+    try {
+      await dio.delete('/forms/$formId');
+    } on DioException catch (e) {
+      debugPrint("Delete Form DioException: ${e.response?.data ?? e.message}");
+      throw Exception(e.response?.data ?? 'Failed to delete form');
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+Future<void> changeFormStatus({
+    required String formId,
+    required bool isActive,
+  }) async {
+    await dio.patch(
+      '/forms/$formId/status',
+      data: {"isActive": isActive},
+    );
+  }
 }
+
