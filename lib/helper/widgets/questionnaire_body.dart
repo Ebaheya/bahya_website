@@ -215,6 +215,7 @@ class LabeledInput extends StatelessWidget {
     this.maxLines = 1,
     required this.w,
     this.isTitle = false,
+    this.isEditing = true,
   });
 
   final String label;
@@ -224,7 +225,7 @@ class LabeledInput extends StatelessWidget {
   final int maxLines;
   final double w;
   final bool isTitle;
-
+  final bool isEditing;
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -239,6 +240,7 @@ class LabeledInput extends StatelessWidget {
               : CustomTextFieldType.text,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           controller: controller,
+          readOnly: !isEditing,
           textDirection: TextDirection.rtl,
           maxLines: maxLines,
         ),
@@ -934,9 +936,10 @@ class QuestionnairePageHeader extends StatelessWidget {
 }
 
 class SurveyTitleCard extends StatelessWidget {
-  const SurveyTitleCard({super.key, required this.controller});
+  const SurveyTitleCard({super.key, required this.controller , required this.isEditing});
 
   final TextEditingController controller;
+  final bool isEditing;
 
   @override
   Widget build(BuildContext context) {
