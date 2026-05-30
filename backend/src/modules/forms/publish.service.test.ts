@@ -182,6 +182,83 @@ describe('publishForm', () => {
     expect(emitFormAssignedMock).toHaveBeenCalledTimes(2);
   });
 
+  it('fans out to a deduplicated set of selected patients', async () => {
+    const tx = transactionTx();
+    tx.patient.findMany.mockResolvedValue([
+      { id: 'patient-1', userId: 'user-1' },
+      { id: 'patient-2', userId: 'user-2' },
+    ]);
+    tx.formAssignment.createManyAndReturn.mockResolvedValue([
+      { id: 'assignment-1', patientId: 'patient-1', assignedToUserId: null, target: 'SELECTED_PATIENTS' },
+      { id: 'assignment-2', patientId: 'patient-2', assignedToUserId: null, target: 'SELECTED_PATIENTS' },
+    ]);
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      publishService.publishForm(
+        'form-1',
+        publishFormSchema.parse({
+          target: 'SELECTED_PATIENTS',
+          patientIds: [
+            '11111111-1111-1111-1111-111111111111',
+            '22222222-2222-2222-2222-222222222222',
+            '11111111-1111-1111-1111-111111111111',
+          ],
+        }),
+        'doctor-1'
+      )
+    ).resolves.toEqual({
+      assignmentsCreated: 2,
+      assignmentIds: ['assignment-1', 'assignment-2'],
+    });
+
+    expect(tx.patient.findMany).toHaveBeenCalledWith({
+      where: {
+        id: {
+          in: [
+            '11111111-1111-1111-1111-111111111111',
+            '22222222-2222-2222-2222-222222222222',
+          ],
+        },
+        user: { is: { role: 'PATIENT', isActive: true } },
+      },
+      select: { id: true, userId: true },
+    });
+    expect(tx.formAssignment.createManyAndReturn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({ patientId: 'patient-1', target: 'SELECTED_PATIENTS' }),
+          expect.objectContaining({ patientId: 'patient-2', target: 'SELECTED_PATIENTS' }),
+        ],
+      })
+    );
+    expect(emitFormAssignedMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects the whole publish when a selected patient is missing or inactive', async () => {
+    const tx = transactionTx();
+    // Two ids requested, only one active patient returned -> all-or-nothing reject.
+    tx.patient.findMany.mockResolvedValue([{ id: 'patient-1', userId: 'user-1' }]);
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      publishService.publishForm(
+        'form-1',
+        publishFormSchema.parse({
+          target: 'SELECTED_PATIENTS',
+          patientIds: [
+            '11111111-1111-1111-1111-111111111111',
+            '22222222-2222-2222-2222-222222222222',
+          ],
+        }),
+        'doctor-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
+
+    expect(tx.formAssignment.createManyAndReturn).not.toHaveBeenCalled();
+    expect(emitFormAssignedMock).not.toHaveBeenCalled();
+  });
+
   it('returns no assignments when there are no active patients to publish to', async () => {
     const tx = transactionTx();
     tx.patient.findMany.mockResolvedValue([]);

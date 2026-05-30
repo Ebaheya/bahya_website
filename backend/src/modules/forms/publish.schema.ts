@@ -23,6 +23,13 @@ export const publishFormSchema = z.discriminatedUnion('target', [
     .strict(),
   z
     .object({
+      target: z.literal('SELECTED_PATIENTS'),
+      patientIds: z.array(z.string().uuid()).min(1).max(200),
+      publishAt: publishAtSchema,
+    })
+    .strict(),
+  z
+    .object({
       target: z.literal('VOLUNTEER_FOR_PATIENT'),
       patientId: z.string().uuid(),
       volunteerId: z.string().uuid(),

@@ -154,6 +154,19 @@
           }
         },
         {
+          "name": "Publish Form - SELECTED_PATIENTS",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}", "publish"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target\": \"SELECTED_PATIENTS\",\n  \"patientIds\": [\"{{patientId}}\"],\n  \"publishAt\": null\n}"
+            },
+            "description": "Fans out one assignment per listed patient. patientIds: 1-200 UUIDs, deduplicated. All-or-nothing: any non-existent/inactive patient -> 404 NOT_FOUND and nothing is published."
+          }
+        },
+        {
           "name": "Publish Form - VOLUNTEER_FOR_PATIENT",
           "request": {
             "method": "POST",

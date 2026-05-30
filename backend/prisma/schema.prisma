@@ -47,6 +47,7 @@ enum FormQuestionType {
 enum FormAssignmentTarget {
   SINGLE_PATIENT
   ALL_PATIENTS
+  SELECTED_PATIENTS
   VOLUNTEER_FOR_PATIENT
 }
 

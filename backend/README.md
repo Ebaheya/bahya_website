@@ -226,7 +226,9 @@ Exceeding a bucket returns `429` with standard `RateLimit-*` headers.
 `publishAt` in the future creates `SCHEDULED` assignments that stay invisible
 until a background due-sweep promotes them to `PUBLISHED` and notifies the
 recipient; a past or null `publishAt` publishes immediately. `ALL_PATIENTS`
-fans out one assignment per active patient, resolved at publish time.
+fans out one assignment per active patient, resolved at publish time;
+`SELECTED_PATIENTS` does the same for a chosen `patientIds` list (1–200,
+deduplicated, all-or-nothing — any inactive/unknown id rejects the whole publish).
 
 **Filling & submitting** (`/form-assignments`, Patient + Volunteer):
 
@@ -1608,6 +1610,16 @@ Set `{{patientId}}` from `GET /patients/options`.
 { "target": "ALL_PATIENTS", "publishAt": null }
 ```
 
+**A chosen subset of patients**
+
+Set `{{patientId}}` values from `GET /patients/options`. `patientIds` accepts
+1–200 UUIDs and is deduplicated. The publish is all-or-nothing: if any id is not
+an active patient the request returns **404** `NOT_FOUND` and nothing is created.
+
+```json
+{ "target": "SELECTED_PATIENTS", "patientIds": ["{{patientId}}"], "publishAt": null }
+```
+
 **Volunteer filling for a patient**
 
 Set `{{patientId}}` from `GET /patients/options` and `{{volunteerId}}` from
@@ -1653,7 +1665,8 @@ pm.environment.set("assignmentId", body.assignmentIds[0]);
   result and creates a notification.
 - A future publication remains hidden until the scheduled sweep publishes it.
 - `ALL_PATIENTS` may return `assignmentsCreated: 0` when there are no active
-  patient users.
+  patient users. `SELECTED_PATIENTS` always creates one assignment per listed
+  id on success (it rejects rather than partially fanning out).
 - A selected patient or volunteer must still be active when the publish
   request is processed.
 

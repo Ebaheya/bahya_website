@@ -93,6 +93,23 @@ export async function publishForm(
         assignedToUserId: null,
         target: 'ALL_PATIENTS',
       }));
+    } else if (input.target === 'SELECTED_PATIENTS') {
+      const uniqueIds = [...new Set(input.patientIds)];
+      const patients = await tx.patient.findMany({
+        where: { id: { in: uniqueIds }, user: { is: { role: 'PATIENT', isActive: true } } },
+        select: { id: true, userId: true },
+      });
+      // All-or-nothing: if any requested patient is missing or inactive the whole
+      // publish is rejected, so the caller never gets a silent partial fan-out.
+      if (patients.length !== uniqueIds.length) {
+        throw AppError.notFound('One or more selected patients not found');
+      }
+      recipients = patients.map((patient) => ({
+        patientId: patient.id,
+        patientUserId: patient.userId,
+        assignedToUserId: null,
+        target: 'SELECTED_PATIENTS',
+      }));
     } else {
       const patient = await tx.patient.findUnique({
         where: { id: input.patientId },
