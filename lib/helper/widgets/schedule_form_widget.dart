@@ -30,65 +30,7 @@ Widget scheduleLabel({required BuildContext context, required String title}) {
   );
 }
 
-Widget scheduleDropdown({
-  required BuildContext context,
-  required String? value,
-  required String hint,
-  required List<String> items,
-  required IconData icon,
-  required ValueChanged<String?> onChanged,
-}) {
-  final h = getScreenHeight(context);
 
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 18),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFF2C9E0)),
-    ),
-    child: DropdownButtonHideUnderline(
-      child: DropdownButton<String>(
-        value: value,
-        isExpanded: true,
-        icon: const Icon(Icons.keyboard_arrow_down_rounded),
-        borderRadius: BorderRadius.circular(16),
-        dropdownColor: Colors.white,
-        hint: Row(
-          children: [
-            Icon(icon, color: const Color(0xFF7B1FA2), size: 22),
-            const SizedBox(width: 10),
-            customText(text: hint, size: h * 0.018, color: Colors.black38),
-          ],
-        ),
-        selectedItemBuilder: (context) {
-          return items.map((e) {
-            return Center(
-              child: customText(
-                text: e,
-                size: h * 0.019,
-                bold: true,
-                color: const Color(0xFF2B2B2B),
-              ),
-            );
-          }).toList();
-        },
-        items: items.map((e) {
-          return DropdownMenuItem<String>(
-            alignment: Alignment.centerRight,
-            value: e,
-            child: customText(
-              text: e,
-              size: h * 0.019,
-              color: const Color(0xFF2B2B2B),
-            ),
-          );
-        }).toList(),
-        onChanged: onChanged,
-      ),
-    ),
-  );
-}
 
 Widget schedulePickerField({
   required BuildContext context,
@@ -179,7 +121,7 @@ Widget scheduleCodeInputSection({
             ),
           ),
           const SizedBox(width: 16),
-if (showAddButton) ...[
+          if (showAddButton) ...[
             const SizedBox(width: 16),
             CustomGlowButton(
               title: "إضافة",

@@ -5,6 +5,7 @@ import 'package:bahya_website/data/api/models/options_model.dart';
 import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_date_picker.dart';
+import 'package:bahya_website/helper/custom_dropDown.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/custom_time_picker.dart';
 import 'package:bahya_website/helper/strings.dart';
@@ -127,7 +128,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
         children: [
           scheduleLabel(context: context, title: "اختر نموذجًا للنشر"),
           const SizedBox(height: 20),
-          scheduleDropdown(
+          customDropdown(
             context: context,
             value: selectedForm?.name,
             hint: "اختر نموذج من القائمة",
@@ -150,7 +151,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
           const SizedBox(height: 30),
           scheduleLabel(context: context, title: "الفئة المستهدفة"),
           const SizedBox(height: 20),
-          scheduleDropdown(
+          customDropdown(
             context: context,
             value: targetType,
             hint: "اختر المرضى أو المتطوعين",
@@ -238,7 +239,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
         const SizedBox(height: 30),
         scheduleLabel(context: context, title: "نوع النشر"),
         const SizedBox(height: 20),
-        scheduleDropdown(
+        customDropdown(
           context: context,
           value: patientPublishType,
           hint: "اختر نوع النشر",

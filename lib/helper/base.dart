@@ -108,6 +108,7 @@ PreferredSizeWidget customAppBar({
   required String title,
   bool isHomeBar = true,
   GlobalKey<ScaffoldState>? scaffoldKey,
+  List<Widget>? widgets,
 }) {
   final h = getScreenHeight(context);
   final w = getScreenWidth(context);
@@ -162,7 +163,9 @@ PreferredSizeWidget customAppBar({
                         SizedBox(width: w * 0.02),
                       ],
                     )
-                  : SizedBox.shrink(),
+                  : widgets != null
+                      ? Row(children: widgets)
+                      : const SizedBox(),
 
               Row(
                 children: [
