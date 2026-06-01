@@ -1,3 +1,4 @@
+import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -93,9 +94,8 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     }
   }
 
-String? _validate(String? value) {
+  String? _validate(String? value) {
     final text = value?.trim() ?? '';
-
     String? error;
 
     if (widget.isRequired && text.isEmpty) {
@@ -178,7 +178,6 @@ String? _validate(String? value) {
     floatingError = error;
 
     if (error == null) return null;
-
     return widget.showInlineError ? '' : error;
   }
 
@@ -226,7 +225,6 @@ String? _validate(String? value) {
 
   @override
   Widget build(BuildContext context) {
-    final width = getScreenWidth(context);
     final isScore = widget.keyboardType == CustomTextFieldType.score;
 
     return Stack(
@@ -243,13 +241,11 @@ String? _validate(String? value) {
             }
           },
           keyboardType: _mapKeyboardType(widget.keyboardType),
-
           textAlign: widget.centerHint
               ? TextAlign.center
               : widget.textDirection == TextDirection.ltr
               ? TextAlign.left
               : TextAlign.right,
-
           controller: widget.controller,
           obscureText: _obscureText,
           validator: (value) {
@@ -274,7 +270,7 @@ String? _validate(String? value) {
           expands: false,
           style: TextStyle(
             color: Colors.black,
-            fontSize: width * 0.01,
+            fontSize: responsiveSize(context, 0.0075, min: 12, max: 15),
             fontFamily: 'ArabicCustomFont',
           ),
           decoration: InputDecoration(
@@ -282,10 +278,12 @@ String? _validate(String? value) {
             counterText: '',
             suffixIcon: widget.obscureText
                 ? Padding(
-                    padding: const EdgeInsets.all(8.0),
+                    padding: EdgeInsets.all(
+                      responsiveSize(context, 0.005, min: 6, max: 8),
+                    ),
                     child: Container(
-                      width: 30,
-                      height: 30,
+                      width: responsiveSize(context, 0.02, min: 28, max: 34),
+                      height: responsiveSize(context, 0.02, min: 28, max: 34),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.pink.shade100.withOpacity(0.5),
@@ -299,17 +297,26 @@ String? _validate(String? value) {
                               ? Icons.visibility
                               : Icons.visibility_off,
                           color: Colors.pink,
-                          size: width * 0.015,
+                          size: responsiveSize(
+                            context,
+                            0.014,
+                            min: 18,
+                            max: 24,
+                          ),
                         ),
                       ),
                     ),
                   )
                 : widget.suffixIcon,
-            suffixIconConstraints: const BoxConstraints(
-              maxHeight: 100,
-              maxWidth: 100,
+            suffixIconConstraints: BoxConstraints(
+              maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
+              maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
             ),
             prefixIcon: widget.prefixIcon,
+            prefixIconConstraints: BoxConstraints(
+              maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
+              maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
+            ),
             hintText: widget.hintText,
             labelText: widget.labelText,
             hintTextDirection: widget.centerHint
@@ -317,58 +324,64 @@ String? _validate(String? value) {
                 : widget.textDirection,
             labelStyle: TextStyle(
               color: Colors.black,
-              fontSize: width * 0.01,
+              fontSize: responsiveSize(context, 0.008, min: 12, max: 16),
               fontFamily: 'ArabicCustomFont',
             ),
             hintStyle: TextStyle(
               color: Colors.grey,
-              fontSize: width * 0.01,
+              fontSize: responsiveSize(context, 0.008, min: 12, max: 16),
               fontFamily: 'ArabicCustomFont',
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 14,
-              horizontal: 12,
+            contentPadding: EdgeInsets.symmetric(
+              vertical: responsiveHeight(context, 0.015, min: 12, max: 16),
+              horizontal: responsiveSize(context, 0.008, min: 10, max: 14),
             ),
-           border: widget.bordered
+            border: widget.bordered
                 ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+                    borderRadius: BorderRadius.circular(
+                      responsiveSize(context, 0.006, min: 8, max: 12),
+                    ),
                     borderSide: BorderSide.none,
                   )
                 : InputBorder.none,
-
             enabledBorder: widget.bordered
                 ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+                    borderRadius: BorderRadius.circular(
+                      responsiveSize(context, 0.006, min: 8, max: 12),
+                    ),
                     borderSide: BorderSide(
                       color: Colors.pink.shade300,
                       width: 1.2,
                     ),
                   )
                 : InputBorder.none,
-
             focusedBorder: widget.bordered
                 ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+                    borderRadius: BorderRadius.circular(
+                      responsiveSize(context, 0.006, min: 8, max: 12),
+                    ),
                     borderSide: const BorderSide(
                       color: Colors.pink,
                       width: 1.5,
                     ),
                   )
                 : InputBorder.none,
-
             errorBorder: widget.bordered
                 ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+                    borderRadius: BorderRadius.circular(
+                      responsiveSize(context, 0.006, min: 8, max: 12),
+                    ),
                     borderSide: BorderSide(
                       color: Colors.red.shade400,
                       width: 1.2,
                     ),
                   )
                 : InputBorder.none,
-
             focusedErrorBorder: widget.bordered
                 ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+                    borderRadius: BorderRadius.circular(
+                      responsiveSize(context, 0.006, min: 8, max: 12),
+                    ),
                     borderSide: BorderSide(
                       color: Colors.red.shade500,
                       width: 1.5,
@@ -377,7 +390,9 @@ String? _validate(String? value) {
                 : InputBorder.none,
             errorStyle: TextStyle(
               fontFamily: 'ArabicCustomFont',
-              fontSize: isScore && widget.showInlineError ? 0 : width * 0.01,
+              fontSize: isScore && widget.showInlineError
+                  ? 0
+                  : responsiveSize(context, 0.0075, min: 11, max: 14),
               height: isScore && widget.showInlineError ? 0 : null,
             ),
           ),
@@ -386,18 +401,20 @@ String? _validate(String? value) {
         if (isScore && widget.showInlineError && floatingError != null)
           Positioned(
             left: 0,
-            top: -38,
+            top: -responsiveHeight(context, 0.045, min: 34, max: 42),
             child: CustomPaint(
               painter: ErrorBubbleArrowPainter(),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 7),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 7,
+                padding: EdgeInsets.symmetric(
+                  horizontal: responsiveSize(context, 0.008, min: 10, max: 12),
+                  vertical: responsiveHeight(context, 0.008, min: 6, max: 8),
                 ),
                 decoration: BoxDecoration(
                   color: Colors.red.shade500,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(
+                    responsiveSize(context, 0.007, min: 8, max: 10),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.red.withOpacity(.25),
@@ -409,19 +426,24 @@ String? _validate(String? value) {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.error_outline_rounded,
                       color: Colors.white,
-                      size: 16,
+                      size: responsiveSize(context, 0.01, min: 14, max: 16),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       floatingError!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontFamily: 'ArabicCustomFont',
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: responsiveSize(
+                          context,
+                          0.0068,
+                          min: 10,
+                          max: 12,
+                        ),
                       ),
                     ),
                   ],

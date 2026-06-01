@@ -30,10 +30,14 @@ class _UsersTableState extends State<UsersTable> {
     context.read<UserCubit>().getAllUserInfo();
   }
 
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
   void applyFilters() {
-    setState(() {
-      selectedPage = 1;
-    });
+    setState(() => selectedPage = 1);
 
     final cubit = context.read<UserCubit>();
 
@@ -57,261 +61,307 @@ class _UsersTableState extends State<UsersTable> {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
-    final h = getScreenHeight(context);
+    final isMobile = getScreenWidth(context) < 750;
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(w * 0.018),
+      padding: EdgeInsets.all(responsiveSize(context, 0.018, min: 14, max: 24)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.018, min: 18, max: 24),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 22,
+            blurRadius: responsiveSize(context, 0.02, min: 18, max: 26),
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                flex: 5,
-                child: modernInputBox(
-                  icon: Icons.search,
-                  child: CustomFormTextField(
-                    hintText: "Search by name or email",
-                    isSearch: true,
-                    isRequired: false,
-                    textDirection: TextDirection.ltr,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    keyboardType: CustomTextFieldType.text,
-                    controller: searchController,
-                    onChange: (_) => applyFilters(),
-                  ),
-                ),
-              ),
-              SizedBox(width: w * 0.015),
-              Expanded(
-                child: FilterDropdown(
-                  hint: "All Roles",
-                  items: const [
-                    "All",
-                    "ADMIN",
-                    "DOCTOR",
-                    "VOLUNTEER",
-                    "PATIENT",
-                    "CALL_CENTER",
-                  ],
-                  onChanged: (v) {
-                    setState(() {
-                      selectedRole = v == "All" ? null : v;
-                    });
-                    applyFilters();
-                  },
-                ),
-              ),
-              SizedBox(width: w * 0.015),
-              Expanded(
-                child: FilterDropdown(
-                  hint: "All Status",
-                  items: const ["All", "Active", "Inactive"],
-                  onChanged: (v) {
-                    setState(() {
-                      if (v == "All") {
-                        selectedStatus = null;
-                      } else if (v == "Active") {
-                        selectedStatus = true;
-                      } else {
-                        selectedStatus = false;
-                      }
-                    });
-                    applyFilters();
-                  },
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: h * 0.035),
-
-          BlocBuilder<UserCubit, UserState>(
-            builder: (context, state) {
-              if (state is UserLoading) {
-                return SizedBox(
-                  height: h * 0.45,
-                  child: Center(child: customLoading()),
-                );
-              }
-
-              if (state is UserError) {
-                return SizedBox(
-                  height: h * 0.35,
-                  child: Center(
-                    child: customText(
-                      text: state.message,
-                      size: w * 0.012,
-                      color: Colors.red,
-                      isEnglish: true,
-                    ),
-                  ),
-                );
-              }
-
-              if (state is UserLoaded || state is UserFilteredLoaded) {
-                final users = state is UserLoaded
-                    ? state.users
-                    : (state as UserFilteredLoaded).users;
-
-                final totalUsers = users.length;
-                final totalPages = totalUsers == 0
-                    ? 1
-                    : (totalUsers / usersPerPage).ceil();
-
-                if (selectedPage > totalPages) {
-                  selectedPage = totalPages;
-                }
-
-                final startIndex = totalUsers == 0
-                    ? 0
-                    : (selectedPage - 1) * usersPerPage;
-
-                final endIndex = totalUsers == 0
-                    ? 0
-                    : (startIndex + usersPerPage > totalUsers
-                          ? totalUsers
-                          : startIndex + usersPerPage);
-
-                final pageUsers = totalUsers == 0
-                    ? []
-                    : users.sublist(startIndex, endIndex);
-
-                return Column(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFCFCFF),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: Colors.grey.withOpacity(0.08),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          tableHeader(w),
-                          Divider(
-                            height: 1,
-                            color: Colors.grey.withOpacity(0.12),
-                          ),
-                          ...pageUsers.map((user) {
-                            return userRow(
-                              context: context,
-                              name: user.name,
-                              email: user.email,
-                              role: user.role,
-                              isActive: user.isActive,
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: h * 0.02),
-
-                    Row(
-                      children: [
-                        customText(
-                          text: totalUsers == 0
-                              ? "Showing 0 users"
-                              : "Showing ${startIndex + 1} to $endIndex of $totalUsers users",
-                          size: w * 0.009,
-                          color: Colors.indigo.withOpacity(0.65),
-                          isEnglish: true,
-                        ),
-
-                        const Spacer(),
-
-                        pageButton(
-                          w: w,
-                          icon: Icons.arrow_back_ios_new_rounded,
-                          selected: false,
-                          onTap: selectedPage > 1
-                              ? () => setState(() => selectedPage--)
-                              : () {},
-                        ),
-
-                        ...List.generate(totalPages, (index) {
-                          final pageNumber = index + 1;
-
-                          return pageButton(
-                            w: w,
-                            text: pageNumber.toString(),
-                            selected: selectedPage == pageNumber,
-                            onTap: () {
-                              setState(() {
-                                selectedPage = pageNumber;
-                              });
-                            },
-                          );
-                        }),
-
-                        pageButton(
-                          w: w,
-                          icon: Icons.arrow_forward_ios_rounded,
-                          selected: false,
-                          onTap: selectedPage < totalPages
-                              ? () => setState(() => selectedPage++)
-                              : () {},
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              }
-
-              return const SizedBox();
-            },
-          ),
+          isMobile ? _mobileFilters(context) : _desktopFilters(context),
+          SizedBox(height: responsiveHeight(context, 0.035, min: 22, max: 34)),
+          _usersBlocContent(context, isMobile),
         ],
       ),
     );
   }
 
-  Widget tableHeader(double w) {
+  Widget _desktopFilters(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 5,
+          child: modernInputBox(
+            icon: Icons.search,
+            child: CustomFormTextField(
+              hintText: "Search by name or email",
+              isSearch: true,
+              isRequired: false,
+              bordered: false,
+              textDirection: TextDirection.ltr,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              keyboardType: CustomTextFieldType.text,
+              controller: searchController,
+              onChange: (_) => applyFilters(),
+            ),
+          ),
+        ),
+        SizedBox(width: responsiveSize(context, 0.015, min: 14, max: 22)),
+        Expanded(child: _roleDropdown(context)),
+        SizedBox(width: responsiveSize(context, 0.015, min: 14, max: 22)),
+        Expanded(child: _statusDropdown(context)),
+      ],
+    );
+  }
+
+  Widget _mobileFilters(BuildContext context) {
+    return Column(
+      children: [
+        modernInputBox(
+          icon: Icons.search,
+          child: CustomFormTextField(
+            hintText: "Search by name or email",
+            isSearch: true,
+            isRequired: false,
+            bordered: false,
+            textDirection: TextDirection.ltr,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            keyboardType: CustomTextFieldType.text,
+            controller: searchController,
+            onChange: (_) => applyFilters(),
+          ),
+        ),
+        SizedBox(height: responsiveHeight(context, 0.016, min: 12, max: 16)),
+        SizedBox(
+          height: responsiveHeight(context, 0.06, min: 46, max: 56),
+          child: _roleDropdown(context),
+        ),
+        SizedBox(height: responsiveHeight(context, 0.016, min: 12, max: 16)),
+        SizedBox(
+          height: responsiveHeight(context, 0.06, min: 46, max: 56),
+          child: _statusDropdown(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _roleDropdown(BuildContext context) {
+    return FilterDropdown(
+      hint: selectedRole ?? "All Roles",
+      items: const [
+        "All",
+        "ADMIN",
+        "DOCTOR",
+        "VOLUNTEER",
+        "PATIENT",
+        "CALL_CENTER",
+      ],
+      onChanged: (v) {
+        setState(() {
+          selectedRole = v == "All" ? null : v;
+        });
+        applyFilters();
+      },
+    );
+  }
+
+  Widget _statusDropdown(BuildContext context) {
+    return FilterDropdown(
+      hint: selectedStatus == null
+          ? "All Status"
+          : selectedStatus == true
+          ? "Active"
+          : "Inactive",
+      items: const ["All", "Active", "Inactive"],
+      onChanged: (v) {
+        setState(() {
+          if (v == "All") {
+            selectedStatus = null;
+          } else if (v == "Active") {
+            selectedStatus = true;
+          } else {
+            selectedStatus = false;
+          }
+        });
+        applyFilters();
+      },
+    );
+  }
+
+  Widget _usersBlocContent(BuildContext context, bool isMobile) {
+    return BlocBuilder<UserCubit, UserState>(
+      builder: (context, state) {
+        if (state is UserLoading) {
+          return SizedBox(
+            height: responsiveHeight(context, 0.45, min: 280, max: 460),
+            child: Center(child: customLoading()),
+          );
+        }
+
+        if (state is UserError) {
+          return SizedBox(
+            height: responsiveHeight(context, 0.35, min: 220, max: 360),
+            child: Center(
+              child: customText(
+                text: state.message,
+                size: responsiveSize(context, 0.012, min: 14, max: 18),
+                color: Colors.red,
+                isEnglish: true,
+              ),
+            ),
+          );
+        }
+
+        if (state is UserLoaded || state is UserFilteredLoaded) {
+          final users = state is UserLoaded
+              ? state.users
+              : (state as UserFilteredLoaded).users;
+
+          final totalUsers = users.length;
+          final totalPages = totalUsers == 0
+              ? 1
+              : (totalUsers / usersPerPage).ceil();
+
+          if (selectedPage > totalPages) selectedPage = totalPages;
+
+          final startIndex = totalUsers == 0
+              ? 0
+              : (selectedPage - 1) * usersPerPage;
+
+          final endIndex = totalUsers == 0
+              ? 0
+              : (startIndex + usersPerPage > totalUsers
+                    ? totalUsers
+                    : startIndex + usersPerPage);
+
+          final pageUsers = totalUsers == 0
+              ? []
+              : users.sublist(startIndex, endIndex);
+
+          return Column(
+            children: [
+              isMobile
+                  ? _mobileUsersList(context, pageUsers)
+                  : _desktopUsersTable(context, pageUsers),
+              SizedBox(
+                height: responsiveHeight(context, 0.02, min: 14, max: 20),
+              ),
+              isMobile
+                  ? _mobilePagination(
+                      context,
+                      totalUsers,
+                      startIndex,
+                      endIndex,
+                      totalPages,
+                    )
+                  : _desktopPagination(
+                      context,
+                      totalUsers,
+                      startIndex,
+                      endIndex,
+                      totalPages,
+                    ),
+            ],
+          );
+        }
+
+        return const SizedBox();
+      },
+    );
+  }
+
+  Widget _desktopUsersTable(BuildContext context, List<dynamic> pageUsers) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCFCFF),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.018, min: 18, max: 22),
+        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.08)),
+      ),
+      child: Column(
+        children: [
+          tableHeader(context),
+          Divider(height: 1, color: Colors.grey.withOpacity(0.12)),
+          ...pageUsers.map((user) {
+            return userRow(
+              context: context,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              isActive: user.isActive,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _mobileUsersList(BuildContext context, List<dynamic> pageUsers) {
+    if (pageUsers.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: responsiveHeight(context, 0.08, min: 50, max: 80),
+        ),
+        child: customText(
+          text: "No users found",
+          size: responsiveSize(context, 0.012, min: 15, max: 18),
+          color: Colors.grey,
+          isEnglish: true,
+        ),
+      );
+    }
+
+    return Column(
+      children: pageUsers.map((user) {
+        return _UserMobileCard(
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+        );
+      }).toList(),
+    );
+  }
+
+  Widget tableHeader(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: w * 0.02, vertical: 18),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.02, min: 18, max: 26),
+        vertical: responsiveHeight(context, 0.018, min: 14, max: 18),
+      ),
       child: Row(
         children: [
-          tableTitle(w, "Name", flex: 3),
-          tableTitle(w, "Email", flex: 4),
-          tableTitle(w, "Role", flex: 2),
-          tableTitle(w, "Status", flex: 2),
-          tableTitle(w, "Actions", flex: 1),
+          tableTitle(context, "Name", flex: 3),
+          tableTitle(context, "Email", flex: 4),
+          tableTitle(context, "Role", flex: 2),
+          tableTitle(context, "Status", flex: 2),
+          tableTitle(context, "Actions", flex: 1),
         ],
       ),
     );
   }
 
-  Widget tableTitle(double w, String text, {required int flex}) {
+  Widget tableTitle(BuildContext context, String text, {required int flex}) {
     return Expanded(
       flex: flex,
       child: Row(
         children: [
           customText(
             text: text,
-            size: w * 0.009,
+            size: responsiveSize(context, 0.009, min: 13, max: 16),
             bold: true,
             isEnglish: true,
             color: const Color(0xFF4B4D8F),
           ),
-          SizedBox(width: w * 0.005),
+          SizedBox(width: responsiveSize(context, 0.005, min: 5, max: 8)),
           Icon(
             Icons.unfold_more_rounded,
             color: Colors.indigo.withOpacity(0.35),
-            size: w * 0.011,
+            size: responsiveSize(context, 0.011, min: 15, max: 20),
           ),
         ],
       ),
@@ -325,10 +375,11 @@ class _UsersTableState extends State<UsersTable> {
     required String role,
     required bool isActive,
   }) {
-    final w = getScreenWidth(context);
-
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: w * 0.02, vertical: 14),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.02, min: 18, max: 26),
+        vertical: responsiveHeight(context, 0.016, min: 12, max: 16),
+      ),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: Colors.grey.withOpacity(0.10)),
@@ -340,12 +391,14 @@ class _UsersTableState extends State<UsersTable> {
             flex: 3,
             child: Row(
               children: [
-                userAvatar(name),
-                SizedBox(width: w * 0.015),
+                userAvatar(context, name),
+                SizedBox(
+                  width: responsiveSize(context, 0.015, min: 12, max: 18),
+                ),
                 Expanded(
                   child: customText(
                     text: name,
-                    size: w * 0.009,
+                    size: responsiveSize(context, 0.009, min: 13, max: 16),
                     color: const Color(0xFF272044),
                     bold: true,
                     isEnglish: true,
@@ -359,45 +412,24 @@ class _UsersTableState extends State<UsersTable> {
             flex: 4,
             child: customText(
               text: email,
-              size: w * 0.009,
+              size: responsiveSize(context, 0.009, min: 13, max: 16),
               color: const Color(0xFF272044),
               isEnglish: true,
               maxLines: 1,
             ),
           ),
-          Expanded(flex: 2, child: roleBadge(role, w)),
-          Expanded(flex: 2, child: statusBadge(isActive, w)),
+          Expanded(flex: 2, child: roleBadge(context, role)),
+          Expanded(flex: 2, child: statusBadge(context, isActive)),
           Expanded(
             flex: 1,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.withOpacity(0.12)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child:  IconButton(
-                  icon: Icon(Icons.more_vert_rounded, color: Color(0xFF4B4D8F)),
-                  onPressed: () {},
-                ),
-              ),
-            ),
+            child: Align(alignment: Alignment.centerLeft, child: _MoreButton()),
           ),
         ],
       ),
     );
   }
 
-  Widget userAvatar(String name) {
+  Widget userAvatar(BuildContext context, String name) {
     final initial = name.isNotEmpty ? name[0].toUpperCase() : "?";
 
     final colors = [
@@ -411,11 +443,11 @@ class _UsersTableState extends State<UsersTable> {
     final color = colors[name.length % colors.length];
 
     return CircleAvatar(
-      radius: 20,
+      radius: responsiveSize(context, 0.014, min: 18, max: 22),
       backgroundColor: color,
       child: customText(
         text: initial,
-        size: 13,
+        size: responsiveSize(context, 0.008, min: 12, max: 14),
         color: const Color(0xFF272044),
         bold: true,
         isEnglish: true,
@@ -423,7 +455,7 @@ class _UsersTableState extends State<UsersTable> {
     );
   }
 
-  Widget roleBadge(String role, double w) {
+  Widget roleBadge(BuildContext context, String role) {
     Color color = Colors.grey;
     IconData icon = Icons.shield_outlined;
 
@@ -447,7 +479,10 @@ class _UsersTableState extends State<UsersTable> {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: EdgeInsets.symmetric(
+          horizontal: responsiveSize(context, 0.01, min: 10, max: 12),
+          vertical: responsiveHeight(context, 0.008, min: 6, max: 7),
+        ),
         decoration: BoxDecoration(
           color: color.withOpacity(0.10),
           borderRadius: BorderRadius.circular(30),
@@ -455,14 +490,21 @@ class _UsersTableState extends State<UsersTable> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: w * 0.01),
-            SizedBox(width: w * 0.006),
-            customText(
-              text: role,
-              size: w * 0.008,
+            Icon(
+              icon,
               color: color,
-              bold: true,
-              isEnglish: true,
+              size: responsiveSize(context, 0.01, min: 14, max: 18),
+            ),
+            SizedBox(width: responsiveSize(context, 0.006, min: 6, max: 9)),
+            Flexible(
+              child: customText(
+                text: role,
+                size: responsiveSize(context, 0.008, min: 11, max: 14),
+                color: color,
+                bold: true,
+                isEnglish: true,
+                maxLines: 1,
+              ),
             ),
           ],
         ),
@@ -470,14 +512,17 @@ class _UsersTableState extends State<UsersTable> {
     );
   }
 
-  Widget statusBadge(bool isActive, double w) {
+  Widget statusBadge(BuildContext context, bool isActive) {
     final color = isActive ? Colors.green : Colors.red;
     final text = isActive ? "Active" : "Inactive";
 
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: EdgeInsets.symmetric(
+          horizontal: responsiveSize(context, 0.01, min: 10, max: 12),
+          vertical: responsiveHeight(context, 0.008, min: 6, max: 7),
+        ),
         decoration: BoxDecoration(
           color: color.withOpacity(0.12),
           borderRadius: BorderRadius.circular(30),
@@ -486,14 +531,14 @@ class _UsersTableState extends State<UsersTable> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 7,
-              height: 7,
+              width: responsiveSize(context, 0.005, min: 6, max: 7),
+              height: responsiveSize(context, 0.005, min: 6, max: 7),
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
-            SizedBox(width: w * 0.006),
+            SizedBox(width: responsiveSize(context, 0.006, min: 6, max: 9)),
             customText(
               text: text,
-              size: w * 0.008,
+              size: responsiveSize(context, 0.008, min: 11, max: 14),
               color: color,
               bold: true,
               isEnglish: true,
@@ -504,21 +549,107 @@ class _UsersTableState extends State<UsersTable> {
     );
   }
 
+  Widget _desktopPagination(
+    BuildContext context,
+    int totalUsers,
+    int startIndex,
+    int endIndex,
+    int totalPages,
+  ) {
+    return Row(
+      children: [
+        customText(
+          text: totalUsers == 0
+              ? "Showing 0 users"
+              : "Showing ${startIndex + 1} to $endIndex of $totalUsers users",
+          size: responsiveSize(context, 0.009, min: 12, max: 15),
+          color: Colors.indigo.withOpacity(0.65),
+          isEnglish: true,
+        ),
+        const Spacer(),
+        _paginationButtons(context, totalPages),
+      ],
+    );
+  }
+
+  Widget _mobilePagination(
+    BuildContext context,
+    int totalUsers,
+    int startIndex,
+    int endIndex,
+    int totalPages,
+  ) {
+    return Column(
+      children: [
+        customText(
+          text: totalUsers == 0
+              ? "Showing 0 users"
+              : "Showing ${startIndex + 1} to $endIndex of $totalUsers users",
+          size: responsiveSize(context, 0.009, min: 12, max: 14),
+          color: Colors.indigo.withOpacity(0.65),
+          isEnglish: true,
+        ),
+        SizedBox(height: responsiveHeight(context, 0.014, min: 10, max: 14)),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: _paginationButtons(context, totalPages),
+        ),
+      ],
+    );
+  }
+
+  Widget _paginationButtons(BuildContext context, int totalPages) {
+    return Row(
+      children: [
+        pageButton(
+          context: context,
+          icon: Icons.arrow_back_ios_new_rounded,
+          selected: false,
+          onTap: selectedPage > 1
+              ? () => setState(() => selectedPage--)
+              : () {},
+        ),
+        ...List.generate(totalPages, (index) {
+          final pageNumber = index + 1;
+
+          return pageButton(
+            context: context,
+            text: pageNumber.toString(),
+            selected: selectedPage == pageNumber,
+            onTap: () => setState(() => selectedPage = pageNumber),
+          );
+        }),
+        pageButton(
+          context: context,
+          icon: Icons.arrow_forward_ios_rounded,
+          selected: false,
+          onTap: selectedPage < totalPages
+              ? () => setState(() => selectedPage++)
+              : () {},
+        ),
+      ],
+    );
+  }
+
   Widget pageButton({
-    required double w,
+    required BuildContext context,
     String? text,
     IconData? icon,
     required bool selected,
     required VoidCallback onTap,
   }) {
+    final size = responsiveSize(context, 0.028, min: 34, max: 40);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.004, min: 3, max: 5),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          width: 38,
-          height: 38,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             color: selected ? const Color(0xFFFFEFF8) : Colors.white,
             borderRadius: BorderRadius.circular(10),
@@ -532,18 +663,126 @@ class _UsersTableState extends State<UsersTable> {
             child: icon != null
                 ? Icon(
                     icon,
-                    size: w * 0.009,
+                    size: responsiveSize(context, 0.009, min: 12, max: 15),
                     color: Colors.indigo.withOpacity(0.7),
                   )
                 : customText(
                     text: text!,
-                    size: w * 0.009,
+                    size: responsiveSize(context, 0.009, min: 12, max: 15),
                     color: selected ? buttonColor : const Color(0xFF272044),
                     bold: selected,
                     isEnglish: true,
                   ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _UserMobileCard extends StatelessWidget {
+  final String name;
+  final String email;
+  final String role;
+  final bool isActive;
+
+  const _UserMobileCard({
+    required this.name,
+    required this.email,
+    required this.role,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final parent = context.findAncestorStateOfType<_UsersTableState>()!;
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(
+        bottom: responsiveHeight(context, 0.014, min: 12, max: 16),
+      ),
+      padding: EdgeInsets.all(responsiveSize(context, 0.014, min: 14, max: 18)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCFCFF),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.018, min: 18, max: 22),
+        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              parent.userAvatar(context, name),
+              SizedBox(width: responsiveSize(context, 0.012, min: 10, max: 14)),
+              Expanded(
+                child: customText(
+                  text: name,
+                  size: responsiveSize(context, 0.011, min: 15, max: 18),
+                  color: const Color(0xFF272044),
+                  bold: true,
+                  isEnglish: true,
+                  isCenter: false,
+                  maxLines: 1,
+                ),
+              ),
+              const _MoreButton(),
+            ],
+          ),
+          SizedBox(height: responsiveHeight(context, 0.012, min: 8, max: 12)),
+          customText(
+            text: email,
+            size: responsiveSize(context, 0.009, min: 12, max: 14),
+            color: Colors.grey[700],
+            isEnglish: true,
+            isCenter: false,
+            maxLines: 1,
+          ),
+          SizedBox(height: responsiveHeight(context, 0.014, min: 10, max: 14)),
+          Wrap(
+            spacing: responsiveSize(context, 0.01, min: 8, max: 12),
+            runSpacing: responsiveHeight(context, 0.01, min: 8, max: 10),
+            children: [
+              parent.roleBadge(context, role),
+              parent.statusBadge(context, isActive),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoreButton extends StatelessWidget {
+  const _MoreButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final size = responsiveSize(context, 0.028, min: 36, max: 40);
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.01, min: 10, max: 12),
+        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8),
+        ],
+      ),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: Icon(
+          Icons.more_vert_rounded,
+          color: const Color(0xFF4B4D8F),
+          size: responsiveSize(context, 0.016, min: 19, max: 24),
+        ),
+        onPressed: () {},
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:bahya_website/helper/admin_widgets/filter_dropdown.dart';
+import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/custom_date_picker.dart';
@@ -42,137 +43,140 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = getScreenWidth(context) < 650;
+
     return Column(
       children: [
-        Row(
+        _ResponsiveFieldRow(
+          isMobile: isMobile,
           children: [
-            Expanded(
-              child: modernInputBox(
-                icon: Icons.person_outline_rounded,
-                child: CustomFormTextField(
-                  controller: widget.fullNameController,
-                  hintText: "Full Name",
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.text,
-                  textDirection: TextDirection.ltr,
-                ),
+            modernInputBox(
+              context: context,
+              icon: Icons.person_outline_rounded,
+              child: CustomFormTextField(
+                controller: widget.fullNameController,
+                hintText: "Full Name",
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                keyboardType: CustomTextFieldType.text,
+                textDirection: TextDirection.ltr,
               ),
             ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: modernInputBox(
-                icon: Icons.email_outlined,
-                child: CustomFormTextField(
-                  controller: widget.emailController,
-                  hintText: "Email",
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.email,
-                  textDirection: TextDirection.ltr,
-                ),
+            modernInputBox(
+              context: context,
+              icon: Icons.email_outlined,
+              child: CustomFormTextField(
+                controller: widget.emailController,
+                hintText: "Email",
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                keyboardType: CustomTextFieldType.email,
+                textDirection: TextDirection.ltr,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 22),
-        Row(
+
+        _ResponsiveFieldRow(
+          isMobile: isMobile,
           children: [
-            Expanded(
-              child: modernInputBox(
-                icon: Icons.lock_outline_rounded,
-                child: CustomFormTextField(
-                  controller: widget.passwordController,
-                  hintText: "Password",
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.password,
-                  obscureText: true,
-                  textDirection: TextDirection.ltr,
-                ),
+            modernInputBox(
+              context: context,
+              icon: Icons.lock_outline_rounded,
+              child: CustomFormTextField(
+                controller: widget.passwordController,
+                hintText: "Password",
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                keyboardType: CustomTextFieldType.password,
+                obscureText: true,
+                textDirection: TextDirection.ltr,
               ),
             ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: modernInputBox(
-                icon: Icons.phone_outlined,
-                child: CustomFormTextField(
-                  controller: widget.phoneController,
-                  hintText: "Phone Number",
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.phone,
-                  textDirection: TextDirection.ltr,
-                ),
+            modernInputBox(
+              context: context,
+              icon: Icons.phone_outlined,
+              child: CustomFormTextField(
+                controller: widget.phoneController,
+                hintText: "Phone Number",
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                keyboardType: CustomTextFieldType.phone,
+                textDirection: TextDirection.ltr,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 22),
-        Row(
+
+        _ResponsiveFieldRow(
+          isMobile: isMobile,
           children: [
-            Expanded(
-              child: modernInputBox(
-                icon: Icons.calendar_month_outlined,
-                child: CustomDatePickerField(
-                  controller: widget.birthDateController,
-                  hintText: "Birth Date",
+            modernInputBox(
+              context: context,
+              icon: Icons.calendar_month_outlined,
+              child: CustomDatePickerField(
+                controller: widget.birthDateController,
+                hintText: "Birth Date",
                 showCalendarIcon: false,
                 initialDate: DateTime.now(),
-                  onDateSelected: widget.onDateSelected,
-                ),
+                onDateSelected: widget.onDateSelected,
               ),
             ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: modernInputBox(
-                icon: Icons.filter_alt_outlined,
-                isPurple: true,
-                child: FilterDropdown(
-                  borderRadius: BorderRadius.circular(16),
-                  hint: "Gender",
-                  showFilterIcon: false,
-                  items: genders,
-                  onChanged: widget.onGenderChanged,
+            modernInputBox(
+              context: context,
+              icon: Icons.filter_alt_outlined,
+              isPurple: true,
+              child: FilterDropdown(
+                borderRadius: BorderRadius.circular(
+                  responsiveSize(context, 0.012, min: 14, max: 16),
                 ),
+                hint: widget.selectedGender ?? "Gender",
+                showFilterIcon: false,
+                items: genders,
+                onChanged: widget.onGenderChanged,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 22),
-        modernInputBox(
-          icon: Icons.location_on_outlined,
-          child: CustomFormTextField(
-            controller: widget.addressController,
-            hintText: "Address",
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            keyboardType: CustomTextFieldType.text,
-            textDirection: TextDirection.ltr,
-            maxLines: 1,
+
+        Padding(
+          padding: EdgeInsets.only(
+            bottom: responsiveHeight(context, 0.022, min: 16, max: 22),
+          ),
+          child: modernInputBox(
+            context: context,
+            icon: Icons.location_on_outlined,
+            child: CustomFormTextField(
+              controller: widget.addressController,
+              hintText: "Address",
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              keyboardType: CustomTextFieldType.text,
+              textDirection: TextDirection.ltr,
+              maxLines: 1,
+            ),
           ),
         ),
-        const SizedBox(height: 22),
-        Row(
+
+        _ResponsiveFieldRow(
+          isMobile: isMobile,
+          addBottomSpace: false,
           children: [
-            Expanded(
-              child: modernInputBox(
-                icon: Icons.person_outline_rounded,
-                child: CustomFormTextField(
-                  controller: widget.emergencyNameController,
-                  hintText: "Emergency Contact Name",
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.text,
-                  textDirection: TextDirection.ltr,
-                ),
+            modernInputBox(
+              context: context,
+              icon: Icons.person_outline_rounded,
+              child: CustomFormTextField(
+                controller: widget.emergencyNameController,
+                hintText: "Emergency Contact Name",
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                keyboardType: CustomTextFieldType.text,
+                textDirection: TextDirection.ltr,
               ),
             ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: modernInputBox(
-                icon: Icons.phone_outlined,
-                child: CustomFormTextField(
-                  controller: widget.emergencyPhoneController,
-                  hintText: "Emergency Contact Phone",
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.phone,
-                  textDirection: TextDirection.ltr,
-                ),
+            modernInputBox(
+              context: context,
+              icon: Icons.phone_outlined,
+              child: CustomFormTextField(
+                controller: widget.emergencyPhoneController,
+                hintText: "Emergency Contact Phone",
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                keyboardType: CustomTextFieldType.phone,
+                textDirection: TextDirection.ltr,
               ),
             ),
           ],
@@ -182,6 +186,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
   }
 
   Widget modernInputBox({
+    required BuildContext context,
     required IconData icon,
     required Widget child,
     bool isPurple = false,
@@ -189,35 +194,83 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
     final color = isPurple ? Colors.deepPurple : buttonColor;
 
     return Container(
-      height: 62,
-      padding: const EdgeInsets.only(left: 14, right: 14),
+      height: responsiveHeight(context, 0.072, min: 54, max: 62),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.011, min: 12, max: 14),
+      ),
       decoration: BoxDecoration(
         color: isPurple ? Colors.deepPurple.withOpacity(0.035) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.014, min: 15, max: 18),
+        ),
         border: Border.all(color: Colors.grey.withOpacity(0.14)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.035),
-            blurRadius: 14,
-            offset: const Offset(0, 7),
+            blurRadius: responsiveSize(context, 0.012, min: 10, max: 14),
+            offset: Offset(0, responsiveHeight(context, 0.008, min: 5, max: 7)),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: responsiveSize(context, 0.034, min: 36, max: 42),
+            height: responsiveSize(context, 0.034, min: 36, max: 42),
             decoration: BoxDecoration(
               color: color.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 11, max: 13),
+              ),
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(
+              icon,
+              color: color,
+              size: responsiveSize(context, 0.017, min: 19, max: 22),
+            ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: responsiveSize(context, 0.01, min: 10, max: 12)),
           Expanded(child: child),
         ],
       ),
+    );
+  }
+}
+
+class _ResponsiveFieldRow extends StatelessWidget {
+  final bool isMobile;
+  final List<Widget> children;
+  final bool addBottomSpace;
+
+  const _ResponsiveFieldRow({
+    required this.isMobile,
+    required this.children,
+    this.addBottomSpace = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = responsiveHeight(context, 0.022, min: 16, max: 22);
+
+    final content = isMobile
+        ? Column(
+            children: [
+              children[0],
+              SizedBox(height: spacing),
+              children[1],
+            ],
+          )
+        : Row(
+            children: [
+              Expanded(child: children[0]),
+              SizedBox(width: responsiveSize(context, 0.018, min: 16, max: 24)),
+              Expanded(child: children[1]),
+            ],
+          );
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: addBottomSpace ? spacing : 0),
+      child: content,
     );
   }
 }

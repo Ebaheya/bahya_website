@@ -3,7 +3,6 @@ import 'package:bahya_website/helper/widgets/diagnosis_patients_dialog.dart';
 import 'package:bahya_website/helper/widgets/home_feature_grid.dart';
 import 'package:bahya_website/helper/widgets/state_card.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 const String baseUrl = "http://127.0.0.1:3000/api/v1";
 get getScreenWidth =>
@@ -11,6 +10,25 @@ get getScreenWidth =>
 
 get getScreenHeight =>
     (BuildContext context) => MediaQuery.of(context).size.height;
+double responsiveSize(
+  BuildContext context,
+  double factor, {
+  double min = 10,
+  double max = 24,
+}) {
+  final width = getScreenWidth(context);
+  return (width * factor).clamp(min, max);
+}
+
+double responsiveHeight(
+  BuildContext context,
+  double factor, {
+  double min = 8,
+  double max = 80,
+}) {
+  final height = getScreenHeight(context);
+  return (height * factor).clamp(min, max);
+}
 
 Color? backgroundColor = const Color(0xFFFFF7FD);
 Color? salesBackgroundColor = Colors.deepPurple;
@@ -50,35 +68,26 @@ List<FeatureItem> homeFeatures(BuildContext context) => [
     title: 'نشر الأسئلة',
     subtitle: 'جدولة ونشر النماذج',
     icon: Icons.event_note,
-    onTap: () {
-      context.push('/publish_schedule');
-    },
+    route: '/publish_schedule',
   ),
   FeatureItem(
     title: 'إضافة أسئلة ',
     subtitle: 'إنشاء نماذج أسئلة و تعديلها',
     icon: Icons.edit_note,
-    onTap: () {
-      context.push('/add_questionnaire');
-    },
+    route: '/add_questionnaire',
   ),
   FeatureItem(
     title: 'بيانات المرضى',
     subtitle: 'عرض وإدارة بيانات',
     icon: Icons.people_alt,
-    onTap: () {
-      context.push('/patient_info');
-    },
+    route: '/patient_info',
   ),
   FeatureItem(
     title: 'تخزين الأسئلة',
     subtitle: 'الوصول للنماذج المحفوظة',
     icon: Icons.folder_open,
-    onTap: () {
-      context.push('/questionnaire_filler');
-    },
+    route: '/questionnaire_filler',
   ),
-
 ];
 
 final demoPatients = <PatientDiagnosisItem>[

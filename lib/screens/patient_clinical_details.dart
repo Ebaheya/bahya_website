@@ -1,9 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:flutter/material.dart';
-import 'dart:typed_data';
 import 'package:excel/excel.dart' hide Border;
 import 'package:file_saver/file_saver.dart';
+import 'package:flutter/material.dart';
+
+
 class PatientClinicalDetails extends StatefulWidget {
   final ClinicalPatient patient;
 
@@ -16,16 +19,17 @@ class PatientClinicalDetails extends StatefulWidget {
 class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
   int selectedTab = 0;
   bool showEmergencyInfo = false;
-Future<void> exportPatientToExcel() async {
+
+  Future<void> exportPatientToExcel() async {
     final patient = widget.patient;
 
     final excel = Excel.createExcel();
-
     final clinicalSheet = excel['Clinical Data'];
     final assessmentsSheet = excel['Assessments'];
 
     excel.delete('Sheet1');
-   clinicalSheet.appendRow([
+
+    clinicalSheet.appendRow([
       TextCellValue('Patient Name'),
       TextCellValue('File Number'),
       TextCellValue('Age'),
@@ -75,10 +79,6 @@ Future<void> exportPatientToExcel() async {
       TextCellValue(patient.drugs.join(', ')),
     ]);
 
-    for (final drug in patient.drugs) {
-      clinicalSheet.appendRow([TextCellValue(drug)]);
-    }
-
     assessmentsSheet.appendRow([
       TextCellValue('Form Name'),
       TextCellValue('Submit Date'),
@@ -110,7 +110,7 @@ Future<void> exportPatientToExcel() async {
     if (bytes == null) return;
 
     await FileSaver.instance.saveFile(
-      name: '${patient.fileNumber}_${patient.name}_clinical_data',
+      name: '${patient.fileNumber}_${patient.name}_clinical_data.xlsx',
       bytes: Uint8List.fromList(bytes),
       mimeType: MimeType.microsoftExcel,
     );
@@ -118,9 +118,6 @@ Future<void> exportPatientToExcel() async {
 
   @override
   Widget build(BuildContext context) {
-    final h = getScreenHeight(context);
-    final w = getScreenWidth(context);
-
     return Scaffold(
       appBar: customAppBar(
         context: context,
@@ -129,7 +126,7 @@ Future<void> exportPatientToExcel() async {
         widgets: [
           _HeaderButton(
             title: 'تصدير Excel',
-            icon: Icons.picture_as_pdf_outlined,
+            icon: Icons.table_chart_outlined,
             onTap: exportPatientToExcel,
           ),
         ],
@@ -138,8 +135,8 @@ Future<void> exportPatientToExcel() async {
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: w * 0.025,
-            vertical: h * 0.03,
+            horizontal: responsiveSize(context, 0.025, min: 16, max: 42),
+            vertical: responsiveHeight(context, 0.03, min: 20, max: 40),
           ),
           child: Column(
             children: [
@@ -150,15 +147,19 @@ Future<void> exportPatientToExcel() async {
                   setState(() => showEmergencyInfo = !showEmergencyInfo);
                 },
               ),
-              SizedBox(height: h * 0.025),
+              SizedBox(
+                height: responsiveHeight(context, 0.025, min: 18, max: 28),
+              ),
               _TabsBar(
                 selectedTab: selectedTab,
                 onTabChanged: (index) {
                   setState(() => selectedTab = index);
                 },
               ),
-              SizedBox(height: h * 0.025),
-             AnimatedSwitcher(
+              SizedBox(
+                height: responsiveHeight(context, 0.025, min: 18, max: 28),
+              ),
+              AnimatedSwitcher(
                 duration: const Duration(milliseconds: 350),
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
@@ -208,10 +209,11 @@ class _PatientHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+    final isSmall = w < 950;
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(w * 0.018),
+      padding: EdgeInsets.all(responsiveSize(context, 0.018, min: 16, max: 28)),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -227,99 +229,165 @@ class _PatientHeaderCard extends StatelessWidget {
         textDirection: TextDirection.rtl,
         child: Column(
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 42,
-                  backgroundColor: const Color(0xFFE83E8C),
-                  child: customText(
-                    text: _initials(patient.name),
-                    size: w * 0.02,
-                    color: Colors.white,
-                    bold: true,
-                    isCenter: true,
+            if (isSmall)
+              Column(
+                children: [
+                  _PatientHeaderIdentity(patient: patient),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 14,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _HeaderInfoItem(
+                        title: 'العمر',
+                        value: '${patient.age} سنة',
+                        icon: Icons.person_outline,
+                      ),
+                      _HeaderInfoItem(
+                        title: 'رقم الهاتف',
+                        value: patient.phone,
+                        icon: Icons.phone_outlined,
+                      ),
+                      _HeaderInfoItem(
+                        title: 'تاريخ التسجيل',
+                        value: patient.registrationDate,
+                        icon: Icons.calendar_month_outlined,
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 18),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    customText(
-                      text: patient.name,
-                      size: w * 0.015,
-                      color: const Color(0xFF271648),
-                      bold: true,
-                      isCenter: false,
-                    ),
-                    const SizedBox(height: 6),
-                    customText(
-                      text: 'رقم الملف: ${patient.fileNumber}',
-                      size: w * 0.008,
-                      color: const Color(0xFF6B667A),
-                      bold: true,
-                      isCenter: false,
-                    ),
-                    const SizedBox(height: 6),
-                    _SmallBadge(text: _translateStatus(patient.diseaseStatus)),
-                  ],
-                ),
-                Spacer(),
-                _HeaderDivider(),
-                _HeaderInfoItem(
-                  title: 'العمر',
-                  value: '${patient.age} سنة',
-                  icon: Icons.person_outline,
-                ),
-                _HeaderDivider(),
-                _HeaderInfoItem(
-                  title: 'رقم الهاتف',
-                  value: patient.phone,
-                  icon: Icons.phone_outlined,
-                ),
-                _HeaderDivider(),
-                _HeaderInfoItem(
-                  title: 'تاريخ التسجيل',
-                  value: patient.registrationDate,
-                  icon: Icons.calendar_month_outlined,
-                ),
-                _HeaderDivider(),
-                Spacer(),
-                _MoreInfoButton(
-                  opened: showEmergencyInfo,
-                  onTap: onMoreInfoTap,
-                ),
-              ],
-            ),
-            if (showEmergencyInfo) ...[
-              const SizedBox(height: 22),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4FA),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFF7CFE0)),
-                ),
-                child: Row(
-                  children: [
-                    _EmergencyInfoItem(
-                      title: 'جهة اتصال الطوارئ',
-                      value: patient.emergencyContactName,
-                      icon: Icons.contact_emergency_outlined,
-                    ),
-                    const SizedBox(width: 35),
-                    _EmergencyInfoItem(
-                      title: 'رقم الطوارئ',
-                      value: patient.emergencyContactPhone,
-                      icon: Icons.phone_in_talk_outlined,
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 18),
+                  _MoreInfoButton(
+                    opened: showEmergencyInfo,
+                    onTap: onMoreInfoTap,
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  _PatientHeaderIdentity(patient: patient),
+                  const Spacer(),
+                  _HeaderDivider(),
+                  _HeaderInfoItem(
+                    title: 'العمر',
+                    value: '${patient.age} سنة',
+                    icon: Icons.person_outline,
+                  ),
+                  _HeaderDivider(),
+                  _HeaderInfoItem(
+                    title: 'رقم الهاتف',
+                    value: patient.phone,
+                    icon: Icons.phone_outlined,
+                  ),
+                  _HeaderDivider(),
+                  _HeaderInfoItem(
+                    title: 'تاريخ التسجيل',
+                    value: patient.registrationDate,
+                    icon: Icons.calendar_month_outlined,
+                  ),
+                  _HeaderDivider(),
+                  const Spacer(),
+                  _MoreInfoButton(
+                    opened: showEmergencyInfo,
+                    onTap: onMoreInfoTap,
+                  ),
+                ],
               ),
-            ],
+            ClipRect(
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: showEmergencyInfo
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 22),
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(
+                            responsiveSize(context, 0.012, min: 14, max: 18),
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF4FA),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFF7CFE0)),
+                          ),
+                          child: Wrap(
+                            spacing: 35,
+                            runSpacing: 16,
+                            alignment: WrapAlignment.start,
+                            children: [
+                              _EmergencyInfoItem(
+                                title: 'جهة اتصال الطوارئ',
+                                value: patient.emergencyContactName,
+                                icon: Icons.contact_emergency_outlined,
+                              ),
+                              _EmergencyInfoItem(
+                                title: 'رقم الطوارئ',
+                                value: patient.emergencyContactPhone,
+                                icon: Icons.phone_in_talk_outlined,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PatientHeaderIdentity extends StatelessWidget {
+  final ClinicalPatient patient;
+
+  const _PatientHeaderIdentity({required this.patient});
+
+  @override
+  Widget build(BuildContext context) {
+    final w = getScreenWidth(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircleAvatar(
+          radius: responsiveSize(context, 0.03, min: 34, max: 42),
+          backgroundColor: const Color(0xFFE83E8C),
+          child: customText(
+            text: _initials(patient.name),
+            size: responsiveSize(context, 0.02, min: 22, max: 30),
+            color: Colors.white,
+            bold: true,
+            isCenter: true,
+          ),
+        ),
+        const SizedBox(width: 18),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            customText(
+              text: patient.name,
+              size: responsiveSize(context, 0.015, min: 18, max: 26),
+              color: const Color(0xFF271648),
+              bold: true,
+              isCenter: false,
+            ),
+            const SizedBox(height: 6),
+            customText(
+              text: 'رقم الملف: ${patient.fileNumber}',
+              size: responsiveSize(context, 0.008, min: 12, max: 15),
+              color: const Color(0xFF6B667A),
+              bold: true,
+              isCenter: false,
+            ),
+            const SizedBox(height: 6),
+            _SmallBadge(text: _translateStatus(patient.diseaseStatus)),
+          ],
+        ),
+      ],
     );
   }
 
@@ -329,7 +397,7 @@ class _PatientHeaderCard extends StatelessWidget {
     return name.isNotEmpty ? name[0] : 'P';
   }
 
-  String _translateStatus(String status) {
+  static String _translateStatus(String status) {
     switch (status) {
       case 'Active treatment':
         return 'تحت علاج نشط';
@@ -356,7 +424,7 @@ class _TabsBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 58,
+      height: responsiveHeight(context, 0.07, min: 52, max: 58),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -402,41 +470,39 @@ class _TabItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: AnimatedScale(
+      child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
-        scale: active ? 1 : 0.96,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          color: active
+              ? Colors.pink[200]!.withOpacity(0.3)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: active ? Border.all(color: Colors.pink) : null,
+        ),
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutCubic,
           opacity: active ? 1 : 0.55,
-          child: Container(
-          height: double.infinity,
-            decoration: BoxDecoration(
-                  color: active
-                  ? Colors.pink[200]!.withOpacity(0.3)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              border: active ? Border.all(color: Colors.pink) : null,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                customText(
-                  text: title,
-                  size: w * 0.0085,
-                  color: const Color(0xFFE83E8C),
-                  bold: true,
-                ),
-                const SizedBox(width: 8),
-                Icon(icon, color: const Color(0xFFE83E8C), size: w * 0.013),
-              ],
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              customText(
+                text: title,
+                size: responsiveSize(context, 0.0085, min: 12, max: 15),
+                color: const Color(0xFFE83E8C),
+                bold: true,
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                icon,
+                color: const Color(0xFFE83E8C),
+                size: responsiveSize(context, 0.013, min: 16, max: 22),
+              ),
+            ],
           ),
         ),
       ),
@@ -447,12 +513,10 @@ class _TabItem extends StatelessWidget {
 class _ClinicalDataTab extends StatelessWidget {
   final ClinicalPatient patient;
 
-  const _ClinicalDataTab({required this.patient , super.key});
+  const _ClinicalDataTab({super.key, required this.patient});
 
   @override
   Widget build(BuildContext context) {
-    final h = getScreenHeight(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -460,95 +524,132 @@ class _ClinicalDataTab extends StatelessWidget {
           title: 'البيانات السريرية للمريض',
           subtitle: 'جميع البيانات السريرية المطلوبة للمشروع النفسي الاجتماعي',
         ),
-        SizedBox(height: h * 0.02),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: _DrugsCard(drugs: patient.drugs)),
-            const SizedBox(width: 18),
-            Expanded(
-              child: _ClinicalCard(
-                title: 'العلاج',
-                icon: Icons.local_hospital_outlined,
-                rows: [
-                  _DataRowItem(
-                    'الجراحة',
-                    patient.surgery,
-                    badgeType: BadgeType.success,
-                  ),
-                  _DataRowItem(
-                    'العلاج الكيميائي',
-                    patient.chemotherapy,
-                    badgeType: BadgeType.warning,
-                  ),
-                  _DataRowItem(
-                    'العلاج الإشعاعي',
-                    _yesNo(patient.radiotherapy),
-                    badgeType: _badgeByYesNo(patient.radiotherapy),
-                  ),
-                  _DataRowItem(
-                    'العلاج الهرموني',
-                    _yesNo(patient.hormonalTherapy),
-                    badgeType: _badgeByYesNo(patient.hormonalTherapy),
-                  ),
-                  _DataRowItem(
-                    'العلاج الموجه',
-                    _yesNo(patient.targetedTherapy),
-                    badgeType: patient.targetedTherapy == 'Yes'
-                        ? BadgeType.warning
-                        : BadgeType.neutral,
-                  ),
-                  _DataRowItem(
-                    'العلاج المناعي',
-                    _yesNo(patient.immunotherapy),
-                    badgeType: patient.immunotherapy == 'Yes'
-                        ? BadgeType.warning
-                        : BadgeType.neutral,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: _ClinicalCard(
-                title: 'حالة المرض',
-                icon: Icons.monitor_heart_outlined,
-                rows: [
-                  _DataRowItem('تاريخ التشخيص', patient.diagnosisDate),
-                  _DataRowItem('المرحلة عند التشخيص', patient.stageAtDiagnosis),
-                  _DataRowItem(
-                    'الحالة الحالية للمرض',
-                    _translateStatus(patient.diseaseStatus),
-                    badgeType: BadgeType.status,
-                  ),
-                  _DataRowItem(
-                    'البيولوجيا الورمية',
-                    patient.tumorBiology,
-                    badgeType: BadgeType.info,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 18),
+        SizedBox(height: responsiveHeight(context, 0.02, min: 14, max: 24)),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmall = constraints.maxWidth < 1150;
 
-            Expanded(
-              child: _ClinicalCard(
-                title: 'التقييم الأولي',
-                icon: Icons.person_outline,
-                rows: [
-                  _DataRowItem('الأمراض المصاحبة', patient.comorbidities),
-                  _DataRowItem('مؤشر كتلة الجسم BMI', patient.bmi),
-                  _DataRowItem('التاريخ العائلي', patient.familyHistory),
-                  _DataRowItem('حالة سن اليأس', patient.menopausalStatus),
+            if (isSmall) {
+              return Column(
+                children: [
+                  _DrugsCard(drugs: patient.drugs),
+                  const SizedBox(height: 16),
+                  _ClinicalCard(
+                    title: 'العلاج',
+                    icon: Icons.local_hospital_outlined,
+                    rows: _treatmentRows(patient),
+                  ),
+                  const SizedBox(height: 16),
+                  _ClinicalCard(
+                    title: 'حالة المرض',
+                    icon: Icons.monitor_heart_outlined,
+                    rows: _diseaseRows(patient),
+                  ),
+                  const SizedBox(height: 16),
+                  _ClinicalCard(
+                    title: 'التقييم الأولي',
+                    icon: Icons.person_outline,
+                    rows: _initialRows(patient),
+                  ),
                 ],
-              ),
-            ),
-          ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _DrugsCard(drugs: patient.drugs)),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: _ClinicalCard(
+                    title: 'العلاج',
+                    icon: Icons.local_hospital_outlined,
+                    rows: _treatmentRows(patient),
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: _ClinicalCard(
+                    title: 'حالة المرض',
+                    icon: Icons.monitor_heart_outlined,
+                    rows: _diseaseRows(patient),
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: _ClinicalCard(
+                    title: 'التقييم الأولي',
+                    icon: Icons.person_outline,
+                    rows: _initialRows(patient),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
-       SizedBox(height: h * 0.1),
-        _PrivacyNotice(),
       ],
     );
+  }
+
+  List<_DataRowItem> _initialRows(ClinicalPatient patient) {
+    return [
+      _DataRowItem('الأمراض المصاحبة', patient.comorbidities),
+      _DataRowItem('مؤشر كتلة الجسم BMI', patient.bmi),
+      _DataRowItem('التاريخ العائلي', patient.familyHistory),
+      _DataRowItem('حالة سن اليأس', patient.menopausalStatus),
+    ];
+  }
+
+  List<_DataRowItem> _diseaseRows(ClinicalPatient patient) {
+    return [
+      _DataRowItem('تاريخ التشخيص', patient.diagnosisDate),
+      _DataRowItem('المرحلة عند التشخيص', patient.stageAtDiagnosis),
+      _DataRowItem(
+        'الحالة الحالية للمرض',
+        _translateStatus(patient.diseaseStatus),
+        badgeType: BadgeType.status,
+      ),
+      _DataRowItem(
+        'البيولوجيا الورمية',
+        patient.tumorBiology,
+        badgeType: BadgeType.info,
+      ),
+    ];
+  }
+
+  List<_DataRowItem> _treatmentRows(ClinicalPatient patient) {
+    return [
+      _DataRowItem('الجراحة', patient.surgery, badgeType: BadgeType.success),
+      _DataRowItem(
+        'العلاج الكيميائي',
+        patient.chemotherapy,
+        badgeType: BadgeType.warning,
+      ),
+      _DataRowItem(
+        'العلاج الإشعاعي',
+        _yesNo(patient.radiotherapy),
+        badgeType: _badgeByYesNo(patient.radiotherapy),
+      ),
+      _DataRowItem(
+        'العلاج الهرموني',
+        _yesNo(patient.hormonalTherapy),
+        badgeType: _badgeByYesNo(patient.hormonalTherapy),
+      ),
+      _DataRowItem(
+        'العلاج الموجه',
+        _yesNo(patient.targetedTherapy),
+        badgeType: patient.targetedTherapy == 'Yes'
+            ? BadgeType.warning
+            : BadgeType.neutral,
+      ),
+      _DataRowItem(
+        'العلاج المناعي',
+        _yesNo(patient.immunotherapy),
+        badgeType: patient.immunotherapy == 'Yes'
+            ? BadgeType.warning
+            : BadgeType.neutral,
+      ),
+    ];
   }
 
   BadgeType _badgeByYesNo(String value) {
@@ -578,7 +679,7 @@ class _ClinicalDataTab extends StatelessWidget {
 class _AssessmentsTab extends StatefulWidget {
   final List<PatientAssessment> assessments;
 
-  const _AssessmentsTab({required this.assessments , super.key});
+  const _AssessmentsTab({super.key, required this.assessments});
 
   @override
   State<_AssessmentsTab> createState() => _AssessmentsTabState();
@@ -590,10 +691,8 @@ class _AssessmentsTabState extends State<_AssessmentsTab>
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
-
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: EdgeInsets.all(responsiveSize(context, 0.014, min: 16, max: 22)),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -610,12 +709,12 @@ class _AssessmentsTabState extends State<_AssessmentsTab>
         children: [
           customText(
             text: 'قائمة التقييمات التي قام بها المريض',
-            size: w * 0.01,
+            size: responsiveSize(context, 0.01, min: 16, max: 20),
             color: const Color(0xFF271648),
             bold: true,
             isCenter: false,
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: responsiveHeight(context, 0.02, min: 14, max: 18)),
           ...List.generate(widget.assessments.length, (index) {
             final assessment = widget.assessments[index];
             final bool isOpen = openedIndex == index;
@@ -703,15 +802,15 @@ class _AssessmentAnswersContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
-
     final answers = assessment.answers.isEmpty
         ? _demoAnswers
         : assessment.answers;
+    final w = getScreenWidth(context);
+    final isSmall = w < 850;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(responsiveSize(context, 0.014, min: 14, max: 18)),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFAFD),
         borderRadius: BorderRadius.circular(14),
@@ -724,124 +823,188 @@ class _AssessmentAnswersContent extends StatelessWidget {
           children: [
             customText(
               text: 'تفاصيل التقييم',
-              size: w * 0.01,
+              size: responsiveSize(context, 0.01, min: 15, max: 18),
               color: const Color(0xFFE83E8C),
               bold: true,
               isCenter: false,
             ),
             const SizedBox(height: 18),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFF7D6E6)),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 14,
-                    ),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFFF0F7),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                    ),
-                    child: Row(
-                      textDirection: TextDirection.rtl,
-                      children: [
-                         SizedBox(width: 20),
-                        customText(
-                          text: '#',
-                          size: w * 0.008,
-                          color: const Color(0xFF271648),
-                          bold: true,
-                        ),
-                        Spacer(),
-                        customText(
-                          text: 'السؤال',
-                          size: w * 0.008,
-                          color: const Color(0xFF271648),
-                          bold: true,
-                        ),
-                          Spacer(),
-                        customText(
-                          text: 'الإجابة',
-                          size: w * 0.008,
-                          color: const Color(0xFF271648),
-                          bold: true,
-                        ),
-                          Spacer(),
-                        customText(
-                          text: 'الاسكور',
-                          size: w * 0.008,
-                          color: textColor,
-                          bold: true,
-                        ),
-                        SizedBox(width: 20),
-                      ],
-                    ),
-                  ),
-                  ...List.generate(answers.length, (index) {
-                    final item = answers[index];
-        
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 13,
-                      ),
-                      decoration: BoxDecoration(
-                        color: index.isEven
-                            ? Colors.white
-                            : const Color(0xFFFFF8FC),
-                        border: Border(
-                          top: BorderSide(color: Colors.grey.shade100),
-                        ),
-                      ),
-                      child: Row(
-                        textDirection: TextDirection.rtl,
-                        children: [
-                          SizedBox(
-                            width: 50,
-                            child: customText(
-                              text: '${index + 1}',
-                              size: w * 0.0075,
-                              color: const Color(0xFF271648),
-                              bold: true,
-                            ),
-                          ),
-                          Expanded(
-                            flex: 4,
-                            child: customText(
-                              text: item.question,
-                              size: w * 0.0075,
-                              color: const Color(0xFF4B445C),
-                              bold: true,
-                              isCenter: false,
-                              maxLines: 2,
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: _AnswerBadge(answer: item.answer),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 90,
-                            child: _ScoreBadge(score: item.score),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
+            if (isSmall)
+              Column(
+                children: List.generate(answers.length, (index) {
+                  final item = answers[index];
+
+                  return _AnswerMobileCard(index: index, item: item);
+                }),
+              )
+            else
+              _AnswersTable(answers: answers),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AnswersTable extends StatelessWidget {
+  final List<PatientAnswer> answers;
+
+  const _AnswersTable({required this.answers});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF7D6E6)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: responsiveSize(context, 0.01, min: 12, max: 14),
+              vertical: responsiveHeight(context, 0.014, min: 12, max: 14),
+            ),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFF0F7),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                SizedBox(
+                  width: responsiveSize(context, 0.035, min: 40, max: 55),
+                  child: customText(
+                    text: '#',
+                    size: responsiveSize(context, 0.008, min: 12, max: 15),
+                    color: const Color(0xFF271648),
+                    bold: true,
+                  ),
+                ),
+                Expanded(
+                  flex: 4,
+                  child: customText(
+                    text: 'السؤال',
+                    size: responsiveSize(context, 0.008, min: 12, max: 15),
+                    color: const Color(0xFF271648),
+                    bold: true,
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: customText(
+                    text: 'الإجابة',
+                    size: responsiveSize(context, 0.008, min: 12, max: 15),
+                    color: const Color(0xFF271648),
+                    bold: true,
+                  ),
+                ),
+                SizedBox(
+                  width: responsiveSize(context, 0.06, min: 80, max: 110),
+                  child: customText(
+                    text: 'الاسكور',
+                    size: responsiveSize(context, 0.008, min: 12, max: 15),
+                    color: textColor,
+                    bold: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ...List.generate(answers.length, (index) {
+            final item = answers[index];
+
+            return Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: responsiveSize(context, 0.01, min: 12, max: 14),
+                vertical: responsiveHeight(context, 0.014, min: 11, max: 13),
+              ),
+              decoration: BoxDecoration(
+                color: index.isEven ? Colors.white : const Color(0xFFFFF8FC),
+                border: Border(top: BorderSide(color: Colors.grey.shade100)),
+              ),
+              child: Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  SizedBox(
+                    width: responsiveSize(context, 0.035, min: 40, max: 55),
+                    child: customText(
+                      text: '${index + 1}',
+                      size: responsiveSize(context, 0.0075, min: 12, max: 14),
+                      color: const Color(0xFF271648),
+                      bold: true,
+                    ),
+                  ),
+                  Expanded(
+                    flex: 4,
+                    child: customText(
+                      text: item.question,
+                      size: responsiveSize(context, 0.0075, min: 12, max: 14),
+                      color: const Color(0xFF4B445C),
+                      bold: true,
+                      isCenter: false,
+                      maxLines: 2,
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: _AnswerBadge(answer: item.answer),
+                    ),
+                  ),
+                  SizedBox(
+                    width: responsiveSize(context, 0.06, min: 80, max: 110),
+                    child: _ScoreBadge(score: item.score),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnswerMobileCard extends StatelessWidget {
+  final int index;
+  final PatientAnswer item;
+
+  const _AnswerMobileCard({required this.index, required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(responsiveSize(context, 0.012, min: 12, max: 16)),
+      decoration: BoxDecoration(
+        color: index.isEven ? Colors.white : const Color(0xFFFFF8FC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF7D6E6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          customText(
+            text: '${index + 1}. ${item.question}',
+            size: responsiveSize(context, 0.008, min: 12, max: 15),
+            color: const Color(0xFF271648),
+            bold: true,
+            isCenter: false,
+            maxLines: 3,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              _AnswerBadge(answer: item.answer),
+              const SizedBox(width: 10),
+              _ScoreBadge(score: item.score),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -861,55 +1024,107 @@ class _AssessmentItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+    final isSmall = w < 700;
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(
+          responsiveSize(context, 0.012, min: 14, max: 16),
+        ),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF7FC),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFFF7D6E6)),
         ),
-        child: Row(
-          textDirection: TextDirection.rtl,
-          children: [
-            Icon(
-              isOpen
-                  ? Icons.keyboard_arrow_up_rounded
-                  : Icons.keyboard_arrow_down_rounded,
-              color: const Color(0xFFE83E8C),
-              size: w * 0.018,
-            ),
-            const SizedBox(width: 10),
-            Icon(
-              Icons.assignment_turned_in_outlined,
-              color: const Color(0xFFE83E8C),
-              size: w * 0.015,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: customText(
-                text: assessment.formName,
-                size: w * 0.01,
-                color: const Color(0xFF271648),
-                bold: true,
-                isCenter: false,
+        child: isSmall
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    textDirection: TextDirection.rtl,
+                    children: [
+                      Icon(
+                        isOpen
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        color: const Color(0xFFE83E8C),
+                        size: responsiveSize(context, 0.018, min: 20, max: 28),
+                      ),
+                      const SizedBox(width: 10),
+                      Icon(
+                        Icons.assignment_turned_in_outlined,
+                        color: const Color(0xFFE83E8C),
+                        size: responsiveSize(context, 0.015, min: 18, max: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: customText(
+                          text: assessment.formName,
+                          size: responsiveSize(context, 0.01, min: 14, max: 18),
+                          color: const Color(0xFF271648),
+                          bold: true,
+                          isCenter: false,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    textDirection: TextDirection.rtl,
+                    children: [
+                      _AssessmentColumn(
+                        title: 'تاريخ الإرسال',
+                        value: assessment.submitDate,
+                      ),
+                      const SizedBox(width: 30),
+                      _AssessmentColumn(
+                        title: 'الاسكور',
+                        value: assessment.score.toString(),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            : Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  Icon(
+                    isOpen
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: const Color(0xFFE83E8C),
+                    size: responsiveSize(context, 0.018, min: 20, max: 28),
+                  ),
+                  const SizedBox(width: 10),
+                  Icon(
+                    Icons.assignment_turned_in_outlined,
+                    color: const Color(0xFFE83E8C),
+                    size: responsiveSize(context, 0.015, min: 18, max: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: customText(
+                      text: assessment.formName,
+                      size: responsiveSize(context, 0.01, min: 14, max: 18),
+                      color: const Color(0xFF271648),
+                      bold: true,
+                      isCenter: false,
+                    ),
+                  ),
+                  _AssessmentColumn(
+                    title: 'تاريخ الإرسال',
+                    value: assessment.submitDate,
+                  ),
+                  const SizedBox(width: 40),
+                  _AssessmentColumn(
+                    title: 'الاسكور',
+                    value: assessment.score.toString(),
+                  ),
+                ],
               ),
-            ),
-            _AssessmentColumn(
-              title: 'تاريخ الإرسال',
-              value: assessment.submitDate,
-            ),
-            const SizedBox(width: 40),
-            _AssessmentColumn(
-              title: 'الاسكور',
-              value: assessment.score.toString(),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -922,12 +1137,13 @@ class _ScoreBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
-
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: responsiveSize(context, 0.008, min: 11, max: 13),
+          vertical: responsiveHeight(context, 0.007, min: 5, max: 7),
+        ),
         decoration: BoxDecoration(
           color: const Color(0xFFEAF1FF),
           borderRadius: BorderRadius.circular(10),
@@ -935,7 +1151,7 @@ class _ScoreBadge extends StatelessWidget {
         ),
         child: customText(
           text: score.toString(),
-          size: w * 0.007,
+          size: responsiveSize(context, 0.007, min: 11, max: 13),
           color: const Color(0xFF3066BE),
           bold: true,
           isCenter: true,
@@ -952,10 +1168,11 @@ class _AnswerBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.009, min: 12, max: 14),
+        vertical: responsiveHeight(context, 0.007, min: 5, max: 7),
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF4DA),
         borderRadius: BorderRadius.circular(10),
@@ -963,7 +1180,7 @@ class _AnswerBadge extends StatelessWidget {
       ),
       child: customText(
         text: answer,
-        size: w * 0.007,
+        size: responsiveSize(context, 0.007, min: 11, max: 13),
         color: const Color(0xFFE28A00),
         bold: true,
         isCenter: true,
@@ -980,13 +1197,12 @@ class _AssessmentColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);  
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         customText(
           text: title,
-          size: w * 0.0075,
+          size: responsiveSize(context, 0.0075, min: 11, max: 14),
           color: const Color(0xFF7A7890),
           bold: true,
           isCenter: false,
@@ -994,7 +1210,7 @@ class _AssessmentColumn extends StatelessWidget {
         const SizedBox(height: 5),
         customText(
           text: value,
-          size: w * 0.008,
+          size: responsiveSize(context, 0.008, min: 12, max: 15),
           color: const Color(0xFFE83E8C),
           bold: true,
           isCenter: false,
@@ -1017,9 +1233,10 @@ class _ClinicalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
     return Container(
-      constraints: const BoxConstraints(minHeight: 330),
+      constraints: BoxConstraints(
+        minHeight: responsiveHeight(context, 0.35, min: 260, max: 330),
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -1028,7 +1245,10 @@ class _ClinicalCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: responsiveSize(context, 0.012, min: 14, max: 18),
+              vertical: responsiveHeight(context, 0.018, min: 12, max: 16),
+            ),
             decoration: const BoxDecoration(
               color: Color(0xFFFFF0F7),
               borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
@@ -1036,11 +1256,15 @@ class _ClinicalCard extends StatelessWidget {
             child: Row(
               textDirection: TextDirection.rtl,
               children: [
-                Icon(icon, color: const Color(0xFFE83E8C) , size: w * 0.015),
+                Icon(
+                  icon,
+                  color: const Color(0xFFE83E8C),
+                  size: responsiveSize(context, 0.015, min: 18, max: 24),
+                ),
                 const SizedBox(width: 8),
                 customText(
                   text: title,
-                  size: w * 0.01,
+                  size: responsiveSize(context, 0.01, min: 14, max: 18),
                   color: const Color(0xFFE83E8C),
                   bold: true,
                   isCenter: false,
@@ -1063,39 +1287,74 @@ class _ClinicalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+    final isSmall = w < 700;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.012, min: 14, max: 18),
+        vertical: responsiveHeight(context, 0.016, min: 11, max: 14),
+      ),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
       ),
-      child: Row(
-        textDirection: TextDirection.rtl,
-        children: [
-          Expanded(
-            child: customText(
-              text: row.label,
-              size: w * 0.0075,
-              color: const Color(0xFF6B667A),
-              bold: true,
-              isCenter: false,
+      child: isSmall
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                customText(
+                  text: row.label,
+                  size: responsiveSize(context, 0.0075, min: 12, max: 14),
+                  color: const Color(0xFF6B667A),
+                  bold: true,
+                  isCenter: false,
+                ),
+                const SizedBox(height: 7),
+                row.badgeType == null
+                    ? customText(
+                        text: row.value,
+                        size: responsiveSize(context, 0.007, min: 12, max: 14),
+                        color: const Color(0xFF271648),
+                        bold: true,
+                        isCenter: false,
+                        maxLines: 2,
+                      )
+                    : _ValueBadge(text: row.value, type: row.badgeType!),
+              ],
+            )
+          : Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Expanded(
+                  child: customText(
+                    text: row.label,
+                    size: responsiveSize(context, 0.0075, min: 12, max: 14),
+                    color: const Color(0xFF6B667A),
+                    bold: true,
+                    isCenter: false,
+                  ),
+                ),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: row.badgeType == null
+                        ? customText(
+                            text: row.value,
+                            size: responsiveSize(
+                              context,
+                              0.007,
+                              min: 12,
+                              max: 14,
+                            ),
+                            color: const Color(0xFF271648),
+                            bold: true,
+                            isCenter: false,
+                            maxLines: 2,
+                          )
+                        : _ValueBadge(text: row.value, type: row.badgeType!),
+                  ),
+                ),
+              ],
             ),
-          ),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: row.badgeType == null
-                  ? customText(
-                      text: row.value,
-                      size: w * 0.007,
-                      color: const Color(0xFF271648),
-                      bold: true,
-                      isCenter: false,
-                    )
-                  : _ValueBadge(text: row.value, type: row.badgeType!),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1108,7 +1367,6 @@ class _ValueBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
     Color bg;
     Color border;
     Color textColor;
@@ -1147,7 +1405,10 @@ class _ValueBadge extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.008, min: 10, max: 12),
+        vertical: responsiveHeight(context, 0.007, min: 5, max: 7),
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(8),
@@ -1155,7 +1416,7 @@ class _ValueBadge extends StatelessWidget {
       ),
       child: customText(
         text: text,
-        size: w * 0.007,
+        size: responsiveSize(context, 0.007, min: 11, max: 13),
         color: textColor,
         bold: true,
         isCenter: true,
@@ -1173,7 +1434,9 @@ class _DrugsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 330),
+      constraints: BoxConstraints(
+        minHeight: responsiveHeight(context, 0.35, min: 260, max: 330),
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -1182,7 +1445,10 @@ class _DrugsCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: responsiveSize(context, 0.012, min: 14, max: 18),
+              vertical: responsiveHeight(context, 0.018, min: 12, max: 16),
+            ),
             decoration: const BoxDecoration(
               color: Color(0xFFFFF0F7),
               borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
@@ -1190,11 +1456,15 @@ class _DrugsCard extends StatelessWidget {
             child: Row(
               textDirection: TextDirection.rtl,
               children: [
-                const Icon(Icons.medication_outlined, color: Color(0xFFE83E8C)),
+                Icon(
+                  Icons.medication_outlined,
+                  color: const Color(0xFFE83E8C),
+                  size: responsiveSize(context, 0.015, min: 18, max: 24),
+                ),
                 const SizedBox(width: 8),
                 customText(
                   text: 'الأدوية',
-                  size: 16,
+                  size: responsiveSize(context, 0.01, min: 14, max: 18),
                   color: const Color(0xFFE83E8C),
                   bold: true,
                   isCenter: false,
@@ -1203,7 +1473,9 @@ class _DrugsCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(18),
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.012, min: 14, max: 18),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: drugs.map((drug) {
@@ -1221,10 +1493,16 @@ class _DrugsCard extends StatelessWidget {
                       Expanded(
                         child: customText(
                           text: drug,
-                          size: 13,
+                          size: responsiveSize(
+                            context,
+                            0.007,
+                            min: 12,
+                            max: 14,
+                          ),
                           color: const Color(0xFF271648),
                           bold: true,
                           isCenter: false,
+                          maxLines: 2,
                         ),
                       ),
                     ],
@@ -1247,13 +1525,12 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         customText(
           text: title,
-          size: w * 0.015,
+          size: responsiveSize(context, 0.015, min: 20, max: 28),
           color: const Color(0xFF271648),
           bold: true,
           isCenter: false,
@@ -1261,40 +1538,12 @@ class _SectionTitle extends StatelessWidget {
         const SizedBox(height: 6),
         customText(
           text: subtitle,
-          size: w * 0.008,
+          size: responsiveSize(context, 0.008, min: 12, max: 15),
           color: const Color(0xFF7A7890),
           bold: true,
           isCenter: false,
         ),
       ],
-    );
-  }
-}
-
-class _PrivacyNotice extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFEAF4),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF7CFE0)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.shield_outlined, color: Color(0xFFE83E8C)),
-          const SizedBox(width: 10),
-          customText(
-            text:
-                'هذه البيانات سرية ومحمية ويتم عرضها للأطباء والمستخدمين المخولين فقط',
-            size: 14,
-            color: const Color(0xFFE83E8C),
-            bold: true,
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1318,7 +1567,7 @@ class _HeaderButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          height: 38,
+          height: responsiveSize(context, 0.026, min: 34, max: 38),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -1326,11 +1575,15 @@ class _HeaderButton extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, size: 18, color: const Color(0xFFE83E8C)),
+              Icon(
+                icon,
+                size: responsiveSize(context, 0.01, min: 15, max: 18),
+                color: const Color(0xFFE83E8C),
+              ),
               const SizedBox(width: 8),
               customText(
                 text: title,
-                size: 13,
+                size: responsiveSize(context, 0.0085, min: 12, max: 14),
                 color: const Color(0xFFE83E8C),
                 bold: true,
               ),
@@ -1355,24 +1608,27 @@ class _HeaderInfoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFFE83E8C), size: w * 0.02),
+        Icon(
+          icon,
+          color: const Color(0xFFE83E8C),
+          size: responsiveSize(context, 0.02, min: 22, max: 32),
+        ),
         const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             customText(
               text: title,
-              size: w * 0.0075,
+              size: responsiveSize(context, 0.0075, min: 11, max: 14),
               color: const Color(0xFF7A7890),
               bold: true,
               isCenter: false,
             ),
             customText(
               text: value,
-              size: w * 0.008,
+              size: responsiveSize(context, 0.008, min: 12, max: 15),
               color: textColor,
               bold: true,
               isCenter: false,
@@ -1388,9 +1644,11 @@ class _HeaderDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 28),
-      width: 3,
-      height: 45,
+      margin: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.018, min: 18, max: 28),
+      ),
+      width: 2,
+      height: responsiveHeight(context, 0.05, min: 38, max: 45),
       color: Colors.grey.shade200,
     );
   }
@@ -1404,30 +1662,33 @@ class _MoreInfoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(11),
       child: Container(
-        height: 42,
-        padding: const EdgeInsets.symmetric(horizontal: 18),
+        height: responsiveHeight(context, 0.05, min: 38, max: 42),
+        padding: EdgeInsets.symmetric(
+          horizontal: responsiveSize(context, 0.012, min: 14, max: 18),
+        ),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF7FC),
           borderRadius: BorderRadius.circular(11),
           border: Border.all(color: const Color(0xFFF7CFE0)),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               opened
                   ? Icons.keyboard_arrow_up_rounded
                   : Icons.keyboard_arrow_down_rounded,
               color: const Color(0xFFE83E8C),
+              size: responsiveSize(context, 0.014, min: 18, max: 22),
             ),
             const SizedBox(width: 8),
             customText(
               text: 'المزيد من المعلومات',
-              size: w * 0.0075,
+              size: responsiveSize(context, 0.0075, min: 12, max: 14),
               color: const Color(0xFFE83E8C),
               bold: true,
             ),
@@ -1451,23 +1712,27 @@ class _EmergencyInfoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
     return Row(
       textDirection: TextDirection.rtl,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: const Color(0xFFE83E8C)),
+        Icon(
+          icon,
+          color: const Color(0xFFE83E8C),
+          size: responsiveSize(context, 0.014, min: 18, max: 22),
+        ),
         const SizedBox(width: 10),
         customText(
           text: '$title: ',
-          size: w * 0.0075,
+          size: responsiveSize(context, 0.0075, min: 12, max: 14),
           color: const Color(0xFF7A7890),
           bold: true,
           isCenter: false,
         ),
-        SizedBox(width: 6),
+        const SizedBox(width: 6),
         customText(
           text: value,
-          size: w * 0.008,
+          size: responsiveSize(context, 0.008, min: 12, max: 15),
           color: textColor,
           bold: true,
           isCenter: false,
@@ -1484,16 +1749,18 @@ class _SmallBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.008, min: 11, max: 13),
+        vertical: responsiveHeight(context, 0.006, min: 4, max: 6),
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFFFFEAF4),
         borderRadius: BorderRadius.circular(8),
       ),
       child: customText(
         text: text,
-        size: w * 0.0065,
+        size: responsiveSize(context, 0.0065, min: 11, max: 13),
         color: const Color(0xFFE83E8C),
         bold: true,
       ),
@@ -1640,4 +1907,3 @@ const List<PatientAnswer> _demoAnswers = [
     score: 0,
   ),
 ];
-

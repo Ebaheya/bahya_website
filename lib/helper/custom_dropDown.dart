@@ -10,7 +10,6 @@ Widget customDropdown({
   required IconData icon,
   required ValueChanged<String?> onChanged,
 }) {
-  final w = getScreenWidth(context);
 
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -30,7 +29,7 @@ Widget customDropdown({
           children: [
             Icon(icon, color: const Color(0xFF7B1FA2), size: 22),
            Spacer(),
-            customText(text: hint, size: w * 0.008, color: Colors.black38),
+            customText(text: hint, size: responsiveSize(context, 0.0075, min: 12, max: 14), color: Colors.black38),
           ],
         ),
         selectedItemBuilder: (context) {
@@ -38,7 +37,7 @@ Widget customDropdown({
             return Center(
               child: customText(
                 text: e,
-                size: w * 0.008,
+                size: responsiveSize(context, 0.0075, min: 12, max: 14),
                 bold: true,
                 color: const Color(0xFF2B2B2B),
               ),
@@ -51,7 +50,7 @@ Widget customDropdown({
             value: e,
             child: customText(
               text: e,
-              size: w * 0.008,
+              size: responsiveSize(context, 0.0075, min: 12, max: 14),
               color: const Color(0xFF2B2B2B),
             ),
           );

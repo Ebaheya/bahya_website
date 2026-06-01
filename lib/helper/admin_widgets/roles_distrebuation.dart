@@ -14,150 +14,224 @@ class _UserRolesDistributionState extends State<UserRolesDistribution> {
   bool _hover = false;
   bool _pressed = false;
 
-  void _setHover(bool v) => setState(() => _hover = v);
-
-  void _setPressed(bool v) => setState(() => _pressed = v);
-
   @override
   Widget build(BuildContext context) {
+    final isMobile = getScreenWidth(context) < 650;
     final scale = _pressed ? 0.98 : (_hover ? 1.02 : 1.0);
 
     return MouseRegion(
-      onEnter: (_) => _setHover(true),
-      onExit: (_) => _setHover(false),
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() {
+        _hover = false;
+        _pressed = false;
+      }),
       child: GestureDetector(
-        onTapDown: (_) => _setPressed(true),
-        onTapUp: (_) => _setPressed(false),
-        onTapCancel: () => _setPressed(false),
-
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
         child: AnimatedScale(
           scale: scale,
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
-
           child: AnimatedContainer(
             width: double.infinity,
-            height: getScreenHeight(context) * 0.45,
+           
+            height: responsiveHeight(
+              context,
+              isMobile ? 0.40 : 0.53,
+              min: isMobile ? 370 : 420,
+              max: isMobile ? 620 : 560,
+            ),
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.all(22),
-
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.014, min: 14, max: 22),
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.018, min: 20, max: 24),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(_hover ? 0.12 : 0.06),
-                  blurRadius: _hover ? 28 : 14,
-                  offset: Offset(0, _hover ? 14 : 6),
+                  blurRadius: responsiveSize(
+                    context,
+                    _hover ? 0.024 : 0.014,
+                    min: 14,
+                    max: 28,
+                  ),
+                  offset: Offset(
+                    0,
+                    responsiveHeight(
+                      context,
+                      _hover ? 0.016 : 0.008,
+                      min: 6,
+                      max: 14,
+                    ),
+                  ),
                 ),
               ],
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _RolesHeader(hover: _hover),
+                SizedBox(
+                  height: responsiveHeight(context, 0.018, min: 12, max: 22),
+                ),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isSmall = constraints.maxWidth < 700;
 
-            child: SizedBox(
-              height: getScreenHeight(context) * 0.36,
-
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-
-                children: [
-                  Row(
-                    children: [
-                      AnimatedScale(
-                        scale: _hover ? 1.12 : 1,
-                        duration: const Duration(milliseconds: 180),
-
-                        child: Container(
-                          width: getScreenWidth(context) * 0.035,
-                          height: getScreenWidth(context) * 0.035,
-
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: gradientColors),
-                            borderRadius: BorderRadius.circular(14),
-
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.pink.withOpacity(0.20),
-                                blurRadius: 14,
-                                offset: const Offset(0, 8),
+                      if (isSmall) {
+                        return Column(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: RolesChart(isHover: _hover),
+                            ),
+                            SizedBox(
+                              height: responsiveHeight(
+                                context,
+                                0.012,
+                                min: 8,
+                                max: 14,
                               ),
-                            ],
+                            ),
+                            const Expanded(
+                              flex: 2,
+                              child: _RolesLegendList(isMobile: true),
+                            ),
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          const Expanded(
+                            flex: 1,
+                            child: _RolesLegendList(isMobile: false),
                           ),
-
-                          child: const Icon(
-                            Icons.pie_chart_rounded,
-                            color: Colors.white,
-                            size: 26,
+                          SizedBox(
+                            width: responsiveSize(
+                              context,
+                              0.02,
+                              min: 16,
+                              max: 30,
+                            ),
                           ),
-                        ),
-                      ),
-
-                      SizedBox(width: getScreenWidth(context) * 0.012),
-
-                      customText(
-                        text: "User Roles Distribution",
-                        size: getScreenWidth(context) * 0.012,
-                        color: const Color(0xFF272044),
-                        bold: true,
-                        isEnglish: true,
-                      ),
-                    ],
+                          Expanded(flex: 2, child: RolesChart(isHover: _hover)),
+                        ],
+                      );
+                    },
                   ),
-
-                  SizedBox(height: getScreenHeight(context) * 0.025),
-
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              ModernLegendItem(
-                                color: Colors.purple,
-                                title: "Doctors",
-                                percent: "62%",
-                              ),
-
-                              SizedBox(height: 18),
-
-                              ModernLegendItem(
-                                color: Colors.blue,
-                                title: "Nurses",
-                                percent: "18%",
-                              ),
-
-                              SizedBox(height: 18),
-
-                              ModernLegendItem(
-                                color: Colors.green,
-                                title: "Staff",
-                                percent: "12%",
-                              ),
-
-                              SizedBox(height: 18),
-
-                              ModernLegendItem(
-                                color: Colors.pink,
-                                title: "Admins",
-                                percent: "8%",
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: 30),
-                        Expanded(flex: 2, child: RolesChart(isHover: _hover)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RolesHeader extends StatelessWidget {
+  final bool hover;
+
+  const _RolesHeader({required this.hover});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        AnimatedScale(
+          scale: hover ? 1.12 : 1,
+          duration: const Duration(milliseconds: 180),
+          child: Container(
+            width: responsiveSize(context, 0.035, min: 40, max: 60),
+            height: responsiveSize(context, 0.035, min: 40, max: 60),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: gradientColors),
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.012, min: 12, max: 18),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.pink.withOpacity(0.20),
+                  blurRadius: responsiveSize(context, 0.012, min: 12, max: 16),
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.pie_chart_rounded,
+              color: Colors.white,
+              size: responsiveSize(context, 0.018, min: 20, max: 28),
+            ),
+          ),
+        ),
+        SizedBox(width: responsiveSize(context, 0.012, min: 10, max: 18)),
+        Expanded(
+          child: customText(
+            text: "User Roles Distribution",
+            size: responsiveSize(context, 0.012, min: 14, max: 22),
+            color: const Color(0xFF272044),
+            bold: true,
+            isEnglish: true,
+            isCenter: false,
+            maxLines: 2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RolesLegendList extends StatelessWidget {
+  final bool isMobile;
+
+  const _RolesLegendList({required this.isMobile});
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = responsiveHeight(
+      context,
+      isMobile ? 0.012 : 0.02,
+      min: isMobile ? 8 : 14,
+      max: isMobile ? 12 : 18,
+    );
+
+    return Column(
+      mainAxisAlignment: isMobile
+          ? MainAxisAlignment.start
+          : MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const ModernLegendItem(
+          color: Colors.purple,
+          title: "Doctors",
+          percent: "62%",
+        ),
+        SizedBox(height: spacing),
+        const ModernLegendItem(
+          color: Colors.blue,
+          title: "Nurses",
+          percent: "18%",
+        ),
+        SizedBox(height: spacing),
+        const ModernLegendItem(
+          color: Colors.green,
+          title: "Staff",
+          percent: "12%",
+        ),
+        SizedBox(height: spacing),
+        const ModernLegendItem(
+          color: Colors.pink,
+          title: "Admins",
+          percent: "8%",
+        ),
+      ],
     );
   }
 }
@@ -184,88 +258,104 @@ class _RolesChartState extends State<RolesChart> {
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: widget.isHover ? 1.04 : 1),
-
+      tween: Tween(begin: 0, end: widget.isHover ? 1.03 : 1),
       duration: const Duration(milliseconds: 200),
-
       builder: (context, scale, child) {
-        return Transform.scale(
-          scale: scale,
+        return Center(
+          child: Transform.scale(
+            scale: scale,
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: 260,
+                  height: 260,
+                  child: PieChart(
+                    PieChartData(
+                      sectionsSpace: 4,
+                      centerSpaceRadius: 32,
+                      pieTouchData: PieTouchData(
+                        touchCallback: (event, response) {
+                          setState(() {
+                            if (!event.isInterestedForInteractions ||
+                                response == null ||
+                                response.touchedSection == null) {
+                              touchedIndex = -1;
+                              return;
+                            }
 
-          child: PieChart(
-            PieChartData(
-              sectionsSpace: 2,
-              centerSpaceRadius: getScreenHeight(context) * 0.02,
+                            touchedIndex =
+                                response.touchedSection!.touchedSectionIndex;
+                          });
+                        },
+                      ),
+                      sections: List.generate(data.length, (index) {
+                        final item = data[index];
+                        final isTouched = index == touchedIndex;
 
-              pieTouchData: PieTouchData(
-                touchCallback: (event, response) {
-                  setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        response == null ||
-                        response.touchedSection == null) {
-                      touchedIndex = -1;
-                      return;
-                    }
-
-                    touchedIndex = response.touchedSection!.touchedSectionIndex;
-                  });
-                },
-              ),
-
-              sections: List.generate(data.length, (index) {
-                final item = data[index];
-
-                final isTouched = index == touchedIndex;
-
-                return PieChartSectionData(
-                  value: item["percent"],
-
-                  color: item["color"],
-
-                  radius: isTouched
-                      ? getScreenHeight(context) * 0.14
-                      : getScreenHeight(context) * 0.13,
-
-                  title: "${item["percent"].toInt()}%",
-
-                  titleStyle: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'ArabicCustomFont',
-
-                    fontSize: getScreenWidth(context) * 0.010,
-                  ),
-
-                  badgeWidget: isTouched
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-
-                          decoration: BoxDecoration(
+                        return PieChartSectionData(
+                          value: item["percent"],
+                          color: item["color"],
+                          radius: isTouched ? 88 : 78,
+                          title: "${item["percent"].toInt()}%",
+                          titleStyle: TextStyle(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 10,
-                              ),
-                            ],
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'ArabicCustomFont',
+                            fontSize: responsiveSize(
+                              context,
+                              0.01,
+                              min: 11,
+                              max: 15,
+                            ),
                           ),
-
-                          child: customText(
-                            text: item["title"],
-                            size: getScreenWidth(context) * 0.009,
-                            color: textColor,
-                            bold: true,
-                            isEnglish: true,
-                          ),
-                        )
-                      : null,
-                );
-              }),
+                          badgeWidget: isTouched
+                              ? Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: responsiveSize(
+                                      context,
+                                      0.008,
+                                      min: 8,
+                                      max: 10,
+                                    ),
+                                    vertical: responsiveHeight(
+                                      context,
+                                      0.006,
+                                      min: 5,
+                                      max: 6,
+                                    ),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.08),
+                                        blurRadius: 10,
+                                      ),
+                                    ],
+                                  ),
+                                  child: customText(
+                                    text: item["title"],
+                                    size: responsiveSize(
+                                      context,
+                                      0.009,
+                                      min: 11,
+                                      max: 14,
+                                    ),
+                                    color: textColor,
+                                    bold: true,
+                                    isEnglish: true,
+                                  ),
+                                )
+                              : null,
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         );
@@ -291,31 +381,32 @@ class ModernLegendItem extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 16,
-          height: 16,
-
+          width: responsiveSize(context, 0.012, min: 12, max: 18),
+          height: responsiveSize(context, 0.012, min: 12, max: 18),
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
-
             boxShadow: [
               BoxShadow(color: color.withOpacity(0.25), blurRadius: 6),
             ],
           ),
         ),
+        SizedBox(width: responsiveSize(context, 0.01, min: 10, max: 14)),
         Expanded(
           child: customText(
             text: title,
-            size: getScreenWidth(context) * 0.01,
+            size: responsiveSize(context, 0.01, min: 12, max: 16),
             color: const Color(0xFF272044),
             bold: true,
             isEnglish: true,
+            isCenter: false,
+            maxLines: 1,
           ),
         ),
-        Spacer(),
+        SizedBox(width: responsiveSize(context, 0.008, min: 8, max: 12)),
         customText(
           text: percent,
-          size: getScreenWidth(context) * 0.009,
+          size: responsiveSize(context, 0.009, min: 11, max: 14),
           color: Colors.grey,
           bold: true,
           isEnglish: true,

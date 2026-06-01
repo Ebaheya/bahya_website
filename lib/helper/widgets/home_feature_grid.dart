@@ -1,17 +1,19 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class FeatureItem {
   final String title;
   final String subtitle;
   final IconData icon;
-  final VoidCallback onTap;
+  final String route;
+
   FeatureItem({
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.onTap,
+    required this.route,
   });
 }
 
@@ -51,7 +53,9 @@ class _FeatureCardState extends State<FeatureCard> {
         onTapDown: (_) => _setPressed(true),
         onTapUp: (_) => _setPressed(false),
         onTapCancel: () => _setPressed(false),
-        onTap: widget.item.onTap,
+        onTap: () {
+          context.pushReplacement(widget.item.route);
+        },
         child: AnimatedScale(
           scale: scale,
           duration: const Duration(milliseconds: 180),
@@ -108,7 +112,6 @@ class _FeatureCardState extends State<FeatureCard> {
                     size: h * 0.012,
                     color: const Color(0xFFE91E63),
                   ),
-                  
                 ],
               ),
             ),

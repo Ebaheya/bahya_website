@@ -1,7 +1,7 @@
 import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/screens/add_questionnaire.dart';
-import 'package:bahya_website/screens/admin_panel/admin_panal.dart';
+import 'package:bahya_website/screens/admin/admin_panal.dart';
 import 'package:bahya_website/screens/home.dart';
 import 'package:bahya_website/screens/login.dart';
 import 'package:bahya_website/screens/patient_info.dart';

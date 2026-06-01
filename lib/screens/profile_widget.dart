@@ -192,39 +192,6 @@ class _ProfileDialogState extends State<ProfileDialog> {
                         SizedBox(height: h * 0.035),
                         ProfileForm(),
                         SizedBox(height: h * 0.03),
-
-                        InkWell(
-                          onTap: () {},
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: Colors.red.withOpacity(0.12),
-                              ),
-                              color: Colors.red.withOpacity(0.03),
-                            ),
-
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.warning_amber_rounded,
-                                  color: Colors.red,
-                                ),
-                                SizedBox(width: 5),
-                                customText(
-                                  text: "الإبلاغ عن مشكلة",
-                                  size: h * 0.018,
-                                  color: Colors.red,
-                                  bold: true,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),

@@ -22,98 +22,184 @@ class _ReportCardState extends State<ReportCard> {
   bool _hover = false;
   bool _pressed = false;
 
-  void _setHover(bool v) => setState(() => _hover = v);
-  void _setPressed(bool v) => setState(() => _pressed = v);
-
   @override
   Widget build(BuildContext context) {
-    final scale = _pressed ? 0.98 : (_hover ? 1.04 : 1.0);
-    final iconScale = _hover ? 1.15 : 1.0;
+    final isMobile = getScreenWidth(context) < 650;
 
-    final shadow = [
-      BoxShadow(
-        color: Colors.black.withOpacity(_hover ? 0.12 : 0.06),
-        blurRadius: _hover ? 28 : 10,
-        offset: Offset(0, _hover ? 14 : 4),
-      ),
-    ];
-
-    final bgColor = _hover ? Colors.grey[50] : Colors.white;
+    final scale = _pressed ? 0.98 : (_hover ? 1.025 : 1.0);
+    final iconScale = _hover ? 1.12 : 1.0;
 
     return MouseRegion(
-      onEnter: (_) => _setHover(true),
-      onExit: (_) => _setHover(false),
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() {
+        _hover = false;
+        _pressed = false;
+      }),
       child: GestureDetector(
-        onTapDown: (_) => _setPressed(true),
-        onTapUp: (_) => _setPressed(false),
-        onTapCancel: () => _setPressed(false),
-
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
         child: AnimatedScale(
           scale: scale,
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
-
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
-            padding: const EdgeInsets.all(16),
-
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: shadow,
+            width: double.infinity,
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.012, min: 12, max: 18),
             ),
-
-            child: Row(
-              children: [
-                /// Icon
-                AnimatedScale(
-                  scale: iconScale,
-                  duration: const Duration(milliseconds: 180),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: gradientColors),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      widget.icon,
-                      color: Colors.white,
-                      size: getScreenWidth(context) * 0.02,
+            decoration: BoxDecoration(
+              color: _hover ? const Color(0xFFFFF8FC) : Colors.white,
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.014, min: 16, max: 22),
+              ),
+              border: Border.all(
+                color: _hover ? const Color(0xFFFFC6DD) : Colors.transparent,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(_hover ? 0.12 : 0.06),
+                  blurRadius: responsiveSize(
+                    context,
+                    _hover ? 0.02 : 0.012,
+                    min: 12,
+                    max: 28,
+                  ),
+                  offset: Offset(
+                    0,
+                    responsiveHeight(
+                      context,
+                      _hover ? 0.016 : 0.008,
+                      min: 5,
+                      max: 14,
                     ),
                   ),
                 ),
-
-                SizedBox(width: getScreenWidth(context) * 0.01),
-
-                /// Title
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    customText(
-                      text: widget.title,
-                      size: getScreenWidth(context) * 0.009,
-                      color: Colors.grey,
-                      isEnglish: true,
-                    ),
-
-                    SizedBox(height: getScreenHeight(context) * 0.001),
-
-                    /// Value
-                    customText(
-                      text: widget.value.toString(),
-                      size: getScreenWidth(context) * 0.009,
-                      color: const Color(0xFF8B2C00),
-                      bold: true,
-                      isEnglish: true,
-                    ),
-                  ],
-                ),
               ],
             ),
+            child: isMobile
+                ? _mobileContent(context, iconScale)
+                : _desktopContent(context, iconScale),
           ),
         ),
       ),
     );
+  }
+
+  Widget _desktopContent(BuildContext context, double iconScale) {
+    return Row(
+      children: [
+        _IconBox(icon: widget.icon, scale: iconScale),
+        SizedBox(width: responsiveSize(context, 0.01, min: 10, max: 16)),
+        Expanded(
+          child: _TextContent(
+            title: widget.title,
+            value: widget.value,
+            center: false,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _mobileContent(BuildContext context, double iconScale) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _IconBox(icon: widget.icon, scale: iconScale),
+        SizedBox(height: responsiveHeight(context, 0.014, min: 10, max: 14)),
+        _TextContent(title: widget.title, value: widget.value, center: false),
+      ],
+    );
+  }
+}
+
+class _IconBox extends StatelessWidget {
+  final IconData icon;
+  final double scale;
+
+  const _IconBox({required this.icon, required this.scale});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = responsiveSize(context, 0.038, min: 42, max: 58);
+
+    return AnimatedScale(
+      scale: scale,
+      duration: const Duration(milliseconds: 180),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: gradientColors),
+          borderRadius: BorderRadius.circular(
+            responsiveSize(context, 0.01, min: 12, max: 16),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: buttonColor.withOpacity(0.18),
+              blurRadius: responsiveSize(context, 0.01, min: 10, max: 14),
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Icon(
+          icon,
+          color: Colors.white,
+          size: responsiveSize(context, 0.018, min: 22, max: 30),
+        ),
+      ),
+    );
+  }
+}
+
+class _TextContent extends StatelessWidget {
+  final String title;
+  final double value;
+  final bool center;
+
+  const _TextContent({
+    required this.title,
+    required this.value,
+    required this.center,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: center
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        customText(
+          text: title,
+          size: responsiveSize(context, 0.009, min: 12, max: 15),
+          color: Colors.grey,
+          isEnglish: true,
+          isCenter: center,
+          maxLines: 2,
+        ),
+        SizedBox(height: responsiveHeight(context, 0.006, min: 5, max: 8)),
+        customText(
+          text: widgetValueText(value),
+          size: responsiveSize(context, 0.012, min: 16, max: 22),
+          color: const Color(0xFF7A004C),
+          bold: true,
+          isEnglish: true,
+          isCenter: center,
+          maxLines: 1,
+        ),
+      ],
+    );
+  }
+
+  String widgetValueText(double value) {
+    if (value % 1 == 0) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(1);
   }
 }

@@ -187,9 +187,7 @@ PreferredSizeWidget customAppBar({
                   if (!isHomeBar)
                     IconButton(
                   onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        }
+                       context.pop();
                       },
                       icon: const Icon(
                         Icons.arrow_forward_ios,
@@ -293,83 +291,7 @@ class LegendDot extends StatelessWidget {
   }
 }
 
-Widget pageHeader({
-  required double width,
-  required double height,
-  required String title,
-  required IconData? icon,
-  String? subtitle,
-  List<Widget>? widgets,
-}) {
-  return Container(
-    width: double.infinity,
-    height: height * 0.15,
-   
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(18),
-      gradient: LinearGradient(
-        colors: gradientColors,
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.pink.withOpacity(0.18),
-          blurRadius: 24,
-          offset: const Offset(0, 10),
-        ),
-      ],
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Row(
-        children: [
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child:  Icon(
-              icon,
-              color: Colors.white,
-              size: 34,
-            ),
-          ),
-    
-          const SizedBox(width: 22),
-    
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              customText(
-                text: title,
-                size: width * 0.017,
-                color: Colors.white,
-                bold: true,
-                isEnglish: true,
-              ),
-              const SizedBox(height: 10),
-              if (subtitle != null)
-                customText(
-                  text: subtitle,
-                  color: Colors.white.withOpacity(0.75),
-                  size: width * 0.01,
-                  isEnglish: true,
-                ),
-            ],
-          ),
-    
-          const Spacer(),
-    
-          if (widgets != null) ...widgets,
-        ],
-      ),
-    ),
-  );
-}
+
 
 Widget customLoading() {
   return Padding(

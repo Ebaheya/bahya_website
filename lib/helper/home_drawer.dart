@@ -3,6 +3,7 @@ import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/widgets/animated_icon.dart';
 import 'package:bahya_website/route.dart';
 import 'package:bahya_website/screens/profile_widget.dart';
+import 'package:bahya_website/screens/send_report.dart';
 import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
@@ -16,11 +17,12 @@ class HomeDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final h = getScreenHeight(context);
     final w = getScreenWidth(context);
 
+    final drawerWidth = (w * 0.28).clamp(360.0, 430.0);
+
     return Drawer(
-      width: w * 0.25,
+      width: drawerWidth,
       backgroundColor: Colors.transparent,
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 1.0, end: 0.0),
@@ -44,8 +46,13 @@ class HomeDrawer extends StatelessWidget {
                 Container(
                   width: double.infinity,
                   padding: EdgeInsets.symmetric(
-                    horizontal: w * 0.025,
-                    vertical: h * 0.04,
+                    horizontal: responsiveSize(
+                      context,
+                      0.018,
+                      min: 22,
+                      max: 32,
+                    ),
+                    vertical: responsiveHeight(context, 0.04, min: 32, max: 46),
                   ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -73,13 +80,24 @@ class HomeDrawer extends StatelessWidget {
                           size: 90,
                         ),
                       ),
-                      //welcome text and user name
                       Column(
                         children: [
-                          SizedBox(height: h * 0.02),
+                          SizedBox(
+                            height: responsiveHeight(
+                              context,
+                              0.02,
+                              min: 14,
+                              max: 22,
+                            ),
+                          ),
                           Center(
                             child: HoverWaveAvatar(
-                              radius: h * 0.045,
+                              radius: responsiveHeight(
+                                context,
+                                0.045,
+                                min: 36,
+                                max: 46,
+                              ),
                               iconColor: buttonColor,
                               onPressed: () {
                                 Navigator.pop(context);
@@ -87,21 +105,36 @@ class HomeDrawer extends StatelessWidget {
                               },
                             ),
                           ),
-
-                          SizedBox(height: h * 0.02),
-
+                          SizedBox(
+                            height: responsiveHeight(
+                              context,
+                              0.02,
+                              min: 14,
+                              max: 22,
+                            ),
+                          ),
                           customText(
                             text: "أهلاً بك،",
-                            size: h * 0.035,
+                            size: responsiveSize(
+                              context,
+                              0.018,
+                              min: 26,
+                              max: 34,
+                            ),
                             color: Colors.white,
                             bold: true,
                           ),
-
                           customText(
                             text: userName,
-                            size: h * 0.03,
+                            size: responsiveSize(
+                              context,
+                              0.014,
+                              min: 20,
+                              max: 26,
+                            ),
                             color: Colors.white,
                             bold: true,
+                            maxLines: 1,
                           ),
                         ],
                       ),
@@ -112,105 +145,66 @@ class HomeDrawer extends StatelessWidget {
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: w * 0.02,
-                      vertical: h * 0.025,
+                      horizontal: responsiveSize(
+                        context,
+                        0.014,
+                        min: 18,
+                        max: 26,
+                      ),
+                      vertical: responsiveHeight(
+                        context,
+                        0.025,
+                        min: 18,
+                        max: 28,
+                      ),
                     ),
                     child: Column(
                       children: [
-                        SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              _drawerItem(
-                                context,
-                                index: 1,
-                                icon: Icons.assignment,
-                                title: 'DT Questionnaire تعيين',
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/assign_questions',
-                                  );
-                                },
-                              ),
-
-                              _drawerItem(
-                                context,
-                                index: 2,
-                                icon: Icons.assignment,
-                                title: 'تعيين الاستئله',
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/assign_questions',
-                                  );
-                                },
-                              ),
-
-                              _drawerItem(
-                                context,
-                                index: 3,
-                                icon: Icons.assignment,
-                                title: 'تعيين المرضى',
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/assign_patients',
-                                  );
-                                },
-                              ),
-
-                              _drawerItem(
-                                context,
-                                index: 4,
-                                icon: Icons.history,
-                                title: 'الاستبيانات السابقة',
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/previous_surveys',
-                                  );
-                                },
-                              ),
-
-                              _drawerItem(
-                                context,
-                                index: 5,
-                                icon: Icons.forum_rounded,
-                                title: 'نموذج المتطوعين',
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/volunteer_survey',
-                                  );
-                                },
-                              ),
-
-                              _drawerItem(
-                                context,
-                                index: 6,
-                                icon: Icons.forum_rounded,
-                                title: 'Admin panel',
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  context.push('/admin');
-                                },
-                              ),
-
-                              // const Spacer(),
-                            ],
+                        Expanded(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                _drawerItem(
+                                  context,
+                                  index: 1,
+                                  icon: Icons.report_problem_rounded,
+                                  title: 'الإبلاغ عن مشكلة',
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    showReportProblemDialog(context);
+                                  },
+                                ),
+                                _drawerItem(
+                                  context,
+                                  index: 5,
+                                  icon: Icons.forum_rounded,
+                                  title: 'نموذج المتطوعين',
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/volunteer_survey',
+                                    );
+                                  },
+                                ),
+                                _drawerItem(
+                                  context,
+                                  index: 6,
+                                  icon: Icons.admin_panel_settings_rounded,
+                                  title: 'Admin panel',
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    context.push('/admin');
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        Spacer(),
                         Divider(
                           color: Colors.pink.withOpacity(0.18),
                           thickness: 1,
                         ),
-
                         _logoutItem(context),
                       ],
                     ),
@@ -231,8 +225,6 @@ class HomeDrawer extends StatelessWidget {
     required String title,
     VoidCallback? onTap,
   }) {
-    final h = getScreenHeight(context);
-
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 1.0, end: 0.0),
       duration: Duration(milliseconds: 350 + (index * 80)),
@@ -247,8 +239,14 @@ class HomeDrawer extends StatelessWidget {
         onTap: onTap ?? () => Navigator.pop(context),
         borderRadius: BorderRadius.circular(18),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          width: double.infinity,
+          margin: EdgeInsets.only(
+            bottom: responsiveHeight(context, 0.014, min: 10, max: 14),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: responsiveSize(context, 0.012, min: 14, max: 18),
+            vertical: responsiveHeight(context, 0.014, min: 11, max: 15),
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
@@ -262,36 +260,39 @@ class HomeDrawer extends StatelessWidget {
             ],
           ),
           child: Row(
-            children: [
-              Icon(icon, color: buttonColor, size: h * 0.028),
+  textDirection: TextDirection.rtl,
+  children: [
+    Icon(
+      Icons.arrow_forward_ios_rounded,
+      color: buttonColor,
+      size: responsiveSize(context, 0.009, min: 14, max: 18),
+    ),
 
-              Spacer(),
+    Expanded(
+      child: Center(
+        child: customText(
+          text: title,
+          size: responsiveSize(context, 0.009, min: 14, max: 18),
+          color: Colors.black87,
+          maxLines: 1,
+          isCenter: true,
+        ),
+      ),
+    ),
 
-              Expanded(
-                child: customText(
-                  text: title,
-                  size: h * 0.018,
-                  color: Colors.black87,
-                  isCenter: false,
-                  maxLines: 1,
-                ),
-              ),
-              Spacer(),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: buttonColor,
-                size: h * 0.018,
-              ),
-            ],
-          ),
+    Icon(
+      icon,
+      color: buttonColor,
+      size: responsiveSize(context, 0.014, min: 20, max: 26),
+    ),
+  ],
+),
         ),
       ),
     );
   }
 
   Widget _logoutItem(BuildContext context) {
-    final h = getScreenHeight(context);
-
     return InkWell(
       onTap: () async {
         try {
@@ -319,7 +320,11 @@ class HomeDrawer extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(
+          horizontal: responsiveSize(context, 0.012, min: 14, max: 18),
+          vertical: responsiveHeight(context, 0.014, min: 10, max: 14),
+        ),
         decoration: BoxDecoration(
           color: const Color(0xFFFFEEF7),
           borderRadius: BorderRadius.circular(18),
@@ -332,17 +337,22 @@ class HomeDrawer extends StatelessWidget {
           ],
         ),
         child: Row(
+          textDirection: TextDirection.rtl,
           children: [
-            Icon(Icons.logout_rounded, color: buttonColor, size: h * 0.03),
-            SizedBox(width: h * 0.018),
             Expanded(
               child: customText(
                 text: 'تسجيل الخروج',
-                size: h * 0.02,
+                size: responsiveSize(context, 0.01, min: 15, max: 19),
                 color: textColor,
                 bold: true,
                 isCenter: false,
               ),
+            ),
+            SizedBox(width: responsiveSize(context, 0.01, min: 10, max: 14)),
+            Icon(
+              Icons.logout_rounded,
+              color: buttonColor,
+              size: responsiveSize(context, 0.015, min: 22, max: 28),
             ),
           ],
         ),
