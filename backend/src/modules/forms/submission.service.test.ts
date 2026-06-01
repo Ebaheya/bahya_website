@@ -141,7 +141,10 @@ describe('submission visibility and detail', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           status: 'PUBLISHED',
-          OR: [{ publishAt: null }, { publishAt: { lte: now } }],
+          AND: [
+            { OR: [{ publishAt: null }, { publishAt: { lte: now } }] },
+            { OR: [{ dueAt: null }, { dueAt: { gt: now } }] },
+          ],
           patient: {
             user: { is: { id: 'patient-user-1', role: 'PATIENT', isActive: true } },
           },
@@ -495,6 +498,45 @@ describe('submit', () => {
       )
     ).rejects.toMatchObject({ statusCode: 409, code: 'FORM_ALREADY_SUBMITTED' });
     expect(tx.formSubmission.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects submitting an expired assignment with 410 GONE and persists nothing', async () => {
+    const tx = submitTx(assignment({ dueAt: new Date('2026-05-20T00:00:00Z') }));
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      submissionService.submit(
+        'assignment-1',
+        { answers: [{ questionId: 'question-select', choiceIds: ['choice-1'] }] },
+        'patient-user-1',
+        'PATIENT',
+        undefined,
+        new Date('2026-05-25T12:00:00Z')
+      )
+    ).rejects.toMatchObject({ statusCode: 410, code: 'FORM_EXPIRED' });
+    expect(tx.formSubmission.create).not.toHaveBeenCalled();
+  });
+
+  it('allows submitting before the due date passes', async () => {
+    const tx = submitTx(assignment({ dueAt: new Date('2026-06-30T00:00:00Z') }));
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    const result = await submissionService.submit(
+      'assignment-1',
+      {
+        answers: [
+          { questionId: 'question-select', choiceIds: ['choice-1'] },
+          { questionId: 'question-scale', value: 2 },
+        ],
+      },
+      'patient-user-1',
+      'PATIENT',
+      undefined,
+      new Date('2026-05-25T12:00:00Z')
+    );
+
+    expect(result.status).toBe('SUBMITTED');
+    expect(tx.formSubmission.create).toHaveBeenCalled();
   });
 
   it('rejects non-filler roles before accessing assignment data', async () => {

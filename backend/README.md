@@ -230,6 +230,18 @@ fans out one assignment per active patient, resolved at publish time;
 `SELECTED_PATIENTS` does the same for a chosen `patientIds` list (1–200,
 deduplicated, all-or-nothing — any inactive/unknown id rejects the whole publish).
 
+Optional `dueAt` (ISO datetime, must be after the publish time) makes the form
+expire: once it passes the form drops out of `/my` and submitting it → **410**
+`FORM_EXPIRED`.
+
+A patient may hold only one *outstanding* (not-yet-submitted) copy of a given
+form at a time. Re-publishing the same form to a patient who still has an open
+copy is a **409** `FORM_DUPLICATE_OPEN_ASSIGNMENT` for the single-patient
+targets, and is silently skipped (reported as `skipped` in the response) for the
+`ALL_PATIENTS`/`SELECTED_PATIENTS` fan-outs. Re-publishing is allowed once the
+prior copy is submitted or cancelled. The publish response is
+`{ assignmentsCreated, assignmentIds, skipped }`.
+
 **Filling & submitting** (`/form-assignments`, Patient + Volunteer):
 
 | Method | Path | Roles | Purpose |
@@ -1635,7 +1647,13 @@ Set `{{patientId}}` from `GET /patients/options` and `{{volunteerId}}` from
 ```
 
 For scheduled visibility, set `publishAt` to an ISO timestamp in the future,
-for example `"2026-06-01T08:00:00.000Z"`.
+for example `"2026-06-01T08:00:00.000Z"`. Add an optional `dueAt` (ISO timestamp,
+must be after the publish time) to make the form expire — after it passes the
+form is hidden and submitting it returns **410** `FORM_EXPIRED`:
+
+```json
+{ "target": "ALL_PATIENTS", "publishAt": null, "dueAt": "2026-06-15T08:00:00.000Z" }
+```
 
 ```http
 POST {{baseUrl}}/forms/{{formId}}/publish
@@ -1648,7 +1666,8 @@ Content-Type: application/json
 ```json
 {
   "assignmentsCreated": 1,
-  "assignmentIds": ["assignment-uuid"]
+  "assignmentIds": ["assignment-uuid"],
+  "skipped": 0
 }
 ```
 
@@ -1669,6 +1688,10 @@ pm.environment.set("assignmentId", body.assignmentIds[0]);
   id on success (it rejects rather than partially fanning out).
 - A selected patient or volunteer must still be active when the publish
   request is processed.
+- A patient who already has an outstanding (not-yet-submitted) copy of this form
+  is skipped by the fan-out targets and counted in `skipped`; the single-patient
+  targets reject with **409** `FORM_DUPLICATE_OPEN_ASSIGNMENT`. Re-publish once
+  the prior copy is submitted or cancelled.
 
 **Errors**
 

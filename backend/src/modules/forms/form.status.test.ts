@@ -64,6 +64,7 @@ function publishTransaction(isActive: boolean) {
     },
     user: { findUnique: jest.fn() },
     formAssignment: {
+      findMany: jest.fn().mockResolvedValue([]),
       createManyAndReturn: jest.fn().mockResolvedValue([
         {
           id: 'assignment-1',
@@ -155,7 +156,7 @@ describe('form status lifecycle', () => {
         }),
         'admin-1'
       )
-    ).resolves.toEqual({ assignmentsCreated: 1, assignmentIds: ['assignment-1'] });
+    ).resolves.toEqual({ assignmentsCreated: 1, assignmentIds: ['assignment-1'], skipped: 0 });
   });
 
   it('is a no-op when the status is already at the requested value', async () => {

@@ -297,6 +297,12 @@ describe('dynamic assessment forms acceptance workflow', () => {
     );
 
     const phq9 = formList.data.find((form) => form.key === 'PHQ9')!;
+    // The one-outstanding-copy-per-(form, patient) guard means each (form, patient)
+    // pair can hold only a single active assignment, so the volunteer-administered
+    // and the cohort-wide publishes below each use their own form to avoid
+    // colliding with the PHQ-9 copies created here.
+    const phq4 = formList.data.find((form) => form.key === 'PHQ4')!;
+    const dt = formList.data.find((form) => form.key === 'DT')!;
     const singlePublish = await request(`/api/v1/forms/${phq9.id}/publish`, doctorToken, {
       method: 'POST',
       body: JSON.stringify({ target: 'SINGLE_PATIENT', patientId: patient.id, publishAt: null }),
@@ -329,7 +335,7 @@ describe('dynamic assessment forms acceptance workflow', () => {
       expect.arrayContaining([expect.objectContaining({ id: scheduledId })])
     );
 
-    const volunteerPublish = await request(`/api/v1/forms/${phq9.id}/publish`, doctorToken, {
+    const volunteerPublish = await request(`/api/v1/forms/${phq4.id}/publish`, doctorToken, {
       method: 'POST',
       body: JSON.stringify({
         target: 'VOLUNTEER_FOR_PATIENT',
@@ -346,7 +352,7 @@ describe('dynamic assessment forms acceptance workflow', () => {
       expect.arrayContaining([expect.objectContaining({ id: volunteerAssignmentId })])
     );
 
-    const allPatients = await request(`/api/v1/forms/${phq9.id}/publish`, doctorToken, {
+    const allPatients = await request(`/api/v1/forms/${dt.id}/publish`, doctorToken, {
       method: 'POST',
       body: JSON.stringify({ target: 'ALL_PATIENTS', publishAt: null }),
     });

@@ -140,7 +140,7 @@
               "mode": "raw",
               "raw": "{\n  \"target\": \"SINGLE_PATIENT\",\n  \"patientId\": \"{{patientId}}\",\n  \"publishAt\": null\n}"
             },
-            "description": "publishAt: omit/null = visible immediately; ISO-8601 future date = scheduled."
+            "description": "publishAt: omit/null = visible immediately; ISO-8601 future date = scheduled. Optional dueAt (ISO-8601, after publishAt) expires the form -> submit after it returns 410 FORM_EXPIRED. If this patient already has an outstanding (not-yet-submitted) copy of this form -> 409 FORM_DUPLICATE_OPEN_ASSIGNMENT; re-publish once the prior copy is submitted or cancelled."
           }
         },
         {
@@ -149,8 +149,8 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "url": { "raw": "{{baseUrl}}/api/v1/forms/{{formId}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "v1", "forms", "{{formId}}", "publish"] },
-            "body": { "mode": "raw", "raw": "{\n  \"target\": \"ALL_PATIENTS\",\n  \"publishAt\": null\n}" },
-            "description": "Fans out one assignment + notification per active patient (tighter rate limit)."
+            "body": { "mode": "raw", "raw": "{\n  \"target\": \"ALL_PATIENTS\",\n  \"publishAt\": null,\n  \"dueAt\": \"2026-06-15T08:00:00Z\"\n}" },
+            "description": "Fans out one assignment + notification per active patient (tighter rate limit). Optional dueAt (ISO-8601, after publishAt) expires every copy. Patients who already hold an outstanding copy of this form are skipped, not duplicated; the response reports `skipped`. Response: { assignmentsCreated, assignmentIds, skipped }."
           }
         },
         {
@@ -163,7 +163,7 @@
               "mode": "raw",
               "raw": "{\n  \"target\": \"SELECTED_PATIENTS\",\n  \"patientIds\": [\"{{patientId}}\"],\n  \"publishAt\": null\n}"
             },
-            "description": "Fans out one assignment per listed patient. patientIds: 1-200 UUIDs, deduplicated. All-or-nothing: any non-existent/inactive patient -> 404 NOT_FOUND and nothing is published."
+            "description": "Fans out one assignment per listed patient. patientIds: 1-200 UUIDs, deduplicated. All-or-nothing on validity: any non-existent/inactive patient -> 404 NOT_FOUND and nothing is published. Optional dueAt (ISO-8601, after publishAt) expires the copies. Patients who already hold an outstanding copy of this form are skipped (reported as `skipped`), not duplicated."
           }
         },
         {

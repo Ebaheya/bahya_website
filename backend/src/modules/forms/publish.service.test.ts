@@ -59,7 +59,12 @@ function transactionTx() {
       findMany: jest.fn(),
     },
     user: { findUnique: jest.fn() },
-    formAssignment: { createManyAndReturn: jest.fn() },
+    formAssignment: {
+      // Open-copy guard lookup. Defaults to "no outstanding copies" so the happy
+      // paths publish; individual tests override it to exercise the guard.
+      findMany: jest.fn().mockResolvedValue([]),
+      createManyAndReturn: jest.fn(),
+    },
   };
 }
 
@@ -111,7 +116,7 @@ describe('publishForm', () => {
         undefined,
         new Date('2026-05-25T12:00:00Z')
       )
-    ).resolves.toEqual({ assignmentsCreated: 1, assignmentIds: ['assignment-1'] });
+    ).resolves.toEqual({ assignmentsCreated: 1, assignmentIds: ['assignment-1'], skipped: 0 });
 
     expect(tx.formAssignment.createManyAndReturn).toHaveBeenCalledWith({
       data: [
@@ -164,6 +169,7 @@ describe('publishForm', () => {
     ).resolves.toEqual({
       assignmentsCreated: 2,
       assignmentIds: ['assignment-1', 'assignment-2'],
+      skipped: 0,
     });
 
     expect(tx.patient.findMany).toHaveBeenCalledWith({
@@ -210,6 +216,7 @@ describe('publishForm', () => {
     ).resolves.toEqual({
       assignmentsCreated: 2,
       assignmentIds: ['assignment-1', 'assignment-2'],
+      skipped: 0,
     });
 
     expect(tx.patient.findMany).toHaveBeenCalledWith({
@@ -270,10 +277,121 @@ describe('publishForm', () => {
         publishFormSchema.parse({ target: 'ALL_PATIENTS' }),
         'doctor-1'
       )
-    ).resolves.toEqual({ assignmentsCreated: 0, assignmentIds: [] });
+    ).resolves.toEqual({ assignmentsCreated: 0, assignmentIds: [], skipped: 0 });
 
     expect(tx.formAssignment.createManyAndReturn).not.toHaveBeenCalled();
     expect(emitFormAssignedMock).not.toHaveBeenCalled();
+  });
+
+  it('skips fan-out patients who already have an outstanding copy and reports the count', async () => {
+    const tx = transactionTx();
+    tx.patient.findMany.mockResolvedValue([
+      { id: 'patient-1', userId: 'user-1' },
+      { id: 'patient-2', userId: 'user-2' },
+    ]);
+    // patient-1 already holds an open copy of this form -> skipped, not duplicated.
+    tx.formAssignment.findMany.mockResolvedValue([{ patientId: 'patient-1' }]);
+    tx.formAssignment.createManyAndReturn.mockResolvedValue([
+      { id: 'assignment-2', patientId: 'patient-2', assignedToUserId: null, target: 'ALL_PATIENTS' },
+    ]);
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      publishService.publishForm(
+        'form-1',
+        publishFormSchema.parse({ target: 'ALL_PATIENTS' }),
+        'doctor-1'
+      )
+    ).resolves.toEqual({
+      assignmentsCreated: 1,
+      assignmentIds: ['assignment-2'],
+      skipped: 1,
+    });
+
+    expect(tx.formAssignment.findMany).toHaveBeenCalledWith({
+      where: {
+        templateId: 'form-1',
+        patientId: { in: ['patient-1', 'patient-2'] },
+        status: { in: ['SCHEDULED', 'PUBLISHED'] },
+      },
+      select: { patientId: true },
+    });
+    expect(tx.formAssignment.createManyAndReturn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [expect.objectContaining({ patientId: 'patient-2', target: 'ALL_PATIENTS' })],
+      })
+    );
+    expect(emitFormAssignedMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a single-patient publish when that patient already has an outstanding copy', async () => {
+    const tx = transactionTx();
+    tx.patient.findUnique.mockResolvedValue({
+      id: 'patient-1',
+      userId: 'patient-user-1',
+      user: { isActive: true },
+    });
+    tx.formAssignment.findMany.mockResolvedValue([{ patientId: 'patient-1' }]);
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      publishService.publishForm(
+        'form-1',
+        publishFormSchema.parse({
+          target: 'SINGLE_PATIENT',
+          patientId: 'e2108357-5e7d-49d5-aad1-d6b0914e7cf7',
+        }),
+        'doctor-1'
+      )
+    ).rejects.toMatchObject({ statusCode: 409, code: 'FORM_DUPLICATE_OPEN_ASSIGNMENT' });
+
+    expect(tx.formAssignment.createManyAndReturn).not.toHaveBeenCalled();
+    expect(emitFormAssignedMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects a publish whose due date is not after its publish time', async () => {
+    const tx = transactionTx();
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      publishService.publishForm(
+        'form-1',
+        publishFormSchema.parse({
+          target: 'ALL_PATIENTS',
+          publishAt: '2026-06-10T08:00:00Z',
+          dueAt: '2026-06-10T08:00:00Z',
+        }),
+        'doctor-1',
+        undefined,
+        new Date('2026-06-01T12:00:00Z')
+      )
+    ).rejects.toMatchObject({ statusCode: 400, code: 'FORM_INVALID_DUE_DATE' });
+  });
+
+  it('stamps the due date on a scheduled fan-out', async () => {
+    const tx = transactionTx();
+    tx.patient.findMany.mockResolvedValue([{ id: 'patient-1', userId: 'user-1' }]);
+    tx.formAssignment.createManyAndReturn.mockResolvedValue([
+      { id: 'assignment-1', patientId: 'patient-1', assignedToUserId: null, target: 'ALL_PATIENTS' },
+    ]);
+    prismaMock.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await publishService.publishForm(
+      'form-1',
+      publishFormSchema.parse({
+        target: 'ALL_PATIENTS',
+        dueAt: '2026-06-15T08:00:00Z',
+      }),
+      'doctor-1',
+      undefined,
+      new Date('2026-06-01T12:00:00Z')
+    );
+
+    expect(tx.formAssignment.createManyAndReturn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [expect.objectContaining({ dueAt: new Date('2026-06-15T08:00:00Z') })],
+      })
+    );
   });
 
   it('schedules a volunteer assignment without notifying before visibility', async () => {

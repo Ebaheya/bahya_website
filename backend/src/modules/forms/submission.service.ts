@@ -76,6 +76,11 @@ function ensureFillerAccess(
   if (!isVisible(assignment, now) || !canFill(assignment, actorId, role)) {
     throw AppError.notFound('Form assignment not found');
   }
+  // Expiry is checked only after visibility/access so we never reveal a form's
+  // existence (or its due date) to someone not entitled to fill it.
+  if (assignment.dueAt && assignment.dueAt.getTime() <= now.getTime()) {
+    throw new AppError(410, FORM_ERROR.EXPIRED, 'This form has expired and can no longer be submitted');
+  }
 }
 
 function asScoringQuestions(assignment: AssignmentDetail): ScoringQuestion[] {
@@ -148,7 +153,13 @@ export async function getMyAssignments(actorId: string, role: Role, now = new Da
 
   const where: Prisma.FormAssignmentWhereInput = {
     status: 'PUBLISHED',
-    OR: [{ publishAt: null }, { publishAt: { lte: now } }],
+    // Visible (publishAt has passed) AND not yet expired (dueAt is null or in the
+    // future). Two independent OR groups must be AND-ed — a single object can hold
+    // only one `OR` key.
+    AND: [
+      { OR: [{ publishAt: null }, { publishAt: { lte: now } }] },
+      { OR: [{ dueAt: null }, { dueAt: { gt: now } }] },
+    ],
     ...(role === 'PATIENT'
       ? {
           patient: { user: { is: { id: actorId, role: 'PATIENT', isActive: true } } },

@@ -231,6 +231,7 @@ model FormAssignment {
   target           FormAssignmentTarget
   status           FormAssignmentStatus @default(PUBLISHED)
   publishAt        DateTime?
+  dueAt            DateTime?
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   template         FormTemplate         @relation(fields: [templateId], references: [id])
@@ -245,6 +246,10 @@ model FormAssignment {
   @@index([status, publishAt])
   @@index([templateId])
   @@index([formVersionId])
+  // NOTE: a partial UNIQUE index on (templateId, patientId) WHERE status IN
+  // ('SCHEDULED','PUBLISHED') enforces the one-outstanding-copy-per-form rule at
+  // the DB level. Prisma cannot express a filtered index, so it lives in the
+  // 20260601000000_form_assignment_expiry_and_open_copy migration only.
 }
 
 model FormSubmission {

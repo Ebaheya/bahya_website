@@ -58,7 +58,22 @@ export async function publishForm(
   const publishAt = normalizedPublishTime(input.publishAt, now);
   const status = publishAt ? 'SCHEDULED' : 'PUBLISHED';
 
-  const assignments = await prisma.$transaction(async (tx) => {
+  // Optional expiry: a form can no longer be filled after dueAt. It must fall
+  // after the moment the form becomes visible (the scheduled time, or now for an
+  // immediate publish) — otherwise the assignment would arrive already expired.
+  const dueAt = input.dueAt ?? null;
+  if (dueAt) {
+    const visibleFrom = publishAt ?? now;
+    if (dueAt.getTime() <= visibleFrom.getTime()) {
+      throw new AppError(
+        400,
+        FORM_ERROR.INVALID_DUE_DATE,
+        'Form due date must be after its publish time'
+      );
+    }
+  }
+
+  const { assignments, skipped } = await prisma.$transaction(async (tx) => {
     const template = await tx.formTemplate.findUnique({
       where: { id: templateId },
       include: {
@@ -139,11 +154,44 @@ export async function publishForm(
       ];
     }
 
+    // Duplicate-publish guard. A patient must not hold two outstanding (not yet
+    // submitted) copies of the same form. Re-publishing is allowed once the prior
+    // copy is submitted/cancelled — that is the next legitimate assessment point.
+    // For the single-recipient targets this is a hard error; for the fan-out
+    // targets we skip the already-covered patients and report how many, so one
+    // stale patient never blocks a publish to the rest of the cohort. A partial
+    // unique index on (templateId, patientId) for active statuses backs this at
+    // the DB level against the double-click race the read-then-write can miss.
+    let skipped = 0;
+    if (recipients.length > 0) {
+      const openCopies = await tx.formAssignment.findMany({
+        where: {
+          templateId: template.id,
+          patientId: { in: recipients.map((recipient) => recipient.patientId) },
+          status: { in: ['SCHEDULED', 'PUBLISHED'] },
+        },
+        select: { patientId: true },
+      });
+      if (openCopies.length > 0) {
+        const blocked = new Set(openCopies.map((copy) => copy.patientId));
+        if (input.target === 'SINGLE_PATIENT' || input.target === 'VOLUNTEER_FOR_PATIENT') {
+          throw new AppError(
+            409,
+            FORM_ERROR.DUPLICATE_OPEN_ASSIGNMENT,
+            'This patient already has an outstanding copy of this form'
+          );
+        }
+        const before = recipients.length;
+        recipients = recipients.filter((recipient) => !blocked.has(recipient.patientId));
+        skipped = before - recipients.length;
+      }
+    }
+
     const recipientUserByPatient = new Map(
       recipients.map((recipient) => [recipient.patientId, recipient.patientUserId])
     );
 
-    if (recipients.length === 0) return [];
+    if (recipients.length === 0) return { assignments: [], skipped };
 
     // Single bulk insert (one round trip) rather than one create per recipient:
     // an ALL_PATIENTS fan-out otherwise serializes N inserts on the interactive
@@ -158,18 +206,22 @@ export async function publishForm(
         target: recipient.target,
         status,
         publishAt,
+        dueAt,
       })),
       select: { id: true, patientId: true, assignedToUserId: true, target: true },
     });
 
-    return created.map((assignment) => ({
-      id: assignment.id,
-      patientId: assignment.patientId,
-      patientUserId: recipientUserByPatient.get(assignment.patientId)!,
-      target: assignment.target,
-      assignedToUserId: assignment.assignedToUserId,
-      formName: template.name,
-    }));
+    return {
+      assignments: created.map((assignment) => ({
+        id: assignment.id,
+        patientId: assignment.patientId,
+        patientUserId: recipientUserByPatient.get(assignment.patientId)!,
+        target: assignment.target,
+        assignedToUserId: assignment.assignedToUserId,
+        formName: template.name,
+      })),
+      skipped,
+    };
   });
 
   if (status === 'PUBLISHED') {
@@ -184,7 +236,9 @@ export async function publishForm(
     newValues: {
       target: input.target,
       assignmentsCreated: assignments.length,
+      skipped,
       scheduled: status === 'SCHEDULED',
+      dueAt: dueAt ? dueAt.toISOString() : null,
     },
     req,
   });
@@ -192,6 +246,7 @@ export async function publishForm(
   return {
     assignmentsCreated: assignments.length,
     assignmentIds: assignments.map((item) => item.id),
+    skipped,
   };
 }
 
