@@ -1,5 +1,5 @@
 import 'package:bahya_app/helper/base.dart';
-import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +11,7 @@ class PatientRequestsDetails extends StatelessWidget {
     final w = getScreenWidth(context);
     final h = getScreenHeight(context);
     return Scaffold(
-            extendBody: true,
+      extendBody: true,
       extendBodyBehindAppBar: true,
       backgroundColor: backgroundColor,
       appBar: customAppBar(
@@ -28,6 +28,7 @@ class PatientRequestsDetails extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                SizedBox(height: h * 0.15),
                 patientDetailsCard(
                   w: w,
                   h: h,
@@ -295,5 +296,4 @@ class PatientRequestsDetails extends StatelessWidget {
       ),
     );
   }
-
 }

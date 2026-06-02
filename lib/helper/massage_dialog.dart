@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:bahya_app/helper/base.dart';
-import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/constant.dart';
 import 'package:flutter/material.dart';
 
 void customDialog({
@@ -65,11 +65,8 @@ void customDialog({
                     alignment: Alignment.topRight,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(20),
-                      onTap: () {
-                        onClose != null
-                            ? onClose()
-                            : Navigator.of(dialogContext).pop();
-                      },
+                      onTap: () {  onClose != null ? onClose() : Navigator.of(dialogContext).pop();
+                       },
                       child: Container(
                         width: 34,
                         height: 34,

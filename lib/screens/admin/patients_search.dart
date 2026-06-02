@@ -1,6 +1,6 @@
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/custom_searchbar.dart';
-import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -46,7 +46,7 @@ class PatientsSearch extends StatelessWidget {
           textDirection: TextDirection.rtl,
           child: Column(
             children: [
-              SizedBox(height: h * 0.02),
+              SizedBox(height: h * 0.25),
               patientCard(
                 w: w,
                 h: h,

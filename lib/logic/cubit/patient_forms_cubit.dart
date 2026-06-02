@@ -1,6 +1,6 @@
 import 'package:bahya_app/data/remote/repo/repo.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'patient_forms_state.dart';
+import '../state/patient_forms_state.dart';
 
 class PatientFormsCubit extends Cubit<PatientFormsState> {
   final AppRepository repo;

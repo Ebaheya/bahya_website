@@ -5,7 +5,7 @@ import 'package:bahya_app/helper/custom_form_textfield.dart';
 import 'package:bahya_app/helper/custom_glow_buttom.dart';
 import 'package:bahya_app/helper/custom_time_picker.dart';
 import 'package:bahya_app/helper/filter_dropdown.dart';
-import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/constant.dart';
 import 'package:flutter/material.dart';
 
 Widget customText({
@@ -59,63 +59,6 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> customSnackBar({
   );
 }
 
-Widget customLoading() {
-  return Padding(
-    padding: const EdgeInsets.all(20),
-
-    child: Center(
-      child: Center(
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.7, end: 1),
-
-          duration: const Duration(milliseconds: 5000),
-
-          curve: Curves.easeInOut,
-
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: value,
-
-              child: Container(
-                padding: const EdgeInsets.all(20),
-
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-
-                  gradient: LinearGradient(colors: gradientColors),
-
-                  boxShadow: [
-                    BoxShadow(
-                      color: gradientColors.first.withOpacity(0.35),
-
-                      blurRadius: 25,
-
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-
-                child: const SizedBox(
-                  width: 40,
-
-                  height: 40,
-
-                  child: CircularProgressIndicator(
-                    strokeWidth: 5,
-
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-
-                    backgroundColor: Colors.white24,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    ),
-  );
-}
 
 Widget chatBotCard({required double w, required double h}) {
   return Center(
@@ -859,6 +802,7 @@ Widget serviceAddForm({
 
             Expanded(
               child: CustomTimePickerField(
+
                 borderRadius: 14,
                 labelText: null,
                 hintText: "الوقت",
@@ -1401,6 +1345,35 @@ Widget registeredServiceTile({
           icon: Icon(Icons.more_vert, color: mainColor, size: w * 0.07),
         ),
       ],
+    ),
+  );
+}
+Widget appIcon({double size = 170}) {
+  return Center(
+    child: Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Image.asset(
+            'assets/pics/app_icon.png',
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+          ),
+        ),
+      ),
     ),
   );
 }

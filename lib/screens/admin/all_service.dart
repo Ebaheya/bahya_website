@@ -1,6 +1,6 @@
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/custom_searchbar.dart';
-import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -106,7 +106,7 @@ class _AllServicesScreenState extends State<AllServicesScreen> {
     final h = getScreenHeight(context);
 
     return Scaffold(
-            extendBody: true,
+      extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: customAppBar(
         context: context,
@@ -122,6 +122,7 @@ class _AllServicesScreenState extends State<AllServicesScreen> {
           padding: EdgeInsets.all(8),
           child: Column(
             children: [
+              SizedBox(height: h * 0.15),
               CustomSearchBarWithFilter(
                 hintText: "ابحث عن خدمة، موقع، نوع الخدمة...",
                 onChanged: (value) {},
@@ -150,12 +151,12 @@ class _AllServicesScreenState extends State<AllServicesScreen> {
                 }),
               ),
 
-              SizedBox(height: h * 0.02),
-
+              // SizedBox(height:20),
               Expanded(
                 child: GridView.builder(
+                  padding: EdgeInsets.only(top: h * 0.025, bottom: h * 0.02),
                   itemCount: services.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 15,
                     mainAxisSpacing: 15,
@@ -180,7 +181,6 @@ class _AllServicesScreenState extends State<AllServicesScreen> {
                   },
                 ),
               ),
-
               SizedBox(height: h * 0.01),
 
               // customText(
@@ -321,7 +321,7 @@ class _AllServicesScreenState extends State<AllServicesScreen> {
         : (isSupport ? Icons.groups_rounded : Icons.menu_book_rounded);
 
     return Container(
-      padding: EdgeInsets.all(w * 0.025),
+      padding: EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -340,7 +340,7 @@ class _AllServicesScreenState extends State<AllServicesScreen> {
             children: [
               Container(
                 height: h * 0.055,
-                width: h * 0.055,
+                width: w * 0.075,
                 decoration: BoxDecoration(
                   color: lightColor,
                   shape: BoxShape.circle,

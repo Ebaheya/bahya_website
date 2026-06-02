@@ -1,6 +1,6 @@
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/custom_glow_buttom.dart';
-import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -32,13 +32,23 @@ class AdminHome extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                SizedBox(height: h * 0.02),
+                SizedBox(height: h * 0.32),
                 CustomGlowButton(
                   width: double.infinity,
                   borderRadius: 12,
                   title: "انشاء خدمه جديده ",
                   onPressed: () {
                     Navigator.pushNamed(context, '/addService');
+                  },
+                  isGradient: true,
+                ),
+                  SizedBox(height: h * 0.02),
+                CustomGlowButton(
+                  width: double.infinity,
+                  borderRadius: 12,
+                  title: "انشاء كاتجورى جديده ",
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/create_category');
                   },
                   isGradient: true,
                 ),

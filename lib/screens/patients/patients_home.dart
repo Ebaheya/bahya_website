@@ -1,6 +1,6 @@
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/widgets/articles.dart';
-import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
 import 'package:bahya_app/helper/widgets/patient_home_widgets.dart';
 import 'package:flutter/material.dart';

@@ -13,6 +13,26 @@ get getScreenWidth =>
 
 get getScreenHeight =>
     (BuildContext context) => MediaQuery.of(context).size.height;
+
+double responsiveSize(
+  BuildContext context,
+  double factor, {
+  double min = 10,
+  double max = 24,
+}) {
+  final width = getScreenWidth(context);
+  return (width * factor).clamp(min, max);
+}
+
+double responsiveHeight(
+  BuildContext context,
+  double factor, {
+  double min = 8,
+  double max = 80,
+}) {
+  final height = getScreenHeight(context);
+  return (height * factor).clamp(min, max);
+}
 final List<IconData> listIcons = [
   Icons.home_outlined,
   Icons.groups_rounded,

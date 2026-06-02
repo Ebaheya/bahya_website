@@ -1,4 +1,4 @@
-import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/constant.dart';
 import 'package:flutter/material.dart';
 
 class CustomTimePickerField extends StatefulWidget {
@@ -30,69 +30,82 @@ class _CustomTimePickerFieldState extends State<CustomTimePickerField> {
       initialTime: TimeOfDay.now(),
 
       builder: (context, child) {
-        return Theme(
+        return  Theme(
           data: Theme.of(context).copyWith(
+            textTheme: Theme.of(
+              context,
+            ).textTheme.apply(fontFamily: "ArabicCustomFont"),
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFFEA4C89),
-
+              primary: Color(0xFF8A1DB3),
               onPrimary: Colors.white,
-
-              onSurface: Color(0xFF7A004C),
-
-              surface: Colors.white,
+              surface: Color(0xFFFFF7FD),
+              onSurface: Color(0xFF2B2B2B),
             ),
-
             timePickerTheme: TimePickerThemeData(
-              backgroundColor: Colors.white,
-
-              hourMinuteTextColor: const Color(0xFF7A004C),
-
-              hourMinuteColor: const Color(0xFFFDE3EE),
-
-              dialHandColor: const Color(0xFFEA4C89),
-
-              dialBackgroundColor: const Color(0xFFFDE3EE),
-
-              dialTextColor: const Color(0xFF7A004C),
-
-              entryModeIconColor: const Color(0xFFEA4C89),
-
-              dayPeriodTextColor: const Color(0xFF7A004C),
-
-              dayPeriodColor: const Color(0xFFFDE3EE),
-
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-
+              backgroundColor: const Color(0xFFFFF7FD),
               helpTextStyle: TextStyle(
-                fontSize: width * 0.045,
+                fontFamily: "ArabicCustomFont",
+                fontSize: width * 0.018,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF7A004C),
-                fontFamily: 'ArabicCustomFont',
+                color: const Color(0xFF8A1DB3),
               ),
-
+              hourMinuteColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return const Color(0xFF8A1DB3);
+                }
+                return const Color(0xFFF3E8FA);
+              }),
+              hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return const Color(0xFF4D2A84);
+              }),
               hourMinuteTextStyle: TextStyle(
-                fontSize: width * 0.09,
+                fontFamily: "ArabicCustomFont",
+                fontSize: width * 0.055,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF7A004C),
-                fontFamily: 'ArabicCustomFont',
               ),
-            ),
-
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFEA298C),
-
+              dialBackgroundColor: const Color(0xFFF6EEF9),
+              dialHandColor: const Color(0xFF8A1DB3),
+              dialTextColor: const Color(0xFF2B2B2B),
+              dayPeriodColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return const Color(0xFFFFD6EA);
+                }
+                return Colors.white;
+              }),
+              dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return const Color(0xFFE5007D);
+                }
+                return const Color(0xFF555555);
+              }),
+              dayPeriodBorderSide: const BorderSide(color: Color(0xFFE5007D)),
+              dayPeriodTextStyle: TextStyle(
+                fontFamily: "ArabicCustomFont",
+                fontSize: width * 0.017,
+                fontWeight: FontWeight.bold,
+              ),
+              entryModeIconColor: const Color(0xFF8A1DB3),
+              confirmButtonStyle: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFE5007D),
                 textStyle: TextStyle(
-                  fontFamily: 'ArabicCustomFont',
-                  fontSize: width * 0.04,
+                  fontFamily: "ArabicCustomFont",
                   fontWeight: FontWeight.bold,
+                  fontSize: width * 0.016,
+                ),
+              ),
+              cancelButtonStyle: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFE5007D),
+                textStyle: TextStyle(
+                  fontFamily: "ArabicCustomFont",
+                  fontWeight: FontWeight.bold,
+                  fontSize: width * 0.016,
                 ),
               ),
             ),
           ),
-
           child: child!,
         );
       },

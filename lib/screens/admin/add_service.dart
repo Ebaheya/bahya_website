@@ -1,6 +1,6 @@
 import 'package:bahya_app/helper/base.dart';
 
-import 'package:bahya_app/helper/widgets/constant.dart';
+import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -40,7 +40,7 @@ class _AddServiceState extends State<AddService> {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                SizedBox(height: getScreenHeight(context) * 0.02),
+                SizedBox(height: getScreenHeight(context) * 0.15),
                 serviceAddForm(
                   context: context,
                   timeController: timeController,

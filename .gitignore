@@ -45,3 +45,4 @@ app.*.map.json
 /android/app/release
 
 notes.txt
+run_server.bat

@@ -2,7 +2,7 @@ import 'package:bahya_app/data/models/patient_forms_models.dart';
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/widgets/questionnaire.dart';
 import 'package:bahya_app/logic/cubit/patient_forms_cubit.dart';
-import 'package:bahya_app/logic/cubit/patient_forms_state.dart';
+import 'package:bahya_app/logic/state/patient_forms_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
