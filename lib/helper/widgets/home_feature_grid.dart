@@ -54,7 +54,7 @@ class _FeatureCardState extends State<FeatureCard> {
         onTapUp: (_) => _setPressed(false),
         onTapCancel: () => _setPressed(false),
         onTap: () {
-          context.pushReplacement(widget.item.route);
+          context.push(widget.item.route);
         },
         child: AnimatedScale(
           scale: scale,

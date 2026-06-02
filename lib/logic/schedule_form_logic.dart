@@ -36,15 +36,15 @@ class ScheduleFormLogic {
     return dateTime.toUtc().toIso8601String();
   }
 
-  Future<bool> publishSinglePatient({
+Future<bool> publishSomePatients({
     required FormModel form,
-    required OptionUserModel patient,
+    required List<OptionUserModel> patients,
     required String? publishAt,
   }) async {
     try {
       final body = {
-        "target": "SINGLE_PATIENT",
-        "patientId": patient.id,
+        "target": "SELECTED_PATIENTS",
+        "patientIds": patients.map((e) => e.id).toList(),
         "publishAt": publishAt,
       };
 
@@ -55,7 +55,7 @@ class ScheduleFormLogic {
         body: body,
       );
     } catch (e) {
-      debugPrint("Error in publishSinglePatient: $e");
+      debugPrint("Error in publishSomePatients: $e");
       return false;
     }
   }
@@ -148,7 +148,7 @@ class ScheduleFormLogic {
       await _publishForPatients(
         selectedForm: selectedForm,
         patientPublishType: patientPublishType,
-        selectedSinglePatient: selectedSinglePatient,
+        selectedPatients: selectedPatients,
         publishAt: publishAt,
         onSuccess: onSuccess,
       );
@@ -167,10 +167,10 @@ class ScheduleFormLogic {
     }
   }
 
-  Future<void> _publishForPatients({
+ Future<void> _publishForPatients({
     required FormModel selectedForm,
     required String? patientPublishType,
-    required OptionUserModel? selectedSinglePatient,
+    required List<OptionUserModel> selectedPatients,
     required String? publishAt,
     required VoidCallback onSuccess,
   }) async {
@@ -179,15 +179,15 @@ class ScheduleFormLogic {
       return;
     }
 
-    if (patientPublishType == "مريض واحد") {
-      if (selectedSinglePatient == null) {
-        showError("اختر المريض أولاً.");
+    if (patientPublishType == "مجموعه من المرضى") {
+      if (selectedPatients.isEmpty) {
+        showError("اختر مريضًا واحدًا على الأقل.");
         return;
       }
 
-      final success = await publishSinglePatient(
+      final success = await publishSomePatients(
         form: selectedForm,
-        patient: selectedSinglePatient,
+        patients: selectedPatients,
         publishAt: publishAt,
       );
 

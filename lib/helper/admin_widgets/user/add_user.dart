@@ -1,9 +1,9 @@
 import 'dart:developer';
 
 import 'package:bahya_website/data/api/web/web_service.dart';
-import 'package:bahya_website/helper/admin_widgets/add_patient.dart';
-import 'package:bahya_website/helper/admin_widgets/add_staff_dialog.dart';
-import 'package:bahya_website/helper/admin_widgets/add_user_widgets.dart';
+import 'package:bahya_website/helper/admin_widgets/user/add_patient.dart';
+import 'package:bahya_website/helper/admin_widgets/user/add_staff_dialog.dart';
+import 'package:bahya_website/helper/admin_widgets/user/add_user_widgets.dart';
 import 'package:bahya_website/helper/admin_widgets/page_header.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';

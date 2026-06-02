@@ -3,7 +3,9 @@ import 'package:bahya_website/bloc/states/doctor_state.dart';
 import 'package:bahya_website/data/api/repo/repo.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
-import 'package:bahya_website/helper/widgets/saved_filler.dart';
+import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/helper/widgets/filler/saved_filler.dart';
+import 'package:bahya_website/helper/widgets/filler/saved_filler_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,8 +26,24 @@ class _FormsScreenBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    final isMobile = w < 900;
+    final size = MediaQuery.sizeOf(context);
+    final w = size.width;
+    final h = size.height;
+
+    final isMobile = w < 700;
+    final isTablet = w >= 700 && w < 1100;
+
+    final pagePadding = responsiveSize(context, 0.025, min: 8, max: 24);
+    final containerPadding = responsiveSize(context, 0.03, min: 10, max: 30);
+    final gap = responsiveSize(context, 0.025, min: 10, max: 30);
+    final radius = responsiveSize(context, 0.025, min: 16, max: 24);
+
+    final savedFormsHeight = responsiveHeight(
+      context,
+      0.50,
+      min: 380,
+      max: 620,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFFCEFFE),
@@ -34,112 +52,153 @@ class _FormsScreenBody extends StatelessWidget {
         title: "ملء الاستبيانات",
         isHomeBar: false,
       ),
-      body: BlocConsumer<DoctorFormsCubit, DoctorFormsState>(
-        listenWhen: (previous, current) {
-          return previous.error != current.error ||
-              previous.createdAssessment != current.createdAssessment;
-        },
-        listener: (context, state) {
-          if (state.error != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.error!)));
-          }
+      body: SafeArea(
+        child: BlocConsumer<DoctorFormsCubit, DoctorFormsState>(
+          listenWhen: (previous, current) {
+            return previous.error != current.error ||
+                previous.createdAssessment != current.createdAssessment;
+          },
+          listener: (context, state) {
+            if (state.error != null) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.error!)));
+            }
 
-         if (state.createdAssessment != null) {
-            final score = state.createdAssessment?["score"] ?? 0;
-            final diagnosis =
-                state.createdAssessment?["diagnosis"] ?? "غير محدد";
-            final patientStatus =
-                state.createdAssessment?["patientStatus"] ?? "غير محدد";
+            if (state.createdAssessment != null) {
+              final score = state.createdAssessment?["score"] ?? 0;
+              final diagnosis =
+                  state.createdAssessment?["diagnosis"] ?? "غير محدد";
+              final patientStatus =
+                  state.createdAssessment?["patientStatus"] ?? "غير محدد";
 
-            customDialog(
-              context: context,
-              title: "تم حفظ التقييم بنجاح",
-              message:
-                  "التشخيص: $diagnosis\nالاسكور: $score\nحالة المريض: $patientStatus",
-              isError: false,
-            );
+              customDialog(
+                context: context,
+                title: "تم حفظ التقييم بنجاح",
+                message:
+                    "التشخيص: $diagnosis\nالاسكور: $score\nحالة المريض: $patientStatus",
+                isError: false,
+              );
 
-            context.read<DoctorFormsCubit>().clearCreatedAssessment();
-          }
-        },
-        builder: (context, state) {
-          if (state.isLoadingForms) {
-            return Center(child: customLoading());
-          }
+              context.read<DoctorFormsCubit>().clearCreatedAssessment();
+            }
+          },
+          builder: (context, state) {
+            if (state.isLoadingForms) {
+              return Center(child: customLoading());
+            }
 
-          return Center(
-            child: Container(
-              width: w * 0.95,
-              padding: const EdgeInsets.all(20),
-              child: isMobile
-                  ? Column(
-                      children: [
-                        SavedFormsWidget(
-                          forms: state.forms,
-                          selectedFormId: state.selectedForm?.id ?? "",
-                          onSelect: (id) {
-                            context.read<DoctorFormsCubit>().selectForm(id);
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        Expanded(
-                          child: _formContainer(
-                            child: state.isLoadingFormDetails
-                                ? Center(child: customLoading())
-                                : DynamicFormFillerWidget(
-                                    form: state.selectedForm,
-                                    patients: state.patientOptions,
-                                    selectedPatient: state.selectedPatient,
-                                    isSearchingPatients:
-                                        state.isSearchingPatients,
-                                    isSubmitting: state.isSubmittingAssessment,
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return Center(
+                  child: SizedBox(
+                    width: isMobile ? w : w * 0.95,
+                    height: constraints.maxHeight,
+                    child: Padding(
+                      padding: EdgeInsets.all(pagePadding),
+                      child: isMobile
+                          ? Column(
+                              children: [
+                                SizedBox(
+                                  height: savedFormsHeight,
+                                  child: SavedFormsWidget(
+                                    forms: state.forms,
+                                    selectedFormId:
+                                        state.selectedForm?.id ?? "",
+                                    isMobileLayout: true,
+                                    onSelect: (id) {
+                                      context
+                                          .read<DoctorFormsCubit>()
+                                          .selectForm(id);
+                                    },
                                   ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: _formContainer(
-                            child: state.isLoadingFormDetails
-                                ? Center(child: customLoading())
-                                : DynamicFormFillerWidget(
-                                    form: state.selectedForm,
-                                    patients: state.patientOptions,
-                                    selectedPatient: state.selectedPatient,
-                                    isSearchingPatients:
-                                        state.isSearchingPatients,
-                                    isSubmitting: state.isSubmittingAssessment,
+                                ),
+                                SizedBox(height: gap),
+                                Expanded(
+                                  child: _formContainer(
+                                    context: context,
+                                    padding: containerPadding,
+                                    radius: radius,
+                                    child: state.isLoadingFormDetails
+                                        ? Center(child: customLoading())
+                                        : DynamicFormFillerWidget(
+                                            form: state.selectedForm,
+                                            patients: state.patientOptions,
+                                            selectedPatient:
+                                                state.selectedPatient,
+                                            isSearchingPatients:
+                                                state.isSearchingPatients,
+                                            isSubmitting:
+                                                state.isSubmittingAssessment,
+                                          ),
                                   ),
-                          ),
-                        ),
-                        const SizedBox(width: 30),
-                        SavedFormsWidget(
-                          forms: state.forms,
-                          selectedFormId: state.selectedForm?.id ?? "",
-                          onSelect: (id) {
-                            context.read<DoctorFormsCubit>().selectForm(id);
-                          },
-                        ),
-                      ],
+                                ),
+                              ],
+                            )
+                          : Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: isTablet ? 2 : 3,
+                                  child: _formContainer(
+                                    context: context,
+                                    padding: containerPadding,
+                                    radius: radius,
+                                    child: state.isLoadingFormDetails
+                                        ? Center(child: customLoading())
+                                        : DynamicFormFillerWidget(
+                                            form: state.selectedForm,
+                                            patients: state.patientOptions,
+                                            selectedPatient:
+                                                state.selectedPatient,
+                                            isSearchingPatients:
+                                                state.isSearchingPatients,
+                                            isSubmitting:
+                                                state.isSubmittingAssessment,
+                                          ),
+                                  ),
+                                ),
+                                SizedBox(width: gap),
+                                SizedBox(
+                                  width: isTablet ? w * 0.32 : w * 0.23,
+                                  height: h,
+                                  child: SavedFormsWidget(
+                                    forms: state.forms,
+                                    selectedFormId:
+                                        state.selectedForm?.id ?? "",
+                                    isMobileLayout: false,
+                                    onSelect: (id) {
+                                      context
+                                          .read<DoctorFormsCubit>()
+                                          .selectForm(id);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
-            ),
-          );
-        },
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _formContainer({required Widget child}) {
+  Widget _formContainer({
+    required BuildContext context,
+    required Widget child,
+    required double padding,
+    required double radius,
+  }) {
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(radius),
         boxShadow: const [
           BoxShadow(
             color: Colors.black12,
@@ -148,7 +207,7 @@ class _FormsScreenBody extends StatelessWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(30),
+      padding: EdgeInsets.all(padding),
       child: child,
     );
   }

@@ -1,4 +1,5 @@
-import 'package:bahya_website/helper/widgets/volunteer_patients_widgets.dart';
+import 'package:bahya_website/helper/widgets/volunteer/patients_list.dart';
+import 'package:bahya_website/helper/widgets/volunteer/volunteer_patients_widgets.dart';
 import 'package:flutter/material.dart';
 import '../helper/base.dart';
 import '../helper/strings.dart';
@@ -17,8 +18,47 @@ class _VolunteerPatientsScreenState extends State<VolunteerPatientsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    final isMobile = w < 900;
+    final size = MediaQuery.sizeOf(context);
+    final w = size.width;
+    final h = size.height;
+
+    final isMobile = w < 700;
+    final isTablet = w >= 700 && w < 1100;
+
+    final pagePadding = responsiveSize(
+      context,
+      isMobile ? 0.018 : 0.025,
+      min: isMobile ? 8 : 10,
+      max: isMobile ? 14 : 24,
+    );
+
+    final gap = responsiveSize(
+      context,
+      isMobile ? 0.018 : 0.024,
+      min: isMobile ? 10 : 12,
+      max: isMobile ? 16 : 30,
+    );
+
+    final formPadding = responsiveSize(
+      context,
+      isMobile ? 0.018 : 0.03,
+      min: isMobile ? 10 : 14,
+      max: isMobile ? 16 : 30,
+    );
+
+    final radius = responsiveSize(
+      context,
+      isMobile ? 0.045 : 0.026,
+      min: isMobile ? 18 : 18,
+      max: isMobile ? 22 : 26,
+    );
+
+    final patientsHeight = responsiveHeight(
+      context,
+      isMobile ? 0.34 : 0.70,
+      min: isMobile ? 400 : 500,
+      max: isMobile ? 600 : h,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFFCEFFE),
@@ -27,50 +67,85 @@ class _VolunteerPatientsScreenState extends State<VolunteerPatientsScreen> {
         title: "ملء استبيانات المرضى",
         isHomeBar: false,
       ),
-      body: Center(
-        child: Container(
-          width: w * 0.95,
-          padding: const EdgeInsets.all(20),
-          child: isMobile
-              ? Column(
-                  children: [
-                    PatientsListWidget(
-                      selectedPatient: selectedPatient,
-                      completedPatients: completedPatients,
-                      onSelect: (p) => setState(() => selectedPatient = p),
-                    ),
-                    const SizedBox(height: 20),
-                    Expanded(child: _formContainer()),
-                  ],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 3, child: _formContainer()),
-                    const SizedBox(width: 30),
-                    PatientsListWidget(
-                      selectedPatient: selectedPatient,
-                      completedPatients: completedPatients,
-                      onSelect: (p) => setState(() => selectedPatient = p),
-                    ),
-                  ],
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: SizedBox(
+                width: isMobile ? w : w * 0.95,
+                height: constraints.maxHeight,
+                child: Padding(
+                  padding: EdgeInsets.all(pagePadding),
+                  child: isMobile
+                      ? Column(
+                          children: [
+                            SizedBox(
+                              height: patientsHeight,
+                              child: PatientsListWidget(
+                                selectedPatient: selectedPatient,
+                                completedPatients: completedPatients,
+
+                                onSelect: (p) {
+                                  setState(() => selectedPatient = p);
+                                },
+                              ),
+                            ),
+                            SizedBox(height: gap),
+                            Expanded(
+                              child: _formContainer(
+                                padding: formPadding,
+                                radius: radius,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: isTablet ? 2 : 3,
+                              child: _formContainer(
+                                padding: formPadding,
+                                radius: radius,
+                              ),
+                            ),
+                            SizedBox(width: gap),
+                            SizedBox(
+                              width: isTablet ? w * 0.32 : w * 0.24,
+                              height: constraints.maxHeight,
+                              child: PatientsListWidget(
+                                selectedPatient: selectedPatient,
+                                completedPatients: completedPatients,
+                           
+                                onSelect: (p) {
+                                  setState(() => selectedPatient = p);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _formContainer() {
+  Widget _formContainer({required double padding, required double radius}) {
     return Container(
-      padding: const EdgeInsets.all(30),
+      width: double.infinity,
+      height: double.infinity,
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 20,
-            offset: Offset(0, 6),
+            color: const Color(0xFF7A004C).withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),

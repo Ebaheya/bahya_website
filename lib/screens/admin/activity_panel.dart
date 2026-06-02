@@ -1,9 +1,9 @@
 import 'dart:ui';
 
-import 'package:bahya_website/helper/admin_widgets/recent_activity_widgets.dart';
+import 'package:bahya_website/helper/admin_widgets/recent%20activity/recent_activity_widgets.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:bahya_website/helper/admin_widgets/recent_activity_dialog.dart';
+import 'package:bahya_website/helper/admin_widgets/recent%20activity/recent_activity_dialog.dart';
 import 'package:flutter/material.dart';
 
 class RecentActivity extends StatefulWidget {

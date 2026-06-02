@@ -1,4 +1,4 @@
-import 'package:bahya_website/helper/base.dart';
+
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -312,7 +312,12 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
               maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
               maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
             ),
-            prefixIcon: widget.prefixIcon,
+            prefixIcon: Padding(
+                  padding: EdgeInsets.all(
+                      responsiveSize(context, 0.005, min: 6, max: 8),
+                    ),
+                  child: widget.prefixIcon,
+                ),
             prefixIconConstraints: BoxConstraints(
               maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
               maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),

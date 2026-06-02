@@ -23,7 +23,7 @@ Widget answersDetails({required BuildContext context}) {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              heartSign(iconSize: 30, containerSize: 40),
+              appIcon(),
               SizedBox(width: w * 0.02),
               customText(
                 text: "تفاصيل الإجابات",

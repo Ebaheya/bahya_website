@@ -1,5 +1,5 @@
-import 'package:bahya_website/helper/admin_widgets/settings_cards.dart';
-import 'package:bahya_website/helper/admin_widgets/settings_widgets.dart';
+import 'package:bahya_website/helper/admin_widgets/settings/settings_cards.dart';
+import 'package:bahya_website/helper/admin_widgets/settings/settings_widgets.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 

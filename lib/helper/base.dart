@@ -61,45 +61,57 @@ Widget buildTextField({
   String? labelText,
   int maxLines = 1,
   Icon? suffixIcon,
+  Icon? prefixIcon,
   bool obscureText = false,
   TextDirection textDirection = TextDirection.ltr,
   TextEditingController? controller,
+  bool? bordered,
 }) {
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6.0),
+    padding: const EdgeInsets.all(8.0),
     child: CustomFormTextField(
       controller: controller,
       keyboardType: keyboardType,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+      autovalidateMode: AutovalidateMode.disabled,
       hintText: hintText,
       labelText: labelText,
       obscureText: obscureText,
       textDirection: textDirection,
       maxLines: maxLines,
       suffixIcon: suffixIcon,
+      prefixIcon: prefixIcon,
+      bordered: bordered ?? true,
     ),
   );
 }
 
-Widget heartSign({
-  Color colorSign = Colors.white,
-  List<Color> gradientColors = const [Color(0xFFFF7BB0), Color(0xFFE6B3FF)],
-  double containerSize = 90,
-  double iconSize = 40,
-}) {
-  return Container(
-    alignment: Alignment.center,
-    width: containerSize,
-    height: containerSize,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      gradient: LinearGradient(
-        colors: gradientColors,
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
+Widget appIcon({double size = 170}) {
+  return Center(
+    child: Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Image.asset(
+            'assets/pics/app_icon.png',
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+          ),
+        ),
       ),
     ),
-    child: Icon(Icons.favorite_border, color: colorSign, size: iconSize),
   );
 }
 
@@ -164,8 +176,8 @@ PreferredSizeWidget customAppBar({
                       ],
                     )
                   : widgets != null
-                      ? Row(children: widgets)
-                      : const SizedBox(),
+                  ? Row(children: widgets)
+                  : const SizedBox(),
 
               Row(
                 children: [
@@ -186,8 +198,8 @@ PreferredSizeWidget customAppBar({
                   ),
                   if (!isHomeBar)
                     IconButton(
-                  onPressed: () {
-                       context.pop();
+                      onPressed: () {
+                        context.pop();
                       },
                       icon: const Icon(
                         Icons.arrow_forward_ios,
@@ -290,8 +302,6 @@ class LegendDot extends StatelessWidget {
     );
   }
 }
-
-
 
 Widget customLoading() {
   return Padding(

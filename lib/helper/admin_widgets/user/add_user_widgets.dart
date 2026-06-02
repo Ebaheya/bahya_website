@@ -144,7 +144,7 @@ class AddUserActions extends StatelessWidget {
         SizedBox(width: responsiveSize(context, 0.016, min: 16, max: 22)),
         Expanded(
           child: CustomGlowButton(
-            textColor: textColor,
+            
             isGradient: true,
             title: isStaff ? "Create Staff" : "Create Patient",
             onPressed: onCreate,

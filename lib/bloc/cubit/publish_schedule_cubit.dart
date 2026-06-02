@@ -1,7 +1,7 @@
 import 'package:bahya_website/bloc/states/publish_schedule_state.dart';
 import 'package:bahya_website/data/api/models/form_model.dart';
 import 'package:bahya_website/data/api/repo/repo.dart';
-import 'package:bahya_website/helper/widgets/scheduled_list_widget.dart';
+import 'package:bahya_website/helper/widgets/schedule/scheduled_list_widget.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PublishScheduleCubit extends Cubit<PublishScheduleState> {
@@ -273,8 +273,10 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
         return "مريض واحد";
       case "ALL_PATIENTS":
         return "كل المرضى";
+      case "SELECTED_PATIENTS":
+        return "مجموعة من المرضى";
       case "VOLUNTEER_FOR_PATIENT":
-        return "متطوع لمريض";
+        return "متطوعين ومرضى";
       default:
         return "غير محدد";
     }

@@ -1,4 +1,4 @@
-import 'package:bahya_website/helper/admin_widgets/filter_dropdown.dart';
+import 'package:bahya_website/helper/filter_dropdown.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
@@ -38,6 +38,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
               context: context,
               icon: Icons.person_outline_rounded,
               child: CustomFormTextField(
+                bordered: false,
                 controller: widget.fullNameController,
                 hintText: "Full Name",
                 autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -50,6 +51,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
               context: context,
               icon: Icons.email_outlined,
               child: CustomFormTextField(
+                bordered: false,
                 controller: widget.emailController,
                 hintText: "Email",
                 autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -68,6 +70,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
               context: context,
               icon: Icons.lock_outline_rounded,
               child: CustomFormTextField(
+                bordered: false,
                 controller: widget.passwordController,
                 hintText: "Password",
                 autovalidateMode: AutovalidateMode.onUserInteraction,

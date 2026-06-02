@@ -181,10 +181,7 @@ class HomeDrawer extends StatelessWidget {
                                   title: 'نموذج المتطوعين',
                                   onTap: () {
                                     Navigator.pop(context);
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/volunteer_survey',
-                                    );
+                                    context.push('/volunteer_survey');
                                   },
                                 ),
                                 _drawerItem(

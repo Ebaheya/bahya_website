@@ -1,6 +1,6 @@
 import 'package:bahya_website/data/api/models/form_model.dart';
 import 'package:bahya_website/data/api/models/options_model.dart';
-import 'package:bahya_website/helper/widgets/scheduled_list_widget.dart';
+import 'package:bahya_website/helper/widgets/schedule/scheduled_list_widget.dart';
 
 class PublishScheduleState {
   final bool isLoading;

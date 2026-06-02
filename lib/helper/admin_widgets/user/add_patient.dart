@@ -1,8 +1,8 @@
-import 'package:bahya_website/helper/admin_widgets/filter_dropdown.dart';
+import 'package:bahya_website/helper/filter_dropdown.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:bahya_website/helper/widgets/custom_date_picker.dart';
+import 'package:bahya_website/helper/admin_widgets/custom_date_picker.dart';
 import 'package:flutter/material.dart';
 
 class AddPatientDialog extends StatefulWidget {
@@ -56,6 +56,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               child: CustomFormTextField(
                 controller: widget.fullNameController,
                 hintText: "Full Name",
+                  bordered: false,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.text,
                 textDirection: TextDirection.ltr,
@@ -67,6 +68,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               child: CustomFormTextField(
                 controller: widget.emailController,
                 hintText: "Email",
+                  bordered: false,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.email,
                 textDirection: TextDirection.ltr,
@@ -84,6 +86,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               child: CustomFormTextField(
                 controller: widget.passwordController,
                 hintText: "Password",
+                  bordered: false,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.password,
                 obscureText: true,
@@ -94,6 +97,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               context: context,
               icon: Icons.phone_outlined,
               child: CustomFormTextField(
+                  bordered: false,
                 controller: widget.phoneController,
                 hintText: "Phone Number",
                 autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -145,6 +149,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
             child: CustomFormTextField(
               controller: widget.addressController,
               hintText: "Address",
+                bordered: false,
               autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: CustomTextFieldType.text,
               textDirection: TextDirection.ltr,
@@ -166,12 +171,14 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.text,
                 textDirection: TextDirection.ltr,
+                bordered: false,
               ),
             ),
             modernInputBox(
               context: context,
               icon: Icons.phone_outlined,
               child: CustomFormTextField(
+                  bordered: false,
                 controller: widget.emergencyPhoneController,
                 hintText: "Emergency Contact Phone",
                 autovalidateMode: AutovalidateMode.onUserInteraction,

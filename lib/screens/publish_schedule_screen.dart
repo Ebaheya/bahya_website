@@ -4,8 +4,8 @@ import 'package:bahya_website/data/api/repo/repo.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:bahya_website/helper/widgets/schedule_form.dart';
-import 'package:bahya_website/helper/widgets/scheduled_list_widget.dart';
+import 'package:bahya_website/helper/widgets/schedule/schedule_form.dart';
+import 'package:bahya_website/helper/widgets/schedule/scheduled_list_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,11 +14,12 @@ class PublishScheduleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final h = getScreenHeight(context);
+    final isMobile = getScreenWidth(context) < 650;
 
     return BlocProvider(
       create: (_) => PublishScheduleCubit(AppRepository())..loadForms(),
       child: Scaffold(
+        backgroundColor: backgroundColor,
         appBar: customAppBar(
           context: context,
           title: "جدولة النماذج",
@@ -46,16 +47,41 @@ class PublishScheduleScreen extends StatelessWidget {
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: h * 0.01),
-                  child: Center(
+                padding: EdgeInsets.symmetric(
+                  horizontal: responsiveSize(
+                    context,
+                    isMobile ? 0.012 : 0.02,
+                    min: 12,
+                    max: 28,
+                  ),
+                  vertical: responsiveHeight(context, 0.02, min: 14, max: 28),
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: isMobile ? double.infinity : 1250,
+                    ),
                     child: Column(
                       children: [
-                        SizedBox(height: h * 0.04),
+                        SizedBox(
+                          height: responsiveHeight(
+                            context,
+                            0.025,
+                            min: 16,
+                            max: 32,
+                          ),
+                        ),
 
                         ScheduleFormWidget(forms: state.activeForms),
 
-                        SizedBox(height: h * 0.04),
+                        SizedBox(
+                          height: responsiveHeight(
+                            context,
+                            0.04,
+                            min: 24,
+                            max: 42,
+                          ),
+                        ),
 
                         ScheduledListWidget(
                           scheduled: const [],
@@ -64,7 +90,14 @@ class PublishScheduleScreen extends StatelessWidget {
                           isLoadingAssignments: state.isLoadingAssignments,
                         ),
 
-                        SizedBox(height: h * 0.04),
+                        SizedBox(
+                          height: responsiveHeight(
+                            context,
+                            0.04,
+                            min: 24,
+                            max: 42,
+                          ),
+                        ),
                       ],
                     ),
                   ),
