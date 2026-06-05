@@ -1914,6 +1914,8 @@ Authorization: Bearer {{doctorToken}}
     "id": "submission-uuid",
     "totalScore": 8,
     "interpretation": { "label": "High", "subscales": [] },
+    "patient": { "id": "patient-uuid", "userId": "patient-user-uuid", "user": { "fullName": "Sara Ahmed" } },
+    "submittedBy": { "id": "filler-user-uuid", "role": "VOLUNTEER", "fullName": "Omar Volunteer" },
     "assignment": {
       "id": "assignment-uuid",
       "template": {
@@ -1927,6 +1929,10 @@ Authorization: Bearer {{doctorToken}}
 
 This staff-only response may expose calculated scores and interpretation for review.
 
+`patient.user.fullName` is the subject and `submittedBy.fullName` is whoever actually filled the
+form. Use `submittedBy.role` to tell a volunteer-filled form (`VOLUNTEER`) from a patient
+self-report (`PATIENT`) — e.g. render _"filled by Omar Volunteer (Volunteer) for Sara Ahmed"_.
+
 #### `GET /assessments/submissions/:id`
 
 Retrieve one submitted form with its answers and computed result for clinical review.
@@ -1937,6 +1943,10 @@ Retrieve one submitted form with its answers and computed result for clinical re
 GET {{baseUrl}}/assessments/submissions/{{submissionId}}
 Authorization: Bearer {{doctorToken}}
 ```
+
+The detail response includes `patient.user.fullName` (the subject) and `submittedBy`
+(`{ id, role, fullName }` — the actual filler), alongside the answers, computed score, and form
+version. `submittedBy.role` distinguishes a volunteer-filled form from a patient self-report.
 
 **Common error:** `404 NOT_FOUND`.
 

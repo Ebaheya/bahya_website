@@ -93,6 +93,26 @@ describe('assessment review queue and access', () => {
           assessment: null,
           assignment: { status: 'SUBMITTED' },
         },
+        include: expect.objectContaining({
+          patient: { select: { id: true, userId: true, user: { select: { fullName: true } } } },
+          submittedBy: { select: { id: true, role: true, fullName: true } },
+        }),
+      })
+    );
+  });
+
+  it('loads patient and filler names on a single submission read', async () => {
+    prismaMock.formSubmission.findUnique.mockResolvedValue({ id: 'submission-1' });
+
+    await assessmentService.getSubmission('submission-1', 'DOCTOR');
+
+    expect(prismaMock.formSubmission.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'submission-1' },
+        include: expect.objectContaining({
+          patient: { select: { id: true, userId: true, user: { select: { fullName: true } } } },
+          submittedBy: { select: { id: true, role: true, fullName: true } },
+        }),
       })
     );
   });

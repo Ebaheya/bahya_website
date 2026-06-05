@@ -14,8 +14,8 @@ const submissionDetailInclude = {
       },
     },
   },
-  patient: { select: { id: true, userId: true } },
-  submittedBy: { select: { id: true, role: true } },
+  patient: { select: { id: true, userId: true, user: { select: { fullName: true } } } },
+  submittedBy: { select: { id: true, role: true, fullName: true } },
   formVersion: {
     include: {
       questions: {
@@ -47,7 +47,8 @@ export async function listPendingSubmissions(role: Role) {
           template: { select: { id: true, key: true, name: true, scoringType: true } },
         },
       },
-      patient: { select: { id: true, userId: true } },
+      patient: { select: { id: true, userId: true, user: { select: { fullName: true } } } },
+      submittedBy: { select: { id: true, role: true, fullName: true } },
     },
     orderBy: { submittedAt: 'asc' },
   });
