@@ -21,18 +21,69 @@ enum Gender {
   OTHER
 }
 
+enum FormScoringType {
+  SUM
+  MANUAL
+}
+
+enum FormInterpretationMode {
+  RANGE
+  MANUAL
+  NONE
+}
+
+enum FormVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum FormQuestionType {
+  SINGLE_SELECT
+  MULTI_SELECT
+  SCALE
+}
+
+enum FormAssignmentTarget {
+  SINGLE_PATIENT
+  ALL_PATIENTS
+  SELECTED_PATIENTS
+  VOLUNTEER_FOR_PATIENT
+}
+
+enum FormAssignmentStatus {
+  SCHEDULED
+  PUBLISHED
+  SUBMITTED
+  REVIEWED
+  CANCELLED
+}
+
+enum AssessmentStatus {
+  NORMAL
+  MILD
+  MODERATE
+  SEVERE
+  CRITICAL
+}
+
 model User {
-  id                  String               @id @default(uuid())
-  email               String               @unique
-  passwordHash        String
-  fullName            String
-  role                Role
-  isActive            Boolean              @default(true)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  refreshTokens       RefreshToken[]
-  patient             Patient?
-  passwordResetTokens PasswordResetToken[]
+  id                   String               @id @default(uuid())
+  email                String               @unique
+  passwordHash         String
+  fullName             String
+  role                 Role
+  isActive             Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  refreshTokens        RefreshToken[]
+  patient              Patient?
+  passwordResetTokens  PasswordResetToken[]
+  createdFormTemplates FormTemplate[]       @relation("FormTemplateCreatedBy")
+  assignedForms        FormAssignment[]     @relation("FormAssignmentAssignedBy")
+  formAssignments      FormAssignment[]     @relation("FormAssignmentAssignedTo")
+  formSubmissions      FormSubmission[]     @relation("FormSubmissionSubmittedBy")
+  assessments          Assessment[]         @relation("AssessmentDoctor")
 
   @@index([role])
 }
@@ -53,8 +104,8 @@ model RefreshToken {
 }
 
 model Patient {
-  id                    String    @id @default(uuid())
-  userId                String    @unique
+  id                    String           @id @default(uuid())
+  userId                String           @unique
   phone                 String
   dateOfBirth           DateTime?
   gender                Gender?
@@ -64,9 +115,12 @@ model Patient {
   medicalHistory        Json?
   socialStatus          Json?
   financials            Json?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  user                  User      @relation(fields: [userId], references: [id])
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  user                  User             @relation(fields: [userId], references: [id])
+  formAssignments       FormAssignment[]
+  formSubmissions       FormSubmission[]
+  assessments           Assessment[]
 
   @@index([phone])
 }
@@ -81,4 +135,159 @@ model PasswordResetToken {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model FormTemplate {
+  id                 String                 @id @default(uuid())
+  key                String                 @unique
+  name               String
+  description        String?
+  category           String?
+  scoringType        FormScoringType        @default(SUM)
+  interpretationMode FormInterpretationMode @default(RANGE)
+  isDefault          Boolean                @default(false)
+  isActive           Boolean                @default(true)
+  currentVersionId   String?                @unique
+  createdById        String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  createdBy          User?                  @relation("FormTemplateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  versions           FormVersion[]          @relation("FormTemplateVersions")
+  currentVersion     FormVersion?           @relation("FormTemplateCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  assignments        FormAssignment[]
+
+  @@index([category])
+  @@index([isActive])
+  @@index([isDefault])
+}
+
+model FormVersion {
+  id                 String            @id @default(uuid())
+  templateId         String
+  version            Int
+  status             FormVersionStatus @default(DRAFT)
+  publishedAt        DateTime?
+  createdAt          DateTime          @default(now())
+  template           FormTemplate      @relation("FormTemplateVersions", fields: [templateId], references: [id], onDelete: Cascade)
+  currentForTemplate FormTemplate?     @relation("FormTemplateCurrentVersion")
+  questions          FormQuestion[]
+  scoreRanges        FormScoreRange[]
+  assignments        FormAssignment[]
+  submissions        FormSubmission[]
+
+  @@unique([templateId, version])
+  @@index([status])
+}
+
+model FormQuestion {
+  id        String             @id @default(uuid())
+  versionId String
+  order     Int
+  text      String
+  type      FormQuestionType
+  subscale  String?
+  required  Boolean            @default(true)
+  scaleMin  Int?
+  scaleMax  Int?
+  scaleStep Int?
+  version   FormVersion        @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  choices   FormAnswerChoice[]
+
+  @@index([versionId])
+}
+
+model FormAnswerChoice {
+  id         String       @id @default(uuid())
+  questionId String
+  order      Int
+  label      String
+  score      Int
+  question   FormQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model FormScoreRange {
+  id        String      @id @default(uuid())
+  versionId String
+  subscale  String?
+  label     String
+  minScore  Int
+  maxScore  Int
+  note      String?
+  version   FormVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@index([versionId])
+  @@index([versionId, subscale])
+}
+
+model FormAssignment {
+  id               String               @id @default(uuid())
+  templateId       String
+  formVersionId    String
+  patientId        String
+  assignedToUserId String?
+  assignedById     String
+  target           FormAssignmentTarget
+  status           FormAssignmentStatus @default(PUBLISHED)
+  publishAt        DateTime?
+  dueAt            DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  template         FormTemplate         @relation(fields: [templateId], references: [id])
+  formVersion      FormVersion          @relation(fields: [formVersionId], references: [id])
+  patient          Patient              @relation(fields: [patientId], references: [id])
+  assignedTo       User?                @relation("FormAssignmentAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  assignedBy       User                 @relation("FormAssignmentAssignedBy", fields: [assignedById], references: [id])
+  submission       FormSubmission?
+
+  @@index([patientId, status])
+  @@index([assignedToUserId, status])
+  @@index([status, publishAt])
+  @@index([templateId])
+  @@index([formVersionId])
+  // NOTE: a partial UNIQUE index on (templateId, patientId) WHERE status IN
+  // ('SCHEDULED','PUBLISHED') enforces the one-outstanding-copy-per-form rule at
+  // the DB level. Prisma cannot express a filtered index, so it lives in the
+  // 20260601000000_form_assignment_expiry_and_open_copy migration only.
+}
+
+model FormSubmission {
+  id                String         @id @default(uuid())
+  assignmentId      String         @unique
+  formVersionId     String
+  patientId         String
+  submittedByUserId String
+  answers           Json
+  totalScore        Int?
+  subscaleScores    Json?
+  interpretation    Json?
+  submittedAt       DateTime       @default(now())
+  assignment        FormAssignment @relation(fields: [assignmentId], references: [id])
+  formVersion       FormVersion    @relation(fields: [formVersionId], references: [id])
+  patient           Patient        @relation(fields: [patientId], references: [id])
+  submittedBy       User           @relation("FormSubmissionSubmittedBy", fields: [submittedByUserId], references: [id])
+  assessment        Assessment?
+
+  @@index([patientId, submittedAt])
+  @@index([formVersionId])
+}
+
+model Assessment {
+  id           String           @id @default(uuid())
+  patientId    String
+  doctorId     String
+  submissionId String?          @unique
+  templateKey  String
+  score        Int?
+  status       AssessmentStatus
+  doctorNote   String?
+  reviewedAt   DateTime         @default(now())
+  createdAt    DateTime         @default(now())
+  patient      Patient          @relation(fields: [patientId], references: [id])
+  doctor       User             @relation("AssessmentDoctor", fields: [doctorId], references: [id])
+  submission   FormSubmission?  @relation(fields: [submissionId], references: [id])
+
+  @@index([patientId, createdAt])
+  @@index([doctorId])
 }

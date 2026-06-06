@@ -15,6 +15,7 @@ developers and engineers exercising the API in Postman.
 - [Scripts](#scripts)
 - [Architecture](#architecture)
 - [Database](#database)
+- [Dynamic assessment forms](#dynamic-assessment-forms)
 - [Tests](#tests)
 - [Postman](#postman)
 - [Authentication](#authentication)
@@ -24,6 +25,9 @@ developers and engineers exercising the API in Postman.
   - [Auth](#auth)
   - [Patients](#patients)
   - [Users](#users)
+  - [Forms](#forms)
+  - [Form Assignments](#form-assignments)
+  - [Assessments](#assessments)
 
 ## Stack
 
@@ -102,6 +106,7 @@ refuses to start if required values are missing.
 | `npm run prisma:generate` | Regenerate Prisma Client |
 | `npm run prisma:migrate` | Create and apply a development migration |
 | `npm run audit:migrate` | Migrate audit data to MongoDB |
+| `npm run seed:forms` | Seed the seven default dynamic assessment forms |
 | `npm run lint` | Run ESLint over `src/` |
 | `npm run format` | Format backend source with Prettier |
 | `npm test` | Run Jest unit and integration tests |
@@ -117,6 +122,9 @@ src/
     email/       password-reset email service and templates
     patients/    routes, controller, service, schemas, JSONB validators
     users/       admin user management
+    forms/       form authoring, publishing, assignments, scoring, submissions
+    assessments/ doctor review and official assessment authorship
+    notifications/ form assignment and high-risk alerts
   routes/        /api/v1 router and health probe
   utils/         passwords, tokens, http errors
   app.ts         Express wiring
@@ -138,8 +146,200 @@ Relational models in Prisma (`prisma/schema.prisma`):
 - `Patient` — demographics + JSONB blocks (`medicalHistory`, `socialStatus`, `financials`)
 - `PasswordResetToken` — single-use, time-bounded reset tokens
 
+Additional relational models for dynamic assessments are `FormTemplate`,
+`FormVersion`, `FormQuestion`, `FormChoice`, `FormScoreRange`,
+`FormAssignment`, `FormSubmission`, and `Assessment`.
+
 MongoDB stores audit log entries and timeline source data (assessments,
 interventions). The `/health` probe checks both stores.
+
+## Dynamic assessment forms
+
+Doctors and admins author **scored assessment forms** — questions with scored
+answer choices and interpretation bands — then publish them to patients or to
+a volunteer filling on a patient's behalf. The recipient fills and submits the
+form; the server recomputes the score and interpretation, stores the
+submission, and (for a top-band score) raises a high-risk doctor alert. The
+filler sees a confirmation only — never the score. A doctor later reviews the
+submission and authors an official `Assessment`.
+
+The feature spans three routers, all mounted under `/api/v1`:
+
+- `forms/` — authoring, versioning, publishing, lifecycle (`/forms`)
+- `forms/` assignments — filling and submission (`/form-assignments`)
+- `assessments/` — doctor review and official assessment authorship (`/assessments`)
+
+### Roles and access
+
+Every route is `authenticate` (JWT + PostgreSQL role re-validation) then
+`authorize(role)`:
+
+- **Doctor, Admin** — author, version, publish, deactivate forms; list
+  active volunteers for delegated assignments; list assignments; cancel
+  assignments; read the review queue and submissions.
+- **Doctor only** — create an official `Assessment` (`POST /assessments`).
+- **Patient** — see and submit only forms assigned to their own account.
+- **Volunteer** — see and submit only forms assigned to them, on behalf of the
+  linked patient. Volunteers cannot author, edit, or publish.
+
+A deactivated (inactive) patient sees and submits nothing; prior submissions
+stay readable to staff.
+
+### Rate limits
+
+All three routers carry a per-user (per authenticated user id) limiter on a
+60-second window, with two tighter buckets for expensive actions:
+
+| Scope | Limit |
+|---|---|
+| All `/forms`, `/form-assignments`, `/assessments` routes (baseline) | 120 req/min/user |
+| `POST /form-assignments/:id/submit` | 20 req/min/user |
+| `POST /forms/:id/publish` | 10 req/min/user |
+
+Exceeding a bucket returns `429` with standard `RateLimit-*` headers.
+
+### Endpoints by lifecycle
+
+**Authoring & versioning** (`/forms`, Doctor + Admin):
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/forms` | Create a custom form (template + v1 DRAFT) |
+| `GET` | `/forms` | List templates (`q`, `isActive`, `isDefault`, `category`, paginated) |
+| `GET` | `/forms/:id` | Template + current version (questions, choices, scores, ranges) |
+| `PUT` | `/forms/:id` | Edit structure (in-place if DRAFT; clone to version N+1 if published) |
+| `GET` | `/forms/:id/versions` | List all versions (newest first) |
+| `GET` | `/forms/:id/versions/:version` | Fetch a specific historical version |
+| `POST` | `/forms/:id/publish-version` | Promote the current DRAFT version to PUBLISHED (assignable) |
+| `PATCH` | `/forms/:id/status` | Activate / deactivate the template |
+
+**Publishing & scheduling** (`/forms`, `/form-assignments`, Doctor + Admin):
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/forms/:id/publish` | Publish to a target (single patient / all active patients / volunteer-for-patient), optional future `publishAt` |
+| `GET` | `/patients/options` | List active patients for assignment selection |
+| `GET` | `/volunteers` | List active volunteers for delegated assignment selection |
+| `GET` | `/forms/:id/assignments` | List assignments for a template (paginated) |
+| `PATCH` | `/form-assignments/:id/cancel` | Cancel a not-yet-submitted assignment |
+
+`publishAt` in the future creates `SCHEDULED` assignments that stay invisible
+until a background due-sweep promotes them to `PUBLISHED` and notifies the
+recipient; a past or null `publishAt` publishes immediately. `ALL_PATIENTS`
+fans out one assignment per active patient, resolved at publish time;
+`SELECTED_PATIENTS` does the same for a chosen `patientIds` list (1–200,
+deduplicated, all-or-nothing — any inactive/unknown id rejects the whole publish).
+
+Optional `dueAt` (ISO datetime, must be after the publish time) makes the form
+expire: once it passes the form drops out of `/my` and submitting it → **410**
+`FORM_EXPIRED`.
+
+A patient may hold only one *outstanding* (not-yet-submitted) copy of a given
+form at a time. Re-publishing the same form to a patient who still has an open
+copy is a **409** `FORM_DUPLICATE_OPEN_ASSIGNMENT` for the single-patient
+targets, and is silently skipped (reported as `skipped` in the response) for the
+`ALL_PATIENTS`/`SELECTED_PATIENTS` fan-outs. Re-publishing is allowed once the
+prior copy is submitted or cancelled. The publish response is
+`{ assignmentsCreated, assignmentIds, skipped }`.
+
+**Filling & submitting** (`/form-assignments`, Patient + Volunteer):
+
+| Method | Path | Roles | Purpose |
+|---|---|---|---|
+| `GET` | `/form-assignments/my` | Patient, Volunteer | My visible assigned forms |
+| `GET` | `/form-assignments/:id` | Patient (owner), Volunteer (assignee), Doctor, Admin | Assignment + form structure to render (fillers get scores stripped) |
+| `POST` | `/form-assignments/:id/submit` | Patient (owner), Volunteer (assignee) | Submit answers; returns confirmation only |
+
+**Doctor review & assessment** (`/assessments`):
+
+| Method | Path | Roles | Purpose |
+|---|---|---|---|
+| `GET` | `/assessments/submissions/pending` | Doctor, Admin | Submissions awaiting review |
+| `GET` | `/assessments/submissions/:id` | Doctor, Admin | Submission detail (answers + computed score/interpretation) |
+| `POST` | `/assessments` | **Doctor only** | Create official assessment (from a submission or direct); flips the assignment to `REVIEWED` |
+| `GET` | `/assessments/patient/:patientId` | Doctor, Admin | List a patient's official assessments |
+| `GET` | `/assessments/:id` | Doctor, Admin | Official assessment detail |
+
+### Scoring and interpretation
+
+Scoring is server-side and ignores any client-supplied score. Question types
+and their contribution to the total:
+
+- **SINGLE_SELECT** — the score of the one selected choice.
+- **MULTI_SELECT** — the **sum** of all selected choices' scores (no upper
+  limit; at least one when required).
+- **SCALE** — the chosen numeric value directly (author defines integer
+  `scaleMin < scaleMax` and `scaleStep > 0`; values must be in range and
+  step-aligned).
+
+The form total is the sum of all question scores. Questions may be grouped
+into **subscales** (e.g. HADS anxiety `A` and depression `D`); each subscale
+total is computed independently. **Score ranges** map a total to an
+interpretation label (e.g. Normal/Mild/Moderate/Severe/Critical). When ranges
+are defined they must cover every achievable total with no gaps and no
+overlaps, validated at authoring time.
+
+When a submission lands in the **top band of a multi-band group**, the server
+emits a high-risk doctor alert (`HIGH_RISK` notification +
+`HIGH_RISK_ALERT_CREATED` audit) at submission time. A single-band group is a
+catch-all and never escalates.
+
+**Manual** forms (`scoringType: "MANUAL"`, `interpretationMode: "MANUAL"`)
+store the answers with no automatic total, subscale totals, or interpretation;
+the reviewing doctor assigns the score and severity during review.
+
+In all cases the filler receives a confirmation (`submissionId`, `status`,
+`submittedAt`) only — the computed score and interpretation are doctor-only.
+
+### Versioning and lifecycle
+
+Published form versions are immutable. Editing a DRAFT version updates it in
+place; editing a PUBLISHED version clones the structure into version N+1 and
+repoints `currentVersion`, so in-flight assignments and past submissions stay
+pinned to the exact version they were answered against. The template `key` is
+immutable once created. Forms and assignments use status transitions
+(`isActive`, and assignment `SCHEDULED`/`PUBLISHED`/`SUBMITTED`/`REVIEWED`/
+`CANCELLED`) rather than delete endpoints; deactivated forms cannot be
+published or sent out, but their past submissions remain readable.
+
+### Seeded default forms
+
+After applying Prisma migrations, seed the default form catalog idempotently:
+
+```bash
+npm run seed:forms
+```
+
+The seed inserts seven recognized clinical instruments (idempotent
+upsert-by-`key`). Five are automatically scored with interpretation ranges and
+two ship as manual-review forms:
+
+| Key | Name | Scoring | Notes |
+|---|---|---|---|
+| `PHQ9` | Patient Health Questionnaire-9 | Scored (RANGE) | 9 SINGLE_SELECT, bands 0–4/5–9/10–14/15–19/20–27 |
+| `PHQ4` | Patient Health Questionnaire-4 | Scored (RANGE) | 4 SINGLE_SELECT, bands 0–2/3–5/6–8/9–12 |
+| `DT` | Distress Thermometer | Scored (RANGE) | Single SCALE 0–10, bands 0–3/4–6/7–10 |
+| `HADS` | Hospital Anxiety and Depression Scale | Scored (RANGE) | 14 SINGLE_SELECT split into subscales `A` and `D`, each 0–7/8–10/11–21 |
+| `PTSD` | PTSD Checklist | Scored (RANGE) | 20 SINGLE_SELECT, bands 0–10/11–30/31–50/51–80 |
+| `QOL` | Quality of Life | **Manual** | Manual interpretation; no automatic total |
+| `MACS` | Mental Adjustment to Cancer Scale | **Manual** | Manual interpretation; no automatic total |
+
+### Errors
+
+Form-specific errors retain the standard error envelope and status contract:
+
+| Status | Form error codes | Meaning |
+|---|---|---|
+| `400` | `FORM_KEY_INVALID`, `FORM_QUESTION_NO_CHOICES`, `FORM_CHOICE_MISSING_SCORE`, `FORM_SCALE_INVALID_RANGE`, `FORM_SCALE_HAS_CHOICES`, `FORM_SCALE_OUT_OF_RANGE`, `FORM_RANGES_INVALID`, `FORM_RANGES_OVERLAP`, `FORM_RANGES_GAP`, `FORM_VERSION_EMPTY`, `FORM_ANSWER_SHAPE_INVALID`, `FORM_DUPLICATE_QUESTION_ANSWER`, `FORM_DUPLICATE_CHOICE`, `FORM_INVALID_CHOICE`, `FORM_INVALID_CHOICE_COUNT`, `FORM_INVALID_QUESTION`, `FORM_INVALID_VOLUNTEER`, `FORM_MISSING_REQUIRED_ANSWER` | Request or scoring validation failed |
+| `401` | `UNAUTHORIZED` | Missing or invalid access token |
+| `403` | `FORBIDDEN` | Authenticated role cannot perform the operation |
+| `404` | `NOT_FOUND` | Form, assignment, or accessible target is not visible/found |
+| `409` | `FORM_KEY_EXISTS`, `FORM_KEY_IMMUTABLE`, `FORM_VERSION_CONFLICT`, `FORM_VERSION_NOT_DRAFT`, `FORM_NOT_PUBLISHABLE`, `FORM_ALREADY_SUBMITTED`, `FORM_ASSIGNMENT_FINALIZED` | Lifecycle or concurrent-operation conflict |
+
+`FORM_RANGES_INVALID` is raised when a score range's `minScore` exceeds its
+`maxScore`. The full as-built endpoint, request/response, and error reference
+lives in
+[`specs/004-dynamic-assessment-forms/contracts/forms-api.md`](../specs/004-dynamic-assessment-forms/contracts/forms-api.md).
 
 ## Tests
 
@@ -147,12 +347,14 @@ interventions). The `/health` probe checks both stores.
 npm run build
 npm run lint
 npm test -- --runInBand
+npm test -- --runInBand --runTestsByPath tests/integration/forms-workflow.test.ts
 npx jest --testPathPatterns=validators --runInBand
 ```
 
 Integration tests live in `tests/integration/` and exercise the API against a
 real PostgreSQL + MongoDB pair. For an end-to-end happy path that mirrors
-manual QA, follow `../specs/003-patient-module/quickstart.md`.
+manual QA, run `tests/integration/forms-workflow.test.ts` against seeded local
+stores and follow `../specs/004-dynamic-assessment-forms/quickstart.md`.
 
 ---
 
@@ -187,6 +389,37 @@ Recommended Postman setup:
 
 Every example body in the API reference below is copy-paste-ready for
 Postman's **Body → raw → JSON** tab.
+
+### Forms workflow variables
+
+Testing the dynamic assessment workflow requires changing roles between
+doctor, patient, and optionally volunteer requests. Add these variables to
+the same Postman environment:
+
+| Variable | Set from |
+|---|---|
+| `doctorToken` | Doctor `POST /auth/login` response |
+| `patientToken` | Patient `POST /auth/login` response |
+| `volunteerToken` | Volunteer `POST /auth/login` response, when testing delegated filling |
+| `patientId` | `GET /patients/options` response (`data[].id`) |
+| `volunteerId` | `GET /volunteers` response (`data[].id`) |
+| `formId` | `POST /forms` or `GET /forms` response |
+| `assignmentId` | `POST /forms/:id/publish` response |
+| `submissionId` | `POST /form-assignments/:id/submit` response |
+| `assessmentId` | `POST /assessments` response |
+
+When logging in as each role, save its token with the following Tests script,
+changing the variable name for the role:
+
+```javascript
+const body = pm.response.json();
+pm.environment.set("doctorToken", body.accessToken);
+```
+
+For the forms requests below, set the Authorization header to the matching
+role token, for example `Bearer {{doctorToken}}` or
+`Bearer {{patientToken}}`. Response-saving snippets are included at the
+endpoint where an id is first produced.
 
 ## Authentication
 
@@ -729,20 +962,81 @@ Example: `GET /patients?q=sara&page=1&pageSize=20`
 
 ```json
 {
-  "data": [ { "id": "...", "fullName": "Sara Patient", "...": "..." } ],
+  "data": [
+    {
+      "id": "...",
+      "fullName": "Sara Patient",
+      "...": "...",
+      "latestAssessments": [
+        { "templateKey": "PHQ9", "score": 12, "status": "MODERATE", "createdAt": "2026-05-20T09:00:00.000Z" },
+        { "templateKey": "PHQ4", "score": 3,  "status": "MILD",     "createdAt": "2026-05-18T09:00:00.000Z" }
+      ]
+    }
+  ],
   "page": 1,
   "pageSize": 20,
   "total": 1
 }
 ```
 
-For `VOLUNTEER` callers, every item in `data` has its `financials` field
+Each item carries `latestAssessments` — the most recent official assessment
+per `templateKey` for that patient (newest first within each key), computed in
+one query for the whole page. Clients render per-instrument scores (e.g.
+`PHQ9`, `PHQ4`) and use `status` as the diagnosis/severity label; an empty
+array means the patient has no official assessments yet.
+
+`latestAssessments` is clinical data: it is present only for `DOCTOR` and
+`ADMIN` callers and is stripped for `CALL_CENTER` and `VOLUNTEER`. For
+`VOLUNTEER` callers, every item in `data` also has its `financials` field
 removed.
 
 **Errors**
 
 - `400 VALIDATION_ERROR` — bad query parameters
 - `403 FORBIDDEN` — caller's role is not in the allow-list
+
+#### `GET /patients/options`
+
+Minimal active-patient lookup for assigning a form without loading clinical
+or demographic patient data.
+
+**Auth:** Bearer token. **Roles:** ADMIN, DOCTOR.
+
+**Query parameters**
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `q` | string | — | Optional case-insensitive substring match on `fullName` |
+| `page` | int | `1` | 1-indexed |
+| `pageSize` | int | `20` | Max `100` |
+
+```http
+GET {{baseUrl}}/patients/options?q=sara&page=1&pageSize=20
+Authorization: Bearer {{doctorToken}}
+```
+
+**Response 200**
+
+```json
+{
+  "data": [
+    {
+      "id": "patient-uuid",
+      "fullName": "Sara Patient"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "total": 1
+}
+```
+
+The response returns active patient records only.
+
+**Errors**
+
+- `400 VALIDATION_ERROR` — bad query parameters
+- `403 FORBIDDEN` — caller is not DOCTOR or ADMIN
 
 #### `GET /patients/:id`
 
@@ -990,6 +1284,784 @@ to send them a fresh link without going through `/auth/forgot-password`.
 - `403 FORBIDDEN` — caller is not ADMIN
 - `404 NOT_FOUND` — no user with that id
 - `503 EMAIL_DELIVERY_FAILED` — SMTP rejected the outgoing reset email
+
+---
+
+### Volunteer Options
+
+This minimal lookup supports assigning a form to a volunteer without giving
+doctors access to admin user management. All `/volunteers` endpoints require
+an authenticated `DOCTOR` or `ADMIN` token and return active volunteers only.
+
+#### `GET /volunteers`
+
+Search active volunteers for the `VOLUNTEER_FOR_PATIENT` publishing target.
+
+**Auth:** Bearer token. **Roles:** DOCTOR, ADMIN.
+
+**Query parameters**
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `q` | string | — | Optional case-insensitive substring match on `fullName` |
+| `page` | int | `1` | 1-indexed |
+| `pageSize` | int | `20` | Max `100` |
+
+```http
+GET {{baseUrl}}/volunteers?q=amira&page=1&pageSize=20
+Authorization: Bearer {{doctorToken}}
+```
+
+**Response 200**
+
+```json
+{
+  "data": [
+    {
+      "id": "volunteer-user-uuid",
+      "fullName": "Amira Hassan"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "total": 1
+}
+```
+
+The response intentionally excludes email, status controls, and other admin
+user fields.
+
+**Errors**
+
+- `400 VALIDATION_ERROR` — bad query parameters
+- `403 FORBIDDEN` — caller is not DOCTOR or ADMIN
+
+---
+
+### Forms
+
+Forms are versioned questionnaires authored by staff and later published as
+assignments. All routes in this section require a bearer token.
+
+**Auth:** Bearer token. **Roles:** DOCTOR, ADMIN.
+**Rate limit:** 120 requests/minute/user; `POST /forms/:id/publish` has a
+separate 10 requests/minute/user limit.
+
+#### `GET /forms`
+
+Lists form templates, including seeded templates after `npm run seed:forms`.
+Use this endpoint to choose a default form for publishing or populate a form
+library screen.
+
+**Query parameters**
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `q` | string | - | Search key, name, or description |
+| `isActive` | string | - | `true` or `false` |
+| `isDefault` | string | - | `true` or `false` |
+| `category` | string | - | Category filter |
+| `page` | int | `1` | 1-indexed |
+| `pageSize` | int | `20` | Max `100` |
+
+**Example request**
+
+```http
+GET {{baseUrl}}/forms?isDefault=true&pageSize=20
+Authorization: Bearer {{doctorToken}}
+```
+
+**Response 200**
+
+```json
+{
+  "data": [
+    {
+      "id": "form-uuid",
+      "key": "PHQ9",
+      "name": "Patient Health Questionnaire-9",
+      "isDefault": true,
+      "isActive": true,
+      "scoringType": "SUM",
+      "interpretationMode": "RANGE",
+      "currentVersion": {
+        "id": "version-uuid",
+        "version": 1,
+        "status": "PUBLISHED"
+      }
+    }
+  ],
+  "total": 7,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+To publish the first result while testing, add this Tests script:
+
+```javascript
+const form = pm.response.json().data[0];
+pm.environment.set("formId", form.id);
+```
+
+**Errors**
+
+- `400 VALIDATION_ERROR` - invalid or unknown query parameter.
+- `403 FORBIDDEN` - patient or volunteer attempted staff form access.
+
+#### `POST /forms`
+
+Creates a custom template with a version 1 `DRAFT`. A draft cannot be
+assigned until promoted with `POST /forms/:id/publish-version`.
+
+`key` is optional. When omitted (or sent empty), the server derives a stable
+unique key from `name` — ASCII alphanumerics uppercased plus a random suffix
+(e.g. `FRONTEND_DISTRESS_CHECK_3F9A1C22`). Non-Latin names (e.g. Arabic) that
+slugify to nothing fall back to `FORM_<random>`. This lets the authoring UI
+submit a title without asking the author to invent a key. On `PUT /forms/:id`,
+`key` is still required and immutable.
+
+**Request body**
+
+```json
+{
+  "key": "DISTRESS_CHECK_DEMO",
+  "name": "Frontend Distress Check",
+  "description": "Created while testing the form editor",
+  "category": "Distress",
+  "scoringType": "SUM",
+  "interpretationMode": "RANGE",
+  "questions": [
+    {
+      "order": 1,
+      "text": "How distressed are you today?",
+      "type": "SCALE",
+      "required": true,
+      "scaleMin": 0,
+      "scaleMax": 10,
+      "scaleStep": 1
+    },
+    {
+      "order": 2,
+      "text": "Which symptoms apply?",
+      "type": "MULTI_SELECT",
+      "required": true,
+      "choices": [
+        { "order": 1, "label": "Fatigue", "score": 1 },
+        { "order": 2, "label": "Insomnia", "score": 2 }
+      ]
+    }
+  ],
+  "scoreRanges": [
+    { "label": "Low", "minScore": 1, "maxScore": 5 },
+    { "label": "High", "minScore": 6, "maxScore": 13 }
+  ]
+}
+```
+
+**Response 201**
+
+```json
+{
+  "id": "form-uuid",
+  "key": "DISTRESS_CHECK_DEMO",
+  "name": "Frontend Distress Check",
+  "isActive": true,
+  "currentVersion": {
+    "id": "version-uuid",
+    "version": 1,
+    "status": "DRAFT",
+    "questions": [
+      {
+        "id": "scale-question-uuid",
+        "order": 1,
+        "text": "How distressed are you today?",
+        "type": "SCALE",
+        "required": true,
+        "scaleMin": 0,
+        "scaleMax": 10,
+        "scaleStep": 1,
+        "choices": []
+      }
+    ],
+    "scoreRanges": [
+      { "id": "range-uuid", "label": "Low", "minScore": 1, "maxScore": 5 }
+    ]
+  }
+}
+```
+
+Save the new template id in Postman:
+
+```javascript
+pm.environment.set("formId", pm.response.json().id);
+```
+
+**Errors**
+
+- `400 VALIDATION_ERROR` - malformed form structure; validation issue messages
+  may include `FORM_KEY_INVALID`, `FORM_QUESTION_NO_CHOICES`,
+  `FORM_SCALE_INVALID_RANGE`, `FORM_RANGES_OVERLAP`, or `FORM_RANGES_GAP`.
+- `409 FORM_KEY_EXISTS` - a template with this key already exists.
+
+#### `GET /forms/:id`
+
+Returns one template with its current version, including staff-visible
+question choice scores and score ranges.
+
+```http
+GET {{baseUrl}}/forms/{{formId}}
+Authorization: Bearer {{doctorToken}}
+```
+
+**Response 200:** the complete template shape returned from `POST /forms`.
+
+**Errors:** `404 NOT_FOUND` if the form id does not exist.
+
+#### `PUT /forms/:id`
+
+Updates a form using the full `POST /forms` body shape. The `key` cannot
+change. If the current version is a draft it is updated in place; if it is
+published, a new published version is created and existing assignments remain
+pinned to their earlier version.
+
+```http
+PUT {{baseUrl}}/forms/{{formId}}
+Authorization: Bearer {{doctorToken}}
+Content-Type: application/json
+```
+
+**Response 200:** complete updated template with `currentVersion`.
+
+**Errors**
+
+- `400 FORM_VERSION_EMPTY` - a published replacement has no questions.
+- `409 FORM_KEY_IMMUTABLE` - request attempts to change `key`.
+- `409 FORM_VERSION_CONFLICT` - concurrent version creation conflict.
+
+#### `GET /forms/:id/versions`
+
+Lists all saved versions for a form, newest first. Use this in the staff UI
+for history display.
+
+```http
+GET {{baseUrl}}/forms/{{formId}}/versions
+Authorization: Bearer {{doctorToken}}
+```
+
+**Response 200**
+
+```json
+[
+  { "id": "version-2-uuid", "version": 2, "status": "PUBLISHED", "questions": [] },
+  { "id": "version-1-uuid", "version": 1, "status": "PUBLISHED", "questions": [] }
+]
+```
+
+#### `GET /forms/:id/versions/:version`
+
+Gets a historical version with its questions, choices, and score ranges.
+
+```http
+GET {{baseUrl}}/forms/{{formId}}/versions/1
+Authorization: Bearer {{doctorToken}}
+```
+
+**Errors:** `404 NOT_FOUND` if that version does not exist.
+
+#### `POST /forms/:id/publish-version`
+
+Moves the current initial draft to `PUBLISHED` so it can be assigned.
+
+```http
+POST {{baseUrl}}/forms/{{formId}}/publish-version
+Authorization: Bearer {{doctorToken}}
+```
+
+**Request body:** none.
+
+**Response 200:** complete template with `currentVersion.status` set to
+`PUBLISHED`.
+
+**Errors**
+
+- `400 FORM_VERSION_EMPTY` - draft has no questions.
+- `409 FORM_VERSION_NOT_DRAFT` - current version was already published.
+
+#### `PATCH /forms/:id/status`
+
+Activates or deactivates a template. Inactive templates cannot be newly
+published, and scheduled assignments are not promoted while inactive.
+
+```http
+PATCH {{baseUrl}}/forms/{{formId}}/status
+Authorization: Bearer {{doctorToken}}
+Content-Type: application/json
+
+{ "isActive": false }
+```
+
+**Response 200:** complete template with the new `isActive` value.
+
+#### `POST /forms/:id/publish`
+
+Creates assignments from a published active form. Select exactly one target
+body below.
+
+**Single patient**
+
+Set `{{patientId}}` from `GET /patients/options`.
+
+```json
+{ "target": "SINGLE_PATIENT", "patientId": "{{patientId}}", "publishAt": null }
+```
+
+**All active patients**
+
+```json
+{ "target": "ALL_PATIENTS", "publishAt": null }
+```
+
+**A chosen subset of patients**
+
+Set `{{patientId}}` values from `GET /patients/options`. `patientIds` accepts
+1–200 UUIDs and is deduplicated. The publish is all-or-nothing: if any id is not
+an active patient the request returns **404** `NOT_FOUND` and nothing is created.
+
+```json
+{ "target": "SELECTED_PATIENTS", "patientIds": ["{{patientId}}"], "publishAt": null }
+```
+
+**Volunteer filling for a patient**
+
+Set `{{patientId}}` from `GET /patients/options` and `{{volunteerId}}` from
+`GET /volunteers`; doctors do not need access to the admin-only `/users` API.
+
+```json
+{
+  "target": "VOLUNTEER_FOR_PATIENT",
+  "patientId": "{{patientId}}",
+  "volunteerId": "{{volunteerId}}",
+  "publishAt": null
+}
+```
+
+For scheduled visibility, set `publishAt` to an ISO timestamp in the future,
+for example `"2026-06-01T08:00:00.000Z"`. Add an optional `dueAt` (ISO timestamp,
+must be after the publish time) to make the form expire — after it passes the
+form is hidden and submitting it returns **410** `FORM_EXPIRED`:
+
+```json
+{ "target": "ALL_PATIENTS", "publishAt": null, "dueAt": "2026-06-15T08:00:00.000Z" }
+```
+
+```http
+POST {{baseUrl}}/forms/{{formId}}/publish
+Authorization: Bearer {{doctorToken}}
+Content-Type: application/json
+```
+
+**Response 201**
+
+```json
+{
+  "assignmentsCreated": 1,
+  "assignmentIds": ["assignment-uuid"],
+  "skipped": 0
+}
+```
+
+Save the first assignment for the patient workflow:
+
+```javascript
+const body = pm.response.json();
+pm.environment.set("assignmentId", body.assignmentIds[0]);
+```
+
+**Frontend notes**
+
+- An immediate publication appears in the recipient's `/form-assignments/my`
+  result and creates a notification.
+- A future publication remains hidden until the scheduled sweep publishes it.
+- `ALL_PATIENTS` may return `assignmentsCreated: 0` when there are no active
+  patient users. `SELECTED_PATIENTS` always creates one assignment per listed
+  id on success (it rejects rather than partially fanning out).
+- A selected patient or volunteer must still be active when the publish
+  request is processed.
+- A patient who already has an outstanding (not-yet-submitted) copy of this form
+  is skipped by the fan-out targets and counted in `skipped`; the single-patient
+  targets reject with **409** `FORM_DUPLICATE_OPEN_ASSIGNMENT`. Re-publish once
+  the prior copy is submitted or cancelled.
+
+**Errors**
+
+- `400 FORM_INVALID_VOLUNTEER` - supplied user is not an active volunteer.
+- `404 NOT_FOUND` - supplied patient is inactive, or the patient or template cannot be found.
+- `409 FORM_NOT_PUBLISHABLE` - form is inactive, not published, or empty.
+
+#### `GET /forms/:id/assignments`
+
+Lists assignments created for a template for staff monitoring screens.
+
+```http
+GET {{baseUrl}}/forms/{{formId}}/assignments?page=1&pageSize=20
+Authorization: Bearer {{doctorToken}}
+```
+
+**Response 200**
+
+```json
+{
+  "data": [
+    {
+      "id": "assignment-uuid",
+      "target": "SINGLE_PATIENT",
+      "status": "PUBLISHED",
+      "publishAt": null,
+      "patient": { "id": "patient-uuid", "userId": "patient-user-uuid" },
+      "formVersion": { "id": "version-uuid", "version": 1 }
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+---
+
+### Form Assignments
+
+Assignments are the patient or volunteer copy of a published form. The filling workflow never returns scoring data to the client.
+
+**Auth:** `Bearer {{patientToken}}` or `Bearer {{volunteerToken}}` for filling; `Bearer {{doctorToken}}` for inspection or cancellation.
+
+**Rate limit:** `120` requests per minute per user. Submission is limited to `20` requests per minute per user.
+
+#### `GET /form-assignments/my`
+
+Return the published assignments currently available to the signed-in patient or volunteer.
+
+```http
+GET {{baseUrl}}/form-assignments/my
+Authorization: Bearer {{patientToken}}
+```
+
+```json
+[
+  {
+    "id": "assignment-uuid",
+    "target": "SINGLE_PATIENT",
+    "status": "PUBLISHED",
+    "publishAt": null,
+    "template": {
+      "id": "form-uuid",
+      "key": "DISTRESS_CHECK_DEMO",
+      "name": "Frontend Distress Check"
+    }
+  }
+]
+```
+
+Patients see their own patient-targeted assignments. Volunteers only see assignments delegated to them. Scheduled, cancelled, submitted, and unauthorized assignments do not appear in this inbox.
+
+#### `GET /form-assignments/:id`
+
+Retrieve the exact frozen form version to render for the recipient.
+
+```http
+GET {{baseUrl}}/form-assignments/{{assignmentId}}
+Authorization: Bearer {{patientToken}}
+```
+
+```json
+{
+  "id": "assignment-uuid",
+  "status": "PUBLISHED",
+  "template": {
+    "key": "DISTRESS_CHECK_DEMO",
+    "name": "Frontend Distress Check"
+  },
+  "formVersion": {
+    "version": 1,
+    "questions": [
+      {
+        "id": "question-uuid",
+        "order": 1,
+        "text": "How distressed are you today?",
+        "type": "SCALE",
+        "required": true,
+        "scaleMin": 0,
+        "scaleMax": 10,
+        "scaleStep": 1,
+        "choices": []
+      },
+      {
+        "id": "multi-question-uuid",
+        "order": 2,
+        "text": "Which symptoms apply?",
+        "type": "MULTI_SELECT",
+        "required": true,
+        "scaleMin": null,
+        "scaleMax": null,
+        "scaleStep": null,
+        "choices": [
+          {
+            "id": "choice-sleep-uuid",
+            "order": 2,
+            "label": "Insomnia"
+          }
+        ]
+      }
+    ],
+    "scoreRanges": []
+  }
+}
+```
+
+The filling response omits choice scores and returns no score ranges. Frontend screens must render questions and collect answers only; score and interpretation are server-side clinical data.
+
+**Common errors:** `404 NOT_FOUND` for unavailable or unauthorized assignments, `409 FORM_ALREADY_SUBMITTED`.
+
+#### `POST /form-assignments/:id/submit`
+
+Submit one answer for every required question. Use `choiceIds` for `SINGLE_SELECT` or `MULTI_SELECT` questions and `value` for `SCALE` questions.
+
+```http
+POST {{baseUrl}}/form-assignments/{{assignmentId}}/submit
+Authorization: Bearer {{patientToken}}
+Content-Type: application/json
+
+{
+  "answers": [
+    {
+      "questionId": "scale-question-uuid",
+      "value": 7
+    },
+    {
+      "questionId": "multi-question-uuid",
+      "choiceIds": ["choice-sleep-uuid"]
+    }
+  ]
+}
+```
+
+```json
+{
+  "submissionId": "submission-uuid",
+  "status": "SUBMITTED",
+  "submittedAt": "2026-05-25T10:10:00.000Z"
+}
+```
+
+Save the submission ID for the doctor workflow:
+
+```javascript
+pm.environment.set("submissionId", pm.response.json().submissionId);
+```
+
+Submission confirmation intentionally does not expose a calculated score or interpretation.
+
+**Common errors:** `400 VALIDATION_ERROR` (including `FORM_ANSWER_SHAPE_INVALID` or `FORM_DUPLICATE_QUESTION_ANSWER` details), `400 FORM_INVALID_QUESTION`, `400 FORM_INVALID_CHOICE`, `400 FORM_INVALID_CHOICE_COUNT`, `400 FORM_DUPLICATE_CHOICE`, `400 FORM_SCALE_OUT_OF_RANGE`, `400 FORM_MISSING_REQUIRED_ANSWER`, `404 NOT_FOUND`, `409 FORM_ALREADY_SUBMITTED`.
+
+#### `PATCH /form-assignments/:id/cancel`
+
+Cancel a scheduled or published assignment before it is completed.
+
+**Roles:** `DOCTOR`, `ADMIN`
+
+```http
+PATCH {{baseUrl}}/form-assignments/{{assignmentId}}/cancel
+Authorization: Bearer {{doctorToken}}
+```
+
+```json
+{
+  "id": "assignment-uuid",
+  "status": "CANCELLED"
+}
+```
+
+**Common error:** `409 FORM_ASSIGNMENT_FINALIZED` when a submitted or reviewed assignment can no longer be cancelled.
+
+---
+
+### Assessments
+
+Assessments are the official clinical record created after a doctor reviews a submitted form, or created directly when no form submission is needed.
+
+**Auth:** `Bearer {{doctorToken}}` for official assessment review, creation, and reads.
+
+Official assessments are clinical staff-only records. Patients must not read
+official assessment scores, interpretations, severity labels, or doctor notes.
+
+**Rate limit:** `120` requests per minute per user.
+
+#### `GET /assessments/submissions/pending`
+
+List form submissions awaiting clinical review.
+
+**Roles:** `DOCTOR`, `ADMIN`
+
+```http
+GET {{baseUrl}}/assessments/submissions/pending
+Authorization: Bearer {{doctorToken}}
+```
+
+```json
+[
+  {
+    "id": "submission-uuid",
+    "totalScore": 8,
+    "interpretation": { "label": "High", "subscales": [] },
+    "patient": { "id": "patient-uuid", "userId": "patient-user-uuid", "user": { "fullName": "Sara Ahmed" } },
+    "submittedBy": { "id": "filler-user-uuid", "role": "VOLUNTEER", "fullName": "Omar Volunteer" },
+    "assignment": {
+      "id": "assignment-uuid",
+      "template": {
+        "key": "DISTRESS_CHECK_DEMO",
+        "name": "Frontend Distress Check"
+      }
+    }
+  }
+]
+```
+
+This staff-only response may expose calculated scores and interpretation for review.
+
+`patient.user.fullName` is the subject and `submittedBy.fullName` is whoever actually filled the
+form. Use `submittedBy.role` to tell a volunteer-filled form (`VOLUNTEER`) from a patient
+self-report (`PATIENT`) — e.g. render _"filled by Omar Volunteer (Volunteer) for Sara Ahmed"_.
+
+#### `GET /assessments/submissions/:id`
+
+Retrieve one submitted form with its answers and computed result for clinical review.
+
+**Roles:** `DOCTOR`, `ADMIN`
+
+```http
+GET {{baseUrl}}/assessments/submissions/{{submissionId}}
+Authorization: Bearer {{doctorToken}}
+```
+
+The detail response includes `patient.user.fullName` (the subject) and `submittedBy`
+(`{ id, role, fullName }` — the actual filler), alongside the answers, computed score, and form
+version. `submittedBy.role` distinguishes a volunteer-filled form from a patient self-report.
+
+**Common error:** `404 NOT_FOUND`.
+
+#### `POST /assessments`
+
+Create the official assessment record. Only doctors can create assessments.
+
+**Roles:** `DOCTOR`
+
+For a scored form submission:
+
+```http
+POST {{baseUrl}}/assessments
+Authorization: Bearer {{doctorToken}}
+Content-Type: application/json
+
+{
+  "patientId": "{{patientId}}",
+  "submissionId": "{{submissionId}}",
+  "templateKey": "DISTRESS_CHECK_DEMO",
+  "status": "MODERATE",
+  "doctorNote": "Review coping plan at the next visit."
+}
+```
+
+For forms with `SUM` scoring, the server uses the stored submitted score. For forms with `MANUAL` scoring, include a doctor-confirmed `"score"` value.
+
+To create an assessment without a form submission:
+
+```json
+{
+  "patientId": "{{patientId}}",
+  "submissionId": null,
+  "templateKey": "CLINICAL_INTERVIEW",
+  "score": 6,
+  "status": "MILD",
+  "doctorNote": "Direct clinical assessment."
+}
+```
+
+Allowed statuses are `NORMAL`, `MILD`, `MODERATE`, `SEVERE`, and `CRITICAL`.
+
+```json
+{
+  "id": "assessment-uuid",
+  "patientId": "patient-uuid",
+  "templateKey": "DISTRESS_CHECK_DEMO",
+  "score": 8,
+  "status": "MODERATE",
+  "doctorNote": "Review coping plan at the next visit."
+}
+```
+
+```javascript
+pm.environment.set("assessmentId", pm.response.json().id);
+```
+
+Creating an assessment linked to a submission changes its assignment status to `REVIEWED`.
+
+**Common errors:** `400 VALIDATION_ERROR`, `400 ASSESSMENT_SUBMISSION_MISMATCH`, `400 ASSESSMENT_SCORE_REQUIRED`, `403 FORBIDDEN`, `404 NOT_FOUND`, `409 ASSESSMENT_ALREADY_CREATED`.
+
+#### `GET /assessments/patient/:patientId`
+
+List official assessments for one patient.
+
+**Roles:** `DOCTOR`, `ADMIN`.
+
+```http
+GET {{baseUrl}}/assessments/patient/{{patientId}}
+Authorization: Bearer {{doctorToken}}
+```
+
+```json
+[
+  {
+    "id": "assessment-uuid",
+    "templateKey": "DISTRESS_CHECK_DEMO",
+    "score": 8,
+    "status": "MODERATE",
+    "createdAt": "2026-05-25T10:20:00.000Z"
+  }
+]
+```
+
+#### `GET /assessments/:id`
+
+Retrieve one official assessment.
+
+**Roles:** `DOCTOR`, `ADMIN`.
+
+```http
+GET {{baseUrl}}/assessments/{{assessmentId}}
+Authorization: Bearer {{doctorToken}}
+```
+
+**Common error:** `404 NOT_FOUND` for missing or inaccessible records.
+
+---
+
+### Dynamic Forms Quick Test Sequence
+
+Use this order in Postman to test the frontend workflow:
+
+1. Sign in as a doctor, save `doctorToken`, then call `POST /forms` and save `formId`.
+2. Call `POST /forms/{{formId}}/publish-version` so an immutable version is ready to assign.
+3. Call `POST /forms/{{formId}}/publish` for `{{patientId}}` and save `assignmentId`.
+4. Sign in as that patient, save `patientToken`, then call `GET /form-assignments/{{assignmentId}}` to render the question IDs and choices.
+5. Call `POST /form-assignments/{{assignmentId}}/submit` and save `submissionId`.
+6. Switch back to `doctorToken` and call `GET /assessments/submissions/{{submissionId}}` to review server-computed results.
+7. Call `POST /assessments` and save `assessmentId`.
+8. Continue with `doctorToken` and call `GET /assessments/{{assessmentId}}` to inspect the official assessment record.
+
+The filler-facing endpoints never return option scores, total score, or
+computed interpretation. Official assessment records are available only to
+doctors and admins, not to patients.
 
 ---
 

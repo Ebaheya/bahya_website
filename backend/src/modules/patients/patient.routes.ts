@@ -20,6 +20,13 @@ patientRouter.get(
 );
 
 patientRouter.get(
+  '/options',
+  authenticate,
+  authorize('ADMIN', 'DOCTOR'),
+  controller.listOptions
+);
+
+patientRouter.get(
   '/:id/timeline',
   authenticate,
   authorize('ADMIN', 'DOCTOR'),

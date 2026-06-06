@@ -1,21 +1,24 @@
 import 'package:bahya_website/route.dart';
+import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
-void main() async{
-  WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+void main() {
+  setUrlStrategy(PathUrlStrategy());
+  initDio();
+    WidgetsFlutterBinding.ensureInitialized();
 
+  authNotifier.checkLogin();
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-   MyApp({super.key});
-  final AppRoute _appRoute = AppRoute();
-
+  const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false,
-          onGenerateRoute: _appRoute.generateRoute, );
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      routerConfig: AppRouter.router,
+    );
   }
 }

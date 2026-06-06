@@ -80,7 +80,7 @@ Future<void> showDiagnosisPatientsDialog({
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: arabicText(
+                          child: customText(
                             text: diagnosisTitle,
                             size: h * 0.015,
                             bold: true,
@@ -133,14 +133,14 @@ Future<void> showDiagnosisPatientsDialog({
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              arabicText(
+                              customText(
                                 text: "إجمالي المريضات",
                                 size: h * 0.016,
                                 bold: true,
                                 color: const Color(0xFF7A004C),
                               ),
                               const SizedBox(height: 2),
-                              arabicText(
+                              customText(
                                 text: patients.length.toString(),
                                 size: h * 0.018,
                                 color: const Color(0xFFB0005B),
@@ -153,14 +153,14 @@ Future<void> showDiagnosisPatientsDialog({
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              arabicText(
+                              customText(
                                 text: "متوسط العمر",
                                 size: h * 0.016,
                                 bold: true,
                                 color: const Color(0xFF7A004C),
                               ),
                               const SizedBox(height: 2),
-                              arabicText(
+                              customText(
                                 text: "$averageAge سنة",
                                 size: h * 0.018,
                                 color: const Color(0xFFB0005B),

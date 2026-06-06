@@ -1,0 +1,377 @@
+import { Prisma, type FormAssignmentTarget } from '@prisma/client';
+import type { Request } from 'express';
+import { prisma } from '../../config/prisma';
+import { writeAudit } from '../../middleware/audit';
+import { AppError } from '../../utils/httpError';
+import {
+  emitFormAssigned,
+  type FormAssignedNotificationInput,
+} from '../notifications/notification.service';
+import { FORM_ERROR } from './form.errors';
+import type { ListAssignmentsQuery, PublishFormInput } from './publish.schema';
+
+const DUE_SWEEP_BATCH_SIZE = 500;
+
+const assignmentInclude = {
+  patient: { select: { id: true, userId: true } },
+  assignedTo: { select: { id: true, role: true } },
+  formVersion: { select: { id: true, version: true } },
+} satisfies Prisma.FormAssignmentInclude;
+
+type VisibleAssignment = {
+  id: string;
+  patientId: string;
+  patientUserId: string;
+  target: FormAssignmentTarget;
+  assignedToUserId: string | null;
+  formName: string;
+};
+
+function normalizedPublishTime(value: Date | null | undefined, now: Date): Date | null {
+  return value && value.getTime() > now.getTime() ? value : null;
+}
+
+function toNotificationInput(assignment: VisibleAssignment): FormAssignedNotificationInput {
+  const isVolunteer = assignment.target === 'VOLUNTEER_FOR_PATIENT';
+  return {
+    assignmentId: assignment.id,
+    patientId: assignment.patientId,
+    recipientRole: isVolunteer ? 'VOLUNTEER' : 'PATIENT',
+    recipientUserId: isVolunteer ? assignment.assignedToUserId! : assignment.patientUserId,
+    formName: assignment.formName,
+  };
+}
+
+async function notifyVisibleAssignments(assignments: VisibleAssignment[]): Promise<void> {
+  await Promise.all(
+    assignments.map((assignment) => emitFormAssigned(toNotificationInput(assignment)))
+  );
+}
+
+export async function publishForm(
+  templateId: string,
+  input: PublishFormInput,
+  actorId: string,
+  req?: Request,
+  now = new Date()
+) {
+  const publishAt = normalizedPublishTime(input.publishAt, now);
+  const status = publishAt ? 'SCHEDULED' : 'PUBLISHED';
+
+  // Optional expiry: a form can no longer be filled after dueAt. It must fall
+  // after the moment the form becomes visible (the scheduled time, or now for an
+  // immediate publish) — otherwise the assignment would arrive already expired.
+  const dueAt = input.dueAt ?? null;
+  if (dueAt) {
+    const visibleFrom = publishAt ?? now;
+    if (dueAt.getTime() <= visibleFrom.getTime()) {
+      throw new AppError(
+        400,
+        FORM_ERROR.INVALID_DUE_DATE,
+        'Form due date must be after its publish time'
+      );
+    }
+  }
+
+  const { assignments, skipped } = await prisma.$transaction(async (tx) => {
+    const template = await tx.formTemplate.findUnique({
+      where: { id: templateId },
+      include: {
+        currentVersion: { include: { questions: { select: { id: true } } } },
+      },
+    });
+    if (!template) throw AppError.notFound('Form not found');
+    if (
+      !template.isActive ||
+      !template.currentVersion ||
+      template.currentVersion.status !== 'PUBLISHED' ||
+      template.currentVersion.questions.length === 0
+    ) {
+      throw new AppError(409, FORM_ERROR.NOT_PUBLISHABLE, 'Form is not publishable');
+    }
+
+    let recipients: Array<{
+      patientId: string;
+      patientUserId: string;
+      assignedToUserId: string | null;
+      target: FormAssignmentTarget;
+    }>;
+
+    if (input.target === 'ALL_PATIENTS') {
+      const patients = await tx.patient.findMany({
+        where: { user: { is: { role: 'PATIENT', isActive: true } } },
+        select: { id: true, userId: true },
+      });
+      recipients = patients.map((patient) => ({
+        patientId: patient.id,
+        patientUserId: patient.userId,
+        assignedToUserId: null,
+        target: 'ALL_PATIENTS',
+      }));
+    } else if (input.target === 'SELECTED_PATIENTS') {
+      const uniqueIds = [...new Set(input.patientIds)];
+      const patients = await tx.patient.findMany({
+        where: { id: { in: uniqueIds }, user: { is: { role: 'PATIENT', isActive: true } } },
+        select: { id: true, userId: true },
+      });
+      // All-or-nothing: if any requested patient is missing or inactive the whole
+      // publish is rejected, so the caller never gets a silent partial fan-out.
+      if (patients.length !== uniqueIds.length) {
+        throw AppError.notFound('One or more selected patients not found');
+      }
+      recipients = patients.map((patient) => ({
+        patientId: patient.id,
+        patientUserId: patient.userId,
+        assignedToUserId: null,
+        target: 'SELECTED_PATIENTS',
+      }));
+    } else {
+      const patient = await tx.patient.findUnique({
+        where: { id: input.patientId },
+        select: { id: true, userId: true, user: { select: { isActive: true } } },
+      });
+      if (!patient || !patient.user.isActive) throw AppError.notFound('Patient not found');
+
+      let assignedToUserId: string | null = null;
+      if (input.target === 'VOLUNTEER_FOR_PATIENT') {
+        const volunteer = await tx.user.findUnique({
+          where: { id: input.volunteerId },
+          select: { id: true, role: true, isActive: true },
+        });
+        if (!volunteer || volunteer.role !== 'VOLUNTEER' || !volunteer.isActive) {
+          throw new AppError(400, FORM_ERROR.INVALID_VOLUNTEER, 'Assigned user must be a volunteer');
+        }
+        assignedToUserId = volunteer.id;
+      }
+
+      recipients = [
+        {
+          patientId: patient.id,
+          patientUserId: patient.userId,
+          assignedToUserId,
+          target: input.target,
+        },
+      ];
+    }
+
+    // Duplicate-publish guard. A patient must not hold two outstanding (not yet
+    // submitted) copies of the same form. Re-publishing is allowed once the prior
+    // copy is submitted/cancelled — that is the next legitimate assessment point.
+    // For the single-recipient targets this is a hard error; for the fan-out
+    // targets we skip the already-covered patients and report how many, so one
+    // stale patient never blocks a publish to the rest of the cohort. A partial
+    // unique index on (templateId, patientId) for active statuses backs this at
+    // the DB level against the double-click race the read-then-write can miss.
+    let skipped = 0;
+    if (recipients.length > 0) {
+      const openCopies = await tx.formAssignment.findMany({
+        where: {
+          templateId: template.id,
+          patientId: { in: recipients.map((recipient) => recipient.patientId) },
+          status: { in: ['SCHEDULED', 'PUBLISHED'] },
+        },
+        select: { patientId: true },
+      });
+      if (openCopies.length > 0) {
+        const blocked = new Set(openCopies.map((copy) => copy.patientId));
+        if (input.target === 'SINGLE_PATIENT' || input.target === 'VOLUNTEER_FOR_PATIENT') {
+          throw new AppError(
+            409,
+            FORM_ERROR.DUPLICATE_OPEN_ASSIGNMENT,
+            'This patient already has an outstanding copy of this form'
+          );
+        }
+        const before = recipients.length;
+        recipients = recipients.filter((recipient) => !blocked.has(recipient.patientId));
+        skipped = before - recipients.length;
+      }
+    }
+
+    const recipientUserByPatient = new Map(
+      recipients.map((recipient) => [recipient.patientId, recipient.patientUserId])
+    );
+
+    if (recipients.length === 0) return { assignments: [], skipped };
+
+    // Single bulk insert (one round trip) rather than one create per recipient:
+    // an ALL_PATIENTS fan-out otherwise serializes N inserts on the interactive
+    // transaction's connection and can exceed its timeout for large cohorts.
+    const created = await tx.formAssignment.createManyAndReturn({
+      data: recipients.map((recipient) => ({
+        templateId: template.id,
+        formVersionId: template.currentVersion!.id,
+        patientId: recipient.patientId,
+        assignedToUserId: recipient.assignedToUserId,
+        assignedById: actorId,
+        target: recipient.target,
+        status,
+        publishAt,
+        dueAt,
+      })),
+      select: { id: true, patientId: true, assignedToUserId: true, target: true },
+    });
+
+    return {
+      assignments: created.map((assignment) => ({
+        id: assignment.id,
+        patientId: assignment.patientId,
+        patientUserId: recipientUserByPatient.get(assignment.patientId)!,
+        target: assignment.target,
+        assignedToUserId: assignment.assignedToUserId,
+        formName: template.name,
+      })),
+      skipped,
+    };
+  });
+
+  if (status === 'PUBLISHED') {
+    await notifyVisibleAssignments(assignments);
+  }
+
+  await writeAudit({
+    actorId,
+    action: 'FORM_PUBLISHED',
+    entityType: 'FormTemplate',
+    entityId: templateId,
+    newValues: {
+      target: input.target,
+      assignmentsCreated: assignments.length,
+      skipped,
+      scheduled: status === 'SCHEDULED',
+      dueAt: dueAt ? dueAt.toISOString() : null,
+    },
+    req,
+  });
+
+  return {
+    assignmentsCreated: assignments.length,
+    assignmentIds: assignments.map((item) => item.id),
+    skipped,
+  };
+}
+
+export async function listAssignments(templateId: string, query: ListAssignmentsQuery) {
+  const template = await prisma.formTemplate.findUnique({
+    where: { id: templateId },
+    select: { id: true },
+  });
+  if (!template) throw AppError.notFound('Form not found');
+
+  const skip = (query.page - 1) * query.pageSize;
+  const [data, total] = await Promise.all([
+    prisma.formAssignment.findMany({
+      where: { templateId },
+      include: assignmentInclude,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: query.pageSize,
+    }),
+    prisma.formAssignment.count({ where: { templateId } }),
+  ]);
+
+  return { data, total, page: query.page, pageSize: query.pageSize };
+}
+
+export async function cancelAssignment(assignmentId: string) {
+  return prisma.$transaction(async (tx) => {
+    const assignment = await tx.formAssignment.findUnique({
+      where: { id: assignmentId },
+      include: assignmentInclude,
+    });
+    if (!assignment) throw AppError.notFound('Form assignment not found');
+    if (assignment.status === 'CANCELLED') return assignment;
+    if (assignment.status === 'SUBMITTED' || assignment.status === 'REVIEWED') {
+      throw new AppError(
+        409,
+        FORM_ERROR.ASSIGNMENT_FINALIZED,
+        'A submitted assignment cannot be cancelled'
+      );
+    }
+
+    // Status-guarded write: if a concurrent sweep/submit flipped the row between
+    // the read above and this update, the guard matches 0 rows and we reject
+    // rather than returning a stale view.
+    const cancelled = await tx.formAssignment.updateMany({
+      where: { id: assignmentId, status: { in: ['SCHEDULED', 'PUBLISHED'] } },
+      data: { status: 'CANCELLED' },
+    });
+    if (cancelled.count !== 1) {
+      throw new AppError(409, FORM_ERROR.ASSIGNMENT_FINALIZED, 'Assignment cannot be cancelled');
+    }
+
+    return { ...assignment, status: 'CANCELLED' as const };
+  });
+}
+
+export async function runDueAssignmentsSweep(now = new Date()): Promise<number> {
+  const promoted: VisibleAssignment[] = [];
+
+  // Drain due assignments in bounded batches. Claiming a row flips it out of the
+  // SCHEDULED set, so each query advances the cursor and a large backlog never
+  // loads the whole table into memory at once.
+  // A scheduled assignment is only promoted when every precondition the
+  // immediate publish path enforces still holds at publish time:
+  //   - its template is still active (a form deactivated after scheduling must
+  //     not be sent out — FR-024 / US7);
+  //   - its patient, and for a delegated assignment its assigned volunteer, are
+  //     still active (the direct path refuses inactive recipients, so the sweep
+  //     must not publish + notify a user who can no longer fill it);
+  //   - its due date has not passed (otherwise /my hides it and a direct submit
+  //     returns 410 — a dead "form assigned" notification).
+  // Anything failing these stays SCHEDULED (still cancellable) and re-fires if
+  // the blocker is lifted before dueAt. The same object guards the claim below
+  // so a recipient/template/date change between fetch and write can't slip
+  // through.
+  const eligible: Prisma.FormAssignmentWhereInput = {
+    status: 'SCHEDULED',
+    publishAt: { lte: now },
+    template: { is: { isActive: true } },
+    patient: { user: { is: { isActive: true } } },
+    AND: [
+      { OR: [{ dueAt: null }, { dueAt: { gt: now } }] },
+      { OR: [{ assignedToUserId: null }, { assignedTo: { is: { isActive: true } } }] },
+    ],
+  };
+
+  for (;;) {
+    const dueAssignments = await prisma.formAssignment.findMany({
+      where: eligible,
+      select: {
+        id: true,
+        patientId: true,
+        assignedToUserId: true,
+        target: true,
+        patient: { select: { userId: true } },
+        template: { select: { name: true } },
+      },
+      take: DUE_SWEEP_BATCH_SIZE,
+    });
+    if (dueAssignments.length === 0) break;
+
+    for (const assignment of dueAssignments) {
+      // Re-assert the full eligibility in the claim itself: if the template,
+      // patient, or assigned volunteer is deactivated (or dueAt passes) between
+      // the findMany above and this write, the guard matches 0 rows and the
+      // assignment stays SCHEDULED rather than being published.
+      const claimed = await prisma.formAssignment.updateMany({
+        where: { ...eligible, id: assignment.id },
+        data: { status: 'PUBLISHED' },
+      });
+      if (claimed.count !== 1) continue;
+
+      promoted.push({
+        id: assignment.id,
+        patientId: assignment.patientId,
+        patientUserId: assignment.patient.userId,
+        target: assignment.target,
+        assignedToUserId: assignment.assignedToUserId,
+        formName: assignment.template.name,
+      });
+    }
+
+    if (dueAssignments.length < DUE_SWEEP_BATCH_SIZE) break;
+  }
+
+  await notifyVisibleAssignments(promoted);
+  return promoted.length;
+}

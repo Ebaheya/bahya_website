@@ -4,12 +4,24 @@ import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/widgets/forget_password_dialog.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/route.dart';
+import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   LoginPage({super.key});
 
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController emailController = TextEditingController();
+
+  final TextEditingController passwordController = TextEditingController();
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -57,13 +69,13 @@ class LoginPage extends StatelessWidget {
                         children: [
                           heartSign(),
                           const SizedBox(height: 16),
-                          arabicText(
+                          customText(
                             text: 'فريق الدعم النفسي',
                             size: getScreenHeight(context) * 0.035,
                             color: Color(0xFF7A104F),
                           ),
                           const SizedBox(height: 8),
-                          arabicText(
+                          customText(
                             text: 'مرحباً بك في منصة الدعم والرعاية',
                             size: getScreenHeight(context) * 0.02,
                             color: Color(0xFFE91E63),
@@ -71,15 +83,19 @@ class LoginPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 24),
                           buildTextField(
+                            controller: emailController,
                             keyboardType: CustomTextFieldType.email,
                             hintText: 'البريد الالكترونى',
                             labelText: 'البريد الالكترونى ',
+                            textDirection: TextDirection.rtl,
                           ),
                           buildTextField(
+                            controller: passwordController,
                             keyboardType: CustomTextFieldType.password,
                             obscureText: true,
                             hintText: 'أدخل كلمة المرور',
                             labelText: 'كلمة المرور',
+                            textDirection: TextDirection.rtl,
                           ),
                           const SizedBox(height: 16),
                           CustomGlowButton(
@@ -88,15 +104,27 @@ class LoginPage extends StatelessWidget {
                             textColor: Colors.white,
                             onPressed: () async {
                               if (_formKey.currentState?.validate() ?? false) {
-                                customDialog(
-                                  context: context,
-                                  title: 'نجاح',
-                                  message: 'تم تسجيل الدخول بنجاح!',
-                                  onClose: () => Navigator.pushReplacementNamed(
-                                    context,
-                                    '/home',
-                                  ),
-                                );
+                                String email = emailController.text.trim();
+                                String password = passwordController.text
+                                    .trim();
+                                try {
+                                  await login(email: email, password: password);
+                                  customDialog(
+                                    context: context,
+                                    title: 'نجاح',
+                                    message: 'تم تسجيل الدخول بنجاح!',
+                                    onClose: () {
+                                      Navigator.of(context).pop();
+                                      authNotifier.login();
+                                    },
+                                  );
+                                } catch (e) {
+                                  customDialog(
+                                    context: context,
+                                    title: 'خطأ',
+                                    message: 'البريد أو كلمة المرور غير صحيحة',
+                                  );
+                                }
                               } else {
                                 customDialog(
                                   context: context,
@@ -112,7 +140,7 @@ class LoginPage extends StatelessWidget {
                             onTap: () {
                               forgetPasswordDialog(context);
                             },
-                            child: arabicText(
+                            child: customText(
                               text: 'نسيت كلمة المرور؟',
                               color: Color(0xFFE91E63),
                               size: 14,

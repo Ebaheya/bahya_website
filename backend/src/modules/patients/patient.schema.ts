@@ -58,6 +58,14 @@ export const queryPatientsSchema = z
   })
   .strict();
 
+export const listPatientOptionsQuerySchema = z
+  .object({
+    q: z.string().trim().min(1).max(120).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .strict();
+
 export const patientTimelineQuerySchema = z
   .object({
     page: z.coerce.number().int().min(1).default(1),
@@ -74,5 +82,6 @@ export const patientIdParamSchema = z
 export type CreatePatientInput = z.infer<typeof createPatientSchema>;
 export type PatchPatientInput = z.infer<typeof patchPatientSchema>;
 export type QueryPatientsInput = z.infer<typeof queryPatientsSchema>;
+export type ListPatientOptionsQuery = z.infer<typeof listPatientOptionsQuerySchema>;
 export type PatientTimelineQuery = z.infer<typeof patientTimelineQuerySchema>;
 export type PatientIdParam = z.infer<typeof patientIdParamSchema>;

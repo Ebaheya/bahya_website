@@ -38,7 +38,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
       ),
       child: Column(
         children: [
-          arabicText(
+          customText(
             text: "جدولة نشر النموذج",
             size: h * 0.03,
             bold: true,
@@ -46,7 +46,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
           ),
           SizedBox(height: h * 0.01),
 
-          arabicText(
+          customText(
             text: "حدد النموذج والوقت المناسب للنشر",
             size: h * 0.02,
             color: const Color(0xFFE40070),
@@ -55,7 +55,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
 
           DropdownButtonFormField(
             decoration: fieldStyle(),
-            hint: arabicText(
+            hint: customText(
               text: "اختر نموذج من القائمة",
               size: h * 0.018,
               isCenter: false,
@@ -72,7 +72,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
                 .map(
                   (e) => DropdownMenuItem(
                     value: e,
-                    child: arabicText(text: e, size: h * 0.018),
+                    child: customText(text: e, size: h * 0.018),
                   ),
                 )
                 .toList(),
@@ -120,7 +120,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
                 .map(
                   (e) => DropdownMenuItem(
                     value: e,
-                    child: arabicText(text: e, size: h * 0.018),
+                    child: customText(text: e, size: h * 0.018),
                   ),
                 )
                 .toList(),

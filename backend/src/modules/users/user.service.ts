@@ -7,7 +7,7 @@ import { AppError } from '../../utils/httpError';
 import { sendEmail } from '../email/email.service';
 import { buildPasswordResetEmail } from '../email/templates/password-reset';
 import { buildResetUrl, invalidateResetToken, issueResetToken } from '../auth/reset-tokens';
-import type { ListUsersQuery, PatchUserInput } from './user.schema';
+import type { ListUsersQuery, ListVolunteerOptionsQuery, PatchUserInput } from './user.schema';
 
 export const publicUserSelect = {
   id: true,
@@ -111,6 +111,32 @@ export async function listUsers(query: ListUsersQuery) {
     pageSize: query.pageSize,
     total,
   };
+}
+
+export async function listVolunteerOptions(query: ListVolunteerOptionsQuery) {
+  const where: Prisma.UserWhereInput = {
+    role: 'VOLUNTEER',
+    isActive: true,
+    ...(query.q
+      ? {
+          fullName: { contains: query.q, mode: 'insensitive' },
+        }
+      : {}),
+  };
+  const skip = (query.page - 1) * query.pageSize;
+
+  const [data, total] = await prisma.$transaction([
+    prisma.user.findMany({
+      where,
+      select: { id: true, fullName: true },
+      orderBy: { fullName: 'asc' },
+      skip,
+      take: query.pageSize,
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return { data, page: query.page, pageSize: query.pageSize, total };
 }
 
 export async function patchUser(

@@ -4,6 +4,7 @@ import { logger } from './config/logger';
 import { prisma, disconnectPrisma } from './config/prisma';
 import { connectMongo, disconnectMongo } from './config/mongo';
 import { pruneExpiredRefreshTokens } from './modules/auth/refreshToken.cleanup';
+import { runDueAssignmentsSweep } from './modules/forms/publish.service';
 
 const app = createApp();
 
@@ -11,6 +12,18 @@ const app = createApp();
 // The variable is declared in the outer scope so the signal handlers
 // can reference it before start() resolves.
 let server: ReturnType<typeof app.listen> | undefined;
+const DUE_ASSIGNMENTS_SWEEP_INTERVAL_MS = 60 * 1000;
+
+async function sweepDueFormAssignments(): Promise<void> {
+  try {
+    const promoted = await runDueAssignmentsSweep();
+    if (promoted > 0) {
+      logger.info({ promoted }, 'scheduled form assignments published');
+    }
+  } catch (err) {
+    logger.warn({ err }, 'scheduled form assignment sweep failed');
+  }
+}
 
 async function start(): Promise<void> {
   // Both datastores must be reachable before the backend accepts traffic.
@@ -26,6 +39,9 @@ async function start(): Promise<void> {
   // prevent graceful shutdown when no other work is pending.
   void pruneExpiredRefreshTokens();
   setInterval(pruneExpiredRefreshTokens, 6 * 60 * 60 * 1000).unref();
+
+  void sweepDueFormAssignments();
+  setInterval(() => void sweepDueFormAssignments(), DUE_ASSIGNMENTS_SWEEP_INTERVAL_MS).unref();
 }
 
 async function shutdown(signal: string): Promise<void> {

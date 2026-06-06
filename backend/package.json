@@ -11,6 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "audit:migrate": "ts-node --transpile-only scripts/migrate-audit-to-mongo.ts",
+    "seed:forms": "ts-node --transpile-only prisma/seed/forms.ts",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest"
