@@ -148,10 +148,20 @@ describe('submission visibility and detail', () => {
           patient: {
             user: { is: { id: 'patient-user-1', role: 'PATIENT', isActive: true } },
           },
-          target: { in: ['SINGLE_PATIENT', 'ALL_PATIENTS'] },
+          target: { in: ['SINGLE_PATIENT', 'ALL_PATIENTS', 'SELECTED_PATIENTS'] },
         }),
       })
     );
+  });
+
+  it('lets the owning patient fill a SELECTED_PATIENTS assignment', async () => {
+    prismaMock.formAssignment.findUnique.mockResolvedValue(
+      assignment({ target: 'SELECTED_PATIENTS' })
+    );
+
+    await expect(
+      submissionService.getAssignmentDetail('assignment-1', 'patient-user-1', 'PATIENT')
+    ).resolves.toMatchObject({ id: 'assignment-1' });
   });
 
   it('returns pinned filler detail without choice scores or interpretation ranges', async () => {

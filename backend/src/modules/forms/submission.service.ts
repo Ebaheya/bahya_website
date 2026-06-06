@@ -55,7 +55,9 @@ function canFill(assignment: AssignmentDetail, actorId: string, role: Role): boo
   if (role === 'PATIENT') {
     return (
       assignment.patient.userId === actorId &&
-      (assignment.target === 'SINGLE_PATIENT' || assignment.target === 'ALL_PATIENTS')
+      (assignment.target === 'SINGLE_PATIENT' ||
+        assignment.target === 'ALL_PATIENTS' ||
+        assignment.target === 'SELECTED_PATIENTS')
     );
   }
   if (role === 'VOLUNTEER') {
@@ -168,7 +170,7 @@ export async function getMyAssignments(actorId: string, role: Role, now = new Da
     ...(role === 'PATIENT'
       ? {
           patient: { user: { is: { id: actorId, role: 'PATIENT', isActive: true } } },
-          target: { in: ['SINGLE_PATIENT', 'ALL_PATIENTS'] },
+          target: { in: ['SINGLE_PATIENT', 'ALL_PATIENTS', 'SELECTED_PATIENTS'] },
         }
       : {
           patient: { user: { is: { role: 'PATIENT', isActive: true } } },
