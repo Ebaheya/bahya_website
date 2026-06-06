@@ -55,6 +55,7 @@ describe('runDueAssignmentsSweep', () => {
           status: 'SCHEDULED',
           publishAt: { lte: now },
           template: { is: { isActive: true } },
+          OR: [{ dueAt: null }, { dueAt: { gt: now } }],
         },
       })
     );
@@ -64,6 +65,7 @@ describe('runDueAssignmentsSweep', () => {
         status: 'SCHEDULED',
         publishAt: { lte: now },
         template: { is: { isActive: true } },
+        OR: [{ dueAt: null }, { dueAt: { gt: now } }],
       },
       data: { status: 'PUBLISHED' },
     });
@@ -86,6 +88,21 @@ describe('runDueAssignmentsSweep', () => {
     await expect(runDueAssignmentsSweep()).resolves.toBe(0);
 
     expect(emitFormAssignedMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('excludes assignments whose due date has already passed from the sweep', async () => {
+    const now = new Date('2026-06-10T08:00:00Z');
+    prismaMock.formAssignment.findMany.mockResolvedValue([]);
+
+    await expect(runDueAssignmentsSweep(now)).resolves.toBe(0);
+
+    expect(prismaMock.formAssignment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ OR: [{ dueAt: null }, { dueAt: { gt: now } }] }),
+      })
+    );
+    expect(prismaMock.formAssignment.updateMany).not.toHaveBeenCalled();
+    expect(emitFormAssignedMock).not.toHaveBeenCalled();
   });
 
   it('does not promote or notify when a template is deactivated before the claim', async () => {

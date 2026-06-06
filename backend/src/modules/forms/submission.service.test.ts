@@ -183,6 +183,19 @@ describe('submission visibility and detail', () => {
       submissionService.getAssignmentDetail('assignment-1', 'volunteer-1', 'VOLUNTEER')
     ).rejects.toMatchObject({ statusCode: 404 });
   });
+
+  it('hides a submitted assignment from a non-owner as 404, not 409', async () => {
+    // Ownership is checked before the submitted/expired states, so a stranger
+    // guessing an id cannot distinguish a real submitted row (would leak via
+    // 409) from a missing one — both return 404.
+    prismaMock.formAssignment.findUnique.mockResolvedValue(
+      assignment({ status: 'SUBMITTED', submission: { id: 'submission-1' } })
+    );
+
+    await expect(
+      submissionService.getAssignmentDetail('assignment-1', 'patient-user-2', 'PATIENT')
+    ).rejects.toMatchObject({ statusCode: 404 });
+  });
 });
 
 describe('submit', () => {

@@ -318,6 +318,11 @@ export async function runDueAssignmentsSweep(now = new Date()): Promise<number> 
         status: 'SCHEDULED',
         publishAt: { lte: now },
         template: { is: { isActive: true } },
+        // A form whose due date has already passed must not be published or
+        // notified: /my would immediately hide it and a direct submit returns
+        // 410. If the sweep was down past dueAt, leave it SCHEDULED (still
+        // cancellable) rather than firing a dead "form assigned" notification.
+        OR: [{ dueAt: null }, { dueAt: { gt: now } }],
       },
       select: {
         id: true,
@@ -341,6 +346,7 @@ export async function runDueAssignmentsSweep(now = new Date()): Promise<number> 
           status: 'SCHEDULED',
           publishAt: { lte: now },
           template: { is: { isActive: true } },
+          OR: [{ dueAt: null }, { dueAt: { gt: now } }],
         },
         data: { status: 'PUBLISHED' },
       });

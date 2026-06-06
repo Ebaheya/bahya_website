@@ -70,14 +70,19 @@ function ensureFillerAccess(
   role: Role,
   now: Date
 ): void {
+  // Ownership is checked first so a non-filler can never tell a real assignment
+  // (submitted, expired, or not-yet-visible) apart from a missing one — every
+  // inaccessible row returns the same 404. Only an entitled filler reaches the
+  // 409/410 states below.
+  if (!canFill(assignment, actorId, role)) {
+    throw AppError.notFound('Form assignment not found');
+  }
   if (assignment.submission || assignment.status === 'SUBMITTED') {
     throw new AppError(409, FORM_ERROR.ALREADY_SUBMITTED, 'This form has already been submitted');
   }
-  if (!isVisible(assignment, now) || !canFill(assignment, actorId, role)) {
+  if (!isVisible(assignment, now)) {
     throw AppError.notFound('Form assignment not found');
   }
-  // Expiry is checked only after visibility/access so we never reveal a form's
-  // existence (or its due date) to someone not entitled to fill it.
   if (assignment.dueAt && assignment.dueAt.getTime() <= now.getTime()) {
     throw new AppError(410, FORM_ERROR.EXPIRED, 'This form has expired and can no longer be submitted');
   }
