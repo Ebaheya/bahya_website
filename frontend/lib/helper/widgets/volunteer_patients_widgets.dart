@@ -46,7 +46,7 @@ class PatientsListWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          arabicText(
+          customText(
             text: "قائمة المريضات",
             size: h * 0.02,
             bold: true,
@@ -78,7 +78,7 @@ class PatientsListWidget extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: arabicText(
+                      child: customText(
                         text: p,
                         size: h * 0.016,
                         bold: isDone || p == selectedPatient,
@@ -132,7 +132,7 @@ class _VolunteerSurveyWidgetState extends State<VolunteerSurveyWidget> {
         children: [
           Align(
             alignment: Alignment.centerRight,
-            child: arabicText(
+            child: customText(
               text: "إمضاء المتطوع",
               size: h * 0.018,
               bold: true,
@@ -144,7 +144,7 @@ class _VolunteerSurveyWidgetState extends State<VolunteerSurveyWidget> {
 
           const SizedBox(height: 30),
 
-          arabicText(
+          customText(
             text: widget.formData["title"],
             size: h * 0.032,
             bold: true,
@@ -153,7 +153,7 @@ class _VolunteerSurveyWidgetState extends State<VolunteerSurveyWidget> {
 
           const SizedBox(height: 8),
 
-          arabicText(
+          customText(
             text: widget.formData["subtitle"],
             size: h * 0.02,
             color: const Color(0xFFE40070),
@@ -202,7 +202,7 @@ class _VolunteerSurveyWidgetState extends State<VolunteerSurveyWidget> {
         child: DropdownButton<String>(
           isExpanded: true,
           alignment: Alignment.centerRight,
-          hint: arabicText(
+          hint: customText(
             text: "اختر اسم المتطوع",
             size: h * 0.016,
             color: Colors.grey,
@@ -213,7 +213,7 @@ class _VolunteerSurveyWidgetState extends State<VolunteerSurveyWidget> {
                 (v) => DropdownMenuItem(
                   value: v,
                   alignment: Alignment.centerRight,
-                  child: arabicText(text: v, size: h * 0.016),
+                  child: customText(text: v, size: h * 0.016),
                 ),
               )
               .toList(),
@@ -240,7 +240,7 @@ class _VolunteerSurveyWidgetState extends State<VolunteerSurveyWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            arabicText(
+            customText(
               text: "السؤال ${index + 1}: ${q["q"]}",
               size: h * 0.02,
               bold: true,
@@ -250,7 +250,7 @@ class _VolunteerSurveyWidgetState extends State<VolunteerSurveyWidget> {
             ...q["options"].map<Widget>((opt) {
               return Row(
                 children: [
-                  arabicText(
+                  customText(
                     text: "(${opt["points"]} نقطة)",
                     size: h * 0.015,
                     bold: true,
@@ -264,7 +264,7 @@ class _VolunteerSurveyWidgetState extends State<VolunteerSurveyWidget> {
                     onChanged: (v) =>
                         setState(() => answers[index] = v.toString()),
                   ),
-                  arabicText(
+                  customText(
                     text: opt["text"],
                     size: h * 0.018,
                     color: const Color(0xFF7A004C),

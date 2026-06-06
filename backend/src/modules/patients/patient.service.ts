@@ -8,6 +8,7 @@ import { AppError } from '../../utils/httpError';
 import { hashPassword } from '../../utils/passwords';
 import type {
   CreatePatientInput,
+  ListPatientOptionsQuery,
   PatchPatientInput,
   QueryPatientsInput,
 } from './patient.schema';
@@ -90,9 +91,13 @@ export function projectForRole<T extends Record<string, unknown>>(
   patient: T,
   role: Role
 ): T {
-  if (role !== 'VOLUNTEER') return patient;
+  // Fast path: clinical/admin roles see the full record (incl. assessment scores).
+  if (role === 'DOCTOR' || role === 'ADMIN') return patient;
+
   const copy: Record<string, unknown> = { ...patient };
-  delete copy.financials;
+  if (role === 'VOLUNTEER') delete copy.financials;
+  // Latest assessment scores are clinical data — restrict to DOCTOR/ADMIN.
+  delete copy.latestAssessments;
   return copy as T;
 }
 
@@ -358,8 +363,91 @@ export async function listPatients(query: QueryPatientsInput) {
     prisma.patient.count({ where }),
   ]);
 
+  const latestByPatient = await getLatestAssessmentsByPatient(
+    patients.map((patient) => patient.id)
+  );
+
   return {
-    data: patients.map(sanitizePatientResponse),
+    data: patients.map((patient) => ({
+      ...sanitizePatientResponse(patient),
+      latestAssessments: latestByPatient.get(patient.id) ?? [],
+    })),
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+  };
+}
+
+interface LatestAssessment {
+  templateKey: string;
+  score: number | null;
+  status: string;
+  createdAt: Date;
+}
+
+// Most recent official assessment per templateKey for each patient, so the
+// patient list can surface scores (e.g. PHQ-9, PHQ-4) and a diagnosis label
+// (`status`) without an extra round-trip per row. Rows come back newest-first,
+// so the first occurrence of each (patientId, templateKey) pair is the latest.
+async function getLatestAssessmentsByPatient(
+  patientIds: string[]
+): Promise<Map<string, LatestAssessment[]>> {
+  const result = new Map<string, LatestAssessment[]>();
+  if (patientIds.length === 0) return result;
+
+  const rows = await prisma.assessment.findMany({
+    where: { patientId: { in: patientIds } },
+    select: { patientId: true, templateKey: true, score: true, status: true, createdAt: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  for (const row of rows) {
+    let perKey = result.get(row.patientId);
+    if (!perKey) {
+      perKey = [];
+      result.set(row.patientId, perKey);
+    }
+    if (perKey.some((item) => item.templateKey === row.templateKey)) continue;
+    perKey.push({
+      templateKey: row.templateKey,
+      score: row.score,
+      status: row.status,
+      createdAt: row.createdAt,
+    });
+  }
+
+  return result;
+}
+
+export async function listPatientOptions(query: ListPatientOptionsQuery) {
+  const where: Prisma.PatientWhereInput = {
+    user: {
+      is: {
+        role: 'PATIENT',
+        isActive: true,
+        ...(query.q
+          ? {
+              fullName: { contains: query.q, mode: 'insensitive' },
+            }
+          : {}),
+      },
+    },
+  };
+  const skip = (query.page - 1) * query.pageSize;
+
+  const [patients, total] = await prisma.$transaction([
+    prisma.patient.findMany({
+      where,
+      select: { id: true, user: { select: { fullName: true } } },
+      orderBy: { user: { fullName: 'asc' } },
+      skip,
+      take: query.pageSize,
+    }),
+    prisma.patient.count({ where }),
+  ]);
+
+  return {
+    data: patients.map((patient) => ({ id: patient.id, fullName: patient.user.fullName })),
     page: query.page,
     pageSize: query.pageSize,
     total,

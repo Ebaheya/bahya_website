@@ -92,13 +92,13 @@ class _DiagnosisRangeWidgetState extends State<DiagnosisRangeWidget> {
       width: w * 0.7,
       child: Column(
         children: [
-          arabicText(
+          customText(
             text: "إعداد التشخيص الكلي للفورم",
             size: h * 0.022,
             color: const Color(0xFF831843),
             bold: true,
           ),
-          arabicText(
+          customText(
             text: "حدد نطاقات السكور الكلي مع التشخيص المقابل لكل نطاق",
             size: h * 0.018,
             color: const Color(0xFFED4EA1),
@@ -169,7 +169,7 @@ class DiagnosisScoreRow extends StatelessWidget {
           children: [
             Column(
               children: [
-                arabicText(text: "إلى", size: h * 0.018, bold: true),
+                customText(text: "إلى", size: h * 0.018, bold: true),
                 SizedBox(height: h * 0.01),
                 scoreCounter(
                   height: h * 0.06,
@@ -184,7 +184,7 @@ class DiagnosisScoreRow extends StatelessWidget {
 
             Column(
               children: [
-                arabicText(text: "من", size: h * 0.018, bold: true),
+                customText(text: "من", size: h * 0.018, bold: true),
                 SizedBox(height: h * 0.01),
                 scoreCounter(
                   height: h * 0.06,
@@ -206,7 +206,7 @@ class DiagnosisScoreRow extends StatelessWidget {
         SizedBox(height: h * 0.03),
         Column(
           children: [
-            arabicText(
+            customText(
               text: "التشخيص",
               size: h * 0.018,
               bold: true,
@@ -239,7 +239,7 @@ class DiagnosisScoreRow extends StatelessWidget {
                     .map(
                       (d) => DropdownMenuItem(
                         value: d,
-                        child: arabicText(
+                        child: customText(
                           text: d,
                           size: h * 0.016,
                           color: const Color(0xFF831843),

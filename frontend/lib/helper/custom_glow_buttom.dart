@@ -10,6 +10,11 @@ class CustomGlowButton extends StatelessWidget {
   final Color? glowColor;
   final double? textSize;
   final double? width;
+  final double? height;
+  final double? borderRadius;
+  final bool isGradient;
+  final IconData? icon;
+
   const CustomGlowButton({
     super.key,
     required this.title,
@@ -17,39 +22,120 @@ class CustomGlowButton extends StatelessWidget {
     this.backgroundColor,
     this.textColor,
     this.glowColor,
-     this.textSize,
+    this.textSize,
     this.width,
+    this.height,
+    this.borderRadius,
+    this.isGradient = false,
+    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(borderRadius ?? 30);
+
+    final buttonTextSize = textSize ?? getScreenHeight(context) * 0.02;
+
+    final iconSize = textSize ?? getScreenHeight(context) * 0.025;
+
     return Container(
-      height: getScreenHeight(context) * 0.06,
+      height: height ?? getScreenHeight(context) * 0.06,
       width: width ?? getScreenWidth(context) * 0.25,
+
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: radius,
         boxShadow: [
           BoxShadow(
-            color: glowColor ?? Color(0xFFFF7BB0).withOpacity(0.6),
-            blurRadius: 25,
-            spreadRadius: 3,
+            color: glowColor ?? const Color(0xFFFF7BB0).withOpacity(0.6),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor ?? Colors.white,
-          foregroundColor: textColor ?? Color(0xFFFF7BB0),
-          shape: const StadiumBorder(),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-        onPressed: onPressed,
-        child: arabicText(
-          text: title,
-          size: textSize ?? getScreenHeight(context) * 0.02,
-          bold: true,
-        ),
-      ),
+
+      child: isGradient
+          ? ClipRRect(
+              borderRadius: radius,
+              child: Material(
+                color: Colors.transparent,
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: gradientColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+
+                  child: InkWell(
+                    borderRadius: radius,
+                    onTap: onPressed,
+
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+
+                        mainAxisSize: MainAxisSize.min,
+
+                        children: [
+                          customText(
+                            text: title,
+                            size: buttonTextSize,
+                            bold: true,
+                            color: textColor ?? Colors.white,
+                          ),
+                          if (icon != null) ...[
+                            const SizedBox(width: 10),
+                            Icon(
+                              icon,
+                              color: textColor ?? Colors.white,
+                              size: iconSize,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: backgroundColor ?? Colors.white,
+
+                foregroundColor: textColor ?? const Color(0xFFFF7BB0),
+
+                shape: RoundedRectangleBorder(borderRadius: radius),
+
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+
+              onPressed: onPressed,
+
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+
+                mainAxisSize: MainAxisSize.min,
+
+                children: [
+                  customText(
+                    text: title,
+                    size: buttonTextSize,
+                    bold: true,
+                    color: textColor ?? const Color(0xFFFF7BB0),
+                  ),
+                  if (icon != null) ...[
+                    const SizedBox(width: 10),
+                    Icon(
+                      icon,
+                      color: textColor ?? const Color(0xFFFF7BB0),
+
+                      size: iconSize,
+                    ),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 }

@@ -101,6 +101,7 @@ class _StatCardState extends State<StatCard>
               clipBehavior: Clip.none,
               children: [
                 AnimatedContainer(
+                  width: double.infinity,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOut,
                   padding: const EdgeInsets.all(20),
@@ -131,7 +132,7 @@ class _StatCardState extends State<StatCard>
                         lineWidth: 8,
                         animation: true,
                         percent: widget.percent,
-                        center: arabicText(
+                        center: customText(
                           text: "${(widget.percent * 100).toStringAsFixed(0)}%",
                           size: 18,
                           bold: true,
@@ -144,14 +145,14 @@ class _StatCardState extends State<StatCard>
                       ),
                       Column(
                         children: [
-                          arabicText(
+                          customText(
                             text: widget.title,
                             size: 18,
                             bold: true,
                             color: const Color(0xFF7A004C),
                           ),
                           const SizedBox(height: 4),
-                          arabicText(
+                          customText(
                             text: "من إجمالي المرضى",
                             size: 13,
                             color: Colors.black45,
@@ -185,7 +186,7 @@ class _StatCardState extends State<StatCard>
                             ),
                           ],
                         ),
-                        child: arabicText(
+                        child: customText(
                           text: "انقر للتفاصيل",
                           size: 10,
                           color: const Color(0xFFE91E63),
@@ -210,8 +211,12 @@ class StatsHorizontalGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+     final h = getScreenHeight(context);
+     final w = getScreenWidth(context);
     return SizedBox(
-      height: getScreenHeight(context) * 0.35,
+     
+      height: h * 0.35,
+      // width: w * 0.02,
       child: ScrollConfiguration(
         behavior: const MaterialScrollBehavior().copyWith(
           dragDevices: {
