@@ -309,21 +309,33 @@ export async function runDueAssignmentsSweep(now = new Date()): Promise<number> 
   // Drain due assignments in bounded batches. Claiming a row flips it out of the
   // SCHEDULED set, so each query advances the cursor and a large backlog never
   // loads the whole table into memory at once.
+  // A scheduled assignment is only promoted when every precondition the
+  // immediate publish path enforces still holds at publish time:
+  //   - its template is still active (a form deactivated after scheduling must
+  //     not be sent out — FR-024 / US7);
+  //   - its patient, and for a delegated assignment its assigned volunteer, are
+  //     still active (the direct path refuses inactive recipients, so the sweep
+  //     must not publish + notify a user who can no longer fill it);
+  //   - its due date has not passed (otherwise /my hides it and a direct submit
+  //     returns 410 — a dead "form assigned" notification).
+  // Anything failing these stays SCHEDULED (still cancellable) and re-fires if
+  // the blocker is lifted before dueAt. The same object guards the claim below
+  // so a recipient/template/date change between fetch and write can't slip
+  // through.
+  const eligible: Prisma.FormAssignmentWhereInput = {
+    status: 'SCHEDULED',
+    publishAt: { lte: now },
+    template: { is: { isActive: true } },
+    patient: { user: { is: { isActive: true } } },
+    AND: [
+      { OR: [{ dueAt: null }, { dueAt: { gt: now } }] },
+      { OR: [{ assignedToUserId: null }, { assignedTo: { is: { isActive: true } } }] },
+    ],
+  };
+
   for (;;) {
     const dueAssignments = await prisma.formAssignment.findMany({
-      // A form deactivated after scheduling must not be sent out: skip
-      // assignments whose template is no longer active (FR-024 / US7). They stay
-      // SCHEDULED and can be cancelled, or re-fire if the form is reactivated.
-      where: {
-        status: 'SCHEDULED',
-        publishAt: { lte: now },
-        template: { is: { isActive: true } },
-        // A form whose due date has already passed must not be published or
-        // notified: /my would immediately hide it and a direct submit returns
-        // 410. If the sweep was down past dueAt, leave it SCHEDULED (still
-        // cancellable) rather than firing a dead "form assigned" notification.
-        OR: [{ dueAt: null }, { dueAt: { gt: now } }],
-      },
+      where: eligible,
       select: {
         id: true,
         patientId: true,
@@ -337,17 +349,12 @@ export async function runDueAssignmentsSweep(now = new Date()): Promise<number> 
     if (dueAssignments.length === 0) break;
 
     for (const assignment of dueAssignments) {
-      // Re-assert template.isActive in the claim itself: if the form is
-      // deactivated between the findMany above and this write, the guard matches
-      // 0 rows and the assignment stays SCHEDULED rather than being published.
+      // Re-assert the full eligibility in the claim itself: if the template,
+      // patient, or assigned volunteer is deactivated (or dueAt passes) between
+      // the findMany above and this write, the guard matches 0 rows and the
+      // assignment stays SCHEDULED rather than being published.
       const claimed = await prisma.formAssignment.updateMany({
-        where: {
-          id: assignment.id,
-          status: 'SCHEDULED',
-          publishAt: { lte: now },
-          template: { is: { isActive: true } },
-          OR: [{ dueAt: null }, { dueAt: { gt: now } }],
-        },
+        where: { ...eligible, id: assignment.id },
         data: { status: 'PUBLISHED' },
       });
       if (claimed.count !== 1) continue;

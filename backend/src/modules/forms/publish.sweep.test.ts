@@ -49,24 +49,21 @@ describe('runDueAssignmentsSweep', () => {
 
     await expect(runDueAssignmentsSweep(now)).resolves.toBe(1);
 
+    const eligible = {
+      status: 'SCHEDULED',
+      publishAt: { lte: now },
+      template: { is: { isActive: true } },
+      patient: { user: { is: { isActive: true } } },
+      AND: [
+        { OR: [{ dueAt: null }, { dueAt: { gt: now } }] },
+        { OR: [{ assignedToUserId: null }, { assignedTo: { is: { isActive: true } } }] },
+      ],
+    };
     expect(prismaMock.formAssignment.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          status: 'SCHEDULED',
-          publishAt: { lte: now },
-          template: { is: { isActive: true } },
-          OR: [{ dueAt: null }, { dueAt: { gt: now } }],
-        },
-      })
+      expect.objectContaining({ where: eligible })
     );
     expect(prismaMock.formAssignment.updateMany).toHaveBeenCalledWith({
-      where: {
-        id: 'assignment-1',
-        status: 'SCHEDULED',
-        publishAt: { lte: now },
-        template: { is: { isActive: true } },
-        OR: [{ dueAt: null }, { dueAt: { gt: now } }],
-      },
+      where: { ...eligible, id: 'assignment-1' },
       data: { status: 'PUBLISHED' },
     });
     expect(emitFormAssignedMock).toHaveBeenCalledWith(
@@ -90,7 +87,7 @@ describe('runDueAssignmentsSweep', () => {
     expect(emitFormAssignedMock).toHaveBeenCalledTimes(1);
   });
 
-  it('excludes assignments whose due date has already passed from the sweep', async () => {
+  it('only sweeps assignments that are due, active-templated, active-recipient, and not expired', async () => {
     const now = new Date('2026-06-10T08:00:00Z');
     prismaMock.formAssignment.findMany.mockResolvedValue([]);
 
@@ -98,7 +95,17 @@ describe('runDueAssignmentsSweep', () => {
 
     expect(prismaMock.formAssignment.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ OR: [{ dueAt: null }, { dueAt: { gt: now } }] }),
+        where: expect.objectContaining({
+          status: 'SCHEDULED',
+          template: { is: { isActive: true } },
+          // Patient must still be active; the assigned volunteer (if any) too;
+          // and the due date must not have passed.
+          patient: { user: { is: { isActive: true } } },
+          AND: [
+            { OR: [{ dueAt: null }, { dueAt: { gt: now } }] },
+            { OR: [{ assignedToUserId: null }, { assignedTo: { is: { isActive: true } } }] },
+          ],
+        }),
       })
     );
     expect(prismaMock.formAssignment.updateMany).not.toHaveBeenCalled();
