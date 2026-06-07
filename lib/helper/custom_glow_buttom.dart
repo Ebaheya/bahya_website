@@ -1,5 +1,6 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class CustomGlowButton extends StatelessWidget {
@@ -32,6 +33,7 @@ class CustomGlowButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizedTitle = localizedText(context, title);
     final radiusValue =
         borderRadius ?? responsiveSize(context, 0.018, min: 14, max: 30);
 
@@ -78,7 +80,7 @@ class CustomGlowButton extends StatelessWidget {
                     borderRadius: radius,
                     onTap: onPressed,
                     child: _ButtonContent(
-                      title: title,
+                      title: localizedTitle,
                       icon: icon,
                       textColor: textColor ?? Colors.white,
                       textSize: buttonTextSize,
@@ -101,7 +103,7 @@ class CustomGlowButton extends StatelessWidget {
               ),
               onPressed: onPressed,
               child: _ButtonContent(
-                title: title,
+                title: localizedTitle,
                 icon: icon,
                 textColor: textColor ?? const Color(0xFFFF7BB0),
                 textSize: buttonTextSize,

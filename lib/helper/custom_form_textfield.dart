@@ -1,4 +1,3 @@
-
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -95,11 +94,13 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
   }
 
   String? _validate(String? value) {
+    final isEnglishLocale =
+        Localizations.localeOf(context).languageCode == 'en';
     final text = value?.trim() ?? '';
     String? error;
 
     if (widget.isRequired && text.isEmpty) {
-      error = 'هذا الحقل مطلوب';
+      error = isEnglishLocale ? 'This field is required' : 'هذا الحقل مطلوب';
     } else if (!widget.isRequired && text.isEmpty) {
       floatingError = null;
       return null;
@@ -107,25 +108,31 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
       switch (widget.keyboardType) {
         case CustomTextFieldType.email:
           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$').hasMatch(text)) {
-            error = 'أدخل بريدًا إلكترونيًا صالحًا';
+            error = isEnglishLocale
+                ? 'Enter a valid email address'
+                : 'أدخل بريدًا إلكترونيًا صالحًا';
           }
           break;
 
         case CustomTextFieldType.name:
           if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(text)) {
-            error = 'أدخل اسمًا صالحًا';
+            error = isEnglishLocale
+                ? 'Enter a valid name'
+                : 'أدخل اسمًا صالحًا';
           }
           break;
 
         case CustomTextFieldType.number:
           if (!RegExp(r'^\d+$').hasMatch(text)) {
-            error = 'أدخل أرقامًا فقط';
+            error = isEnglishLocale ? 'Enter numbers only' : 'أدخل أرقامًا فقط';
           }
           break;
 
         case CustomTextFieldType.phone:
           if (!RegExp(r'^\d{11}$').hasMatch(text)) {
-            error = 'أدخل رقم هاتف مكون من 11 رقمًا';
+            error = isEnglishLocale
+                ? 'Enter an 11-digit phone number'
+                : 'أدخل رقم هاتف مكون من 11 رقمًا';
           }
           break;
 
@@ -135,22 +142,29 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           );
 
           if (text.length < 8) {
-            error = 'Password must be at least 8 characters';
+            error = isEnglishLocale
+                ? 'Password must be at least 8 characters'
+                : 'Password must be at least 8 characters';
           } else if (!passwordRegex.hasMatch(text)) {
-            error =
-                'Password can contain only English letters, numbers, and special characters';
+            error = isEnglishLocale
+                ? 'Password can contain only English letters, numbers, and special characters'
+                : 'Password can contain only English letters, numbers, and special characters';
           }
           break;
 
         case CustomTextFieldType.date:
           if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(text)) {
-            error = 'أدخل تاريخًا صالحًا (mm/dd/yyyy)';
+            error = isEnglishLocale
+                ? 'Enter a valid date (mm/dd/yyyy)'
+                : 'أدخل تاريخًا صالحًا (mm/dd/yyyy)';
           }
           break;
 
         case CustomTextFieldType.title:
           if (text.length > 25) {
-            error = 'العنوان لا يمكن أن يتجاوز 25 حرفًا';
+            error = isEnglishLocale
+                ? 'The title cannot exceed 25 characters'
+                : 'العنوان لا يمكن أن يتجاوز 25 حرفًا';
           }
           break;
 
@@ -158,15 +172,19 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           final score = int.tryParse(text);
 
           if (score == null) {
-            error = 'أدخل أرقامًا فقط';
+            error = isEnglishLocale ? 'Enter numbers only' : 'أدخل أرقامًا فقط';
           } else if (score < 0 || score > 100) {
-            error = 'السكور يجب أن يكون من 0 إلى 100';
+            error = isEnglishLocale
+                ? 'The score must be between 0 and 100'
+                : 'السكور يجب أن يكون من 0 إلى 100';
           }
           break;
 
         case CustomTextFieldType.diagnose:
           if (text.length > 50) {
-            error = 'التشخيص لا يمكن أن يتجاوز 50 حرف';
+            error = isEnglishLocale
+                ? 'The diagnosis cannot exceed 50 characters'
+                : 'التشخيص لا يمكن أن يتجاوز 50 حرف';
           }
           break;
 
@@ -225,6 +243,11 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final isEnglishLocale =
+        Localizations.localeOf(context).languageCode == 'en';
+    final effectiveDirection = isEnglishLocale
+        ? TextDirection.ltr
+        : widget.textDirection;
     final isScore = widget.keyboardType == CustomTextFieldType.score;
 
     return Stack(
@@ -243,7 +266,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           keyboardType: _mapKeyboardType(widget.keyboardType),
           textAlign: widget.centerHint
               ? TextAlign.center
-              : widget.textDirection == TextDirection.ltr
+              : effectiveDirection == TextDirection.ltr
               ? TextAlign.left
               : TextAlign.right,
           controller: widget.controller,
@@ -264,7 +287,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           inputFormatters: _inputFormatters(),
           obscuringCharacter: '•',
           autovalidateMode: widget.autovalidateMode,
-          textDirection: widget.textDirection,
+          textDirection: effectiveDirection,
           maxLines: widget.maxLines,
           minLines: 1,
           expands: false,
@@ -313,11 +336,11 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
               maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
             ),
             prefixIcon: Padding(
-                  padding: EdgeInsets.all(
-                      responsiveSize(context, 0.005, min: 6, max: 8),
-                    ),
-                  child: widget.prefixIcon,
-                ),
+              padding: EdgeInsets.all(
+                responsiveSize(context, 0.005, min: 6, max: 8),
+              ),
+              child: widget.prefixIcon,
+            ),
             prefixIconConstraints: BoxConstraints(
               maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
               maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
@@ -326,7 +349,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
             labelText: widget.labelText,
             hintTextDirection: widget.centerHint
                 ? TextDirection.ltr
-                : widget.textDirection,
+                : effectiveDirection,
             labelStyle: TextStyle(
               color: Colors.black,
               fontSize: responsiveSize(context, 0.008, min: 12, max: 16),

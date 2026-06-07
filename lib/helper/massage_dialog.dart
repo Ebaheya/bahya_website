@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 void customDialog({
@@ -12,10 +13,11 @@ void customDialog({
   bool isInfo = false,
   void Function()? onClose,
 }) {
+  final localizedTitle = localizedText(context, title);
+  final localizedMessage = localizedText(context, message);
+
   final bool showSuccess = isSuccess && !isError && !isInfo;
   final bool showError = isError && !isSuccess && !isInfo;
-  final bool showInfo = isInfo || (!isSuccess && !isError);
-
   final IconData icon = showSuccess
       ? Icons.check_rounded
       : showError
@@ -65,8 +67,11 @@ void customDialog({
                     alignment: Alignment.topRight,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(20),
-                      onTap: () {  onClose != null ? onClose() : Navigator.of(dialogContext).pop();
-                       },
+                      onTap: () {
+                        onClose != null
+                            ? onClose()
+                            : Navigator.of(dialogContext).pop();
+                      },
                       child: Container(
                         width: 34,
                         height: 34,
@@ -117,7 +122,7 @@ void customDialog({
                   ),
                   const SizedBox(height: 18),
                   customText(
-                    text: title,
+                    text: localizedTitle,
                     size: 28,
                     bold: true,
                     color: const Color(0xFF3B1038),
@@ -133,7 +138,7 @@ void customDialog({
                   ),
                   const SizedBox(height: 12),
                   customText(
-                    text: message,
+                    text: localizedMessage,
                     size: 15,
                     maxLines: 3,
                     bold: true,

@@ -4,6 +4,7 @@ import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_dropDown.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:excel/excel.dart' hide Border;
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
@@ -380,7 +381,7 @@ class _TopActionsBar extends StatelessWidget {
         children: [
           CustomFormTextField(
             controller: searchController,
-            hintText: 'ابحث بالاسم أو رقم الملف...',
+            hintText: localizedText(context, 'ابحث بالاسم أو رقم الملف...'),
             autovalidateMode: AutovalidateMode.disabled,
             keyboardType: CustomTextFieldType.text,
             textDirection: TextDirection.rtl,
@@ -464,7 +465,7 @@ class _TopActionsBar extends StatelessWidget {
             ),
             child: CustomFormTextField(
               controller: searchController,
-              hintText: 'ابحث بالاسم أو رقم الملف...',
+              hintText: localizedText(context, 'ابحث بالاسم أو رقم الملف...'),
               autovalidateMode: AutovalidateMode.disabled,
               keyboardType: CustomTextFieldType.text,
               textDirection: TextDirection.rtl,
@@ -717,8 +718,8 @@ class _ResultsHeader extends StatelessWidget {
           bold: true,
           isCenter: false,
         ),
-        const Spacer(),
-        const _SortDropdown(),
+        Spacer(),
+        _SortDropdown(),
       ],
     );
   }
@@ -740,7 +741,7 @@ class _SortDropdown extends StatelessWidget {
             context: context,
             value: 'تاريخ التسجيل الأحدث',
             hint: 'ترتيب حسب',
-            items: const ['تاريخ التسجيل الأحدث', 'الاسم', 'العمر'],
+            items: ['تاريخ التسجيل الأحدث', 'الاسم', 'العمر'],
             icon: Icons.sort_rounded,
             onChanged: (_) {},
           ),
@@ -878,7 +879,7 @@ class _PatientCard extends StatelessWidget {
           ],
         ),
         child: Directionality(
-          textDirection: TextDirection.rtl,
+          textDirection: Directionality.of(context),
           child: isSmall
               ? Column(
                   children: [
@@ -1163,7 +1164,7 @@ class _PaginationBar extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             alignment: WrapAlignment.center,
-            children: const [
+            children: [
               _PageButton(title: 'السابق'),
               _PageNumber(title: '1', active: true),
               _PageNumber(title: '2'),
@@ -1185,16 +1186,16 @@ class _PaginationBar extends StatelessWidget {
           bold: true,
           isCenter: false,
         ),
-        const Spacer(),
-        const _PageButton(title: 'السابق'),
-        const SizedBox(width: 8),
-        const _PageNumber(title: '1', active: true),
-        const _PageNumber(title: '2'),
-        const _PageNumber(title: '3'),
-        const _PageNumber(title: '21'),
-        const SizedBox(width: 8),
-        const _PageButton(title: 'التالي'),
-        const Spacer(),
+        Spacer(),
+        _PageButton(title: 'السابق'),
+        SizedBox(width: 8),
+        _PageNumber(title: '1', active: true),
+        _PageNumber(title: '2'),
+        _PageNumber(title: '3'),
+        _PageNumber(title: '21'),
+        SizedBox(width: 8),
+        _PageButton(title: 'التالي'),
+        Spacer(),
         customText(
           text: 'عرض لكل صفحة',
           size: responsiveSize(context, 0.0075, min: 12, max: 13),
@@ -1529,8 +1530,12 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
         targetedTherapy == null ||
         immunotherapy == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('من فضلك كمّل كل الاختيارات'),
+        SnackBar(
+          content: customText(
+            text: 'من فضلك كمّل كل الاختيارات',
+            size: 14,
+            color: Colors.white,
+          ),
           backgroundColor: Color(0xFFE83E8C),
         ),
       );
@@ -1605,7 +1610,10 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'اسم المريض',
                               child: CustomFormTextField(
                                 controller: nameController,
-                                hintText: 'ادخل اسم المريض',
+                                hintText: localizedText(
+                                  context,
+                                  'ادخل اسم المريض',
+                                ),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.text,
@@ -1615,7 +1623,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'العمر',
                               child: CustomFormTextField(
                                 controller: ageController,
-                                hintText: 'ادخل العمر',
+                                hintText: localizedText(context, 'ادخل العمر'),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.number,
@@ -1625,7 +1633,10 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'رقم الهاتف',
                               child: CustomFormTextField(
                                 controller: phoneController,
-                                hintText: 'ادخل رقم الهاتف',
+                                hintText: localizedText(
+                                  context,
+                                  'ادخل رقم الهاتف',
+                                ),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.phone,
@@ -1635,7 +1646,10 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'تاريخ التسجيل',
                               child: CustomFormTextField(
                                 controller: registrationDateController,
-                                hintText: '2025 - 05 - 20',
+                                hintText: localizedText(
+                                  context,
+                                  '2025 - 05 - 20',
+                                ),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.text,
@@ -1652,7 +1666,10 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'جهة اتصال الطوارئ',
                               child: CustomFormTextField(
                                 controller: emergencyNameController,
-                                hintText: 'اسم جهة الاتصال',
+                                hintText: localizedText(
+                                  context,
+                                  'اسم جهة الاتصال',
+                                ),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.text,
@@ -1662,7 +1679,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'رقم الطوارئ',
                               child: CustomFormTextField(
                                 controller: emergencyPhoneController,
-                                hintText: 'رقم الطوارئ',
+                                hintText: localizedText(context, 'رقم الطوارئ'),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.phone,
@@ -1679,7 +1696,10 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'الأمراض المصاحبة',
                               child: CustomFormTextField(
                                 controller: comorbiditiesController,
-                                hintText: 'مثال: السكري، ضغط الدم',
+                                hintText: localizedText(
+                                  context,
+                                  'مثال: السكري، ضغط الدم',
+                                ),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.text,
@@ -1689,7 +1709,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'BMI',
                               child: CustomFormTextField(
                                 controller: bmiController,
-                                hintText: 'مثال: 27.4',
+                                hintText: localizedText(context, 'مثال: 27.4'),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.text,
@@ -1699,7 +1719,10 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'التاريخ العائلي',
                               child: CustomFormTextField(
                                 controller: familyHistoryController,
-                                hintText: 'مثال: نعم - سرطان الثدي',
+                                hintText: localizedText(
+                                  context,
+                                  'مثال: نعم - سرطان الثدي',
+                                ),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.text,
@@ -1709,7 +1732,10 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'حالة سن اليأس',
                               child: CustomFormTextField(
                                 controller: menopausalStatusController,
-                                hintText: 'قبل / بعد سن اليأس',
+                                hintText: localizedText(
+                                  context,
+                                  'قبل / بعد سن اليأس',
+                                ),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.text,
@@ -1719,7 +1745,10 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'تاريخ التشخيص',
                               child: CustomFormTextField(
                                 controller: diagnosisDateController,
-                                hintText: '2024 - 11 - 10',
+                                hintText: localizedText(
+                                  context,
+                                  '2024 - 11 - 10',
+                                ),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.text,
@@ -1729,7 +1758,10 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'المرحلة عند التشخيص',
                               child: CustomFormTextField(
                                 controller: stageController,
-                                hintText: 'مثال: المرحلة الثانية',
+                                hintText: localizedText(
+                                  context,
+                                  'مثال: المرحلة الثانية',
+                                ),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.text,
@@ -1817,7 +1849,10 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                               title: 'الأدوية',
                               child: CustomFormTextField(
                                 controller: drugsController,
-                                hintText: 'افصل بين الأدوية بفاصلة',
+                                hintText: localizedText(
+                                  context,
+                                  'افصل بين الأدوية بفاصلة',
+                                ),
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 keyboardType: CustomTextFieldType.text,

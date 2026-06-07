@@ -1,5 +1,6 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -28,6 +29,8 @@ class DiagnosisComparisonChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isEnglishLocale =
+        Localizations.localeOf(context).languageCode == 'en';
     return SizedBox(
       height: height,
       child: ScrollConfiguration(
@@ -59,9 +62,10 @@ class DiagnosisComparisonChart extends StatelessWidget {
                         final item = data[group.x.toInt()];
                         final isPercent = rod.color == _colorPercent;
                         final value = rod.toY;
+                        final label = localizedText(context, item.label);
                         return BarTooltipItem(
-                          '${item.label}\n'
-                          '${isPercent ? "نسبة" : "عدد"}: ${value.toStringAsFixed(0)}${isPercent ? "%" : ""}',
+                          '$label\n'
+                          '${isPercent ? (isEnglishLocale ? "Percent" : "نسبة") : (isEnglishLocale ? "Count" : "عدد")}: ${value.toStringAsFixed(0)}${isPercent ? "%" : ""}',
                           const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,

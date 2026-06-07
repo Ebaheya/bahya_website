@@ -82,7 +82,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
             ),
             child: Column(
               children: [
-                const ScheduleHeader(),
+                ScheduleHeader(),
                 SizedBox(
                   height: responsiveHeight(context, 0.04, min: 22, max: 40),
                 ),

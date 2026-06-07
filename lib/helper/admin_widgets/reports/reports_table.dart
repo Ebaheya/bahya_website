@@ -2,6 +2,7 @@ import 'package:bahya_website/helper/filter_dropdown.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 import 'reports_widgets.dart';
@@ -83,7 +84,10 @@ class _ReportsTableState extends State<ReportsTable> {
                     modernInputBox(
                       icon: Icons.search,
                       child: CustomFormTextField(
-                        hintText: "Search by name, email or title",
+                        hintText: localizedText(
+                          context,
+                          'Search by name, email or title',
+                        ),
                         isSearch: true,
                         isRequired: false,
                         bordered: false,
@@ -132,7 +136,10 @@ class _ReportsTableState extends State<ReportsTable> {
                     child: modernInputBox(
                       icon: Icons.search,
                       child: CustomFormTextField(
-                        hintText: "Search by name, email or title",
+                        hintText: localizedText(
+                          context,
+                          'Search by name, email or title',
+                        ),
                         isSearch: true,
                         isRequired: false,
                         bordered: false,

@@ -5,6 +5,7 @@ import 'package:bahya_website/helper/filter_dropdown.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -97,7 +98,7 @@ class _UsersTableState extends State<UsersTable> {
           child: modernInputBox(
             icon: Icons.search,
             child: CustomFormTextField(
-              hintText: "Search by name or email",
+              hintText: localizedText(context, 'Search by name or email'),
               isSearch: true,
               isRequired: false,
               bordered: false,
@@ -123,7 +124,7 @@ class _UsersTableState extends State<UsersTable> {
         modernInputBox(
           icon: Icons.search,
           child: CustomFormTextField(
-            hintText: "Search by name or email",
+            hintText: localizedText(context, 'Search by name or email'),
             isSearch: true,
             isRequired: false,
             bordered: false,
@@ -559,13 +560,16 @@ class _UsersTableState extends State<UsersTable> {
     return Row(
       children: [
         customText(
-          text: totalUsers == 0
-              ? "Showing 0 users"
-              : "Showing ${startIndex + 1} to $endIndex of $totalUsers users",
-          size: responsiveSize(context, 0.009, min: 12, max: 15),
-          color: Colors.indigo.withOpacity(0.65),
-          isEnglish: true,
-        ),
+  text: 'showing_users',
+  namedArgs: {
+    'from': '${startIndex + 1}',
+    'to': '$endIndex',
+    'total': '$totalUsers',
+  },
+  size: responsiveSize(context, 0.009, min: 12, max: 15),
+  color: Colors.indigo.withOpacity(0.65),
+  isEnglish: false,
+),
         const Spacer(),
         _paginationButtons(context, totalPages),
       ],
@@ -581,14 +585,17 @@ class _UsersTableState extends State<UsersTable> {
   ) {
     return Column(
       children: [
-        customText(
-          text: totalUsers == 0
-              ? "Showing 0 users"
-              : "Showing ${startIndex + 1} to $endIndex of $totalUsers users",
-          size: responsiveSize(context, 0.009, min: 12, max: 14),
-          color: Colors.indigo.withOpacity(0.65),
-          isEnglish: true,
-        ),
+customText(
+  text: 'showing_users',
+  namedArgs: {
+    'from': '${startIndex + 1}',
+    'to': '$endIndex',
+    'total': '$totalUsers',
+  },
+  size: responsiveSize(context, 0.009, min: 12, max: 15),
+  color: Colors.indigo.withOpacity(0.65),
+  isEnglish: false,
+),
         SizedBox(height: responsiveHeight(context, 0.014, min: 10, max: 14)),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,

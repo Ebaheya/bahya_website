@@ -49,8 +49,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-   final h = getScreenHeight(context);
-  final  w = getScreenWidth(context);
+    final h = getScreenHeight(context);
+    final w = getScreenWidth(context);
     return Scaffold(
       key: _scaffoldKey,
       drawer: HomeDrawer(userName: userName),
@@ -68,7 +68,7 @@ class _HomePageState extends State<HomePage> {
 
             customText(
               text: "لوحة التحكم الرئيسية",
-              size: h  * 0.02,
+              size: h * 0.02,
               color: const Color(0xFF831843),
               bold: true,
             ),
@@ -79,7 +79,7 @@ class _HomePageState extends State<HomePage> {
               color: const Color(0xFFEB48A0),
               bold: true,
             ),
-             SizedBox(height: h * 0.03),
+            SizedBox(height: h * 0.03),
 
             Center(
               child: Container(
@@ -116,7 +116,7 @@ class _HomePageState extends State<HomePage> {
                       title: "لوحة الإحصائيات العامة",
                     ),
 
-                     SizedBox(height: h * 0.01),
+                    SizedBox(height: h * 0.01),
 
                     sectionCard(
                       context: context,
@@ -130,7 +130,7 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(height: 6),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
+                            children: [
                               LegendDot(color: Color(0xFFB36BFF), label: 'عدد'),
                               SizedBox(width: 18),
                               LegendDot(
@@ -153,7 +153,7 @@ class _HomePageState extends State<HomePage> {
             sectionCard(
               context: context,
               title: "الخدمات",
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(16),
                 child: HomeFeaturesGrid(),
               ),

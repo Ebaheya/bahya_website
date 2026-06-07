@@ -2,6 +2,7 @@ import 'package:bahya_website/bloc/cubit/publish_schedule_cubit.dart';
 import 'package:bahya_website/data/api/models/form_model.dart';
 import 'package:bahya_website/data/api/models/options_model.dart';
 import 'package:bahya_website/data/api/web/web_service.dart';
+import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,7 +37,7 @@ class ScheduleFormLogic {
     return dateTime.toUtc().toIso8601String();
   }
 
-Future<bool> publishSomePatients({
+  Future<bool> publishSomePatients({
     required FormModel form,
     required List<OptionUserModel> patients,
     required String? publishAt,
@@ -65,15 +66,15 @@ Future<bool> publishSomePatients({
     required String? publishAt,
   }) async {
     try {
-  final body = {"target": "ALL_PATIENTS", "publishAt": publishAt};
-  
-  debugPrint("Publish body: $body");
-  
-  return await context.read<PublishScheduleCubit>().publishForm(
-    form: form,
-    body: body,
-  );
-} catch (e) {
+      final body = {"target": "ALL_PATIENTS", "publishAt": publishAt};
+
+      debugPrint("Publish body: $body");
+
+      return await context.read<PublishScheduleCubit>().publishForm(
+        form: form,
+        body: body,
+      );
+    } catch (e) {
       debugPrint("Error in publishAllPatients: $e");
       return false;
     }
@@ -86,23 +87,23 @@ Future<bool> publishSomePatients({
     required String? publishAt,
   }) async {
     try {
-  final body = {
-    "target": "VOLUNTEER_FOR_PATIENT",
-    "patientId": patient.id,
-    "volunteerId": volunteer.id,
-    "publishAt": publishAt,
-  };
-  
-  debugPrint("Publish body: $body");
-  
-  return await context.read<PublishScheduleCubit>().publishForm(
-    form: form,
-    body: body,
-  );
-}  catch (e) {
+      final body = {
+        "target": "VOLUNTEER_FOR_PATIENT",
+        "patientId": patient.id,
+        "volunteerId": volunteer.id,
+        "publishAt": publishAt,
+      };
+
+      debugPrint("Publish body: $body");
+
+      return await context.read<PublishScheduleCubit>().publishForm(
+        form: form,
+        body: body,
+      );
+    } catch (e) {
       debugPrint("Error in publishVolunteerForPatient: $e");
       return false;
-}
+    }
   }
 
   Future<void> deactivateForm(FormModel form) async {
@@ -167,7 +168,7 @@ Future<bool> publishSomePatients({
     }
   }
 
- Future<void> _publishForPatients({
+  Future<void> _publishForPatients({
     required FormModel selectedForm,
     required String? patientPublishType,
     required List<OptionUserModel> selectedPatients,
@@ -253,19 +254,28 @@ Future<bool> publishSomePatients({
       context: context,
       builder: (_) {
         return AlertDialog(
-          title: const Text("إلغاء النشر"),
-          content: Text(
-            "سيتم تعطيل نموذج (${form.name}) ولن يكون متاحًا للنشر. هل تريد المتابعة؟",
-            textDirection: TextDirection.rtl,
+          title: customText(
+            text: "إلغاء النشر",
+            size: 18,
+            color: Colors.black87,
+            isCenter: false,
+          ),
+          content: customText(
+            text:
+                "سيتم تعطيل نموذج (${form.name}) ولن يكون متاحًا للنشر. هل تريد المتابعة؟",
+            size: 16,
+            color: Colors.black87,
+            isCenter: false,
+            maxLines: 3,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text("إلغاء"),
+              child: customText(text: "إلغاء", size: 14, color: Colors.pink),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text("تأكيد", style: TextStyle(color: Colors.red)),
+              child: customText(text: "تأكيد", size: 14, color: Colors.red),
             ),
           ],
         );

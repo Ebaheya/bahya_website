@@ -1,5 +1,6 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 Widget customDropdown({
@@ -49,7 +50,7 @@ Widget customDropdown({
             ),
             Center(
               child: customText(
-                text: hint,
+                text: localizedText(context, hint),
                 size: responsiveSize(context, 0.0075, min: 12, max: 14),
                 color: Colors.black38,
                 isCenter: true,
@@ -63,7 +64,7 @@ Widget customDropdown({
           return items.map((e) {
             return Center(
               child: customText(
-                text: e,
+                text: localizedText(context, e),
                 size: responsiveSize(context, 0.0075, min: 12, max: 14),
                 bold: true,
                 color: const Color(0xFF2B2B2B),
@@ -80,7 +81,7 @@ Widget customDropdown({
             value: e,
             child: Center(
               child: customText(
-                text: e,
+                text: localizedText(context, e),
                 size: responsiveSize(context, 0.0075, min: 12, max: 14),
                 color: const Color(0xFF2B2B2B),
                 isCenter: true,

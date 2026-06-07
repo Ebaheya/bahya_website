@@ -20,7 +20,7 @@ class AuthNotifier extends ChangeNotifier {
   bool get isLoggedIn => _isLoggedIn;
   bool get passwordResetDone => _passwordResetDone;
   bool get isLoading => _isLoading;
-Future<void> forceLogout() async {
+  Future<void> forceLogout() async {
     final storage = SecureStorageService();
     await storage.clearTokens();
 
@@ -29,7 +29,8 @@ Future<void> forceLogout() async {
 
     notifyListeners();
   }
-Future<void> checkLogin() async {
+
+  Future<void> checkLogin() async {
     _isLoading = true;
     notifyListeners();
 
@@ -145,8 +146,14 @@ class AppRouter {
           final token = state.uri.queryParameters['token'];
 
           if (token == null || token.isEmpty) {
-            return const Scaffold(
-              body: Center(child: Text('Invalid reset token')),
+            return Scaffold(
+              body: Center(
+                child: customText(
+                  text: 'Invalid reset token',
+                  size: 18,
+                  color: Colors.black87,
+                ),
+              ),
             );
           }
 

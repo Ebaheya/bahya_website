@@ -3,6 +3,7 @@ import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 enum ContactMethod { email, phone }
@@ -10,13 +11,11 @@ enum ContactMethod { email, phone }
 void forgetPasswordDialog(BuildContext context) {
   final TextEditingController emailController = TextEditingController();
 
-  showGeneralDialog(
+  showDialog(
     context: context,
     barrierDismissible: true,
-    barrierLabel: 'forget',
     barrierColor: Colors.black.withOpacity(0.38),
-    transitionDuration: const Duration(milliseconds: 240),
-    pageBuilder: (ctx, _, __) {
+    builder: (dialogContext) {
       ContactMethod method = ContactMethod.email;
 
       return StatefulBuilder(
@@ -25,305 +24,286 @@ void forgetPasswordDialog(BuildContext context) {
           final h = getScreenHeight(context);
           final isMobile = w < 700;
 
-          final dialogWidth = isMobile ? w * 0.92 : 520.0;
-
-          final padding = responsiveSize(
-            context,
-            isMobile ? 0.04 : 0.026,
-            min: isMobile ? 16 : 22,
-            max: isMobile ? 20 : 30,
-          );
-
-          return Center(
-            child: Material(
-              color: Colors.transparent,
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: Container(
-                  width: dialogWidth,
-                  constraints: BoxConstraints(maxHeight: h * 0.92),
-                  padding: EdgeInsets.all(padding),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(
-                      responsiveSize(
-                        context,
-                        isMobile ? 0.05 : 0.03,
-                        min: 22,
-                        max: 30,
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF7A004C).withOpacity(0.18),
-                        blurRadius: 35,
-                        offset: const Offset(0, 18),
-                      ),
-                    ],
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.symmetric(
+              horizontal: responsiveSize(context, 0.03, min: 18, max: 42),
+              vertical: responsiveHeight(context, 0.03, min: 18, max: 36),
+            ),
+            child: Directionality(
+              textDirection: Directionality.of(context),
+              child: Container(
+                width: isMobile ? w * 0.92 : 520.0,
+                constraints: BoxConstraints(maxHeight: h * 0.92),
+                padding: EdgeInsets.all(
+                  responsiveSize(
+                    context,
+                    isMobile ? 0.04 : 0.026,
+                    min: 16,
+                    max: 30,
                   ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(99),
-                            onTap: () {
-                              Navigator.of(context, rootNavigator: true).pop();
-                            },
-                            child: Container(
-                              width: responsiveSize(
-                                context,
-                                0.04,
-                                min: 34,
-                                max: 42,
-                              ),
-                              height: responsiveSize(
-                                context,
-                                0.04,
-                                min: 34,
-                                max: 42,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF0F7),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFFFFC2DD),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.close_rounded,
-                                color: Color(0xFFE40070),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        Container(
-                          width: responsiveSize(
-                            context,
-                            isMobile ? 0.16 : 0.075,
-                            min: 58,
-                            max: 82,
-                          ),
-                          height: responsiveSize(
-                            context,
-                            isMobile ? 0.16 : 0.075,
-                            min: 58,
-                            max: 82,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFF6AAE), Color(0xFFE40070)],
-                            ),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFFE40070,
-                                ).withOpacity(0.25),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.lock_reset_rounded,
-                            color: Colors.white,
-                            size: responsiveSize(
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(
+                    responsiveSize(
+                      context,
+                      isMobile ? 0.05 : 0.03,
+                      min: 22,
+                      max: 30,
+                    ),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF7A004C).withOpacity(0.18),
+                      blurRadius: 35,
+                      offset: const Offset(0, 18),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(99),
+                          onTap: () => Navigator.of(dialogContext).pop(),
+                          child: Container(
+                            width: responsiveSize(
                               context,
-                              isMobile ? 0.085 : 0.035,
-                              min: 32,
-                              max: 40,
+                              0.04,
+                              min: 34,
+                              max: 42,
+                            ),
+                            height: responsiveSize(
+                              context,
+                              0.04,
+                              min: 34,
+                              max: 42,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF0F7),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFFFFC2DD),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              color: Color(0xFFE40070),
                             ),
                           ),
                         ),
-
-                        SizedBox(
-                          height: responsiveHeight(
+                      ),
+                      Container(
+                        width: responsiveSize(
+                          context,
+                          isMobile ? 0.16 : 0.075,
+                          min: 58,
+                          max: 82,
+                        ),
+                        height: responsiveSize(
+                          context,
+                          isMobile ? 0.16 : 0.075,
+                          min: 58,
+                          max: 82,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF6AAE), Color(0xFFE40070)],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFE40070).withOpacity(0.25),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.lock_reset_rounded,
+                          color: Colors.white,
+                          size: responsiveSize(
                             context,
-                            0.018,
+                            isMobile ? 0.085 : 0.035,
+                            min: 32,
+                            max: 40,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.018,
+                          min: 14,
+                          max: 18,
+                        ),
+                      ),
+                      customText(
+                        text: 'استرجاع كلمة المرور',
+                        size: responsiveHeight(
+                          context,
+                          0.032,
+                          min: isMobile ? 22 : 24,
+                          max: isMobile ? 26 : 32,
+                        ),
+                        color: const Color(0xFF7A004C),
+                        bold: true,
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.008,
+                          min: 6,
+                          max: 8,
+                        ),
+                      ),
+                      customText(
+                        text:
+                            'اكتب بريدك الإلكتروني واختر طريقة التواصل المفضلة',
+                        size: responsiveHeight(
+                          context,
+                          0.018,
+                          min: 13,
+                          max: 17,
+                        ),
+                        color: const Color(0xFF9A315F),
+                        bold: false,
+                        maxLines: 2,
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.028,
+                          min: 20,
+                          max: 28,
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.all(
+                          responsiveSize(context, 0.014, min: 10, max: 14),
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFBFD),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFFFB6D9)),
+                        ),
+                        child: buildTextField(
+                          controller: emailController,
+                          keyboardType: CustomTextFieldType.email,
+                          hintText: localizedText(context, 'example@email.com'),
+                          prefixIcon: const Icon(
+                            Icons.email_outlined,
+                            color: Color(0xFFE40070),
+                          ),
+                          textDirection: Directionality.of(context),
+                        ),
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.024,
+                          min: 18,
+                          max: 24,
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: customText(
+                          text: 'طريقة التواصل المفضلة',
+                          size: responsiveHeight(
+                            context,
+                            0.019,
                             min: 14,
                             max: 18,
                           ),
-                        ),
-
-                        customText(
-                          text: 'استرجاع كلمة المرور',
-                          size: responsiveHeight(
-                            context,
-                            0.032,
-                            min: isMobile ? 22 : 24,
-                            max: isMobile ? 26 : 32,
-                          ),
-                          color: const Color(0xFF7A004C),
+                          color: const Color(0xFF2D142C),
                           bold: true,
+                          isCenter: false,
                         ),
-
-                        SizedBox(
-                          height: responsiveHeight(
-                            context,
-                            0.008,
-                            min: 6,
-                            max: 8,
-                          ),
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.012,
+                          min: 10,
+                          max: 12,
                         ),
-
-                        customText(
-                          text:
-                              'اكتب بريدك الإلكتروني واختر طريقة التواصل المفضلة',
-                          size: responsiveHeight(
-                            context,
-                            0.018,
-                            min: 13,
-                            max: 17,
-                          ),
-                          color: const Color(0xFF9A315F),
-                          bold: false,
-                          maxLines: 2,
+                      ),
+                      _contactOption(
+                        title: 'البريد الإلكتروني',
+                        subtitle: 'استلام التعليمات عبر البريد',
+                        icon: Icons.email_outlined,
+                        value: ContactMethod.email,
+                        groupValue: method,
+                        onChanged: (v) => setState(() => method = v!),
+                        context: context,
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.012,
+                          min: 10,
+                          max: 12,
                         ),
-
-                        SizedBox(
-                          height: responsiveHeight(
-                            context,
-                            0.028,
-                            min: 20,
-                            max: 28,
-                          ),
+                      ),
+                      _contactOption(
+                        title: 'الهاتف',
+                        subtitle: 'التواصل معك عبر رقم الهاتف',
+                        icon: Icons.phone_rounded,
+                        value: ContactMethod.phone,
+                        groupValue: method,
+                        onChanged: (v) => setState(() => method = v!),
+                        context: context,
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.03,
+                          min: 22,
+                          max: 30,
                         ),
-
-                        Container(
-                          padding: EdgeInsets.all(
-                            responsiveSize(context, 0.014, min: 10, max: 14),
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFFBFD),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: const Color(0xFFFFB6D9)),
-                          ),
-                          child: buildTextField(
-                            controller: emailController,
-                            keyboardType: CustomTextFieldType.email,
-                            hintText: 'example@email.com',
-                            prefixIcon: const Icon(
-                              Icons.email_outlined,
-                              color: Color(0xFFE40070),
+                      ),
+                      isMobile
+                          ? Column(
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: _confirmButton(
+                                    context,
+                                    emailController,
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: responsiveHeight(
+                                    context,
+                                    0.012,
+                                    min: 10,
+                                    max: 12,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: _cancelButton(context),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                Expanded(
+                                  child: _confirmButton(
+                                    context,
+                                    emailController,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(child: _cancelButton(context)),
+                              ],
                             ),
-                            textDirection: TextDirection.rtl,
-                          ),
-                        ),
-
-                        SizedBox(
-                          height: responsiveHeight(
-                            context,
-                            0.024,
-                            min: 18,
-                            max: 24,
-                          ),
-                        ),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: customText(
-                            text: 'طريقة التواصل المفضلة',
-                            size: responsiveHeight(
-                              context,
-                              0.019,
-                              min: 14,
-                              max: 18,
-                            ),
-                            color: const Color(0xFF2D142C),
-                            bold: true,
-                            isCenter: false,
-                          ),
-                        ),
-
-                        SizedBox(
-                          height: responsiveHeight(
-                            context,
-                            0.012,
-                            min: 10,
-                            max: 12,
-                          ),
-                        ),
-
-                        _contactOption(
-                          title: 'البريد الإلكتروني',
-                          subtitle: 'استلام التعليمات عبر البريد',
-                          icon: Icons.email_outlined,
-                          value: ContactMethod.email,
-                          groupValue: method,
-                          onChanged: (v) => setState(() => method = v!),
-                          context: context,
-                        ),
-
-                        SizedBox(
-                          height: responsiveHeight(
-                            context,
-                            0.012,
-                            min: 10,
-                            max: 12,
-                          ),
-                        ),
-
-                        _contactOption(
-                          title: 'الهاتف',
-                          subtitle: 'التواصل معك عبر رقم الهاتف',
-                          icon: Icons.phone_rounded,
-                          value: ContactMethod.phone,
-                          groupValue: method,
-                          onChanged: (v) => setState(() => method = v!),
-                          context: context,
-                        ),
-
-                        SizedBox(
-                          height: responsiveHeight(
-                            context,
-                            0.03,
-                            min: 22,
-                            max: 30,
-                          ),
-                        ),
-
-                        isMobile
-                            ? Column(
-                                children: [
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: _confirmButton(
-                                      context,
-                                      emailController,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    height: responsiveHeight(
-                                      context,
-                                      0.012,
-                                      min: 10,
-                                      max: 12,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: _cancelButton(context),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                children: [
-                                  Expanded(
-                                    child: _confirmButton(
-                                      context,
-                                      emailController,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(child: _cancelButton(context)),
-                                ],
-                              ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -332,22 +312,7 @@ void forgetPasswordDialog(BuildContext context) {
         },
       );
     },
-    transitionBuilder: (ctx, anim, _, child) {
-      final curved = CurvedAnimation(
-        parent: anim,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
-      );
-
-      return FadeTransition(
-        opacity: curved,
-        child: ScaleTransition(
-          scale: Tween<double>(begin: 0.94, end: 1.0).animate(curved),
-          child: child,
-        ),
-      );
-    },
-  );
+  ).whenComplete(emailController.dispose);
 }
 
 Widget _confirmButton(
@@ -467,7 +432,6 @@ Widget _contactOption({
                 ? const VisualDensity(horizontal: -4, vertical: -4)
                 : VisualDensity.standard,
           ),
-
           SizedBox(
             width: responsiveSize(
               context,
@@ -476,7 +440,6 @@ Widget _contactOption({
               max: 18,
             ),
           ),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -517,9 +480,14 @@ Widget _contactOption({
               ],
             ),
           ),
-
-          SizedBox(width: responsiveSize(context, 0.012, min: 8, max: 12)),
-
+          SizedBox(
+            width: responsiveSize(
+              context,
+              isMobile ? 0.012 : 0.02,
+              min: 8,
+              max: 12,
+            ),
+          ),
           Container(
             width: iconBoxSize,
             height: iconBoxSize,

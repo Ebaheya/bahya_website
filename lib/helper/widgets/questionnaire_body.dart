@@ -2,6 +2,7 @@ import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 
 enum QuestionType { single, multiple }
@@ -234,11 +235,9 @@ class LabeledInput extends StatelessWidget {
         sectionLabel(label: label, icon: icon, w: w),
         const SizedBox(height: 8),
         CustomFormTextField(
-          hintText: hint,
-          keyboardType: isTitle
-              ? CustomTextFieldType.title
-              : CustomTextFieldType.text,
           autovalidateMode: AutovalidateMode.onUserInteraction,
+          keyboardType: CustomTextFieldType.text,
+          hintText: localizedText(context, hint),
           controller: controller,
           readOnly: !isEditing,
           textDirection: TextDirection.rtl,
@@ -266,7 +265,7 @@ class AddOutlineButton extends StatelessWidget {
     return OutlinedButton.icon(
       onPressed: onPressed,
       icon: const Icon(Icons.add_rounded),
-      label: Text(title),
+      label: Text(localizedText(context, title)),
       style: OutlinedButton.styleFrom(
         foregroundColor: color,
         side: BorderSide(color: color.withOpacity(.65)),
@@ -416,7 +415,7 @@ class ScoreInput extends StatelessWidget {
         autovalidateMode: AutovalidateMode.onUserInteraction,
         keyboardType: CustomTextFieldType.score,
         controller: controller,
-        hintText: '0',
+        hintText: localizedText(context, '0'),
         prefixIcon: const Icon(Icons.star_border_rounded, size: 18),
       ),
     );
@@ -450,7 +449,7 @@ class AnswerOptionTile extends StatelessWidget {
           child: CustomFormTextField(
             autovalidateMode: AutovalidateMode.onUserInteraction,
             keyboardType: CustomTextFieldType.text,
-            hintText: 'اكتب خيار',
+            hintText: localizedText(context, 'اكتب خيار'),
             controller: answer.answerController,
             textDirection: TextDirection.rtl,
           ),
@@ -633,8 +632,8 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
             const SizedBox(height: 25),
             LabeledInput(
               w: w,
-              label: 'نص السؤال',
-              hint: 'اكتب السؤال هنا',
+              label: localizedText(context, 'نص السؤال'),
+              hint: localizedText(context, 'اكتب السؤال هنا'),
               controller: questionController,
               icon: Icons.help_outline_rounded,
             ),
@@ -716,9 +715,9 @@ class DiagnosisMiniCard extends StatelessWidget {
             child: CustomFormTextField(
               autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: CustomTextFieldType.score,
-              labelText: "من",
+              labelText: localizedText(context, 'من'),
               centerHint: true,
-              hintText: '0',
+              hintText: localizedText(context, '0'),
               controller: item.fromController,
             ),
           ),
@@ -727,9 +726,9 @@ class DiagnosisMiniCard extends StatelessWidget {
             child: CustomFormTextField(
               autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: CustomTextFieldType.score,
-              labelText: "إلى",
+              labelText: localizedText(context, 'إلى'),
               centerHint: true,
-              hintText: '100',
+              hintText: localizedText(context, '100'),
               controller: item.toController,
             ),
           ),
@@ -739,7 +738,7 @@ class DiagnosisMiniCard extends StatelessWidget {
             child: CustomFormTextField(
               autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: CustomTextFieldType.diagnose,
-              hintText: 'اكتب التشخيص',
+              hintText: localizedText(context, 'اكتب التشخيص'),
               controller: item.diagnosisController,
               textDirection: TextDirection.rtl,
             ),
@@ -936,7 +935,11 @@ class QuestionnairePageHeader extends StatelessWidget {
 }
 
 class SurveyTitleCard extends StatelessWidget {
-  const SurveyTitleCard({super.key, required this.controller , required this.isEditing});
+  const SurveyTitleCard({
+    super.key,
+    required this.controller,
+    required this.isEditing,
+  });
 
   final TextEditingController controller;
   final bool isEditing;

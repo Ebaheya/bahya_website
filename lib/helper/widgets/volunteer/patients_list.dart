@@ -194,7 +194,7 @@ class _PatientsListWidgetState extends State<PatientsListWidget> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 customText(
-                  text: "${patients.length} مرضى",
+                  text: "${patients.length} مريض",
                   size: subTextSize,
                   color: const Color(0xFF7A004C),
                   bold: true,

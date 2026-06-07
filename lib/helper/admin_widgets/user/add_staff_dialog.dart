@@ -2,6 +2,7 @@ import 'package:bahya_website/helper/filter_dropdown.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class AddStaffDialog extends StatefulWidget {
@@ -40,7 +41,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
               child: CustomFormTextField(
                 bordered: false,
                 controller: widget.fullNameController,
-                hintText: "Full Name",
+                hintText: localizedText(context, 'Full Name'),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.text,
                 textDirection: TextDirection.ltr,
@@ -53,7 +54,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
               child: CustomFormTextField(
                 bordered: false,
                 controller: widget.emailController,
-                hintText: "Email",
+                hintText: localizedText(context, 'Email'),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.email,
                 textDirection: TextDirection.ltr,
@@ -72,7 +73,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
               child: CustomFormTextField(
                 bordered: false,
                 controller: widget.passwordController,
-                hintText: "Password",
+                hintText: localizedText(context, 'Password'),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.password,
                 obscureText: true,

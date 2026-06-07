@@ -2,6 +2,7 @@ import 'package:bahya_website/helper/filter_dropdown.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:bahya_website/helper/admin_widgets/custom_date_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -55,8 +56,8 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               icon: Icons.person_outline_rounded,
               child: CustomFormTextField(
                 controller: widget.fullNameController,
-                hintText: "Full Name",
-                  bordered: false,
+                hintText: localizedText(context, 'Full Name'),
+                bordered: false,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.text,
                 textDirection: TextDirection.ltr,
@@ -67,8 +68,8 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               icon: Icons.email_outlined,
               child: CustomFormTextField(
                 controller: widget.emailController,
-                hintText: "Email",
-                  bordered: false,
+                hintText: localizedText(context, 'Email'),
+                bordered: false,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.email,
                 textDirection: TextDirection.ltr,
@@ -85,8 +86,8 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               icon: Icons.lock_outline_rounded,
               child: CustomFormTextField(
                 controller: widget.passwordController,
-                hintText: "Password",
-                  bordered: false,
+                hintText: localizedText(context, 'Password'),
+                bordered: false,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.password,
                 obscureText: true,
@@ -97,9 +98,9 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               context: context,
               icon: Icons.phone_outlined,
               child: CustomFormTextField(
-                  bordered: false,
+                bordered: false,
                 controller: widget.phoneController,
-                hintText: "Phone Number",
+                hintText: localizedText(context, 'Phone Number'),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.phone,
                 textDirection: TextDirection.ltr,
@@ -116,7 +117,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               icon: Icons.calendar_month_outlined,
               child: CustomDatePickerField(
                 controller: widget.birthDateController,
-                hintText: "Birth Date",
+                hintText: localizedText(context, 'Birth Date'),
                 showCalendarIcon: false,
                 initialDate: DateTime.now(),
                 onDateSelected: widget.onDateSelected,
@@ -148,8 +149,8 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
             icon: Icons.location_on_outlined,
             child: CustomFormTextField(
               controller: widget.addressController,
-              hintText: "Address",
-                bordered: false,
+              hintText: localizedText(context, 'Address'),
+              bordered: false,
               autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: CustomTextFieldType.text,
               textDirection: TextDirection.ltr,
@@ -167,7 +168,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               icon: Icons.person_outline_rounded,
               child: CustomFormTextField(
                 controller: widget.emergencyNameController,
-                hintText: "Emergency Contact Name",
+                hintText: localizedText(context, 'Emergency Contact Name'),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.text,
                 textDirection: TextDirection.ltr,
@@ -178,9 +179,9 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               context: context,
               icon: Icons.phone_outlined,
               child: CustomFormTextField(
-                  bordered: false,
+                bordered: false,
                 controller: widget.emergencyPhoneController,
-                hintText: "Emergency Contact Phone",
+                hintText: localizedText(context, 'Emergency Contact Phone'),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: CustomTextFieldType.phone,
                 textDirection: TextDirection.ltr,

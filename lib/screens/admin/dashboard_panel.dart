@@ -62,7 +62,7 @@ class _DashboardState extends State<Dashboard> {
         ? responsiveHeight(context, 0.16, min: 120, max: 145)
         : isTablet
         ? responsiveHeight(context, 0.15, min: 120, max: 150)
-        : responsiveHeight(context, 0.195, min: 125, max: 165);
+        : responsiveHeight(context, 0.2, min: 165, max: 180);
 
     final dashboardCards = [
       const DashboardCard(

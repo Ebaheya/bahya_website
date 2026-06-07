@@ -1,5 +1,6 @@
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
@@ -14,25 +15,48 @@ Widget customText({
   bool bold = true,
   TextAlign? align,
   int maxLines = 1,
+  Map<String, String>? namedArgs,
 }) {
-  return Text(
-    text,
-    textAlign: isCenter ? TextAlign.center : TextAlign.start,
-    textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
-    maxLines: maxLines,
-    style: TextStyle(
-      fontSize: size,
+  return ValueListenableBuilder<Locale>(
+    valueListenable: AppLanguageController.localeNotifier,
+    builder: (context, locale, _) {
+      final languageCode = locale.languageCode;
 
-      fontFamily: 'ArabicCustomFont',
-      fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-      color: isGradient ? null : (color ?? Colors.black),
-      foreground: isGradient
-          ? (Paint()
-              ..shader = LinearGradient(
-                colors: [Color(0xFF8A2BE2), Color(0xFFFF69B4)],
-              ).createShader(Rect.fromLTWH(0, 0, 200, 70)))
-          : null,
-    ),
+      String translatedText = AppLocalizations.translateByLocaleCode(
+        languageCode,
+        text,
+      );
+
+      if (namedArgs != null) {
+        namedArgs.forEach((key, value) {
+          translatedText = translatedText.replaceAll('{$key}', value);
+        });
+      }
+
+      final isEnglishLocale = languageCode == 'en';
+
+      return Text(
+        translatedText,
+        textAlign: align ?? (isCenter ? TextAlign.center : TextAlign.start),
+        textDirection: isEnglish || isEnglishLocale
+            ? TextDirection.ltr
+            : TextDirection.rtl,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: size,
+          fontFamily: 'ArabicCustomFont',
+          fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          color: isGradient ? null : (color ?? Colors.black),
+          foreground: isGradient
+              ? (Paint()
+                  ..shader = const LinearGradient(
+                    colors: [Color(0xFF8A2BE2), Color(0xFFFF69B4)],
+                  ).createShader(const Rect.fromLTWH(0, 0, 200, 70)))
+              : null,
+        ),
+      );
+    },
   );
 }
 
@@ -67,21 +91,38 @@ Widget buildTextField({
   TextEditingController? controller,
   bool? bordered,
 }) {
-  return Padding(
-    padding: const EdgeInsets.all(8.0),
-    child: CustomFormTextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      autovalidateMode: AutovalidateMode.disabled,
-      hintText: hintText,
-      labelText: labelText,
-      obscureText: obscureText,
-      textDirection: textDirection,
-      maxLines: maxLines,
-      suffixIcon: suffixIcon,
-      prefixIcon: prefixIcon,
-      bordered: bordered ?? true,
-    ),
+  return ValueListenableBuilder<Locale>(
+    valueListenable: AppLanguageController.localeNotifier,
+    builder: (context, locale, _) {
+      final languageCode = locale.languageCode;
+      final localizedHint = AppLocalizations.translateByLocaleCode(
+        languageCode,
+        hintText,
+      );
+      final localizedLabel = labelText == null
+          ? null
+          : AppLocalizations.translateByLocaleCode(
+              languageCode,
+              labelText!,
+            );
+
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: CustomFormTextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          autovalidateMode: AutovalidateMode.disabled,
+          hintText: localizedHint,
+          labelText: localizedLabel,
+          obscureText: obscureText,
+          textDirection: languageCode == 'en' ? TextDirection.ltr : TextDirection.rtl,
+          maxLines: maxLines,
+          suffixIcon: suffixIcon,
+          prefixIcon: prefixIcon,
+          bordered: bordered ?? true,
+        ),
+      );
+    },
   );
 }
 
@@ -154,6 +195,7 @@ PreferredSizeWidget customAppBar({
                             size: 28,
                           ),
                         ),
+                        const _LanguageToggleButton(),
                         // GestureDetector(
                         //   onTap: () {
                         //     scaffoldKey?.currentState?.openDrawer();
@@ -215,6 +257,51 @@ PreferredSizeWidget customAppBar({
       ),
     ),
   );
+}
+
+class _LanguageToggleButton extends StatelessWidget {
+  const _LanguageToggleButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Locale>(
+      valueListenable: AppLanguageController.localeNotifier,
+      builder: (context, locale, _) {
+        final isEnglish = locale.languageCode == 'en';
+
+        return Padding(
+          padding: const EdgeInsetsDirectional.only(start: 8),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: AppLanguageController.toggle,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.16),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white.withOpacity(0.32)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.language, color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    isEnglish ? 'AR' : 'EN',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 Widget sectionCard({
@@ -371,12 +458,7 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> customSnackBar({
       backgroundColor: buttonColor,
       animation: const AlwaysStoppedAnimation(1),
       showCloseIcon: true,
-      content: customText(
-        isCenter: true,
-        text: message,
-        size: w * 0.01,
-        color: Colors.white,
-      ),
+      content: customText(text: message, size: w * 0.01, color: Colors.white),
     ),
   );
 }
@@ -433,32 +515,44 @@ class ScheduleInfoBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final h = getScreenHeight(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        customText(
-          text: title,
-          size: h * 0.018,
-          color: Colors.grey.shade600,
-          bold: true,
-        ),
-        SizedBox(height: h * 0.007),
-        customText(
-          text: value,
-          size: isTime ? h * 0.032 : h * 0.018,
-          bold: true,
-          color: isTime ? const Color(0xFF8A0057) : const Color(0xFF333333),
-        ),
-        if (subValue != null) ...[
-          SizedBox(height: h * 0.003),
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(responsiveSize(context, 0.01, min: 12, max: 16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           customText(
-            text: subValue!,
-            size: h * 0.017,
+            text: title,
+            size: h * 0.018,
+            color: Colors.grey.shade600,
             bold: true,
-            color: const Color(0xFFE5005F),
+            isCenter: false,
           ),
+          SizedBox(height: h * 0.007),
+          customText(
+            text: value,
+            size: isTime ? h * 0.032 : h * 0.018,
+            bold: true,
+            color: isTime ? const Color(0xFF8A0057) : const Color(0xFF333333),
+            isCenter: false,
+          ),
+          if (subValue != null) ...[
+            SizedBox(height: h * 0.003),
+            customText(
+              text: subValue!,
+              size: h * 0.017,
+              bold: true,
+              color: const Color(0xFFE5005F),
+              isCenter: false,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

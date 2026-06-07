@@ -1,4 +1,5 @@
 import 'package:bahya_website/data/api/repo/repo.dart';
+import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/widgets/questionnaire_body.dart';
 import 'package:flutter/material.dart';
@@ -401,16 +402,27 @@ class AddQuestionnaireController extends ChangeNotifier {
       context: context,
       builder: (_) {
         return AlertDialog(
-          title: const Text('حذف الاستبيان'),
-          content: const Text('هل أنت متأكد من حذف هذا الاستبيان؟'),
+          title: customText(
+            text: 'حذف الاستبيان',
+            size: 18,
+            color: Colors.black87,
+            isCenter: false,
+          ),
+          content: customText(
+            text: 'هل أنت متأكد من حذف هذا الاستبيان؟',
+            size: 16,
+            color: Colors.black87,
+            isCenter: false,
+            maxLines: 2,
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
+              child: customText(text: 'إلغاء', size: 14, color: Colors.pink),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('حذف', style: TextStyle(color: Colors.red)),
+              child: customText(text: 'حذف', size: 14, color: Colors.red),
             ),
           ],
         );

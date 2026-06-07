@@ -4,6 +4,7 @@ import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class ProfileForm extends StatefulWidget {
@@ -134,7 +135,7 @@ class _ProfileFormState extends State<ProfileForm> {
                 buildTextField(
                   controller: nameController,
                   keyboardType: CustomTextFieldType.name,
-                  hintText: 'الاسم الجديد',
+                  hintText: localizedText(context, 'الاسم الجديد'),
                 ),
 
                 SizedBox(height: h * 0.025),
@@ -170,7 +171,7 @@ class _ProfileFormState extends State<ProfileForm> {
                 buildTextField(
                   controller: emailController,
                   keyboardType: CustomTextFieldType.email,
-                  hintText: 'البريد الإلكتروني الجديد',
+                  hintText: localizedText(context, 'البريد الإلكتروني الجديد'),
                 ),
 
                 SizedBox(height: h * 0.025),
@@ -207,7 +208,7 @@ class _ProfileFormState extends State<ProfileForm> {
                   controller: oldPasswordController,
                   keyboardType: CustomTextFieldType.password,
                   obscureText: true,
-                  hintText: 'كلمة المرور الحالية',
+                  hintText: localizedText(context, 'كلمة المرور الحالية'),
                 ),
 
                 SizedBox(height: h * 0.02),
@@ -216,7 +217,7 @@ class _ProfileFormState extends State<ProfileForm> {
                   controller: newPasswordController,
                   keyboardType: CustomTextFieldType.password,
                   obscureText: true,
-                  hintText: 'كلمة المرور الجديدة',
+                  hintText: localizedText(context, 'كلمة المرور الجديدة'),
                 ),
 
                 SizedBox(height: h * 0.025),

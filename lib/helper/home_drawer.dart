@@ -257,33 +257,35 @@ class HomeDrawer extends StatelessWidget {
             ],
           ),
           child: Row(
-  textDirection: TextDirection.rtl,
-  children: [
-    Icon(
-      Icons.arrow_forward_ios_rounded,
-      color: buttonColor,
-      size: responsiveSize(context, 0.009, min: 14, max: 18),
-    ),
+            textDirection: Localizations.localeOf(context).languageCode == 'en'
+                ? TextDirection.ltr
+                : TextDirection.rtl,
+            children: [
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: buttonColor,
+                size: responsiveSize(context, 0.009, min: 14, max: 18),
+              ),
 
-    Expanded(
-      child: Center(
-        child: customText(
-          text: title,
-          size: responsiveSize(context, 0.009, min: 14, max: 18),
-          color: Colors.black87,
-          maxLines: 1,
-          isCenter: true,
-        ),
-      ),
-    ),
+              Expanded(
+                child: Center(
+                  child: customText(
+                    text: title,
+                    size: responsiveSize(context, 0.009, min: 14, max: 18),
+                    color: Colors.black87,
+                    maxLines: 1,
+                    isCenter: true,
+                  ),
+                ),
+              ),
 
-    Icon(
-      icon,
-      color: buttonColor,
-      size: responsiveSize(context, 0.014, min: 20, max: 26),
-    ),
-  ],
-),
+              Icon(
+                icon,
+                color: buttonColor,
+                size: responsiveSize(context, 0.014, min: 20, max: 26),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -334,7 +336,9 @@ class HomeDrawer extends StatelessWidget {
           ],
         ),
         child: Row(
-          textDirection: TextDirection.rtl,
+          textDirection: Localizations.localeOf(context).languageCode == 'en'
+              ? TextDirection.ltr
+              : TextDirection.rtl,
           children: [
             Expanded(
               child: customText(

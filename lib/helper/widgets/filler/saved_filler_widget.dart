@@ -5,8 +5,8 @@ import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:bahya_website/helper/widgets/filler/form_header.dart'
-    ;
+import 'package:bahya_website/l10n/app_localizations.dart';
+import 'package:bahya_website/helper/widgets/filler/form_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -124,7 +124,6 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
     final state = context.watch<DoctorFormsCubit>().state;
 
     return Container(
-      width: double.infinity,
       padding: EdgeInsets.all(responsiveSize(context, 0.02, min: 14, max: 18)),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFBFD),
@@ -140,7 +139,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               customText(
-                text: "اختيار المريض",
+                text: localizedText(context, 'اختيار المريض'),
                 size: responsiveHeight(context, 0.02, min: 14, max: 19),
                 bold: true,
                 color: const Color(0xFF7A004C),
@@ -158,8 +157,8 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
             textDirection: TextDirection.rtl,
             child: CustomFormTextField(
               controller: patientSearchController,
-              labelText: "اختيار المريض",
-              hintText: "ابحث باسم المريض",
+              labelText: localizedText(context, 'اختيار المريض'),
+              hintText: localizedText(context, 'ابحث باسم المريض'),
               autovalidateMode: AutovalidateMode.disabled,
               keyboardType: CustomTextFieldType.text,
               onChange: (value) {
@@ -635,7 +634,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               customText(
-                text: "ملاحظات الطبيب",
+                text: localizedText(context, 'ملاحظات الطبيب'),
                 size: responsiveHeight(context, 0.021, min: 15, max: 21),
                 bold: true,
                 color: const Color(0xFF7A004C),
@@ -653,7 +652,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
             textDirection: TextDirection.rtl,
             child: CustomFormTextField(
               controller: noteController,
-              hintText: "اكتب ملاحظات الطبيب هنا...",
+              hintText: localizedText(context, 'اكتب ملاحظات الطبيب هنا...'),
               autovalidateMode: AutovalidateMode.disabled,
               keyboardType: CustomTextFieldType.text,
               maxLines: 4,
