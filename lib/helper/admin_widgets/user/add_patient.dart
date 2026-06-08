@@ -1,5 +1,4 @@
 import 'package:bahya_website/helper/filter_dropdown.dart';
-import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/l10n/app_localizations.dart';
@@ -15,7 +14,7 @@ class AddPatientDialog extends StatefulWidget {
   final TextEditingController addressController;
   final TextEditingController emergencyNameController;
   final TextEditingController emergencyPhoneController;
-
+  final TextEditingController crnController;
   final String? selectedGender;
   final Function(String?) onGenderChanged;
   final Function(DateTime)? onDateSelected;
@@ -30,6 +29,7 @@ class AddPatientDialog extends StatefulWidget {
     required this.addressController,
     required this.emergencyNameController,
     required this.emergencyPhoneController,
+    required this.crnController,
     required this.selectedGender,
     required this.onGenderChanged,
     required this.onDateSelected,
@@ -48,6 +48,19 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
 
     return Column(
       children: [
+          modernInputBox(
+          context: context,
+          icon: Icons.badge_outlined,
+          child: CustomFormTextField(
+            controller: widget.crnController,
+            hintText: localizedText(context, 'CRN'),
+            bordered: false,
+            autovalidateMode: AutovalidateMode.disabled,
+            keyboardType: CustomTextFieldType.text,
+            textDirection: TextDirection.ltr,
+          ),
+        ),
+        SizedBox(height: responsiveHeight(context, 0.022, min: 16, max: 22)),
         _ResponsiveFieldRow(
           isMobile: isMobile,
           children: [
@@ -58,7 +71,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 controller: widget.fullNameController,
                 hintText: localizedText(context, 'Full Name'),
                 bordered: false,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
+                autovalidateMode: AutovalidateMode.disabled,
                 keyboardType: CustomTextFieldType.text,
                 textDirection: TextDirection.ltr,
               ),
@@ -70,7 +83,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 controller: widget.emailController,
                 hintText: localizedText(context, 'Email'),
                 bordered: false,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
+                autovalidateMode: AutovalidateMode.disabled,
                 keyboardType: CustomTextFieldType.email,
                 textDirection: TextDirection.ltr,
               ),
@@ -88,7 +101,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 controller: widget.passwordController,
                 hintText: localizedText(context, 'Password'),
                 bordered: false,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
+                autovalidateMode: AutovalidateMode.disabled,
                 keyboardType: CustomTextFieldType.password,
                 obscureText: true,
                 textDirection: TextDirection.ltr,
@@ -101,7 +114,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 bordered: false,
                 controller: widget.phoneController,
                 hintText: localizedText(context, 'Phone Number'),
-                autovalidateMode: AutovalidateMode.onUserInteraction,
+                autovalidateMode: AutovalidateMode.disabled,
                 keyboardType: CustomTextFieldType.phone,
                 textDirection: TextDirection.ltr,
               ),
@@ -119,7 +132,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 controller: widget.birthDateController,
                 hintText: localizedText(context, 'Birth Date'),
                 showCalendarIcon: false,
-                initialDate: DateTime.now(),
+                initialDate: DateTime.now().subtract(Duration(days: 365 * 20)),
                 onDateSelected: widget.onDateSelected,
               ),
             ),
@@ -151,7 +164,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               controller: widget.addressController,
               hintText: localizedText(context, 'Address'),
               bordered: false,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+              autovalidateMode: AutovalidateMode.disabled,
               keyboardType: CustomTextFieldType.text,
               textDirection: TextDirection.ltr,
               maxLines: 1,
@@ -169,7 +182,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               child: CustomFormTextField(
                 controller: widget.emergencyNameController,
                 hintText: localizedText(context, 'Emergency Contact Name'),
-                autovalidateMode: AutovalidateMode.onUserInteraction,
+                autovalidateMode: AutovalidateMode.disabled,
                 keyboardType: CustomTextFieldType.text,
                 textDirection: TextDirection.ltr,
                 bordered: false,
@@ -182,7 +195,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 bordered: false,
                 controller: widget.emergencyPhoneController,
                 hintText: localizedText(context, 'Emergency Contact Phone'),
-                autovalidateMode: AutovalidateMode.onUserInteraction,
+                autovalidateMode: AutovalidateMode.disabled,
                 keyboardType: CustomTextFieldType.phone,
                 textDirection: TextDirection.ltr,
               ),

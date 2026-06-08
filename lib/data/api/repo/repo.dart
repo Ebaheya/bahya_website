@@ -8,6 +8,16 @@ import 'package:dio/dio.dart';
 
 class AppRepository {
   WebService webService = WebService();
+
+  String _readableError(Object error, String fallback) {
+    final text = error.toString().replaceFirst('Exception: ', '').trim();
+    if (text.isEmpty) return fallback;
+    if (text.startsWith('Unexpected error : Exception: ')) {
+      return text.replaceFirst('Unexpected error : Exception: ', '');
+    }
+    return text;
+  }
+
   Future<UserModel> getUserProfile({required String accessToken}) async {
     try {
       final data = await webService.getUserInfo();
@@ -138,6 +148,61 @@ class AppRepository {
     }
   }
 
+  Future<PatientsResponseModel> getPatients({
+    String? search,
+    String? diseaseStatus,
+    String? tumorBiology,
+    String? surgery,
+    String? chemotherapy,
+    bool? radiotherapy,
+    bool? hormonalTherapy,
+    bool? targetedTherapy,
+    bool? immunotherapy,
+    String? sortBy,
+    String? sortOrder,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await webService.getPatients(
+        search: search,
+        diseaseStatus: diseaseStatus,
+        tumorBiology: tumorBiology,
+        surgery: surgery,
+        chemotherapy: chemotherapy,
+        radiotherapy: radiotherapy,
+        hormonalTherapy: hormonalTherapy,
+        targetedTherapy: targetedTherapy,
+        immunotherapy: immunotherapy,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+        page: page,
+        pageSize: pageSize,
+      );
+
+      return PatientsResponseModel.fromJson(
+        response,
+      ).sorted(sortBy: sortBy, sortOrder: sortOrder);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get patients');
+    } catch (e) {
+      throw Exception(_readableError(e, 'Failed to get patients'));
+    }
+  }
+
+  Future<PatientModel> createPatient({
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final response = await webService.createPatientFromBody(body: body);
+      return PatientModel.fromJson(response);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to create patient');
+    } catch (e) {
+      throw Exception(_readableError(e, 'Failed to create patient'));
+    }
+  }
+
   Future<OptionsResponseModel> getVolunteer({
     String? search,
     int page = 1,
@@ -154,7 +219,7 @@ class AppRepository {
     } on DioException catch (e) {
       throw Exception(e.response?.data ?? 'Failed to get user');
     } catch (e) {
-      throw Exception('Unexpected error : $e');
+      throw Exception(_readableError(e, 'Failed to get patient'));
     }
   }
 
@@ -186,6 +251,17 @@ class AppRepository {
       throw Exception(e.response?.data ?? 'Failed to get user');
     } catch (e) {
       throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<PatientModel> getPatientDetails(String patientId) async {
+    try {
+      final json = await webService.getPatientById(patientId);
+      return PatientModel.fromJson(json);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to get patient details');
+    } catch (e) {
+      throw Exception(_readableError(e, 'Failed to get patient details'));
     }
   }
 

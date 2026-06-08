@@ -2,6 +2,7 @@ import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
+import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -326,8 +327,9 @@ Widget _confirmButton(
     textColor: Colors.white,
     onPressed: () async {
       if (emailController.text.trim().isEmpty) {
-        customSnackBar(
+        customDialog(
           context: context,
+          title: 'خطأ',
           message: 'يرجى إدخال البريد الإلكتروني',
         );
         return;
@@ -337,17 +339,25 @@ Widget _confirmButton(
         await WebService().forgetPassword(email: emailController.text.trim());
 
         if (!context.mounted) return;
-
-        customSnackBar(
+        customDialog(
           context: context,
+          isSuccess: true,
+          title: 'نجاح',
           message: 'تم إرسال تعليمات استرجاع كلمة المرور إلى بريدك الإلكتروني',
+          onClose: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            Navigator.of(context, rootNavigator: true).pop();
+          },
         );
-
-        Navigator.of(context, rootNavigator: true).pop();
       } catch (error) {
         if (!context.mounted) return;
-
-        customSnackBar(context: context, message: 'حدث خطأ: $error');
+        customDialog(
+          context: context,
+          title: 'خطأ',
+          isError: true,
+          message:
+              'حدث خطأ أثناء محاولة استرجاع كلمة المرور. يرجى المحاولة مرة أخرى.',
+        );
       }
     },
   );

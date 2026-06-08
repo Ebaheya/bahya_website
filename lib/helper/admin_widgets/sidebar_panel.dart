@@ -57,7 +57,7 @@ class AdminSidebarContainer extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.pink.withOpacity(0.08),
+            color: Colors.pink.withValues(alpha: 0.08),
             blurRadius: responsiveSize(context, 0.028, min: 28, max: 35),
             offset: Offset(
               0,
@@ -103,7 +103,7 @@ class AdminSidebarContainer extends StatelessWidget {
                     onTap: () => onItemSelected(3),
                   ),
                   const Spacer(),
-                  Divider(color: Colors.pink.withOpacity(0.25)),
+                  Divider(color: Colors.pink.withValues(alpha: 0.25)),
                   SizedBox(
                     height: responsiveHeight(context, 0.02, min: 14, max: 24),
                   ),
@@ -151,7 +151,7 @@ class AdminBottomNavigation extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.pink.withOpacity(0.12),
+            color: Colors.pink.withValues(alpha: 0.12),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -272,7 +272,7 @@ class _SidebarHeader extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: buttonColor.withOpacity(0.25),
+                  color: buttonColor.withValues(alpha: 0.25),
                   blurRadius: responsiveSize(context, 0.018, min: 18, max: 22),
                   offset: const Offset(0, 10),
                 ),
@@ -299,10 +299,14 @@ class _SidebarHeader extends StatelessWidget {
             color: Colors.grey.shade600,
             isEnglish: true,
           ),
+          SizedBox(height: responsiveHeight(context, 0.016, min: 12, max: 18)),
+          const LanguageToggleButton(padding: EdgeInsets.zero),
           SizedBox(height: responsiveHeight(context, 0.025, min: 20, max: 30)),
           Row(
             children: [
-              Expanded(child: Divider(color: Colors.pink.withOpacity(0.35))),
+              Expanded(
+                child: Divider(color: Colors.pink.withValues(alpha: 0.35)),
+              ),
               Container(
                 width: responsiveSize(context, 0.006, min: 8, max: 9),
                 height: responsiveSize(context, 0.006, min: 8, max: 9),
@@ -314,7 +318,9 @@ class _SidebarHeader extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
               ),
-              Expanded(child: Divider(color: Colors.pink.withOpacity(0.35))),
+              Expanded(
+                child: Divider(color: Colors.pink.withValues(alpha: 0.35)),
+              ),
             ],
           ),
         ],
@@ -384,7 +390,7 @@ class _SidebarItemState extends State<_SidebarItem> {
               boxShadow: widget.isSelected || isHovered
                   ? [
                       BoxShadow(
-                        color: Colors.pink.withOpacity(0.12),
+                        color: Colors.pink.withValues(alpha: 0.12),
                         blurRadius: responsiveSize(
                           context,
                           0.016,
@@ -494,8 +500,8 @@ class _SidebarWaveFooterState extends State<_SidebarWaveFooter>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF8A2BE2).withOpacity(0.75),
-                    const Color(0xFFFF5FA2).withOpacity(0.78),
+                    const Color(0xFF8A2BE2).withValues(alpha: 0.75),
+                    const Color(0xFFFF5FA2).withValues(alpha: 0.78),
                   ],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
@@ -512,7 +518,7 @@ class _SidebarWaveFooterState extends State<_SidebarWaveFooter>
               top: -25,
               child: CircleAvatar(
                 radius: responsiveSize(context, 0.07, min: 80, max: 115),
-                backgroundColor: Colors.white.withOpacity(0.10),
+                backgroundColor: Colors.white.withValues(alpha: 0.10),
               ),
             ),
             Positioned(
@@ -520,7 +526,7 @@ class _SidebarWaveFooterState extends State<_SidebarWaveFooter>
               bottom: responsiveHeight(context, 0.034, min: 28, max: 34),
               child: CircleAvatar(
                 radius: responsiveSize(context, 0.004, min: 4, max: 5),
-                backgroundColor: Colors.white.withOpacity(0.18),
+                backgroundColor: Colors.white.withValues(alpha: 0.18),
               ),
             ),
           ],
@@ -613,7 +619,7 @@ class _LogoutButtonState extends State<_LogoutButton> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withOpacity(hover ? 0.12 : 0.08),
+                  color: Colors.red.withValues(alpha: hover ? 0.12 : 0.08),
                   blurRadius: responsiveSize(context, 0.016, min: 14, max: 18),
                   offset: const Offset(0, 8),
                 ),

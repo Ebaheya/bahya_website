@@ -5,8 +5,6 @@ import 'package:bahya_website/helper/admin_widgets/user/add_patient.dart';
 import 'package:bahya_website/helper/admin_widgets/user/add_staff_dialog.dart';
 import 'package:bahya_website/helper/admin_widgets/user/add_user_widgets.dart';
 import 'package:bahya_website/helper/admin_widgets/page_header.dart';
-import 'package:bahya_website/helper/base.dart';
-import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +29,7 @@ class _AddUserDialogState extends State<AddUserDialog>
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController fullNameController = TextEditingController();
-
+final TextEditingController crnController = TextEditingController();
   final TextEditingController patientFullNameController =
       TextEditingController();
   final TextEditingController patientEmailController = TextEditingController();
@@ -68,6 +66,7 @@ class _AddUserDialogState extends State<AddUserDialog>
     if (isStaff) {
       try {
         await webService.createStaff(
+      
           email: emailController.text,
           password: passwordController.text,
           fullName: fullNameController.text,
@@ -101,6 +100,7 @@ class _AddUserDialogState extends State<AddUserDialog>
     } else {
       try {
         await webService.createPatient(
+              crn: crnController.text,
           fullName: patientFullNameController.text,
           email: patientEmailController.text,
           password: patientPasswordController.text,
@@ -252,6 +252,7 @@ class _AddUserDialogState extends State<AddUserDialog>
                               )
                             : AddPatientDialog(
                                 key: const ValueKey('patient'),
+                                crnController: crnController,
                                 fullNameController: patientFullNameController,
                                 emailController: patientEmailController,
                                 passwordController: patientPasswordController,

@@ -27,6 +27,7 @@ class CustomFormTextField extends StatefulWidget {
   final Icon? suffixIcon;
   final Icon? prefixIcon;
   final int maxLines;
+  final int minLines;
   final VoidCallback? onTap;
   final Function(String)? onChange;
   final bool isSearch;
@@ -47,6 +48,7 @@ class CustomFormTextField extends StatefulWidget {
     this.textDirection = TextDirection.rtl,
     this.suffixIcon,
     this.maxLines = 1,
+    this.minLines = 1,
     this.prefixIcon,
     this.onTap,
     this.onChange,
@@ -248,8 +250,6 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     final effectiveDirection = isEnglishLocale
         ? TextDirection.ltr
         : widget.textDirection;
-    final isScore = widget.keyboardType == CustomTextFieldType.score;
-
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -257,7 +257,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           onChanged: (value) {
             widget.onChange?.call(value);
 
-            if (isScore) {
+            if (widget.showInlineError) {
               setState(() {
                 _validate(value);
               });
@@ -274,7 +274,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           validator: (value) {
             final result = _validate(value);
 
-            if (isScore) {
+            if (widget.showInlineError) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) setState(() {});
               });
@@ -289,7 +289,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           autovalidateMode: widget.autovalidateMode,
           textDirection: effectiveDirection,
           maxLines: widget.maxLines,
-          minLines: 1,
+          minLines: widget.minLines,
           expands: false,
           style: TextStyle(
             color: Colors.black,
@@ -309,7 +309,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                       height: responsiveSize(context, 0.02, min: 28, max: 34),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.pink.shade100.withOpacity(0.5),
+                        color: Colors.pink.shade100.withValues(alpha: 0.5),
                       ),
                       child: InkWell(
                         onTap: () {
@@ -418,15 +418,15 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                 : InputBorder.none,
             errorStyle: TextStyle(
               fontFamily: 'ArabicCustomFont',
-              fontSize: isScore && widget.showInlineError
+              fontSize: widget.showInlineError
                   ? 0
                   : responsiveSize(context, 0.0075, min: 11, max: 14),
-              height: isScore && widget.showInlineError ? 0 : null,
+              height: widget.showInlineError ? 0 : null,
             ),
           ),
         ),
 
-        if (isScore && widget.showInlineError && floatingError != null)
+        if (widget.showInlineError && floatingError != null)
           Positioned(
             left: 0,
             top: -responsiveHeight(context, 0.045, min: 34, max: 42),
@@ -445,7 +445,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(.25),
+                      color: Colors.red.withValues(alpha: 0.25),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),

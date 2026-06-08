@@ -1,7 +1,8 @@
 import 'package:bahya_website/data/api/repo/repo.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
-import 'package:bahya_website/helper/widgets/questionnaire_body.dart';
+import 'package:bahya_website/helper/widgets/add_questionnaire/questionnaire_body.dart';
+import 'package:bahya_website/helper/widgets/add_questionnaire/questionnaire_body_widgets.dart';
 import 'package:flutter/material.dart';
 
 class AddQuestionnaireController extends ChangeNotifier {

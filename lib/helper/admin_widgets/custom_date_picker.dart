@@ -145,7 +145,6 @@ class _CustomDatePickerFieldState extends State<CustomDatePickerField> {
   Widget build(BuildContext context) {
     final textSize = responsiveSize(context, 0.018, min: 13, max: 16);
     final hintSize = responsiveSize(context, 0.017, min: 12, max: 15);
-    final errorSize = responsiveSize(context, 0.014, min: 11, max: 13);
     final radius = responsiveSize(context, 0.018, min: 10, max: 14);
     final iconSize = responsiveSize(context, 0.024, min: 20, max: 24);
 

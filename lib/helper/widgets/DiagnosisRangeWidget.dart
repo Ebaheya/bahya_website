@@ -1,6 +1,6 @@
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
-import 'package:bahya_website/helper/widgets/questionnaire_body.dart';
+import 'package:bahya_website/helper/widgets/add_questionnaire/questionnaire_body.dart';
 import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';

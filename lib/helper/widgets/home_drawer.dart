@@ -257,14 +257,16 @@ class HomeDrawer extends StatelessWidget {
             ],
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
             textDirection: Localizations.localeOf(context).languageCode == 'en'
                 ? TextDirection.ltr
                 : TextDirection.rtl,
             children: [
+             
               Icon(
-                Icons.arrow_forward_ios_rounded,
+                icon,
                 color: buttonColor,
-                size: responsiveSize(context, 0.009, min: 14, max: 18),
+                size: responsiveSize(context, 0.014, min: 20, max: 26),
               ),
 
               Expanded(
@@ -279,10 +281,13 @@ class HomeDrawer extends StatelessWidget {
                 ),
               ),
 
-              Icon(
-                icon,
+            
+               Icon(
+                Localizations.localeOf(context).languageCode == 'en'
+                    ? Icons.arrow_forward_ios_rounded
+                    : Icons.arrow_forward_ios_rounded,
                 color: buttonColor,
-                size: responsiveSize(context, 0.014, min: 20, max: 26),
+                size: responsiveSize(context, 0.009, min: 14, max: 18),
               ),
             ],
           ),

@@ -101,10 +101,7 @@ Widget buildTextField({
       );
       final localizedLabel = labelText == null
           ? null
-          : AppLocalizations.translateByLocaleCode(
-              languageCode,
-              labelText!,
-            );
+          : AppLocalizations.translateByLocaleCode(languageCode, labelText);
 
       return Padding(
         padding: const EdgeInsets.all(8.0),
@@ -115,7 +112,9 @@ Widget buildTextField({
           hintText: localizedHint,
           labelText: localizedLabel,
           obscureText: obscureText,
-          textDirection: languageCode == 'en' ? TextDirection.ltr : TextDirection.rtl,
+          textDirection: languageCode == 'en'
+              ? TextDirection.ltr
+              : TextDirection.rtl,
           maxLines: maxLines,
           suffixIcon: suffixIcon,
           prefixIcon: prefixIcon,
@@ -136,7 +135,7 @@ Widget appIcon({double size = 170}) {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -195,7 +194,7 @@ PreferredSizeWidget customAppBar({
                             size: 28,
                           ),
                         ),
-                        const _LanguageToggleButton(),
+                        const LanguageToggleButton(),
                         // GestureDetector(
                         //   onTap: () {
                         //     scaffoldKey?.currentState?.openDrawer();
@@ -259,8 +258,68 @@ PreferredSizeWidget customAppBar({
   );
 }
 
-class _LanguageToggleButton extends StatelessWidget {
-  const _LanguageToggleButton();
+class LanguageToggleButton extends StatefulWidget {
+  final EdgeInsetsGeometry padding;
+
+  const LanguageToggleButton({
+    super.key,
+    this.padding = const EdgeInsetsDirectional.only(start: 8),
+  });
+
+  @override
+  State<LanguageToggleButton> createState() => _LanguageToggleButtonState();
+}
+
+class _LanguageToggleButtonState extends State<LanguageToggleButton> {
+  bool isSwitching = false;
+
+  Future<void> _toggleLanguageWithLoading() async {
+    if (isSwitching) return;
+
+    setState(() => isSwitching = true);
+    final navigator = Navigator.of(context, rootNavigator: true);
+
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'Language loading',
+      barrierColor: const Color(0xFFFDF7FB).withValues(alpha: 0.94),
+      transitionDuration: const Duration(milliseconds: 320),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Material(
+          color: Colors.transparent,
+          child: Center(child: customLoading()),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+
+        return FadeTransition(
+          opacity: curvedAnimation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.96, end: 1).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+    );
+
+    await Future.delayed(const Duration(milliseconds: 3200));
+    AppLanguageController.toggle();
+    await Future.delayed(const Duration(milliseconds: 350));
+
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+
+    if (mounted) {
+      setState(() => isSwitching = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -270,26 +329,37 @@ class _LanguageToggleButton extends StatelessWidget {
         final isEnglish = locale.languageCode == 'en';
 
         return Padding(
-          padding: const EdgeInsetsDirectional.only(start: 8),
+          padding: widget.padding,
           child: InkWell(
             borderRadius: BorderRadius.circular(999),
-            onTap: AppLanguageController.toggle,
+            onTap: _toggleLanguageWithLoading,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.16),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white.withOpacity(0.32)),
+                border: Border.all(color: const Color(0xFFFFC7DD)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.10),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.language, color: Colors.white, size: 18),
+                  const Icon(
+                    Icons.language,
+                    color: Color(0xFFE83E8C),
+                    size: 18,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     isEnglish ? 'AR' : 'EN',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFFE83E8C),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -347,7 +417,7 @@ Widget sectionCard({
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               customText(
                 text: title,
@@ -368,7 +438,7 @@ Widget sectionCard({
 class LegendDot extends StatelessWidget {
   final Color color;
   final String label;
-  const LegendDot({required this.color, required this.label});
+  const LegendDot({super.key, required this.color, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -417,7 +487,7 @@ Widget customLoading() {
 
                   boxShadow: [
                     BoxShadow(
-                      color: gradientColors.first.withOpacity(0.35),
+                      color: gradientColors.first.withValues(alpha: 0.35),
 
                       blurRadius: 25,
 
@@ -470,10 +540,10 @@ Widget modernInputBox({required IconData icon, required Widget child}) {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: Colors.grey.withOpacity(0.14)),
+      border: Border.all(color: Colors.grey.withValues(alpha: 0.14)),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.035),
+          color: Colors.black.withValues(alpha: 0.035),
           blurRadius: 14,
           offset: const Offset(0, 7),
         ),
@@ -485,7 +555,7 @@ Widget modernInputBox({required IconData icon, required Widget child}) {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: buttonColor.withOpacity(0.10),
+            color: buttonColor.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(13),
           ),
           child: Icon(icon, color: buttonColor, size: 22),
@@ -521,7 +591,7 @@ class ScheduleInfoBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
