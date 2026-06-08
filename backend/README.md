@@ -143,7 +143,7 @@ Relational models in Prisma (`prisma/schema.prisma`):
 
 - `User` — staff and patient accounts; role determines access
 - `RefreshToken` — opaque refresh tokens, hashed at rest, with `replacedBy` chain
-- `Patient` — demographics + JSONB blocks (`medicalHistory`, `socialStatus`, `financials`)
+- `Patient` — demographics + unique `crn` (file number) + typed clinical fields (staging, treatment, tumour biology, BMI…) + JSONB blocks (`medicalHistory`, `socialStatus`, `financials`)
 - `PasswordResetToken` — single-use, time-bounded reset tokens
 
 Additional relational models for dynamic assessments are `FormTemplate`,
@@ -851,13 +851,15 @@ there is no separate "register patient" endpoint.
 #### Common patient response shape
 
 After flattening by `sanitizePatientResponse`, every patient response has
-these fields. Volunteers do not receive `financials` (the field is removed
-from the response, not nulled).
+these fields, including the optional clinical record and the unique `crn`
+(file number). See [role-based visibility](#patient-field-visibility-by-role)
+for what each role receives — volunteers get basic identity/contact info only.
 
 ```json
 {
   "id": "f2a8b6c4-1d3e-4a5b-9c8d-7e6f5a4b3c2d",
   "userId": "9c8d7e6f-5a4b-3c2d-1e0f-9a8b7c6d5e4f",
+  "crn": "PT-2504",
   "fullName": "Sara Patient",
   "email": "sara@example.com",
   "role": "PATIENT",
@@ -868,9 +870,26 @@ from the response, not nulled).
   "address": "12 Tahrir Square, Cairo",
   "emergencyContactName": "Ahmed Patient",
   "emergencyContactPhone": "+201003334444",
-  "medicalHistory": { "allergies": ["penicillin"], "conditions": [], "notes": null },
+  "medicalHistory": {
+    "allergies": ["penicillin"], "conditions": [],
+    "comorbidities": ["Diabetes", "Hypertension"],
+    "drugs": ["Tamoxifen 20mg daily", "Calcium + Vitamin D"],
+    "familyHistory": "Yes - breast cancer", "notes": null
+  },
   "socialStatus":   { "maritalStatus": "single", "familySupport": "moderate", "notes": null },
   "financials":     { "incomeBracket": "low", "notes": null },
+  "bmi": 27.4,
+  "menopausalStatus": "POST_MENOPAUSAL",
+  "dateOfDiagnosis": "2024-11-10T00:00:00.000Z",
+  "stageAtDiagnosis": "STAGE_II",
+  "diseaseStatus": "ACTIVE_TREATMENT",
+  "tumorBiology": "LUMINAL_A",
+  "surgery": "BREAST_CONSERVATIVE",
+  "chemotherapy": "ADJUVANT",
+  "radiotherapy": true,
+  "hormonalTherapy": true,
+  "targetedTherapy": true,
+  "immunotherapy": true,
   "createdAt": "2026-05-06T10:00:00.000Z",
   "updatedAt": "2026-05-06T10:00:00.000Z"
 }
@@ -881,13 +900,44 @@ JSONB blocks have strict shapes — unknown keys are rejected with
 
 | Block | Allowed keys |
 |---|---|
-| `medicalHistory` | `allergies` (string[]), `conditions` (string[]), `notes` (string) |
+| `medicalHistory` | `allergies` (string[]), `conditions` (string[]), `comorbidities` (string[]), `drugs` (string[]), `familyHistory` (string), `notes` (string) |
 | `socialStatus` | `maritalStatus` (string), `familySupport` (string), `notes` (string) |
 | `financials` | `incomeBracket` (string), `notes` (string) |
 
 Each leaf inside a block can be set to `null` on PATCH to delete that key
 from the stored block. PATCH shallow-merges blocks; it does not replace them
 wholesale.
+
+#### Clinical fields
+
+These are typed columns (queryable/filterable), distinct from the free-text
+JSONB blocks. All are optional.
+
+| Field | Type | Values |
+|---|---|---|
+| `crn` | string (unique) | File number, e.g. `PT-2504`. Matches `^[A-Za-z0-9-]{1,32}$`. **Required on create.** |
+| `bmi` | number | 5–100 |
+| `menopausalStatus` | enum | `PRE_MENOPAUSAL`, `PERI_MENOPAUSAL`, `POST_MENOPAUSAL` |
+| `dateOfDiagnosis` | string | ISO datetime or `YYYY-MM-DD`; not in the future |
+| `stageAtDiagnosis` | enum | `STAGE_0`, `STAGE_I`, `STAGE_II`, `STAGE_III`, `STAGE_IV` |
+| `diseaseStatus` | enum | `NEWLY_DIAGNOSED`, `ACTIVE_TREATMENT`, `FOLLOW_UP`, `RECURRENCE`, `METASTATIC` |
+| `tumorBiology` | enum | `LUMINAL_A`, `LUMINAL_B`, `HER2_ENRICHED`, `TNBC` |
+| `surgery` | enum | `NONE`, `BREAST_CONSERVATIVE`, `MASTECTOMY` |
+| `chemotherapy` | enum | `NO`, `NEOADJUVANT`, `ADJUVANT`, `METASTATIC` |
+| `radiotherapy` / `hormonalTherapy` / `targetedTherapy` / `immunotherapy` | boolean | — |
+
+#### Patient field visibility by role
+
+`projectForRole` shapes every patient response by the caller's role:
+
+| Field group | ADMIN | DOCTOR | CALL_CENTER | VOLUNTEER | PATIENT (own) |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Identity/contact (`crn`, `fullName`, `email`, `phone`, `gender`, `dateOfBirth`, `address`, emergency contacts) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `medicalHistory`, `socialStatus`, clinical fields | ✅ | ✅ | ✅ | ❌ | ✅ |
+| `financials` | ✅ | ✅ | ✅ | ❌ | ✅ |
+| `latestAssessments` (list only) | ✅ | ✅ | ❌ | ❌ | ❌ |
+
+Stripped fields are removed from the response, not nulled.
 
 #### `POST /patients`
 
@@ -904,6 +954,7 @@ records.
 | `fullName` | string | yes | 2–120 chars, trimmed |
 | `email` | string | yes | Valid email, max 254 chars, lowercased server-side |
 | `password` | string | yes | 8–128 chars; the patient signs in with this |
+| `crn` | string | yes | Unique file number, e.g. `PT-2504`. Matches `^[A-Za-z0-9-]{1,32}$` |
 | `phone` | string | yes | Matches `^\+?[0-9]{8,15}$` |
 | `dateOfBirth` | string | no | ISO datetime with offset, or `YYYY-MM-DD`. Must be in the past, within the last 130 years. |
 | `gender` | enum | no | `MALE`, `FEMALE`, `OTHER` |
@@ -913,6 +964,7 @@ records.
 | `medicalHistory` | object | no | See JSONB block table above |
 | `socialStatus` | object | no | See JSONB block table above |
 | `financials` | object | no | See JSONB block table above |
+| clinical fields | mixed | no | `bmi`, `menopausalStatus`, `dateOfDiagnosis`, `stageAtDiagnosis`, `diseaseStatus`, `tumorBiology`, `surgery`, `chemotherapy`, `radiotherapy`, `hormonalTherapy`, `targetedTherapy`, `immunotherapy` — see [Clinical fields](#clinical-fields) |
 
 The body is `.strict()` — unknown top-level keys produce `400 VALIDATION_ERROR`.
 
@@ -921,13 +973,31 @@ The body is `.strict()` — unknown top-level keys produce `400 VALIDATION_ERROR
   "fullName": "Sara Patient",
   "email": "sara@example.com",
   "password": "Welcome123!",
+  "crn": "PT-2504",
   "phone": "+201001112222",
   "dateOfBirth": "1990-05-12",
   "gender": "FEMALE",
   "address": "12 Tahrir Square, Cairo",
   "emergencyContactName": "Ahmed Patient",
   "emergencyContactPhone": "+201003334444",
-  "medicalHistory": { "allergies": ["penicillin"] }
+  "medicalHistory": {
+    "allergies": ["penicillin"],
+    "comorbidities": ["Diabetes", "Hypertension"],
+    "drugs": ["Tamoxifen 20mg daily"],
+    "familyHistory": "Yes - breast cancer"
+  },
+  "bmi": 27.4,
+  "menopausalStatus": "POST_MENOPAUSAL",
+  "dateOfDiagnosis": "2024-11-10",
+  "stageAtDiagnosis": "STAGE_II",
+  "diseaseStatus": "ACTIVE_TREATMENT",
+  "tumorBiology": "LUMINAL_A",
+  "surgery": "BREAST_CONSERVATIVE",
+  "chemotherapy": "ADJUVANT",
+  "radiotherapy": true,
+  "hormonalTherapy": true,
+  "targetedTherapy": true,
+  "immunotherapy": true
 }
 ```
 
@@ -937,7 +1007,7 @@ The body is `.strict()` — unknown top-level keys produce `400 VALIDATION_ERROR
 
 - `400 VALIDATION_ERROR` — invalid body
 - `403 FORBIDDEN` — caller is not ADMIN or CALL_CENTER
-- `409 CONFLICT` — `Email already registered`
+- `409 CONFLICT` — `Email already registered` or `CRN already in use`
 
 #### `GET /patients`
 
@@ -949,14 +1019,25 @@ Paginated list of patients with optional search.
 
 | Param | Type | Default | Notes |
 |---|---|---|---|
-| `q` | string | — | Case-insensitive substring match on `fullName` or `email` |
+| `q` | string | — | Case-insensitive substring match on `fullName`, `email`, or `crn` |
 | `phone` | string | — | Exact match; same phone format as create |
+| `surgery` | enum | — | Filter by surgery type |
+| `chemotherapy` | enum | — | Filter by chemotherapy type |
+| `tumorBiology` | enum | — | Filter by tumor biology |
+| `diseaseStatus` | enum | — | Filter by current disease status |
+| `radiotherapy` | bool | — | `true` / `false` |
+| `hormonalTherapy` | bool | — | `true` / `false` |
+| `targetedTherapy` | bool | — | `true` / `false` |
+| `immunotherapy` | bool | — | `true` / `false` |
 | `page` | int | `1` | 1-indexed |
 | `pageSize` | int | `20` | Max `100` |
 
 The query is `.strict()` — unknown query parameters produce `400 VALIDATION_ERROR`.
+The clinical enum/boolean filters use the [Clinical fields](#clinical-fields) value
+sets. **Volunteers cannot use the clinical filters** — they are silently ignored
+for `VOLUNTEER` callers so the result set can't leak clinical data they don't see.
 
-Example: `GET /patients?q=sara&page=1&pageSize=20`
+Example: `GET /patients?q=sara&diseaseStatus=ACTIVE_TREATMENT&tumorBiology=LUMINAL_A`
 
 **Response 200**
 
@@ -987,8 +1068,9 @@ array means the patient has no official assessments yet.
 
 `latestAssessments` is clinical data: it is present only for `DOCTOR` and
 `ADMIN` callers and is stripped for `CALL_CENTER` and `VOLUNTEER`. For
-`VOLUNTEER` callers, every item in `data` also has its `financials` field
-removed.
+`VOLUNTEER` callers, every item in `data` is reduced to basic identity/contact
+info — `financials`, `socialStatus`, `medicalHistory`, and all clinical fields
+are removed (see [visibility by role](#patient-field-visibility-by-role)).
 
 **Errors**
 
@@ -1047,7 +1129,7 @@ Fetches a single patient by patient id.
 A `PATIENT` caller may only fetch their own patient record (the one whose
 `userId` matches their token's `sub`); any other id returns `403 FORBIDDEN`.
 
-**Response 200** — the [common patient response shape](#common-patient-response-shape) (volunteers receive it without `financials`).
+**Response 200** — the [common patient response shape](#common-patient-response-shape), shaped by [role visibility](#patient-field-visibility-by-role) (volunteers receive basic identity/contact info only).
 
 **Errors**
 
@@ -1057,17 +1139,27 @@ A `PATIENT` caller may only fetch their own patient record (the one whose
 
 #### `PATCH /patients/:id`
 
-Updates demographic fields and shallow-merges JSONB blocks. Fields omitted
-from the body are left untouched. Setting a scalar field to `null` clears
-it (where the schema allows it). Setting a JSONB sub-key to `null` removes
-that sub-key from the stored block.
+Updates demographic and clinical fields and shallow-merges JSONB blocks.
+Fields omitted from the body are left untouched. Setting a scalar field to
+`null` clears it (where the schema allows it). Setting a JSONB sub-key to
+`null` removes that sub-key from the stored block.
 
-**Auth:** Bearer token. **Roles:** ADMIN, CALL_CENTER.
+**Auth:** Bearer token. **Roles:** ADMIN, CALL_CENTER (full record); DOCTOR
+(clinical fields only).
+
+A `DOCTOR` may edit only clinical fields and `medicalHistory` — the set
+`bmi`, `menopausalStatus`, `dateOfDiagnosis`, `stageAtDiagnosis`,
+`diseaseStatus`, `tumorBiology`, `surgery`, `chemotherapy`, `radiotherapy`,
+`hormonalTherapy`, `targetedTherapy`, `immunotherapy`, `medicalHistory`. A
+doctor PATCH containing **any** other field (e.g. `crn`, `phone`, `address`,
+`socialStatus`, `financials`) is rejected wholesale with `403 FORBIDDEN` and
+nothing is applied.
 
 **Request body** — all fields are optional; the body is `.strict()`.
 
 | Field | Type | Nullable? | Notes |
 |---|---|---|---|
+| `crn` | string | no | Unique file number; ADMIN/CALL_CENTER only |
 | `phone` | string | no | Phone format |
 | `dateOfBirth` | string | yes | ISO datetime or `YYYY-MM-DD`, past, within 130 years |
 | `gender` | enum | yes | `MALE`, `FEMALE`, `OTHER` |
@@ -1077,24 +1169,27 @@ that sub-key from the stored block.
 | `medicalHistory` | object | no | Shallow-merged into stored block |
 | `socialStatus` | object | no | Shallow-merged into stored block |
 | `financials` | object | no | Shallow-merged into stored block |
+| clinical fields | mixed | yes | All [Clinical fields](#clinical-fields) except `crn`; nullable to clear |
 
 ```json
 {
-  "address": "New Cairo, 5th Settlement",
+  "diseaseStatus": "RECURRENCE",
+  "surgery": "MASTECTOMY",
   "medicalHistory": {
-    "conditions": ["asthma"],
+    "drugs": ["Letrozole 2.5mg daily"],
     "notes": null
   }
 }
 ```
 
-**Response 200** — the updated patient in the [common patient response shape](#common-patient-response-shape) (volunteers cannot reach this endpoint).
+**Response 200** — the updated patient in the [common patient response shape](#common-patient-response-shape), shaped by [role visibility](#patient-field-visibility-by-role) (volunteers cannot reach this endpoint).
 
 **Errors**
 
 - `400 VALIDATION_ERROR` — invalid body or unknown field
-- `403 FORBIDDEN` — caller is not ADMIN or CALL_CENTER
+- `403 FORBIDDEN` — caller is not ADMIN/CALL_CENTER/DOCTOR, or a DOCTOR included non-clinical fields
 - `404 NOT_FOUND` — no patient with that id
+- `409 CONFLICT` — `CRN already in use`
 
 #### `GET /patients/:id/timeline`
 

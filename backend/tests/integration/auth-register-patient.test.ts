@@ -46,6 +46,7 @@ const validBody = {
   fullName: 'Layla Hassan',
   email: 'layla.register-patient@example.com',
   password: patientPassword,
+  crn: 'PT-7001',
   phone: '+201234567899',
   dateOfBirth: '1992-08-21',
   gender: 'FEMALE',
