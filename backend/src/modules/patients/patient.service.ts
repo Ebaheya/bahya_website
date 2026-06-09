@@ -632,7 +632,7 @@ export async function patchPatient(
     });
   } catch (err) {
     if (isUniqueConstraintError(err)) {
-      throw conflictForUniqueError(err);
+      throw AppError.conflict('CRN already in use');
     }
     throw err;
   }
