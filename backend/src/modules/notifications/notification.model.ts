@@ -1,12 +1,19 @@
 import { Schema, model, models } from 'mongoose';
 
-export type NotificationRecipientRole = 'DOCTOR' | 'CALL_CENTER' | 'VOLUNTEER' | 'PATIENT';
+export type NotificationRecipientRole =
+  | 'ADMIN'
+  | 'DOCTOR'
+  | 'CALL_CENTER'
+  | 'VOLUNTEER'
+  | 'PATIENT';
 export type NotificationType =
   | 'FORM_ASSIGNED'
   | 'HIGH_RISK'
   | 'BOOKING_REQUIRED'
   | 'DOCTOR_REVIEW'
-  | 'FOLLOW_UP_REQUIRED';
+  | 'FOLLOW_UP_REQUIRED'
+  | 'SERVICE_REQUEST_SUBMITTED'
+  | 'SERVICE_REQUEST_DECIDED';
 export type NotificationSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type NotificationStatus = 'UNREAD' | 'READ' | 'DONE';
 
@@ -31,14 +38,22 @@ const NotificationSchema = new Schema<NotificationDoc>(
   {
     recipientRole: {
       type: String,
-      enum: ['DOCTOR', 'CALL_CENTER', 'VOLUNTEER', 'PATIENT'],
+      enum: ['ADMIN', 'DOCTOR', 'CALL_CENTER', 'VOLUNTEER', 'PATIENT'],
       required: true,
     },
     recipientUserId: { type: String, default: null },
     patientId: { type: String, required: true },
     type: {
       type: String,
-      enum: ['FORM_ASSIGNED', 'HIGH_RISK', 'BOOKING_REQUIRED', 'DOCTOR_REVIEW', 'FOLLOW_UP_REQUIRED'],
+      enum: [
+        'FORM_ASSIGNED',
+        'HIGH_RISK',
+        'BOOKING_REQUIRED',
+        'DOCTOR_REVIEW',
+        'FOLLOW_UP_REQUIRED',
+        'SERVICE_REQUEST_SUBMITTED',
+        'SERVICE_REQUEST_DECIDED',
+      ],
       required: true,
     },
     title: { type: String, required: true },
