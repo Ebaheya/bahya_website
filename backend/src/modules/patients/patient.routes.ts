@@ -43,6 +43,9 @@ patientRouter.get(
 patientRouter.patch(
   '/:id',
   authenticate,
-  authorize('ADMIN', 'CALL_CENTER'),
+  // DOCTOR is permitted at the route level but restricted to clinical fields
+  // inside the controller (see DOCTOR_EDITABLE_FIELDS); ADMIN/CALL_CENTER may
+  // edit the full record.
+  authorize('ADMIN', 'CALL_CENTER', 'DOCTOR'),
   controller.patch
 );

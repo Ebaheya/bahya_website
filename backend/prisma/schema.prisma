@@ -21,6 +21,48 @@ enum Gender {
   OTHER
 }
 
+enum MenopausalStatus {
+  PRE_MENOPAUSAL
+  PERI_MENOPAUSAL
+  POST_MENOPAUSAL
+}
+
+enum CancerStage {
+  STAGE_0
+  STAGE_I
+  STAGE_II
+  STAGE_III
+  STAGE_IV
+}
+
+enum DiseaseStatus {
+  NEWLY_DIAGNOSED
+  ACTIVE_TREATMENT
+  FOLLOW_UP
+  RECURRENCE
+  METASTATIC
+}
+
+enum TumorBiology {
+  LUMINAL_A
+  LUMINAL_B
+  HER2_ENRICHED
+  TNBC
+}
+
+enum SurgeryType {
+  NONE
+  BREAST_CONSERVATIVE
+  MASTECTOMY
+}
+
+enum ChemotherapyType {
+  NO
+  NEOADJUVANT
+  ADJUVANT
+  METASTATIC
+}
+
 enum FormScoringType {
   SUM
   MANUAL
@@ -104,8 +146,9 @@ model RefreshToken {
 }
 
 model Patient {
-  id                    String           @id @default(uuid())
-  userId                String           @unique
+  id                    String            @id @default(uuid())
+  userId                String            @unique
+  crn                   String?           @unique
   phone                 String
   dateOfBirth           DateTime?
   gender                Gender?
@@ -115,14 +158,30 @@ model Patient {
   medicalHistory        Json?
   socialStatus          Json?
   financials            Json?
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-  user                  User             @relation(fields: [userId], references: [id])
+  bmi                   Float?
+  menopausalStatus      MenopausalStatus?
+  dateOfDiagnosis       DateTime?
+  stageAtDiagnosis      CancerStage?
+  diseaseStatus         DiseaseStatus?
+  tumorBiology          TumorBiology?
+  surgery               SurgeryType?
+  chemotherapy          ChemotherapyType?
+  radiotherapy          Boolean?
+  hormonalTherapy       Boolean?
+  targetedTherapy       Boolean?
+  immunotherapy         Boolean?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  user                  User              @relation(fields: [userId], references: [id])
   formAssignments       FormAssignment[]
   formSubmissions       FormSubmission[]
   assessments           Assessment[]
 
   @@index([phone])
+  @@index([diseaseStatus])
+  @@index([tumorBiology])
+  @@index([surgery])
+  @@index([chemotherapy])
 }
 
 model PasswordResetToken {

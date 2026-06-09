@@ -87,6 +87,26 @@ export function sanitizePatientResponse(patient: PatientWithUser) {
   };
 }
 
+// Volunteers see only basic identity/contact info — none of the clinical record,
+// medical history, social status, or financials.
+const VOLUNTEER_RESTRICTED_FIELDS = [
+  'financials',
+  'socialStatus',
+  'medicalHistory',
+  'bmi',
+  'menopausalStatus',
+  'dateOfDiagnosis',
+  'stageAtDiagnosis',
+  'diseaseStatus',
+  'tumorBiology',
+  'surgery',
+  'chemotherapy',
+  'radiotherapy',
+  'hormonalTherapy',
+  'targetedTherapy',
+  'immunotherapy',
+] as const;
+
 export function projectForRole<T extends Record<string, unknown>>(
   patient: T,
   role: Role
@@ -95,7 +115,9 @@ export function projectForRole<T extends Record<string, unknown>>(
   if (role === 'DOCTOR' || role === 'ADMIN') return patient;
 
   const copy: Record<string, unknown> = { ...patient };
-  if (role === 'VOLUNTEER') delete copy.financials;
+  if (role === 'VOLUNTEER') {
+    for (const field of VOLUNTEER_RESTRICTED_FIELDS) delete copy[field];
+  }
   // Latest assessment scores are clinical data — restrict to DOCTOR/ADMIN.
   delete copy.latestAssessments;
   return copy as T;
@@ -103,6 +125,25 @@ export function projectForRole<T extends Record<string, unknown>>(
 
 function isUniqueConstraintError(err: unknown): err is Prisma.PrismaClientKnownRequestError {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
+}
+
+function uniqueConstraintTargets(
+  err: Prisma.PrismaClientKnownRequestError
+): string[] {
+  const target = err.meta?.target;
+  if (Array.isArray(target)) return target.map(String);
+  if (typeof target === 'string') return [target];
+  return [];
+}
+
+// Maps a P2002 to the field that actually collided. CRN and email are both
+// unique on the patient-creation path, so the message must tell them apart.
+function conflictForUniqueError(err: Prisma.PrismaClientKnownRequestError): AppError {
+  const targets = uniqueConstraintTargets(err);
+  if (targets.some((field) => field.toLowerCase().includes('crn'))) {
+    return AppError.conflict('CRN already in use');
+  }
+  return AppError.conflict('Email already registered');
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -278,6 +319,7 @@ export async function createPatient(
       return tx.patient.create({
         data: {
           userId: user.id,
+          crn: input.crn,
           phone: input.phone,
           dateOfBirth: input.dateOfBirth,
           gender: input.gender,
@@ -287,13 +329,25 @@ export async function createPatient(
           medicalHistory: input.medicalHistory ?? Prisma.JsonNull,
           socialStatus: input.socialStatus ?? Prisma.JsonNull,
           financials: input.financials ?? Prisma.JsonNull,
+          bmi: input.bmi,
+          menopausalStatus: input.menopausalStatus,
+          dateOfDiagnosis: input.dateOfDiagnosis,
+          stageAtDiagnosis: input.stageAtDiagnosis,
+          diseaseStatus: input.diseaseStatus,
+          tumorBiology: input.tumorBiology,
+          surgery: input.surgery,
+          chemotherapy: input.chemotherapy,
+          radiotherapy: input.radiotherapy,
+          hormonalTherapy: input.hormonalTherapy,
+          targetedTherapy: input.targetedTherapy,
+          immunotherapy: input.immunotherapy,
         },
         include: patientInclude,
       });
     });
   } catch (err) {
     if (isUniqueConstraintError(err)) {
-      throw AppError.conflict('Email already registered');
+      throw conflictForUniqueError(err);
     }
     throw err;
   }
@@ -342,12 +396,22 @@ export async function listPatients(query: QueryPatientsInput) {
   const where: Prisma.PatientWhereInput = {};
 
   if (query.q) {
+    // The list-screen search box matches by name, email, or file number (CRN).
     where.OR = [
       { user: { fullName: { contains: query.q, mode: 'insensitive' } } },
       { user: { email: { contains: query.q, mode: 'insensitive' } } },
+      { crn: { contains: query.q, mode: 'insensitive' } },
     ];
   }
   if (query.phone) where.phone = query.phone;
+  if (query.surgery) where.surgery = query.surgery;
+  if (query.chemotherapy) where.chemotherapy = query.chemotherapy;
+  if (query.tumorBiology) where.tumorBiology = query.tumorBiology;
+  if (query.diseaseStatus) where.diseaseStatus = query.diseaseStatus;
+  if (query.radiotherapy !== undefined) where.radiotherapy = query.radiotherapy;
+  if (query.hormonalTherapy !== undefined) where.hormonalTherapy = query.hormonalTherapy;
+  if (query.targetedTherapy !== undefined) where.targetedTherapy = query.targetedTherapy;
+  if (query.immunotherapy !== undefined) where.immunotherapy = query.immunotherapy;
 
   const skip = (query.page - 1) * query.pageSize;
   const take = query.pageSize;
@@ -472,11 +536,23 @@ export async function patchPatient(
 
   const setScalar = <K extends keyof Pick<
     PatchPatientInput,
+    | 'crn'
     | 'phone'
     | 'gender'
     | 'address'
     | 'emergencyContactName'
     | 'emergencyContactPhone'
+    | 'bmi'
+    | 'menopausalStatus'
+    | 'stageAtDiagnosis'
+    | 'diseaseStatus'
+    | 'tumorBiology'
+    | 'surgery'
+    | 'chemotherapy'
+    | 'radiotherapy'
+    | 'hormonalTherapy'
+    | 'targetedTherapy'
+    | 'immunotherapy'
   >>(
     key: K,
     current: PatientWithUser[K],
@@ -489,23 +565,40 @@ export async function patchPatient(
     newValues[key] = next;
   };
 
+  setScalar('crn', patient.crn, data.crn);
   setScalar('phone', patient.phone, data.phone);
   setScalar('gender', patient.gender, data.gender);
   setScalar('address', patient.address, data.address);
   setScalar('emergencyContactName', patient.emergencyContactName, data.emergencyContactName);
   setScalar('emergencyContactPhone', patient.emergencyContactPhone, data.emergencyContactPhone);
+  setScalar('bmi', patient.bmi, data.bmi);
+  setScalar('menopausalStatus', patient.menopausalStatus, data.menopausalStatus);
+  setScalar('stageAtDiagnosis', patient.stageAtDiagnosis, data.stageAtDiagnosis);
+  setScalar('diseaseStatus', patient.diseaseStatus, data.diseaseStatus);
+  setScalar('tumorBiology', patient.tumorBiology, data.tumorBiology);
+  setScalar('surgery', patient.surgery, data.surgery);
+  setScalar('chemotherapy', patient.chemotherapy, data.chemotherapy);
+  setScalar('radiotherapy', patient.radiotherapy, data.radiotherapy);
+  setScalar('hormonalTherapy', patient.hormonalTherapy, data.hormonalTherapy);
+  setScalar('targetedTherapy', patient.targetedTherapy, data.targetedTherapy);
+  setScalar('immunotherapy', patient.immunotherapy, data.immunotherapy);
 
-  if (data.dateOfBirth !== undefined) {
-    const next = data.dateOfBirth;
-    const currentTime = patient.dateOfBirth?.getTime() ?? null;
+  const setDate = (
+    key: 'dateOfBirth' | 'dateOfDiagnosis',
+    next: Date | null | undefined
+  ) => {
+    if (next === undefined) return;
+    const currentTime = patient[key]?.getTime() ?? null;
     const nextTime = next?.getTime() ?? null;
+    if (currentTime === nextTime) return;
 
-    if (currentTime !== nextTime) {
-      updateData.dateOfBirth = next;
-      oldValues.dateOfBirth = patient.dateOfBirth;
-      newValues.dateOfBirth = next;
-    }
-  }
+    updateData[key] = next;
+    oldValues[key] = patient[key];
+    newValues[key] = next;
+  };
+
+  setDate('dateOfBirth', data.dateOfBirth);
+  setDate('dateOfDiagnosis', data.dateOfDiagnosis);
 
   const setJsonBlock = (
     key: 'medicalHistory' | 'socialStatus' | 'financials',
@@ -530,11 +623,19 @@ export async function patchPatient(
     return sanitizePatientResponse(patient);
   }
 
-  const updated = await prisma.patient.update({
-    where: { id: patientId },
-    data: updateData,
-    include: patientInclude,
-  });
+  let updated: PatientWithUser;
+  try {
+    updated = await prisma.patient.update({
+      where: { id: patientId },
+      data: updateData,
+      include: patientInclude,
+    });
+  } catch (err) {
+    if (isUniqueConstraintError(err)) {
+      throw AppError.conflict('CRN already in use');
+    }
+    throw err;
+  }
 
   await writeAudit({
     actorId,
