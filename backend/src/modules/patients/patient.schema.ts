@@ -35,7 +35,7 @@ const dateOnly = z
   .refine((value) => !Number.isNaN(value.getTime()), 'Invalid date');
 
 const dateOfBirth = dateOnly
-  .refine((value) => value.getTime() < Date.now(), 'Date of birth must be in the past')
+  .refine((value) => value.getTime() < Date.now() + 86400000, 'Date of birth must be in the past')
   .refine((value) => {
     const oldest = new Date();
     oldest.setFullYear(oldest.getFullYear() - 130);
@@ -43,7 +43,7 @@ const dateOfBirth = dateOnly
   }, 'Date of birth must be within the last 130 years');
 
 const dateOfDiagnosis = dateOnly.refine(
-  (value) => value.getTime() <= Date.now(),
+  (value) => value.getTime() <= Date.now() + 86400000,
   'Date of diagnosis cannot be in the future'
 );
 
