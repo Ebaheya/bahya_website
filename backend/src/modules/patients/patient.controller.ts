@@ -10,6 +10,38 @@ import {
 } from './patient.schema';
 import * as patientService from './patient.service';
 
+// Fields a DOCTOR may edit. Clinical data (staging, treatment, tumour biology,
+// BMI) plus the medical-history blob are the doctor's domain; CRN, demographics,
+// contacts, social status, and financials stay with ADMIN/CALL_CENTER.
+const DOCTOR_EDITABLE_FIELDS = new Set([
+  'bmi',
+  'menopausalStatus',
+  'dateOfDiagnosis',
+  'stageAtDiagnosis',
+  'diseaseStatus',
+  'tumorBiology',
+  'surgery',
+  'chemotherapy',
+  'radiotherapy',
+  'hormonalTherapy',
+  'targetedTherapy',
+  'immunotherapy',
+  'medicalHistory',
+]);
+
+// Clinical list filters a VOLUNTEER is not allowed to use (would leak clinical
+// data they can't otherwise see).
+const VOLUNTEER_CLINICAL_FILTERS = [
+  'surgery',
+  'chemotherapy',
+  'tumorBiology',
+  'diseaseStatus',
+  'radiotherapy',
+  'hormonalTherapy',
+  'targetedTherapy',
+  'immunotherapy',
+] as const;
+
 export async function create(
   req: Request,
   res: Response,
@@ -58,8 +90,17 @@ export async function list(
     if (!req.user) throw AppError.unauthorized();
 
     const query = queryPatientsSchema.parse(req.query);
-    const result = await patientService.listPatients(query);
     const role = req.user.role;
+
+    // Volunteers can't see clinical data, so they can't filter by it either —
+    // otherwise the result set would leak the value they filtered on.
+    if (role === 'VOLUNTEER') {
+      for (const field of VOLUNTEER_CLINICAL_FILTERS) {
+        delete query[field];
+      }
+    }
+
+    const result = await patientService.listPatients(query);
     const data = result.data.map((patient) => patientService.projectForRole(patient, role));
 
     res.status(200).json({ ...result, data });
@@ -93,6 +134,18 @@ export async function patch(
 
     const { id } = patientIdParamSchema.parse(req.params);
     const input = patchPatientSchema.parse(req.body);
+
+    if (req.user.role === 'DOCTOR') {
+      const forbidden = Object.keys(input).filter(
+        (field) => !DOCTOR_EDITABLE_FIELDS.has(field)
+      );
+      if (forbidden.length > 0) {
+        throw AppError.forbidden(
+          `Doctors can only edit clinical fields; not allowed: ${forbidden.join(', ')}`
+        );
+      }
+    }
+
     const patient = await patientService.patchPatient(id, input, req.user.id, req);
 
     res.status(200).json(patientService.projectForRole(patient, req.user.role));

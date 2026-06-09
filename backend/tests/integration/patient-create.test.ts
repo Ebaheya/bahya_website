@@ -46,6 +46,7 @@ const validPatientBody = {
   fullName: 'Sara Ali',
   email: 'sara.patient-create@example.com',
   password: patientPassword,
+  crn: 'PT-2504',
   phone: '+201234567890',
   dateOfBirth: '1995-04-12',
   gender: 'FEMALE',
@@ -55,6 +56,9 @@ const validPatientBody = {
   medicalHistory: {
     allergies: ['penicillin'],
     conditions: ['anxiety'],
+    comorbidities: ['Diabetes', 'Hypertension'],
+    drugs: ['Tamoxifen 20mg daily', 'Calcium + Vitamin D'],
+    familyHistory: 'Yes - breast cancer',
     notes: 'Family history of depression',
   },
   socialStatus: {
@@ -64,6 +68,18 @@ const validPatientBody = {
   financials: {
     incomeBracket: 'LOW',
   },
+  bmi: 27.4,
+  menopausalStatus: 'POST_MENOPAUSAL',
+  dateOfDiagnosis: '2024-11-10',
+  stageAtDiagnosis: 'STAGE_II',
+  diseaseStatus: 'ACTIVE_TREATMENT',
+  tumorBiology: 'LUMINAL_A',
+  surgery: 'BREAST_CONSERVATIVE',
+  chemotherapy: 'ADJUVANT',
+  radiotherapy: true,
+  hormonalTherapy: true,
+  targetedTherapy: true,
+  immunotherapy: true,
 };
 
 describe('POST /api/v1/patients', () => {
@@ -116,11 +132,24 @@ describe('POST /api/v1/patients', () => {
     expect(body).toMatchObject({
       fullName: validPatientBody.fullName,
       email: validPatientBody.email,
+      crn: validPatientBody.crn,
       phone: validPatientBody.phone,
       gender: validPatientBody.gender,
       role: 'PATIENT',
       isActive: true,
       financials: validPatientBody.financials,
+      medicalHistory: validPatientBody.medicalHistory,
+      bmi: validPatientBody.bmi,
+      menopausalStatus: validPatientBody.menopausalStatus,
+      stageAtDiagnosis: validPatientBody.stageAtDiagnosis,
+      diseaseStatus: validPatientBody.diseaseStatus,
+      tumorBiology: validPatientBody.tumorBiology,
+      surgery: validPatientBody.surgery,
+      chemotherapy: validPatientBody.chemotherapy,
+      radiotherapy: true,
+      hormonalTherapy: true,
+      targetedTherapy: true,
+      immunotherapy: true,
     });
     expect(body.passwordHash).toBeUndefined();
 
@@ -184,6 +213,7 @@ describe('POST /api/v1/patients', () => {
       headers: { authorization: `Bearer ${admin.token}` },
       body: JSON.stringify({
         ...validPatientBody,
+        crn: 'PT-0001',
         phone: '+201999999999',
       }),
     });
@@ -196,6 +226,40 @@ describe('POST /api/v1/patients', () => {
     await expect(prisma.user.count({ where: { email: validPatientBody.email } })).resolves.toBe(1);
     await expect(prisma.patient.count()).resolves.toBe(1);
     await expect(prisma.patient.findFirst({ where: { phone: '+201999999999' } })).resolves.toBeNull();
+  });
+
+  it('rejects a duplicate CRN without creating an orphaned patient row', async () => {
+    const admin = await createStaff('ADMIN', 'admin.duplicate-crn@example.com');
+
+    const first = await request('/api/v1/patients', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${admin.token}` },
+      body: JSON.stringify({
+        ...validPatientBody,
+        email: 'crn.first@example.com',
+      }),
+    });
+    expect(first.status).toBe(201);
+
+    const duplicate = await request('/api/v1/patients', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${admin.token}` },
+      body: JSON.stringify({
+        ...validPatientBody,
+        email: 'crn.second@example.com',
+        phone: '+201999999998',
+      }),
+    });
+
+    expect(duplicate.status).toBe(409);
+    await expect(duplicate.json()).resolves.toMatchObject({
+      error: { code: 'CONFLICT', message: 'CRN already in use' },
+    });
+
+    await expect(prisma.patient.count()).resolves.toBe(1);
+    await expect(
+      prisma.user.count({ where: { email: 'crn.second@example.com' } })
+    ).resolves.toBe(0);
   });
 
   it.each([
@@ -247,6 +311,7 @@ describe('POST /api/v1/patients', () => {
       headers: { authorization: `Bearer ${admin.token}` },
       body: JSON.stringify({
         ...validPatientBody,
+        crn: 'PT-1001',
         email: 'first.self-read@example.com',
       }),
     });
@@ -262,6 +327,7 @@ describe('POST /api/v1/patients', () => {
       headers: { authorization: `Bearer ${admin.token}` },
       body: JSON.stringify({
         ...validPatientBody,
+        crn: 'PT-1002',
         email: 'second.self-read@example.com',
         phone: '+201222222222',
       }),
@@ -294,8 +360,34 @@ describe('POST /api/v1/patients', () => {
       headers: { authorization: `Bearer ${volunteer.token}` },
     });
     expect(volunteerProfile.status).toBe(200);
-    const volunteerBody = (await volunteerProfile.json()) as { financials?: unknown };
-    expect(volunteerBody.financials).toBeUndefined();
+    const volunteerBody = (await volunteerProfile.json()) as Record<string, unknown>;
+    // Volunteers see basic identity/contact info only.
+    expect(volunteerBody).toMatchObject({
+      id: firstPatient.id,
+      fullName: validPatientBody.fullName,
+      crn: 'PT-1001',
+      phone: validPatientBody.phone,
+    });
+    // ...but none of the clinical/sensitive record.
+    for (const hidden of [
+      'financials',
+      'socialStatus',
+      'medicalHistory',
+      'bmi',
+      'diseaseStatus',
+      'tumorBiology',
+      'surgery',
+      'chemotherapy',
+      'radiotherapy',
+      'hormonalTherapy',
+      'targetedTherapy',
+      'immunotherapy',
+      'stageAtDiagnosis',
+      'menopausalStatus',
+      'dateOfDiagnosis',
+    ]) {
+      expect(volunteerBody[hidden]).toBeUndefined();
+    }
 
     await prisma.user.update({
       where: { id: firstPatient.userId },
@@ -322,6 +414,7 @@ describe('POST /api/v1/patients', () => {
         body: JSON.stringify({
           ...validPatientBody,
           fullName,
+          crn: `PT-20${index}`,
           email: `patient-list-${index}@example.com`,
           phone: `+20155555555${index}`,
         }),
@@ -362,10 +455,27 @@ describe('POST /api/v1/patients', () => {
     });
     expect(volunteerResponse.status).toBe(200);
     const volunteerBody = (await volunteerResponse.json()) as {
-      data: Array<{ financials?: unknown }>;
+      data: Array<{ financials?: unknown; diseaseStatus?: unknown; medicalHistory?: unknown }>;
     };
     expect(volunteerBody.data).toHaveLength(2);
-    expect(volunteerBody.data.every((patient) => patient.financials === undefined)).toBe(true);
+    expect(
+      volunteerBody.data.every(
+        (patient) =>
+          patient.financials === undefined &&
+          patient.diseaseStatus === undefined &&
+          patient.medicalHistory === undefined
+      )
+    ).toBe(true);
+
+    // Clinical filters are ignored for volunteers: every patient here is
+    // ACTIVE_TREATMENT, so a real NEWLY_DIAGNOSED filter would return 0 — but
+    // the volunteer still gets the full match set (filter stripped, no leak).
+    const volunteerFiltered = await request(
+      '/api/v1/patients?q=sara&diseaseStatus=NEWLY_DIAGNOSED',
+      { headers: { authorization: `Bearer ${volunteer.token}` } }
+    );
+    expect(volunteerFiltered.status).toBe(200);
+    await expect(volunteerFiltered.json()).resolves.toMatchObject({ total: 2 });
 
     const patientToken = signAccessToken({
       sub: createdPatients[0].userId,
@@ -375,6 +485,67 @@ describe('POST /api/v1/patients', () => {
       headers: { authorization: `Bearer ${patientToken}` },
     });
     expect(patientListResponse.status).toBe(403);
+  });
+
+  it('filters the patient list by clinical fields and searches by CRN', async () => {
+    const admin = await createStaff('ADMIN', 'admin.clinical-filter@example.com');
+
+    const cases = [
+      {
+        email: 'clinical-a@example.com',
+        crn: 'PT-3001',
+        phone: '+201600000001',
+        diseaseStatus: 'ACTIVE_TREATMENT',
+        tumorBiology: 'LUMINAL_A',
+        surgery: 'MASTECTOMY',
+        radiotherapy: true,
+      },
+      {
+        email: 'clinical-b@example.com',
+        crn: 'PT-3002',
+        phone: '+201600000002',
+        diseaseStatus: 'FOLLOW_UP',
+        tumorBiology: 'TNBC',
+        surgery: 'NONE',
+        radiotherapy: false,
+      },
+    ];
+
+    for (const c of cases) {
+      const response = await request('/api/v1/patients', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${admin.token}` },
+        body: JSON.stringify({ ...validPatientBody, ...c }),
+      });
+      expect(response.status).toBe(201);
+    }
+
+    const byStatus = await request('/api/v1/patients?diseaseStatus=FOLLOW_UP', {
+      headers: { authorization: `Bearer ${admin.token}` },
+    });
+    expect(byStatus.status).toBe(200);
+    await expect(byStatus.json()).resolves.toMatchObject({
+      total: 1,
+      data: [{ crn: 'PT-3002', tumorBiology: 'TNBC' }],
+    });
+
+    const byRadiotherapy = await request('/api/v1/patients?radiotherapy=false', {
+      headers: { authorization: `Bearer ${admin.token}` },
+    });
+    expect(byRadiotherapy.status).toBe(200);
+    await expect(byRadiotherapy.json()).resolves.toMatchObject({
+      total: 1,
+      data: [{ crn: 'PT-3002' }],
+    });
+
+    const byCrn = await request('/api/v1/patients?q=PT-3001', {
+      headers: { authorization: `Bearer ${admin.token}` },
+    });
+    expect(byCrn.status).toBe(200);
+    await expect(byCrn.json()).resolves.toMatchObject({
+      total: 1,
+      data: [{ crn: 'PT-3001', surgery: 'MASTECTOMY' }],
+    });
   });
 
   it('lets admin/call center patch demographics and shallow-merge JSONB blocks', async () => {
@@ -398,8 +569,11 @@ describe('POST /api/v1/patients', () => {
       headers: { authorization: `Bearer ${callCenter.token}` },
       body: JSON.stringify({
         address: '456 Cairo Ave',
+        surgery: 'MASTECTOMY',
+        diseaseStatus: 'FOLLOW_UP',
         medicalHistory: {
           allergies: ['ibuprofen'],
+          drugs: ['Letrozole 2.5mg daily'],
           notes: null,
         },
         socialStatus: {
@@ -410,14 +584,21 @@ describe('POST /api/v1/patients', () => {
     expect(updateResponse.status).toBe(200);
     const updated = (await updateResponse.json()) as {
       address: string;
+      surgery: string;
+      diseaseStatus: string;
       medicalHistory: Record<string, unknown>;
       socialStatus: Record<string, unknown>;
       financials: Record<string, unknown>;
     };
     expect(updated.address).toBe('456 Cairo Ave');
+    expect(updated.surgery).toBe('MASTECTOMY');
+    expect(updated.diseaseStatus).toBe('FOLLOW_UP');
     expect(updated.medicalHistory).toEqual({
       allergies: ['ibuprofen'],
       conditions: ['anxiety'],
+      comorbidities: ['Diabetes', 'Hypertension'],
+      drugs: ['Letrozole 2.5mg daily'],
+      familyHistory: 'Yes - breast cancer',
     });
     expect(updated.socialStatus).toEqual({
       maritalStatus: 'MARRIED',
@@ -492,6 +673,59 @@ describe('POST /api/v1/patients', () => {
       .collection('audit_logs')
       .countDocuments({ action: 'PATIENT_UPDATED', entityId: patient.id });
     expect(auditCountAfterNoop).toBe(1);
+  });
+
+  it('lets doctors edit clinical fields but blocks demographics/CRN/financials', async () => {
+    const admin = await createStaff('ADMIN', 'admin.doctor-clinical@example.com');
+    const doctor = await createStaff('DOCTOR', 'doctor.clinical-edit@example.com');
+
+    const createResponse = await request('/api/v1/patients', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${admin.token}` },
+      body: JSON.stringify({
+        ...validPatientBody,
+        email: 'doctor-editable.patient@example.com',
+      }),
+    });
+    expect(createResponse.status).toBe(201);
+    const patient = (await createResponse.json()) as { id: string };
+
+    // Doctor may edit clinical fields + medical history.
+    const clinicalPatch = await request(`/api/v1/patients/${patient.id}`, {
+      method: 'PATCH',
+      headers: { authorization: `Bearer ${doctor.token}` },
+      body: JSON.stringify({
+        diseaseStatus: 'RECURRENCE',
+        surgery: 'MASTECTOMY',
+        bmi: 25.1,
+        medicalHistory: { drugs: ['Letrozole 2.5mg daily'] },
+      }),
+    });
+    expect(clinicalPatch.status).toBe(200);
+    const updated = (await clinicalPatch.json()) as {
+      diseaseStatus: string;
+      surgery: string;
+      bmi: number;
+      medicalHistory: Record<string, unknown>;
+    };
+    expect(updated.diseaseStatus).toBe('RECURRENCE');
+    expect(updated.surgery).toBe('MASTECTOMY');
+    expect(updated.bmi).toBe(25.1);
+    expect(updated.medicalHistory).toMatchObject({ drugs: ['Letrozole 2.5mg daily'] });
+
+    // Doctor may NOT edit demographics, CRN, or financials.
+    for (const forbiddenBody of [
+      { address: '789 Alexandria Rd' },
+      { crn: 'PT-9999' },
+      { financials: { incomeBracket: 'HIGH' } },
+    ]) {
+      const blocked = await request(`/api/v1/patients/${patient.id}`, {
+        method: 'PATCH',
+        headers: { authorization: `Bearer ${doctor.token}` },
+        body: JSON.stringify(forbiddenBody),
+      });
+      expect(blocked.status).toBe(403);
+    }
   });
 
   it('returns an empty timeline, enforces RBAC, and fails closed when Mongo is down', async () => {
