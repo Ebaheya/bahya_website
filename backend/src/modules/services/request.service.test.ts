@@ -146,9 +146,10 @@ function decisionTxWith({
   updated?: unknown;
 } = {}) {
   return {
-    service: {
-      updateMany: jest.fn().mockResolvedValue({ count: seatCount }),
-    },
+    // approveRequest consumes a seat via a raw column-to-column UPDATE; the mock
+    // returns the number of affected rows (1 = seat taken, 0 = full / capacity
+    // lowered out from under the approval).
+    $executeRaw: jest.fn().mockResolvedValue(seatCount),
     serviceRequest: {
       findUnique: jest.fn().mockResolvedValueOnce(existing).mockResolvedValueOnce(updated),
       updateMany: jest.fn().mockResolvedValue({ count: requestCount }),
@@ -349,13 +350,7 @@ describe('service browsing and request creation', () => {
       decidedById: doctorId,
     });
 
-    expect(tx.service.updateMany).toHaveBeenCalledWith({
-      where: {
-        id: serviceId,
-        seatsTaken: { lt: 10 },
-      },
-      data: { seatsTaken: { increment: 1 } },
-    });
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
     expect(emitServiceRequestDecidedMock).toHaveBeenCalledTimes(1);
     expect(emitServiceRequestDecidedMock).toHaveBeenCalledWith({
       patientId,
@@ -388,6 +383,22 @@ describe('service browsing and request creation', () => {
       code: ServiceErrors.requestAlreadyDecided().code,
     });
 
+    expect(emitServiceRequestDecidedMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects approval when a concurrent capacity reduction makes the seat unavailable', async () => {
+    // The seat consume is a raw `seatsTaken < capacity` check against the live
+    // capacity column. If a concurrent updateService lowered capacity to the
+    // current seatsTaken, the UPDATE matches no rows (count 0) and the approval
+    // is rejected as full — it can never increment seatsTaken past capacity.
+    const tx = decisionTxWith({ seatCount: 0 });
+    prismaMock.$transaction.mockImplementationOnce(async (callback) => callback(tx));
+
+    await expect(requestService.approveRequest(requestId, doctorId)).rejects.toMatchObject({
+      statusCode: 409,
+      code: ServiceErrors.serviceFull().code,
+    });
+    expect(tx.serviceRequest.updateMany).not.toHaveBeenCalled();
     expect(emitServiceRequestDecidedMock).not.toHaveBeenCalled();
   });
 
@@ -424,14 +435,8 @@ describe('service browsing and request creation', () => {
         code: ServiceErrors.serviceFull().code,
       },
     });
-    expect(winningTx.service.updateMany).toHaveBeenCalledWith({
-      where: { id: serviceId, seatsTaken: { lt: 10 } },
-      data: { seatsTaken: { increment: 1 } },
-    });
-    expect(losingTx.service.updateMany).toHaveBeenCalledWith({
-      where: { id: serviceId, seatsTaken: { lt: 10 } },
-      data: { seatsTaken: { increment: 1 } },
-    });
+    expect(winningTx.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(losingTx.$executeRaw).toHaveBeenCalledTimes(1);
     expect(emitServiceRequestDecidedMock).toHaveBeenCalledTimes(1);
     expect(writeAuditMock).toHaveBeenCalledTimes(1);
   });
@@ -454,7 +459,7 @@ describe('service browsing and request creation', () => {
       decisionNote: 'Capacity is reserved for a later cohort',
     });
 
-    expect(tx.service.updateMany).not.toHaveBeenCalled();
+    expect(tx.$executeRaw).not.toHaveBeenCalled();
     expect(emitServiceRequestDecidedMock).toHaveBeenCalledTimes(1);
     expect(emitServiceRequestDecidedMock).toHaveBeenCalledWith({
       patientId,

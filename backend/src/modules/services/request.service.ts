@@ -324,14 +324,19 @@ export async function approveRequest(requestId: string, actorId: string, req?: R
     if (!existing) throw AppError.notFound('Service request not found');
     if (existing.status !== 'PENDING') throw ServiceErrors.requestAlreadyDecided();
 
-    const seatUpdate = await tx.service.updateMany({
-      where: {
-        id: existing.serviceId,
-        seatsTaken: { lt: existing.service.capacity },
-      },
-      data: { seatsTaken: { increment: 1 } },
-    });
-    if (seatUpdate.count !== 1) throw ServiceErrors.serviceFull();
+    // Consume a seat atomically against the LIVE capacity column. Prisma's
+    // updateMany cannot compare two columns, and the capacity read into
+    // `existing` would be stale if a concurrent updateService lowered capacity
+    // between that read and this write — letting the seat increment past the new
+    // capacity and breaking INV-1 (seatsTaken <= capacity). Raw SQL re-checks
+    // seatsTaken < capacity row-locally at write time; the serviceId is
+    // parameterized by the tagged template. A DB CHECK constraint backstops INV-1.
+    const seatCount = await tx.$executeRaw`
+      UPDATE "Service"
+      SET "seatsTaken" = "seatsTaken" + 1
+      WHERE "id" = ${existing.serviceId} AND "seatsTaken" < "capacity"
+    `;
+    if (seatCount !== 1) throw ServiceErrors.serviceFull();
 
     const decidedAt = new Date();
     const requestUpdate = await tx.serviceRequest.updateMany({
