@@ -21,6 +21,17 @@ async function ensureNameAvailable(name: string, excludeId?: string): Promise<vo
   if (duplicate) throw ServiceErrors.categoryNameTaken();
 }
 
+// The findFirst pre-check above is a fast/friendly path; the authoritative guard
+// is the functional unique index on LOWER(name). Two concurrent creates/renames
+// that both pass the read collide on the index — the loser's P2002 is mapped to
+// CATEGORY_NAME_TAKEN here so duplicates can never persist.
+function rethrowNameConflict(err: unknown): never {
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+    throw ServiceErrors.categoryNameTaken();
+  }
+  throw err;
+}
+
 export async function createCategory(
   input: CreateCategoryInput,
   actorId: string,
@@ -28,17 +39,19 @@ export async function createCategory(
 ) {
   await ensureNameAvailable(input.name);
 
-  const category = await prisma.serviceCategory.create({
-    data: {
-      name: input.name,
-      kind: input.kind,
-      iconKey: input.iconKey,
-      color: input.color,
-      isDefault: false,
-      isActive: true,
-      createdById: actorId,
-    },
-  });
+  const category = await prisma.serviceCategory
+    .create({
+      data: {
+        name: input.name,
+        kind: input.kind,
+        iconKey: input.iconKey,
+        color: input.color,
+        isDefault: false,
+        isActive: true,
+        createdById: actorId,
+      },
+    })
+    .catch(rethrowNameConflict);
 
   await writeAudit({
     actorId,
@@ -67,15 +80,17 @@ export async function updateCategory(
   if (!existing) throw AppError.notFound('Service category not found');
   if (input.name !== undefined) await ensureNameAvailable(input.name, id);
 
-  const category = await prisma.serviceCategory.update({
-    where: { id },
-    data: {
-      ...(input.name !== undefined ? { name: input.name } : {}),
-      ...(input.kind !== undefined ? { kind: input.kind } : {}),
-      ...(input.iconKey !== undefined ? { iconKey: input.iconKey } : {}),
-      ...(input.color !== undefined ? { color: input.color } : {}),
-    },
-  });
+  const category = await prisma.serviceCategory
+    .update({
+      where: { id },
+      data: {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.kind !== undefined ? { kind: input.kind } : {}),
+        ...(input.iconKey !== undefined ? { iconKey: input.iconKey } : {}),
+        ...(input.color !== undefined ? { color: input.color } : {}),
+      },
+    })
+    .catch(rethrowNameConflict);
 
   await writeAudit({
     actorId,

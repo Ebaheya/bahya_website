@@ -95,9 +95,9 @@ function txWith({
   duplicate?: unknown;
 } = {}) {
   return {
-    service: {
-      findUnique: jest.fn().mockResolvedValue(serviceRow),
-    },
+    // createRequest locks the service row with `SELECT ... FOR UPDATE` via
+    // $queryRaw, which returns an array of rows.
+    $queryRaw: jest.fn().mockResolvedValue(serviceRow == null ? [] : [serviceRow]),
     serviceRequest: {
       findFirst: jest.fn().mockResolvedValue(duplicate),
       create: jest.fn().mockResolvedValue({

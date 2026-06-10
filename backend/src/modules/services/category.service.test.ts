@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { writeAudit } from '../../middleware/audit';
 import { ServiceErrors } from './service.errors';
@@ -96,6 +97,29 @@ describe('service category service', () => {
       code: ServiceErrors.categoryNameTaken().code,
     });
     expect(prismaMock.serviceCategory.create).not.toHaveBeenCalled();
+  });
+
+  it('translates a concurrent unique-violation (P2002) on create to CATEGORY_NAME_TAKEN', async () => {
+    // Pre-check passes, but a concurrent create commits first and the functional
+    // unique index on LOWER(name) rejects this insert with P2002.
+    prismaMock.serviceCategory.findFirst.mockResolvedValue(null);
+    prismaMock.serviceCategory.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+      })
+    );
+
+    await expect(
+      categoryService.createCategory(
+        { name: 'Education', kind: 'EDUCATIONAL', iconKey: 'school', color: '#6CCB4F' },
+        actorId
+      )
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: ServiceErrors.categoryNameTaken().code,
+    });
+    expect(writeAuditMock).not.toHaveBeenCalled();
   });
 
   it('updates a category after excluding itself from the duplicate-name check', async () => {

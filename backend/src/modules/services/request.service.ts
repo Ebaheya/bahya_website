@@ -158,10 +158,19 @@ export async function createRequest(serviceId: string, actorUserId: string, req?
   let request;
   try {
     request = await prisma.$transaction(async (tx) => {
-      const service = await tx.service.findUnique({
-        where: { id: serviceId },
-        select: { id: true, status: true, capacity: true, seatsTaken: true },
-      });
+      // Lock the service row FOR UPDATE so a concurrent close (updateService,
+      // which UPDATEs the row) serializes with this create: we either read the
+      // live status before inserting, or the close blocks until this request
+      // commits. Without the lock, a close could commit between a plain status
+      // read and the insert, leaving a PENDING request on a CLOSED service
+      // (contract: closed -> SERVICE_NOT_ACCEPTING). serviceId is parameterized.
+      const rows = await tx.$queryRaw<
+        Array<{ id: string; status: string; capacity: number; seatsTaken: number }>
+      >`
+        SELECT "id", "status", "capacity", "seatsTaken"
+        FROM "Service" WHERE "id" = ${serviceId} FOR UPDATE
+      `;
+      const service = rows[0];
       if (!service) throw AppError.notFound('Service not found');
       if (service.status !== 'ACTIVE') throw ServiceErrors.serviceNotAccepting();
       if (service.seatsTaken >= service.capacity) throw ServiceErrors.serviceFull();
