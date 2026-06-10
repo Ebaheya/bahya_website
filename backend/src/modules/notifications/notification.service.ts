@@ -131,7 +131,6 @@ export async function emitServiceRequestSubmitted(
       {
         metric: 'notification_emit_failure',
         type: 'SERVICE_REQUEST_SUBMITTED',
-        patientId: input.patientId,
         err: loggableError(err),
       },
       'notification emit failed'
@@ -166,8 +165,6 @@ export async function emitServiceRequestDecided(
       {
         metric: 'notification_emit_failure',
         type: 'SERVICE_REQUEST_DECIDED',
-        patientId: input.patientId,
-        recipientUserId: input.recipientUserId,
         approved: input.approved,
         err: loggableError(err),
       },

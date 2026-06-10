@@ -27,6 +27,15 @@ export async function listMy(req: Request, res: Response, next: NextFunction): P
   }
 }
 
+export async function summary(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const counts = await requestService.getSummary();
+    res.status(200).json(counts);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function approve(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.user) throw AppError.unauthorized();

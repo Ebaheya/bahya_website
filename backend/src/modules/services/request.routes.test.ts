@@ -20,6 +20,9 @@ const mockListMy = jest.fn((_req: Request, res: Response): void => {
 const mockCancel = jest.fn((_req: Request, res: Response): void => {
   res.status(200).json({ id: requestId, status: 'CANCELLED' });
 });
+const mockSummary = jest.fn((_req: Request, res: Response): void => {
+  res.status(200).json({ pending: 4, approvedToday: 2, approvedTotal: 12 });
+});
 
 jest.mock('../../middleware/authenticate', () => ({
   authenticate: (req: Request, _res: Response, next: NextFunction): void => {
@@ -37,6 +40,7 @@ jest.mock('./request.controller', () => ({
   approve: mockApprove,
   cancel: mockCancel,
   reject: mockReject,
+  summary: mockSummary,
 }));
 
 import { requestRouter } from './request.routes';
@@ -148,5 +152,30 @@ describe('service request decision routes', () => {
 
     expect(mockListMy).toHaveBeenCalledTimes(1);
     expect(mockCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows only admins and doctors to fetch service request summary counts', async () => {
+    for (const role of ['ADMIN', 'DOCTOR']) {
+      const response = await fetch(`${baseUrl}/service-requests/summary`, {
+        headers: { 'x-test-role': role },
+      });
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({
+        pending: 4,
+        approvedToday: 2,
+        approvedTotal: 12,
+      });
+    }
+
+    for (const role of ['PATIENT', 'VOLUNTEER', 'CALL_CENTER']) {
+      const response = await fetch(`${baseUrl}/service-requests/summary`, {
+        headers: { 'x-test-role': role },
+      });
+
+      expect(response.status).toBe(403);
+    }
+
+    expect(mockSummary).toHaveBeenCalledTimes(2);
   });
 });

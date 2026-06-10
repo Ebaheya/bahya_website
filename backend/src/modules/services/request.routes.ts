@@ -8,6 +8,7 @@ export const requestRouter = Router();
 requestRouter.use(authenticate);
 
 requestRouter.get('/my', authorize('PATIENT'), controller.listMy);
+requestRouter.get('/summary', authorize('ADMIN', 'DOCTOR'), controller.summary);
 requestRouter.get('/', authorize('ADMIN', 'DOCTOR'), controller.listQueue);
 requestRouter.patch('/:id/approve', authorize('ADMIN', 'DOCTOR'), controller.approve);
 requestRouter.patch('/:id/reject', authorize('ADMIN', 'DOCTOR'), controller.reject);

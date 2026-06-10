@@ -284,6 +284,21 @@ export async function listQueue(query: ListServiceRequestsQuery) {
   };
 }
 
+export async function getSummary(now = new Date()) {
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const [pending, approvedToday, approvedTotal] = await Promise.all([
+    prisma.serviceRequest.count({ where: { status: 'PENDING' } }),
+    prisma.serviceRequest.count({
+      where: { status: 'APPROVED', decidedAt: { gte: startOfToday } },
+    }),
+    prisma.serviceRequest.count({ where: { status: 'APPROVED' } }),
+  ]);
+
+  return { pending, approvedToday, approvedTotal };
+}
+
 export async function approveRequest(requestId: string, actorId: string, req?: Request) {
   const request = await prisma.$transaction(async (tx) => {
     const existing = await tx.serviceRequest.findUnique({

@@ -371,6 +371,51 @@ describe('service browsing and request creation', () => {
     expect(emitServiceRequestDecidedMock).not.toHaveBeenCalled();
   });
 
+  it('allows only one simultaneous approval to consume the last seat', async () => {
+    const otherRequestId = '77777777-7777-4777-8777-777777777777';
+    const winningTx = decisionTxWith({
+      existing: decisionRequest({ id: requestId }),
+      updated: decisionRequest({
+        id: requestId,
+        status: 'APPROVED',
+        decidedById: doctorId,
+        decidedAt: new Date('2026-06-10T01:00:00.000Z'),
+      }),
+    });
+    const losingTx = decisionTxWith({
+      existing: decisionRequest({ id: otherRequestId }),
+      seatCount: 0,
+    });
+    prismaMock.$transaction
+      .mockImplementationOnce(async (callback) => callback(winningTx))
+      .mockImplementationOnce(async (callback) => callback(losingTx));
+
+    const results = await Promise.allSettled([
+      requestService.approveRequest(requestId, doctorId),
+      requestService.approveRequest(otherRequestId, doctorId),
+    ]);
+
+    expect(results).toHaveLength(2);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    const rejection = results.find((result) => result.status === 'rejected');
+    expect(rejection).toMatchObject({
+      reason: {
+        statusCode: 409,
+        code: ServiceErrors.serviceFull().code,
+      },
+    });
+    expect(winningTx.service.updateMany).toHaveBeenCalledWith({
+      where: { id: serviceId, seatsTaken: { lt: 10 } },
+      data: { seatsTaken: { increment: 1 } },
+    });
+    expect(losingTx.service.updateMany).toHaveBeenCalledWith({
+      where: { id: serviceId, seatsTaken: { lt: 10 } },
+      data: { seatsTaken: { increment: 1 } },
+    });
+    expect(emitServiceRequestDecidedMock).toHaveBeenCalledTimes(1);
+    expect(writeAuditMock).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects a pending request with a decision note and emits one patient notification and audit', async () => {
     const updated = decisionRequest({
       status: 'REJECTED',
@@ -475,6 +520,32 @@ describe('service browsing and request creation', () => {
     await expect(requestService.cancelRequest(requestId, actorUserId)).rejects.toMatchObject({
       statusCode: 403,
       code: 'FORBIDDEN',
+    });
+  });
+
+  it('returns pending, approved-today, and approved-total summary counts', async () => {
+    const now = new Date('2026-06-10T15:30:00.000Z');
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    prismaMock.serviceRequest.count
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(12);
+
+    await expect(requestService.getSummary(now)).resolves.toEqual({
+      pending: 4,
+      approvedToday: 2,
+      approvedTotal: 12,
+    });
+
+    expect(prismaMock.serviceRequest.count).toHaveBeenNthCalledWith(1, {
+      where: { status: 'PENDING' },
+    });
+    expect(prismaMock.serviceRequest.count).toHaveBeenNthCalledWith(2, {
+      where: { status: 'APPROVED', decidedAt: { gte: startOfToday } },
+    });
+    expect(prismaMock.serviceRequest.count).toHaveBeenNthCalledWith(3, {
+      where: { status: 'APPROVED' },
     });
   });
 });
