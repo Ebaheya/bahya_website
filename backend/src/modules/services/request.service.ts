@@ -164,6 +164,14 @@ export async function createRequest(serviceId: string, actorUserId: string, req?
     if (service.status !== 'ACTIVE') throw ServiceErrors.serviceNotAccepting();
     if (service.seatsTaken >= service.capacity) throw ServiceErrors.serviceFull();
 
+    // Single-active-request guard (INV-2). Enforced in the service layer rather
+    // than with a partial unique index (research R2: portability over a
+    // Postgres-specific filtered index). The check + create share this
+    // transaction, but under Read Committed two concurrent creates could each
+    // pass the findFirst and insert duplicate PENDING rows. Accepted residual
+    // race: per-patient create is low-contention and the worst case is a
+    // duplicate PENDING row — seats are guarded independently at approve time
+    // (updateMany WHERE seatsTaken < capacity), so this can never oversubscribe.
     const duplicate = await tx.serviceRequest.findFirst({
       where: {
         serviceId,
@@ -211,6 +219,7 @@ export async function listMyRequests(actorUserId: string) {
     where: { patientId: patient.id },
     include: myRequestInclude,
     orderBy: { requestedAt: 'desc' },
+    take: 100, // bound the result set (S-2); a patient's active request volume stays well under this
   });
 
   return requests.map(toMyRequestItem);

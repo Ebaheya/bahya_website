@@ -34,6 +34,9 @@ export async function seedDefaultServiceCategories(client: PrismaClient): Promis
     };
 
     if (existing) {
+      // Refresh presentation/classification of an existing default, but do NOT
+      // touch isActive (F2): re-seeding must not silently re-activate a default
+      // category a staff member deliberately deactivated.
       await client.serviceCategory.update({
         where: { id: existing.id },
         data: {
@@ -41,7 +44,6 @@ export async function seedDefaultServiceCategories(client: PrismaClient): Promis
           iconKey: category.iconKey,
           color: category.color,
           isDefault: true,
-          isActive: true,
         },
       });
     } else {

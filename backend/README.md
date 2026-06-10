@@ -16,6 +16,7 @@ developers and engineers exercising the API in Postman.
 - [Architecture](#architecture)
 - [Database](#database)
 - [Dynamic assessment forms](#dynamic-assessment-forms)
+- [Patient services & activities](#patient-services--activities)
 - [Tests](#tests)
 - [Postman](#postman)
 - [Authentication](#authentication)
@@ -28,6 +29,9 @@ developers and engineers exercising the API in Postman.
   - [Forms](#forms)
   - [Form Assignments](#form-assignments)
   - [Assessments](#assessments)
+  - [Service Categories](#service-categories)
+  - [Services](#services)
+  - [Service Requests](#service-requests)
 
 ## Stack
 
@@ -124,7 +128,8 @@ src/
     users/       admin user management
     forms/       form authoring, publishing, assignments, scoring, submissions
     assessments/ doctor review and official assessment authorship
-    notifications/ form assignment and high-risk alerts
+    services/    service categories, services, and join requests (enrollment)
+    notifications/ form assignment, high-risk alerts, service-request alerts
   routes/        /api/v1 router and health probe
   utils/         passwords, tokens, http errors
   app.ts         Express wiring
@@ -150,8 +155,14 @@ Additional relational models for dynamic assessments are `FormTemplate`,
 `FormVersion`, `FormQuestion`, `FormChoice`, `FormScoreRange`,
 `FormAssignment`, `FormSubmission`, and `Assessment`.
 
+Relational models for patient services & activities:
+
+- `ServiceCategory` — service classification (`name`, `kind`, `iconKey`, `color`); seeded defaults + custom (`ServiceKind` = `EDUCATIONAL` / `TRIP` / `SUPPORT` / `OTHER`)
+- `Service` — a joinable activity with a seat `capacity` and `seatsTaken`; `ServiceStatus` = `ACTIVE` / `CLOSED`; trip-kind services also carry `endDate`, `departureTime`, `meetingPlace`
+- `ServiceRequest` — a patient's join request; `ServiceRequestStatus` = `PENDING` / `APPROVED` / `REJECTED` / `CANCELLED` (a seat is consumed only on `APPROVED`)
+
 MongoDB stores audit log entries and timeline source data (assessments,
-interventions). The `/health` probe checks both stores.
+interventions) plus emitted notifications. The `/health` probe checks both stores.
 
 ## Dynamic assessment forms
 
@@ -340,6 +351,57 @@ Form-specific errors retain the standard error envelope and status contract:
 `maxScore`. The full as-built endpoint, request/response, and error reference
 lives in
 [`specs/004-dynamic-assessment-forms/contracts/forms-api.md`](../specs/004-dynamic-assessment-forms/contracts/forms-api.md).
+
+## Patient services & activities
+
+The clinic offers patients structured **services** — educational courses,
+recreational trips, and psychological-support groups. Staff (Admin/Doctor)
+author **categories** and **services** with a seat capacity; patients browse,
+filter, and search the available services and **request to join** one; staff
+review the incoming requests and **accept or reject** them from a dashboard. A
+seat is consumed only when a request is accepted, and the seat check + increment
+run in a single transaction so concurrent acceptances can never oversubscribe a
+service. Accepting records enrollment only — it never schedules an appointment.
+
+The feature spans three routers, all mounted under `/api/v1`:
+
+- `services/` categories — `/service-categories` (Admin/Doctor author; everyone lists)
+- `services/` services — `/services` (Admin/Doctor author; patients browse `ACTIVE`; patients request to join)
+- `services/` requests — `/service-requests` (patient tracks own; Admin/Doctor review/decide)
+
+### Roles and access
+
+| Capability | Admin | Doctor | Patient | Volunteer | Call Center |
+|---|:---:|:---:|:---:|:---:|:---:|
+| List categories / browse services | ✅ | ✅ | ✅ (ACTIVE) | ✅ | ✅ |
+| Create/update/deactivate category | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Create/update/close service | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Request to join / track own / cancel pending | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Review queue / summary / accept / reject | ✅ | ✅ | ❌ | ❌ | ❌ |
+
+### Default categories
+
+```bash
+npm run seed:services
+```
+
+Seeds default categories (idempotent on case-insensitive `name`) covering the
+`EDUCATIONAL`, `TRIP`, and `SUPPORT` kinds plus a starter set, so services can be
+created on a fresh database.
+
+### Errors
+
+Service-specific errors keep the standard error envelope and status contract:
+
+| Status | Service error codes | Meaning |
+|---|---|---|
+| `400` | `SERVICE_CAPACITY_INVALID`, `TRIP_FIELDS_REQUIRED`, `SERVICE_CAPACITY_BELOW_TAKEN`, `VALIDATION_ERROR` | Request validation failed (non-positive capacity, missing trip fields, capacity below accepted count) |
+| `403` | `FORBIDDEN` | Authenticated role cannot perform the operation (or not the request owner) |
+| `404` | `NOT_FOUND` | Service, category, or request not visible/found |
+| `409` | `CATEGORY_NAME_TAKEN`, `DUPLICATE_SERVICE_REQUEST`, `SERVICE_FULL`, `SERVICE_NOT_ACCEPTING`, `REQUEST_ALREADY_DECIDED`, `REQUEST_NOT_PENDING` | Lifecycle or concurrent-operation conflict |
+
+The full as-built endpoint, request/response, and error reference lives in
+[`specs/006-patient-services-activities/contracts/services-api.md`](../specs/006-patient-services-activities/contracts/services-api.md).
 
 ## Tests
 
@@ -2157,6 +2219,70 @@ Use this order in Postman to test the frontend workflow:
 The filler-facing endpoints never return option scores, total score, or
 computed interpretation. Official assessment records are available only to
 doctors and admins, not to patients.
+
+---
+
+### Service Categories
+
+Service classifications used to group and color services. Everyone authenticated
+can list; only Admin and Doctor mutate. Base path `/api/v1/service-categories`.
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| GET | `/service-categories` | Authenticated | List categories (filters: `kind`, `isActive`) |
+| POST | `/service-categories` | Admin, Doctor | Create a category (`name`, `kind`, `iconKey`, `color`) |
+| PATCH | `/service-categories/:id` | Admin, Doctor | Update name / kind / iconKey / color |
+| PATCH | `/service-categories/:id/status` | Admin, Doctor | Activate / deactivate (`{ "isActive": false }`) |
+
+A duplicate `name` (case-insensitive) returns `409 CATEGORY_NAME_TAKEN`. A
+category referenced by services is deactivated, never deleted.
+
+```bash
+curl -X POST localhost:3000/api/v1/service-categories \
+  -H "Authorization: Bearer $ADMIN" -H "Content-Type: application/json" \
+  -d '{ "name": "خدمات تعليمية", "kind": "EDUCATIONAL", "iconKey": "school", "color": "#6CCB4F" }'
+```
+
+### Services
+
+Joinable activities with a seat capacity. Admin/Doctor author; patients browse
+`ACTIVE` services and request to join. Base path `/api/v1/services`.
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| GET | `/services` | Authenticated | Browse. Patients see only `ACTIVE`; staff see all. Filters: `kind`, `categoryId`, `q`, `status` (staff), `page`, `pageSize` |
+| GET | `/services/:id` | Authenticated | One service + `remainingSeats` (patient gets 404 for non-`ACTIVE`) |
+| POST | `/services` | Admin, Doctor | Create a service |
+| PATCH | `/services/:id` | Admin, Doctor | Update fields and/or close (`{ "status": "CLOSED" }`) |
+| POST | `/services/:id/requests` | Patient | Request to join |
+
+Create requires a positive `capacity`; trip-kind categories additionally require
+`endDate`, `departureTime`, and `meetingPlace`. Lowering `capacity` below the
+already-accepted count returns `400 SERVICE_CAPACITY_BELOW_TAKEN`. A new service
+starts `ACTIVE` with `seatsTaken: 0`; each list row carries
+`remainingSeats = capacity - seatsTaken`.
+
+### Service Requests
+
+Patient join requests (enrollment). Patients track and withdraw their own; staff
+review the queue and decide. Base path `/api/v1/service-requests`.
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| GET | `/service-requests/my` | Patient | The caller's own requests with status |
+| GET | `/service-requests` | Admin, Doctor | Staff queue (filters: `status`, `serviceId`); includes patient name + CRN |
+| GET | `/service-requests/summary` | Admin, Doctor | Counts: `{ pending, approvedToday, approvedTotal }` |
+| PATCH | `/service-requests/:id/approve` | Admin, Doctor | Accept (consumes a seat, atomic) |
+| PATCH | `/service-requests/:id/reject` | Admin, Doctor | Reject (optional `decisionNote`) |
+| PATCH | `/service-requests/:id/cancel` | Patient (owner) | Withdraw own pending request |
+
+Requesting a service the patient already has a `PENDING`/`APPROVED` request for
+returns `409 DUPLICATE_SERVICE_REQUEST`; a full service returns `409
+SERVICE_FULL`; a closed service returns `409 SERVICE_NOT_ACCEPTING`. Approving
+re-checks capacity inside a transaction so concurrent acceptances never
+oversubscribe, and emits a `SERVICE_REQUEST_DECIDED` notification to the patient;
+a new request emits `SERVICE_REQUEST_SUBMITTED` to staff (Admin and Doctor).
+Deciding an already-decided request returns `409 REQUEST_ALREADY_DECIDED`.
 
 ---
 
