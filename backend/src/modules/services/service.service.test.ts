@@ -6,6 +6,7 @@ import * as serviceService from './service.service';
 
 jest.mock('../../config/prisma', () => ({
   prisma: {
+    $transaction: jest.fn(),
     serviceCategory: {
       findUnique: jest.fn(),
     },
@@ -13,6 +14,7 @@ jest.mock('../../config/prisma', () => ({
       create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
   },
 }));
@@ -22,11 +24,13 @@ jest.mock('../../middleware/audit', () => ({
 }));
 
 const prismaMock = prisma as unknown as {
+  $transaction: jest.Mock;
   serviceCategory: { findUnique: jest.Mock };
   service: {
     create: jest.Mock;
     findUnique: jest.Mock;
     update: jest.Mock;
+    updateMany: jest.Mock;
   };
 };
 
@@ -77,6 +81,10 @@ describe('service service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     writeAuditMock.mockResolvedValue(undefined);
+    // Interactive transactions run the callback against the same mocked client.
+    prismaMock.$transaction.mockImplementation((cb: (tx: typeof prismaMock) => unknown) =>
+      cb(prismaMock)
+    );
   });
 
   it('creates a service with active status, zero seats taken, and remaining seats', async () => {
@@ -160,8 +168,10 @@ describe('service service', () => {
   });
 
   it('closes a service with the SERVICE_CLOSED audit action', async () => {
-    prismaMock.service.findUnique.mockResolvedValue(persistedService({ seatsTaken: 3 }));
-    prismaMock.service.update.mockResolvedValue(persistedService({ seatsTaken: 3, status: 'CLOSED' }));
+    prismaMock.service.findUnique
+      .mockResolvedValueOnce(persistedService({ seatsTaken: 3 })) // snapshot read
+      .mockResolvedValueOnce(persistedService({ seatsTaken: 3, status: 'CLOSED' })); // post-write read
+    prismaMock.service.updateMany.mockResolvedValue({ count: 1 });
 
     await expect(
       serviceService.updateService(serviceId, { status: 'CLOSED' }, actorId)
@@ -170,6 +180,12 @@ describe('service service', () => {
       remainingSeats: 9,
     });
 
+    // The write is guarded on the live seat count to avoid racing a concurrent approval.
+    expect(prismaMock.service.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: serviceId, seatsTaken: { lte: 12 } },
+      })
+    );
     expect(writeAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
         actorId,
@@ -177,5 +193,23 @@ describe('service service', () => {
         entityId: serviceId,
       })
     );
+  });
+
+  it('rejects a capacity reduction that races a concurrent approval', async () => {
+    // Snapshot passes the upfront check (seatsTaken 5 <= requested 6), but a
+    // concurrent approval pushes seatsTaken to 7, so the guarded write matches no
+    // rows and the reduction is rejected with the current accepted count.
+    prismaMock.service.findUnique
+      .mockResolvedValueOnce(persistedService({ seatsTaken: 5 })) // snapshot read
+      .mockResolvedValueOnce({ seatsTaken: 7 }); // re-read after the guarded write misses
+    prismaMock.service.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      serviceService.updateService(serviceId, { capacity: 6 }, actorId)
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: ServiceErrors.serviceCapacityBelowTaken(7).code,
+      details: { minimum: 7 },
+    });
   });
 });

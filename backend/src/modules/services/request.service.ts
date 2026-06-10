@@ -155,46 +155,53 @@ async function emitDecisionSideEffects(
 export async function createRequest(serviceId: string, actorUserId: string, req?: Request) {
   const patient = await getPatientForUser(actorUserId);
 
-  const request = await prisma.$transaction(async (tx) => {
-    const service = await tx.service.findUnique({
-      where: { id: serviceId },
-      select: { id: true, status: true, capacity: true, seatsTaken: true },
-    });
-    if (!service) throw AppError.notFound('Service not found');
-    if (service.status !== 'ACTIVE') throw ServiceErrors.serviceNotAccepting();
-    if (service.seatsTaken >= service.capacity) throw ServiceErrors.serviceFull();
+  let request;
+  try {
+    request = await prisma.$transaction(async (tx) => {
+      const service = await tx.service.findUnique({
+        where: { id: serviceId },
+        select: { id: true, status: true, capacity: true, seatsTaken: true },
+      });
+      if (!service) throw AppError.notFound('Service not found');
+      if (service.status !== 'ACTIVE') throw ServiceErrors.serviceNotAccepting();
+      if (service.seatsTaken >= service.capacity) throw ServiceErrors.serviceFull();
 
-    // Single-active-request guard (INV-2). Enforced in the service layer rather
-    // than with a partial unique index (research R2: portability over a
-    // Postgres-specific filtered index). The check + create share this
-    // transaction, but under Read Committed two concurrent creates could each
-    // pass the findFirst and insert duplicate PENDING rows. Accepted residual
-    // race: per-patient create is low-contention and the worst case is a
-    // duplicate PENDING row — seats are guarded independently at approve time
-    // (updateMany WHERE seatsTaken < capacity), so this can never oversubscribe.
-    const duplicate = await tx.serviceRequest.findFirst({
-      where: {
-        serviceId,
-        patientId: patient.id,
-        status: { in: ['PENDING', 'APPROVED'] },
-      },
-      select: { id: true },
-    });
-    if (duplicate) throw ServiceErrors.duplicateServiceRequest();
+      // Single-active-request guard (INV-2). This findFirst is the fast,
+      // friendly path; the AUTHORITATIVE guard is the partial unique index
+      // `ServiceRequest_active_unique` (serviceId, patientId) WHERE status IN
+      // ('PENDING','APPROVED'). Two concurrent creates that both pass this read
+      // collide on the index — the loser's insert raises P2002, translated to
+      // DUPLICATE_SERVICE_REQUEST below — so a patient can never hold two active
+      // requests (or consume two seats) for one service.
+      const duplicate = await tx.serviceRequest.findFirst({
+        where: {
+          serviceId,
+          patientId: patient.id,
+          status: { in: ['PENDING', 'APPROVED'] },
+        },
+        select: { id: true },
+      });
+      if (duplicate) throw ServiceErrors.duplicateServiceRequest();
 
-    return tx.serviceRequest.create({
-      data: {
-        serviceId,
-        patientId: patient.id,
-      },
-      select: {
-        id: true,
-        status: true,
-        serviceId: true,
-        requestedAt: true,
-      },
+      return tx.serviceRequest.create({
+        data: {
+          serviceId,
+          patientId: patient.id,
+        },
+        select: {
+          id: true,
+          status: true,
+          serviceId: true,
+          requestedAt: true,
+        },
+      });
     });
-  });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw ServiceErrors.duplicateServiceRequest();
+    }
+    throw err;
+  }
 
   await emitServiceRequestSubmitted({ patientId: patient.id });
   await writeAudit({

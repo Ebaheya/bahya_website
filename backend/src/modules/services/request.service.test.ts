@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { writeAudit } from '../../middleware/audit';
 import {
@@ -314,6 +315,25 @@ describe('service browsing and request creation', () => {
         code: expected.code,
       });
     }
+
+    expect(emitServiceRequestSubmittedMock).not.toHaveBeenCalled();
+    expect(writeAuditMock).not.toHaveBeenCalled();
+  });
+
+  it('translates a concurrent unique-violation (P2002) to DUPLICATE_SERVICE_REQUEST', async () => {
+    // Two concurrent creates that both pass the in-tx duplicate read collide on
+    // the partial unique index; the loser's insert raises P2002, which must
+    // surface as DUPLICATE_SERVICE_REQUEST rather than a generic conflict.
+    const uniqueViolation = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+      code: 'P2002',
+      clientVersion: 'test',
+    });
+    prismaMock.$transaction.mockRejectedValueOnce(uniqueViolation);
+
+    await expect(requestService.createRequest(serviceId, actorUserId)).rejects.toMatchObject({
+      statusCode: ServiceErrors.duplicateServiceRequest().statusCode,
+      code: ServiceErrors.duplicateServiceRequest().code,
+    });
 
     expect(emitServiceRequestSubmittedMock).not.toHaveBeenCalled();
     expect(writeAuditMock).not.toHaveBeenCalled();

@@ -160,21 +160,39 @@ export async function updateService(
     meetingPlace: input.meetingPlace !== undefined ? input.meetingPlace : existing.meetingPlace,
   });
 
-  const updated = await prisma.service.update({
-    where: { id },
-    data: {
-      ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
-      ...(input.name !== undefined ? { name: input.name } : {}),
-      ...(input.locationBranch !== undefined ? { locationBranch: input.locationBranch } : {}),
-      ...(input.startDate !== undefined ? { startDate: input.startDate } : {}),
-      ...(input.startTime !== undefined ? { startTime: input.startTime } : {}),
-      ...(input.endDate !== undefined ? { endDate: input.endDate } : {}),
-      ...(input.departureTime !== undefined ? { departureTime: input.departureTime } : {}),
-      ...(input.meetingPlace !== undefined ? { meetingPlace: input.meetingPlace } : {}),
-      ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
-      ...(input.status !== undefined ? { status: input.status } : {}),
-    },
-    include: serviceInclude,
+  const data: Prisma.ServiceUpdateManyMutationInput = {
+    ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
+    ...(input.name !== undefined ? { name: input.name } : {}),
+    ...(input.locationBranch !== undefined ? { locationBranch: input.locationBranch } : {}),
+    ...(input.startDate !== undefined ? { startDate: input.startDate } : {}),
+    ...(input.startTime !== undefined ? { startTime: input.startTime } : {}),
+    ...(input.endDate !== undefined ? { endDate: input.endDate } : {}),
+    ...(input.departureTime !== undefined ? { departureTime: input.departureTime } : {}),
+    ...(input.meetingPlace !== undefined ? { meetingPlace: input.meetingPlace } : {}),
+    ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
+    ...(input.status !== undefined ? { status: input.status } : {}),
+  };
+
+  // Apply the write conditionally on the live seat count so a concurrent
+  // approval that increments seatsTaken between the snapshot check above and
+  // this write cannot leave capacity < seatsTaken. The guard is a no-op when
+  // capacity is unchanged or raised (seatsTaken <= capacity always holds), and
+  // only bites when lowering capacity into a concurrent-approval race.
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.service.updateMany({
+      where: { id, seatsTaken: { lte: nextCapacity } },
+      data,
+    });
+    if (result.count !== 1) {
+      const current = await tx.service.findUnique({
+        where: { id },
+        select: { seatsTaken: true },
+      });
+      throw ServiceErrors.serviceCapacityBelowTaken(current?.seatsTaken ?? existing.seatsTaken);
+    }
+    const fresh = await tx.service.findUnique({ where: { id }, include: serviceInclude });
+    if (!fresh) throw AppError.notFound('Service not found');
+    return fresh;
   });
 
   await writeAudit({
