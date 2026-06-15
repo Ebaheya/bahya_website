@@ -1,8 +1,16 @@
+import type { FilterQuery } from 'mongoose';
+import { Types } from 'mongoose';
+import type { Role } from '@prisma/client';
 import { logger } from '../../config/logger';
+import { prisma } from '../../config/prisma';
+import { AppError } from '../../utils/httpError';
+import { NotificationErrors } from './notification.errors';
 import {
   NotificationModel,
+  type NotificationDoc,
   type NotificationRecipientRole,
   type NotificationSeverity,
+  type NotificationStatus,
 } from './notification.model';
 
 export interface FormAssignedNotificationInput {
@@ -171,4 +179,129 @@ export async function emitServiceRequestDecided(
       'notification emit failed'
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Recipient-facing read surface (US1)
+// ---------------------------------------------------------------------------
+
+export interface NotificationListActor {
+  id: string;
+  role: Role;
+}
+
+export interface ListMyNotificationsQuery {
+  status?: NotificationStatus;
+  severity?: NotificationSeverity;
+  page: number;
+  pageSize: number;
+}
+
+type LeanNotification = NotificationDoc & { _id: Types.ObjectId };
+
+interface PatientContact {
+  id: string;
+  fullName: string;
+  phone: string;
+}
+
+function toNotificationCore(doc: LeanNotification) {
+  return {
+    id: String(doc._id),
+    type: doc.type,
+    severity: doc.severity,
+    status: doc.status,
+    title: doc.title,
+    message: doc.message,
+    doctorNote: doc.doctorNote,
+    claimedAt: doc.claimedAt,
+    readAt: doc.readAt,
+    doneAt: doc.doneAt,
+    createdAt: doc.createdAt,
+  };
+}
+
+function toListItem(doc: LeanNotification, patientById: Map<string, PatientContact>) {
+  return {
+    ...toNotificationCore(doc),
+    // Live patient contact (FR-004); degrades to null when the patient can no
+    // longer be read, rather than failing the whole list.
+    patient: patientById.get(doc.patientId) ?? null,
+  };
+}
+
+// Lists the notifications addressed to the caller: those personally assigned
+// to them, plus unclaimed role-broadcasts to their role (FR-001). A patient
+// only ever matches the personal branch, so cross-patient leakage is impossible
+// (FR-015). Patient name/phone are read live from PostgreSQL (FR-004).
+export async function listMyNotifications(
+  actor: NotificationListActor,
+  query: ListMyNotificationsQuery
+) {
+  const filter: FilterQuery<NotificationDoc> = {
+    $or: [
+      { recipientUserId: actor.id },
+      { recipientRole: actor.role as NotificationRecipientRole, recipientUserId: null },
+    ],
+  };
+  if (query.status) filter.status = query.status;
+  if (query.severity) filter.severity = query.severity;
+
+  const skip = (query.page - 1) * query.pageSize;
+
+  const [docs, total] = await Promise.all([
+    NotificationModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(query.pageSize)
+      .lean<LeanNotification[]>(),
+    NotificationModel.countDocuments(filter),
+  ]);
+
+  const patientIds = [...new Set(docs.map((d) => d.patientId).filter(Boolean))];
+  const patients = patientIds.length
+    ? await prisma.patient.findMany({
+        where: { id: { in: patientIds } },
+        select: { id: true, phone: true, user: { select: { fullName: true } } },
+      })
+    : [];
+  const patientById = new Map<string, PatientContact>(
+    patients.map((p) => [p.id, { id: p.id, fullName: p.user.fullName, phone: p.phone }])
+  );
+
+  return {
+    data: docs.map((d) => toListItem(d, patientById)),
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Claim a role-broadcast notification (US2)
+// ---------------------------------------------------------------------------
+
+// Atomically assigns an unclaimed role-broadcast notification to the caller.
+// The single findOneAndUpdate is the authoritative guard: of two concurrent
+// claimers, exactly one matches `recipientUserId: null` and wins; the other
+// gets null and is classified below (FR-006). On a null result we read the doc
+// once to return an accurate status: 404 missing / 403 wrong role / 409 already
+// claimed.
+export async function claimNotification(actor: NotificationListActor, id: string) {
+  const claimed = await NotificationModel.findOneAndUpdate(
+    {
+      _id: id,
+      recipientUserId: null,
+      recipientRole: actor.role as NotificationRecipientRole,
+    },
+    { $set: { recipientUserId: actor.id, claimedAt: new Date() } },
+    { new: true }
+  ).lean<LeanNotification | null>();
+
+  if (claimed) return toNotificationCore(claimed);
+
+  const existing = await NotificationModel.findById(id).lean<LeanNotification | null>();
+  if (!existing) throw AppError.notFound('Notification not found');
+  if (existing.recipientRole !== actor.role) throw NotificationErrors.notRecipient();
+  throw NotificationErrors.claimConflict();
 }
