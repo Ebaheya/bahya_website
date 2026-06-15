@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import type { Role } from '@prisma/client';
 import { logger } from '../../config/logger';
 import { prisma } from '../../config/prisma';
+import { writeAudit } from '../../middleware/audit';
 import { AppError } from '../../utils/httpError';
 import { NotificationErrors } from './notification.errors';
 import {
@@ -304,4 +305,57 @@ export async function claimNotification(actor: NotificationListActor, id: string
   if (!existing) throw AppError.notFound('Notification not found');
   if (existing.recipientRole !== actor.role) throw NotificationErrors.notRecipient();
   throw NotificationErrors.claimConflict();
+}
+
+// ---------------------------------------------------------------------------
+// Notification lifecycle transitions (US3)
+// ---------------------------------------------------------------------------
+
+async function classifyTransitionMiss(actor: NotificationListActor, id: string): Promise<never> {
+  const existing = await NotificationModel.findById(id).lean<LeanNotification | null>();
+  if (!existing) throw AppError.notFound('Notification not found');
+  if (existing.recipientUserId !== actor.id) throw NotificationErrors.notRecipient();
+  throw NotificationErrors.illegalTransition();
+}
+
+export async function markRead(actor: NotificationListActor, id: string) {
+  const updated = await NotificationModel.findOneAndUpdate(
+    { _id: id, recipientUserId: actor.id, status: 'UNREAD' },
+    { $set: { status: 'READ', readAt: new Date() } },
+    { new: true }
+  ).lean<LeanNotification | null>();
+
+  if (!updated) return classifyTransitionMiss(actor, id);
+
+  await writeAudit({
+    actorId: actor.id,
+    action: 'NOTIFICATION_READ',
+    entityType: 'NOTIFICATION',
+    entityId: id,
+    oldValues: { status: 'UNREAD' },
+    newValues: { status: 'READ' },
+  });
+
+  return toNotificationCore(updated);
+}
+
+export async function markDone(actor: NotificationListActor, id: string) {
+  const updated = await NotificationModel.findOneAndUpdate(
+    { _id: id, recipientUserId: actor.id, status: { $in: ['UNREAD', 'READ'] } },
+    { $set: { status: 'DONE', doneAt: new Date() } },
+    { new: true }
+  ).lean<LeanNotification | null>();
+
+  if (!updated) return classifyTransitionMiss(actor, id);
+
+  await writeAudit({
+    actorId: actor.id,
+    action: 'NOTIFICATION_DONE',
+    entityType: 'NOTIFICATION',
+    entityId: id,
+    oldValues: { status: 'UNREAD_OR_READ' },
+    newValues: { status: 'DONE' },
+  });
+
+  return toNotificationCore(updated);
 }

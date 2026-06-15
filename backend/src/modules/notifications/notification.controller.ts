@@ -33,3 +33,31 @@ export async function claim(req: Request, res: Response, next: NextFunction): Pr
     next(err);
   }
 }
+
+export async function read(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.user) throw AppError.unauthorized();
+    const { id } = notificationIdParamSchema.parse(req.params);
+    const result = await notificationService.markRead(
+      { id: req.user.id, role: req.user.role },
+      id
+    );
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function done(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.user) throw AppError.unauthorized();
+    const { id } = notificationIdParamSchema.parse(req.params);
+    const result = await notificationService.markDone(
+      { id: req.user.id, role: req.user.role },
+      id
+    );
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}

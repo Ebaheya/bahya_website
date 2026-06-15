@@ -15,3 +15,5 @@ notificationRouter.use(authenticate);
 
 notificationRouter.get('/my', controller.listMy);
 notificationRouter.patch('/:id/claim', controller.claim);
+notificationRouter.patch('/:id/read', controller.read);
+notificationRouter.patch('/:id/done', controller.done);

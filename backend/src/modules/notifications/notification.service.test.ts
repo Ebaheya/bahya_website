@@ -1,11 +1,14 @@
 import { logger } from '../../config/logger';
 import { prisma } from '../../config/prisma';
+import { writeAudit } from '../../middleware/audit';
 import { NotificationModel } from './notification.model';
 import {
   claimNotification,
   emitServiceRequestDecided,
   emitServiceRequestSubmitted,
   listMyNotifications,
+  markDone,
+  markRead,
 } from './notification.service';
 
 jest.mock('../../config/logger', () => ({
@@ -29,7 +32,12 @@ jest.mock('../../config/prisma', () => ({
   prisma: { patient: { findMany: jest.fn() } },
 }));
 
+jest.mock('../../middleware/audit', () => ({
+  writeAudit: jest.fn(),
+}));
+
 const loggerMock = logger as unknown as { warn: jest.Mock };
+const writeAuditMock = writeAudit as jest.Mock;
 const notificationModelMock = NotificationModel as unknown as {
   create: jest.Mock;
   insertMany: jest.Mock;
@@ -91,6 +99,137 @@ describe('service notification emitters', () => {
       metric: 'notification_emit_failure',
       type: 'SERVICE_REQUEST_DECIDED',
       approved: true,
+    });
+  });
+});
+
+describe('markRead / markDone', () => {
+  const ID = '64b2f0000000000000000001';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    writeAuditMock.mockResolvedValue(undefined);
+  });
+
+  it('marks an owned unread notification read and audits the transition', async () => {
+    const updatedDoc = {
+      _id: ID,
+      type: 'SERVICE_REQUEST_DECIDED',
+      severity: 'LOW',
+      status: 'READ',
+      title: 'Service request approved',
+      message: 'Your request was approved.',
+      doctorNote: null,
+      claimedAt: null,
+      readAt: new Date('2026-06-15T03:00:00Z'),
+      doneAt: null,
+      createdAt: new Date('2026-06-15T00:00:00Z'),
+      patientId: 'p1',
+      recipientRole: 'PATIENT',
+      recipientUserId: 'patient-user',
+    };
+    notificationModelMock.findOneAndUpdate.mockReturnValue(leanResult(updatedDoc));
+
+    const result = await markRead({ id: 'patient-user', role: 'PATIENT' }, ID);
+
+    expect(notificationModelMock.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: ID, recipientUserId: 'patient-user', status: 'UNREAD' },
+      { $set: { status: 'READ', readAt: expect.any(Date) } },
+      { new: true }
+    );
+    expect(result).toMatchObject({ id: ID, status: 'READ', readAt: updatedDoc.readAt });
+    expect(writeAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: 'patient-user',
+        action: 'NOTIFICATION_READ',
+        entityType: 'NOTIFICATION',
+        entityId: ID,
+        oldValues: { status: 'UNREAD' },
+        newValues: { status: 'READ' },
+      })
+    );
+  });
+
+  it('marks unread directly done, keeps readAt null, and audits the transition', async () => {
+    const doneAt = new Date('2026-06-15T04:00:00Z');
+    const updatedDoc = {
+      _id: ID,
+      type: 'SERVICE_REQUEST_DECIDED',
+      severity: 'LOW',
+      status: 'DONE',
+      title: 'Service request approved',
+      message: 'Your request was approved.',
+      doctorNote: null,
+      claimedAt: null,
+      readAt: null,
+      doneAt,
+      createdAt: new Date('2026-06-15T00:00:00Z'),
+      patientId: 'p1',
+      recipientRole: 'PATIENT',
+      recipientUserId: 'patient-user',
+    };
+    notificationModelMock.findOneAndUpdate.mockReturnValue(leanResult(updatedDoc));
+
+    const result = await markDone({ id: 'patient-user', role: 'PATIENT' }, ID);
+
+    expect(notificationModelMock.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: ID, recipientUserId: 'patient-user', status: { $in: ['UNREAD', 'READ'] } },
+      { $set: { status: 'DONE', doneAt: expect.any(Date) } },
+      { new: true }
+    );
+    expect(result).toMatchObject({ id: ID, status: 'DONE', readAt: null, doneAt });
+    expect(writeAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: 'patient-user',
+        action: 'NOTIFICATION_DONE',
+        entityType: 'NOTIFICATION',
+        entityId: ID,
+        oldValues: { status: 'UNREAD_OR_READ' },
+        newValues: { status: 'DONE' },
+      })
+    );
+  });
+
+  it('forbids read/done when the caller does not own the notification', async () => {
+    notificationModelMock.findOneAndUpdate.mockReturnValue(leanResult(null));
+    notificationModelMock.findById.mockReturnValue(
+      leanResult({ _id: ID, recipientUserId: 'other-user', recipientRole: 'PATIENT', status: 'UNREAD' })
+    );
+
+    await expect(markRead({ id: 'patient-user', role: 'PATIENT' }, ID)).rejects.toMatchObject({
+      statusCode: 403,
+      code: 'NOT_RECIPIENT',
+    });
+    await expect(markDone({ id: 'patient-user', role: 'PATIENT' }, ID)).rejects.toMatchObject({
+      statusCode: 403,
+      code: 'NOT_RECIPIENT',
+    });
+    expect(writeAuditMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects backward or repeated transitions with 409', async () => {
+    notificationModelMock.findOneAndUpdate.mockReturnValue(leanResult(null));
+    notificationModelMock.findById.mockReturnValue(
+      leanResult({ _id: ID, recipientUserId: 'patient-user', recipientRole: 'PATIENT', status: 'DONE' })
+    );
+
+    await expect(markRead({ id: 'patient-user', role: 'PATIENT' }, ID)).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'ILLEGAL_TRANSITION',
+    });
+    await expect(markDone({ id: 'patient-user', role: 'PATIENT' }, ID)).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'ILLEGAL_TRANSITION',
+    });
+    expect(writeAuditMock).not.toHaveBeenCalled();
+  });
+
+  it('returns not found when the notification does not exist', async () => {
+    notificationModelMock.findOneAndUpdate.mockReturnValue(leanResult(null));
+    notificationModelMock.findById.mockReturnValue(leanResult(null));
+
+    await expect(markRead({ id: 'patient-user', role: 'PATIENT' }, ID)).rejects.toMatchObject({
+      statusCode: 404,
     });
   });
 });
