@@ -10,6 +10,7 @@ import {
   listMyNotifications,
   markDone,
   markRead,
+  requestBooking,
 } from './notification.service';
 
 jest.mock('../../config/logger', () => ({
@@ -30,7 +31,7 @@ jest.mock('./notification.model', () => ({
 }));
 
 jest.mock('../../config/prisma', () => ({
-  prisma: { patient: { findMany: jest.fn() } },
+  prisma: { patient: { findMany: jest.fn(), findUnique: jest.fn() } },
 }));
 
 jest.mock('../../middleware/audit', () => ({
@@ -52,7 +53,9 @@ const notificationModelMock = NotificationModel as unknown as {
   findOneAndUpdate: jest.Mock;
   findById: jest.Mock;
 };
-const prismaMock = prisma as unknown as { patient: { findMany: jest.Mock } };
+const prismaMock = prisma as unknown as {
+  patient: { findMany: jest.Mock; findUnique: jest.Mock };
+};
 
 // Mongoose query chain stub: find().sort().skip().limit().lean()
 function findChain(result: unknown[]) {
@@ -463,5 +466,77 @@ describe('claimNotification', () => {
     await expect(claimNotification({ id: 'doc1', role: 'DOCTOR' }, ID)).rejects.toMatchObject({
       statusCode: 404,
     });
+  });
+});
+
+describe('requestBooking', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    pushForNotificationMock.mockResolvedValue(undefined);
+  });
+
+  it('creates a Call Center BOOKING_REQUIRED notification for an existing patient', async () => {
+    const createdAt = new Date('2026-06-16T10:00:00Z');
+    const createdDoc = {
+      _id: '64b2f0000000000000000001',
+      type: 'BOOKING_REQUIRED',
+      severity: 'MEDIUM',
+      status: 'UNREAD',
+      title: 'Doctor booking required',
+      message: 'Patient needs a doctor appointment.',
+      doctorNote: 'Needs urgent follow-up.',
+      claimedAt: null,
+      readAt: null,
+      doneAt: null,
+      createdAt,
+      patientId: '11111111-1111-4111-8111-111111111111',
+      recipientRole: 'CALL_CENTER',
+      recipientUserId: null,
+    };
+    prismaMock.patient.findUnique.mockResolvedValue({ id: createdDoc.patientId });
+    notificationModelMock.create.mockResolvedValue(createdDoc);
+
+    const result = await requestBooking(
+      { id: 'doctor-1', role: 'DOCTOR' },
+      { patientId: createdDoc.patientId, doctorNote: 'Needs urgent follow-up.' }
+    );
+
+    expect(prismaMock.patient.findUnique).toHaveBeenCalledWith({
+      where: { id: createdDoc.patientId },
+      select: { id: true },
+    });
+    expect(notificationModelMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientRole: 'CALL_CENTER',
+        recipientUserId: null,
+        patientId: createdDoc.patientId,
+        type: 'BOOKING_REQUIRED',
+        severity: 'MEDIUM',
+        reason: 'doctor-1',
+        doctorNote: 'Needs urgent follow-up.',
+        status: 'UNREAD',
+        pushedAt: null,
+      })
+    );
+    expect(pushForNotificationMock).toHaveBeenCalledWith(createdDoc);
+    expect(result).toMatchObject({
+      id: '64b2f0000000000000000001',
+      type: 'BOOKING_REQUIRED',
+      status: 'UNREAD',
+    });
+  });
+
+  it('returns 404 and does not create a notification for an unknown patient', async () => {
+    prismaMock.patient.findUnique.mockResolvedValue(null);
+
+    await expect(
+      requestBooking(
+        { id: 'doctor-1', role: 'DOCTOR' },
+        { patientId: '11111111-1111-4111-8111-111111111111' }
+      )
+    ).rejects.toMatchObject({ statusCode: 404, code: 'NOT_FOUND' });
+
+    expect(notificationModelMock.create).not.toHaveBeenCalled();
+    expect(pushForNotificationMock).not.toHaveBeenCalled();
   });
 });

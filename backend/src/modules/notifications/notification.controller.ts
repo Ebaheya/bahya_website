@@ -3,6 +3,7 @@ import { AppError } from '../../utils/httpError';
 import {
   listMyNotificationsQuerySchema,
   notificationIdParamSchema,
+  requestBookingSchema,
   registerDeviceSchema,
   unregisterDeviceSchema,
 } from './notification.schema';
@@ -60,6 +61,24 @@ export async function done(req: Request, res: Response, next: NextFunction): Pro
       id
     );
     res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function requestBooking(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) throw AppError.unauthorized();
+    const body = requestBookingSchema.parse(req.body);
+    const result = await notificationService.requestBooking(
+      { id: req.user.id, role: req.user.role },
+      body
+    );
+    res.status(201).json(result);
   } catch (err) {
     next(err);
   }

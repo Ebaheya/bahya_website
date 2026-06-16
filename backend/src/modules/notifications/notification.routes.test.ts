@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import type { Role } from '@prisma/client';
 import express from 'express';
 import { errorHandler } from '../../middleware/errorHandler';
+import { AppError } from '../../utils/httpError';
 
 const notificationId = '64b2f0000000000000000001';
 
@@ -10,6 +11,7 @@ const mockListMyNotifications = jest.fn();
 const mockClaimNotification = jest.fn();
 const mockMarkRead = jest.fn();
 const mockMarkDone = jest.fn();
+const mockRequestBooking = jest.fn();
 const mockRegisterDevice = jest.fn();
 const mockUnregisterDevice = jest.fn();
 
@@ -28,6 +30,7 @@ jest.mock('./notification.service', () => ({
   claimNotification: mockClaimNotification,
   markRead: mockMarkRead,
   markDone: mockMarkDone,
+  requestBooking: mockRequestBooking,
 }));
 
 jest.mock('./device.service', () => ({
@@ -60,6 +63,12 @@ describe('notification lifecycle routes', () => {
     jest.clearAllMocks();
     mockMarkRead.mockResolvedValue({ id: notificationId, status: 'READ' });
     mockMarkDone.mockResolvedValue({ id: notificationId, status: 'DONE' });
+    mockRequestBooking.mockResolvedValue({
+      id: notificationId,
+      type: 'BOOKING_REQUIRED',
+      status: 'UNREAD',
+      createdAt: new Date('2026-06-16T10:00:00.000Z'),
+    });
     mockRegisterDevice.mockResolvedValue({ registered: true });
     mockUnregisterDevice.mockResolvedValue({ unregistered: true });
   });
@@ -124,5 +133,54 @@ describe('notification lifecycle routes', () => {
 
     expect(response.status).toBe(400);
     expect(mockRegisterDevice).not.toHaveBeenCalled();
+  });
+
+  it('allows doctors to request a Call Center booking notification', async () => {
+    const response = await fetch(`${baseUrl}/notifications/request-booking`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-test-role': 'DOCTOR' },
+      body: JSON.stringify({
+        patientId: '11111111-1111-4111-8111-111111111111',
+        doctorNote: 'Needs urgent follow-up.',
+      }),
+    });
+
+    await expect(response.json()).resolves.toMatchObject({
+      id: notificationId,
+      type: 'BOOKING_REQUIRED',
+      status: 'UNREAD',
+    });
+    expect(response.status).toBe(201);
+    expect(mockRequestBooking).toHaveBeenCalledWith(
+      { id: 'actor-id', role: 'DOCTOR' },
+      {
+        patientId: '11111111-1111-4111-8111-111111111111',
+        doctorNote: 'Needs urgent follow-up.',
+      }
+    );
+  });
+
+  it('rejects non-doctors before creating a booking notification', async () => {
+    const response = await fetch(`${baseUrl}/notifications/request-booking`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-test-role': 'CALL_CENTER' },
+      body: JSON.stringify({ patientId: '11111111-1111-4111-8111-111111111111' }),
+    });
+
+    expect(response.status).toBe(403);
+    expect(mockRequestBooking).not.toHaveBeenCalled();
+  });
+
+  it('returns service errors such as unknown patient from request-booking', async () => {
+    mockRequestBooking.mockRejectedValueOnce(AppError.notFound('Patient not found'));
+
+    const response = await fetch(`${baseUrl}/notifications/request-booking`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-test-role': 'DOCTOR' },
+      body: JSON.stringify({ patientId: '11111111-1111-4111-8111-111111111111' }),
+    });
+
+    expect(response.status).toBe(404);
+    expect(mockRequestBooking).toHaveBeenCalledTimes(1);
   });
 });

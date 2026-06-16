@@ -41,6 +41,11 @@ export interface ServiceRequestDecidedInput {
   serviceName: string;
 }
 
+export interface RequestBookingInput {
+  patientId: string;
+  doctorNote?: string;
+}
+
 function loggableError(err: unknown): { name?: string; message: string } {
   if (err instanceof Error) return { name: err.name, message: err.message };
   return { message: String(err) };
@@ -385,4 +390,37 @@ export async function markDone(actor: NotificationListActor, id: string) {
   });
 
   return toNotificationCore(updated);
+}
+
+// ---------------------------------------------------------------------------
+// Doctor requests a Call Center booking (US4)
+// ---------------------------------------------------------------------------
+
+export async function requestBooking(actor: NotificationListActor, input: RequestBookingInput) {
+  const patient = await prisma.patient.findUnique({
+    where: { id: input.patientId },
+    select: { id: true },
+  });
+  if (!patient) throw AppError.notFound('Patient not found');
+
+  const doc = await NotificationModel.create({
+    recipientRole: 'CALL_CENTER',
+    recipientUserId: null,
+    patientId: input.patientId,
+    type: 'BOOKING_REQUIRED',
+    title: 'Doctor booking required',
+    message: 'Patient needs a doctor appointment.',
+    severity: 'MEDIUM',
+    reason: actor.id,
+    doctorNote: input.doctorNote ?? null,
+    status: 'UNREAD',
+    claimedAt: null,
+    readAt: null,
+    doneAt: null,
+    pushedAt: null,
+    createdAt: new Date(),
+  });
+
+  await pushBestEffort(doc, 'BOOKING_REQUIRED');
+  return toNotificationCore(doc as LeanNotification);
 }

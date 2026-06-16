@@ -39,5 +39,13 @@ export const unregisterDeviceSchema = z
   })
   .strict();
 
+export const requestBookingSchema = z
+  .object({
+    patientId: z.string().uuid(),
+    doctorNote: z.string().trim().max(5000).optional(),
+  })
+  .strict();
+
 export type RegisterDeviceBody = z.infer<typeof registerDeviceSchema>;
 export type UnregisterDeviceBody = z.infer<typeof unregisterDeviceSchema>;
+export type RequestBookingBody = z.infer<typeof requestBookingSchema>;
