@@ -2,8 +2,8 @@ const Map<String, String> arToEn = {
   "showing_users": "Showing {from} to {to} of {total} users",
   "showing_zero_users": "Showing 0 users",
   'الاسم': 'Name',
-  'مثال' : 'e.g.',
-   'ضغط الدم': 'hypertension',
+  'مثال': 'e.g.',
+  'ضغط الدم': 'hypertension',
   'السكر': 'diabetes',
   'لا يوجد': 'none',
   'المرحلة': 'Stage',
@@ -24,6 +24,11 @@ const Map<String, String> arToEn = {
   'انشاء مريض': 'Create Patient',
   'الجنس': 'Gender',
   'مريض': 'Patient',
+  'العربية': 'Arabic',
+  'الإنجليزية': 'English',
+  'جاري تغيير اللغة': 'Changing language',
+  'تغيير اللغة إلى العربية': 'Switch to Arabic',
+  'تغيير اللغة إلى الإنجليزية': 'Switch to English',
   'المستخدمون': 'Users',
   'التشخيص': 'Diagnosis',
   'ملاحظات الطبيب': 'Doctor notes',
@@ -293,8 +298,11 @@ const Map<String, String> arToEn = {
   'السكور: 2': 'Score: 2',
   'حالات طبيعية': 'Normal cases',
   'اضطراب نفسي عام': 'General mental disorder',
+  'اضطراب نفسي': 'Mental disorder',
   'القلق': 'Anxiety',
   'الاكتئاب': 'Depression',
+  'المريضات المصابات بحالات طبيعية': 'Patients with normal cases',
+  'انقر للتفاصيل': 'Click for details',
   'حالة طبيعية': 'Normal',
   'اكتئاب بسيط': 'Mild depression',
   'اكتئاب متوسط': 'Moderate depression',
@@ -335,12 +343,16 @@ const Map<String, String> arToEn = {
       'Password must be at least 8 characters',
   'Password can contain only English letters, numbers, and special characters':
       'Password can contain only English letters, numbers, and special characters',
+  'يجب أن تكون كلمة المرور 8 أحرف على الأقل':
+      'Password must be at least 8 characters',
+  'يمكن أن تحتوي كلمة المرور على حروف إنجليزية وأرقام ورموز خاصة فقط':
+      'Password can contain only English letters, numbers, and special characters',
+  'حسنًا': 'OK',
   'أدخل تاريخًا صالحًا (mm/dd/yyyy)': 'Enter a valid date (mm/dd/yyyy)',
   'العنوان لا يمكن أن يتجاوز 25 حرفًا': 'The title cannot exceed 25 characters',
   'السكور يجب أن يكون من 0 إلى 100': 'The score must be between 0 and 100',
   'التشخيص لا يمكن أن يتجاوز 50 حرف':
       'The diagnosis cannot exceed 50 characters',
-  'حسنًا': 'Okay',
   'Invalid reset token': 'Invalid reset token',
   'Users Management': 'Users Management',
   'Manage and monitor all platform users':
@@ -438,7 +450,6 @@ const Map<String, String> arToEn = {
   'إضافة خيار': 'Add option',
   'يمكنك تحديد تشخيص لكل نطاق من السكور الكلي':
       'You can set a diagnosis for each total-score range',
-  'انقر للتفاصيل': 'Click for details',
   'من إجمالي المرضى': 'of total patients',
   'اختر المريض ثم ابدأ الإجابات يدويًا':
       'Choose the patient then start answering manually',

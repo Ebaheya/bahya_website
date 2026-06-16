@@ -27,6 +27,9 @@ class FormModel {
   final String id;
   final String key;
   final String name;
+  final String category;
+  final String scoringType;
+  final String interpretationMode;
   final bool isDefault;
   final bool isActive;
   final String currentVersionId;
@@ -39,6 +42,9 @@ class FormModel {
     required this.id,
     required this.key,
     required this.name,
+    required this.category,
+    required this.scoringType,
+    required this.interpretationMode,
     required this.isDefault,
     required this.isActive,
     required this.currentVersionId,
@@ -53,6 +59,9 @@ class FormModel {
       id: json['id'] ?? '',
       key: json['key'] ?? '',
       name: json['name'] ?? '',
+      category: json['category'] ?? '',
+      scoringType: json['scoringType'] ?? '',
+      interpretationMode: json['interpretationMode'] ?? '',
       isDefault: json['isDefault'] ?? false,
       isActive: json['isActive'] ?? false,
       currentVersionId: json['currentVersionId'] ?? '',

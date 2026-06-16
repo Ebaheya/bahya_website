@@ -4,13 +4,14 @@ import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setUrlStrategy(PathUrlStrategy());
   initDio();
+  await AppLanguageController.loadSavedLocale();
 
   authNotifier.checkLogin();
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

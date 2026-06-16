@@ -79,15 +79,9 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                           const QuestionnairePageHeader(),
                           SizedBox(height: h * 0.035),
 
-                          AbsorbPointer(
-                            absorbing: controller.isEditMode,
-                            child: Opacity(
-                              opacity: controller.isEditMode ? 0.65 : 1,
-                              child: SurveyTitleCard(
-                                isEditing: controller.isEditMode,
-                                controller: controller.surveyTitleController,
-                              ),
-                            ),
+                          SurveyTitleCard(
+                            isEditing: true,
+                            controller: controller.surveyTitleController,
                           ),
 
                           SizedBox(height: h * 0.025),

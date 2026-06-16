@@ -9,7 +9,17 @@ class AddQuestionnaireController extends ChangeNotifier {
   static const int maxQuestions = 20;
 
   final AppRepository formRepository = AppRepository();
+
+  final TextEditingController formKeyController = TextEditingController();
   final TextEditingController surveyTitleController = TextEditingController();
+  final TextEditingController categoryController = TextEditingController();
+
+  final TextEditingController scoringTypeController = TextEditingController(
+    text: 'SUM',
+  );
+
+  final TextEditingController interpretationModeController =
+      TextEditingController(text: 'RANGE');
 
   final GlobalKey<DiagnosisSectionState> diagnosisKey =
       GlobalKey<DiagnosisSectionState>();
@@ -27,9 +37,26 @@ class AddQuestionnaireController extends ChangeNotifier {
     QuestionItem(id: 2, key: GlobalKey<QuestionnaireBodyState>()),
   ];
 
+  AddQuestionnaireController() {
+    surveyTitleController.addListener(() {
+      formKeyController.text = _generatedKeyFromName(
+        surveyTitleController.text,
+      );
+    });
+  }
+
+  String get saveButtonText => isEditMode ? 'تعديل الاستبيان' : 'حفظ الاستبيان';
+
+  String get editorModeText =>
+      isEditMode ? 'أنت الآن في وضع تعديل استبيان موجود' : 'إنشاء استبيان جديد';
+
   @override
   void dispose() {
+    formKeyController.dispose();
     surveyTitleController.dispose();
+    categoryController.dispose();
+    scoringTypeController.dispose();
+    interpretationModeController.dispose();
     super.dispose();
   }
 
@@ -43,7 +70,7 @@ class AddQuestionnaireController extends ChangeNotifier {
       availableForms = response.data.map((form) {
         return {"id": form.id, "name": form.name, "key": form.key};
       }).toList();
-    } catch (e) {
+    } catch (_) {
       if (!context.mounted) return;
 
       customDialog(
@@ -110,19 +137,94 @@ class AddQuestionnaireController extends ChangeNotifier {
     return scores.reduce((a, b) => a > b ? a : b);
   }
 
-  String? validateBeforeSave() {
-    final title = surveyTitleController.text.trim();
+  String _generatedKeyFromName(String name) {
+    final cleaned = name
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\u0621-\u064Aa-zA-Z0-9\s_-]'), '')
+        .replaceAll(RegExp(r'\s+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
 
-    if (title.isEmpty) {
-      return 'اكتب عنوان الاستبيان أولاً.';
+    if (cleaned.length >= 2) return cleaned;
+
+    return '';
+  }
+
+  String _buildFormKey() {
+    final manualKey = formKeyController.text.trim();
+
+    if (manualKey.length >= 2) {
+      return _generatedKeyFromName(manualKey);
+    }
+
+    final generated = _generatedKeyFromName(surveyTitleController.text);
+
+    if (generated.length >= 2) return generated;
+
+    return 'form_${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  String _buildCategory() {
+    final category = categoryController.text.trim();
+
+    if (category.isNotEmpty) return category;
+
+    return 'general';
+  }
+
+  String _readableError(Object error) {
+    final text = error.toString().replaceFirst('Exception: ', '').trim();
+
+    if (text.contains('Unrecognized key')) {
+      return 'البيانات المرسلة تحتوي حقول غير مدعومة من السيرفر.';
+    }
+
+    if (text.contains('String must contain at least 2 character')) {
+      return 'اسم الاستبيان يجب أن يكون حرفين على الأقل.';
+    }
+
+    if (text.contains('category')) {
+      return 'يجب تحديد تصنيف الاستبيان.';
+    }
+
+    if (text.isEmpty) return 'حدث خطأ غير متوقع.';
+
+    return text;
+  }
+
+  List<Map<String, dynamic>> _scaleChoices({
+    required int minValue,
+    required int maxValue,
+  }) {
+    return List.generate(maxValue - minValue + 1, (index) {
+      final value = minValue + index;
+
+      return {"order": index + 1, "label": value.toString(), "score": value};
+    });
+  }
+
+  String? validateFormForSubmit() {
+    final formName = surveyTitleController.text.trim();
+    final generatedKey = _buildFormKey();
+    final category = _buildCategory();
+
+    if (formName.isEmpty) return 'اكتب اسم الاستبيان أولاً.';
+
+    if (formName.length < 2) {
+      return 'اسم الاستبيان يجب أن يكون حرفين على الأقل.';
+    }
+
+    if (generatedKey.length < 2) {
+      return 'Form key يجب أن يكون حرفين على الأقل.';
+    }
+
+    if (category.isEmpty) {
+      return 'اكتب category / التشخيص قبل الحفظ.';
     }
 
     if (questions.isEmpty) {
       return 'يجب إضافة سؤال واحد على الأقل.';
-    }
-
-    if (questions.length < 2) {
-      return 'يجب أن يحتوي الاستبيان على سؤالين على الأقل حتى يكون التشخيص أدق.';
     }
 
     int formMinScore = 0;
@@ -141,34 +243,58 @@ class AddQuestionnaireController extends ChangeNotifier {
         return 'اكتب نص السؤال رقم ${i + 1}.';
       }
 
+      if (question.questionType == QuestionType.scale) {
+        final minValue = question.minValue;
+        final maxValue = question.maxValue;
+
+        if (minValue == null || maxValue == null) {
+          return 'سؤال Scale رقم ${i + 1} يجب أن يحتوي minValue و maxValue.';
+        }
+
+        if (maxValue <= minValue) {
+          return 'في سؤال Scale رقم ${i + 1}، maxValue يجب أن يكون أكبر من minValue.';
+        }
+
+        if ((maxValue - minValue) > 20) {
+          return 'سؤال Scale رقم ${i + 1} لا يمكن أن يزيد عن 20 درجة.';
+        }
+
+        formMinScore += minValue;
+        formMaxScore += maxValue;
+        continue;
+      }
+
       if (question.answers.length < 2) {
-        return 'السؤال رقم ${i + 1} يجب أن يحتوي على إجابتين على الأقل.';
+        return 'السؤال رقم ${i + 1} يجب أن يحتوي على اختيارين على الأقل.';
       }
 
       final scores = <int>[];
 
       for (int j = 0; j < question.answers.length; j++) {
         final answer = question.answers[j];
+        final scoreText = state.answers[j].scoreController.text.trim();
 
         if (answer.answerText.trim().isEmpty) {
-          return 'اكتب نص الإجابة رقم ${j + 1} في السؤال رقم ${i + 1}.';
+          return 'اكتب label الاختيار رقم ${j + 1} في السؤال رقم ${i + 1}.';
         }
 
-        if (answer.score < 0 || answer.score > 100) {
-          return 'سكور الإجابة رقم ${j + 1} في السؤال رقم ${i + 1} يجب أن يكون من 0 إلى 100.';
+        final score = int.tryParse(scoreText);
+
+        if (scoreText.isEmpty || score == null) {
+          return 'score الاختيار رقم ${j + 1} في السؤال رقم ${i + 1} يجب أن يكون رقم.';
         }
 
-        scores.add(answer.score);
+        if (score < 0 || score > 100) {
+          return 'score الاختيار رقم ${j + 1} في السؤال رقم ${i + 1} يجب أن يكون من 0 إلى 100.';
+        }
+
+        scores.add(score);
       }
 
-      final int questionMinScore = _minScore(scores);
-
-      final int questionMaxScore = question.questionType == QuestionType.single
+      formMinScore += _minScore(scores);
+      formMaxScore += question.questionType == QuestionType.single
           ? _maxScore(scores)
           : scores.fold<int>(0, (sum, score) => sum + score);
-
-      formMinScore += questionMinScore;
-      formMaxScore += questionMaxScore;
     }
 
     final diagnosisState = diagnosisKey.currentState;
@@ -185,24 +311,35 @@ class AddQuestionnaireController extends ChangeNotifier {
 
     for (int i = 0; i < ranges.length; i++) {
       final range = ranges[i];
+      final item = diagnosisState.diagnosisItems[i];
 
       if (range.diagnosis.trim().isEmpty) {
         return 'اكتب اسم التشخيص رقم ${i + 1}.';
       }
 
+      final fromText = item.fromController.text.trim();
+      final toText = item.toController.text.trim();
+
+      if (fromText.isEmpty ||
+          toText.isEmpty ||
+          int.tryParse(fromText) == null ||
+          int.tryParse(toText) == null) {
+        return 'minScore و maxScore في التشخيص رقم ${i + 1} يجب أن يكونا أرقام.';
+      }
+
       if (range.from > range.to) {
-        return 'في التشخيص رقم ${i + 1}، قيمة "من" يجب أن تكون أقل من أو تساوي "إلى".';
+        return 'في التشخيص رقم ${i + 1}، maxScore يجب أن يكون أكبر من أو يساوي minScore.';
       }
     }
 
     ranges.sort((a, b) => a.from.compareTo(b.from));
 
     if (ranges.first.from != formMinScore) {
-      return 'أول تشخيص يجب أن يبدأ من $formMinScore حسب أقل سكور ممكن للفورم.';
+      return 'أول range يجب أن يبدأ من $formMinScore حسب أقل score ممكن للفورم.';
     }
 
     if (ranges.last.to != formMaxScore) {
-      return 'آخر تشخيص يجب أن ينتهي عند $formMaxScore حسب أعلى سكور ممكن للفورم.';
+      return 'آخر range يجب أن ينتهي عند $formMaxScore حسب أعلى score ممكن للفورم.';
     }
 
     for (int i = 0; i < ranges.length - 1; i++) {
@@ -210,11 +347,11 @@ class AddQuestionnaireController extends ChangeNotifier {
       final next = ranges[i + 1];
 
       if (current.to >= next.from) {
-        return 'يوجد تداخل بين التشخيص "${current.diagnosis}" و "${next.diagnosis}".';
+        return 'يوجد overlap بين "${current.diagnosis}" و "${next.diagnosis}".';
       }
 
       if (current.to + 1 != next.from) {
-        return 'يوجد فراغ في التشخيص بين ${current.to} و ${next.from}.';
+        return 'يوجد gap بين ranges من ${current.to + 1} إلى ${next.from - 1}.';
       }
     }
 
@@ -226,16 +363,37 @@ class AddQuestionnaireController extends ChangeNotifier {
 
     for (int i = 0; i < questions.length; i++) {
       final state = questions[i].key.currentState;
+
       if (state == null) continue;
 
       final question = state.getQuestionData();
 
+      if (question.questionType == QuestionType.scale) {
+        final minValue = question.minValue ?? 0;
+        final maxValue = question.maxValue ?? 10;
+
+        questionsBody.add({
+          "order": i + 1,
+          "text": question.questionText,
+          "type": QuestionType.scale.apiValue,
+          "subscale": null,
+          "required": true,
+          "scaleMin": minValue,
+          "scaleMax": maxValue,
+          "scaleStep": 1,
+          "minLabel": question.minLabel.isEmpty ? null : question.minLabel,
+          "maxLabel": question.maxLabel.isEmpty ? null : question.maxLabel,
+          "choices": _scaleChoices(minValue: minValue, maxValue: maxValue),
+        });
+
+        continue;
+      }
+
       questionsBody.add({
         "order": i + 1,
         "text": question.questionText,
-        "type": question.questionType == QuestionType.single
-            ? "SINGLE_SELECT"
-            : "MULTI_SELECT",
+        "type": question.questionType.apiValue,
+        "subscale": null,
         "required": true,
         "choices": List.generate(question.answers.length, (answerIndex) {
           final answer = question.answers[answerIndex];
@@ -254,12 +412,14 @@ class AddQuestionnaireController extends ChangeNotifier {
 
   List<Map<String, dynamic>> buildScoreRangesBody() {
     final diagnosisState = diagnosisKey.currentState;
+
     if (diagnosisState == null) return [];
 
     final ranges = diagnosisState.getDiagnosisRanges();
 
     return ranges.map((range) {
       return {
+        "subscale": null,
         "label": range.diagnosis,
         "minScore": range.from,
         "maxScore": range.to,
@@ -267,8 +427,24 @@ class AddQuestionnaireController extends ChangeNotifier {
     }).toList();
   }
 
+  Map<String, dynamic> buildFormBody() {
+    return {
+      "key": _buildFormKey(),
+      "name": surveyTitleController.text.trim(),
+      "category": _buildCategory(),
+      "scoringType": scoringTypeController.text.trim().isEmpty
+          ? "SUM"
+          : scoringTypeController.text.trim(),
+      "interpretationMode": interpretationModeController.text.trim().isEmpty
+          ? "RANGE"
+          : interpretationModeController.text.trim(),
+      "questions": buildQuestionsBody(),
+      "scoreRanges": buildScoreRangesBody(),
+    };
+  }
+
   Future<void> saveSurvey(BuildContext context) async {
-    final error = validateBeforeSave();
+    final error = validateFormForSubmit();
 
     if (error != null) {
       customDialog(
@@ -286,34 +462,19 @@ class AddQuestionnaireController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final questionsBody = buildQuestionsBody();
-      final scoreRangesBody = buildScoreRangesBody();
+      final body = buildFormBody();
 
       if (isEditMode && editingFormId != null) {
-        final body = {
-          "key": surveyTitleController.text.trim().toUpperCase().replaceAll(
-            ' ',
-            '_',
-          ),
-          "name": surveyTitleController.text.trim(),
-          "scoringType": "SUM",
-          "interpretationMode": "RANGE",
-          "questions": questionsBody,
-          "scoreRanges": scoreRangesBody,
-        };
-
         await formRepository.updateFormRaw(formId: editingFormId!, body: body);
       } else {
-        await formRepository.createForm(
-          formName: surveyTitleController.text.trim(),
-          questions: questionsBody,
-          diagnoses: scoreRangesBody,
-        );
+        await formRepository.createFormRaw(body: body);
       }
 
       if (!context.mounted) return;
 
       await loadAvailableForms(context);
+
+      if (!context.mounted) return;
 
       customDialog(
         context: context,
@@ -331,7 +492,7 @@ class AddQuestionnaireController extends ChangeNotifier {
       customDialog(
         context: context,
         title: 'خطأ',
-        message: 'حدث خطأ أثناء حفظ الاستبيان، حاول مرة أخرى.',
+        message: _readableError(e),
         isError: true,
       );
     } finally {
@@ -345,13 +506,22 @@ class AddQuestionnaireController extends ChangeNotifier {
       final json = await formRepository.getFormByIdRaw(formId);
 
       final formName = json["name"]?.toString() ?? "";
+      final formKey =
+          json["key"]?.toString() ?? _generatedKeyFromName(formName);
+
       final currentVersion = json["currentVersion"] ?? {};
       final apiQuestions = currentVersion["questions"] as List? ?? [];
       final apiRanges = currentVersion["scoreRanges"] as List? ?? [];
 
       isEditMode = true;
       editingFormId = formId;
+
       surveyTitleController.text = formName;
+      formKeyController.text = formKey;
+      categoryController.text = json["category"]?.toString() ?? "general";
+      scoringTypeController.text = json["scoringType"]?.toString() ?? "SUM";
+      interpretationModeController.text =
+          json["interpretationMode"]?.toString() ?? "RANGE";
 
       questions.clear();
 
@@ -383,10 +553,10 @@ class AddQuestionnaireController extends ChangeNotifier {
       customDialog(
         context: context,
         title: 'وضع التعديل',
-        message: 'تم تحميل الاستبيان للتعديل. لا يمكن تعديل عنوان الاستبيان.',
+        message: 'تم تحميل الاستبيان للتعديل.',
         isInfo: true,
       );
-    } catch (e) {
+    } catch (_) {
       if (!context.mounted) return;
 
       customDialog(
@@ -434,7 +604,12 @@ class AddQuestionnaireController extends ChangeNotifier {
 
     try {
       await formRepository.deleteForm(formId: formId);
+
+      if (!context.mounted) return;
+
       await loadAvailableForms(context);
+
+      if (!context.mounted) return;
 
       if (editingFormId == formId) {
         resetEditor();
@@ -448,7 +623,7 @@ class AddQuestionnaireController extends ChangeNotifier {
         message: 'تم حذف الاستبيان بنجاح.',
         isSuccess: true,
       );
-    } catch (e) {
+    } catch (_) {
       if (!context.mounted) return;
 
       customDialog(
@@ -463,7 +638,12 @@ class AddQuestionnaireController extends ChangeNotifier {
   void resetEditor() {
     isEditMode = false;
     editingFormId = null;
+
+    formKeyController.clear();
     surveyTitleController.clear();
+    categoryController.clear();
+    scoringTypeController.text = "SUM";
+    interpretationModeController.text = "RANGE";
 
     questions.clear();
 
@@ -478,18 +658,4 @@ class AddQuestionnaireController extends ChangeNotifier {
 
     notifyListeners();
   }
-}
-
-class QuestionItem {
-  final int id;
-  final GlobalKey<QuestionnaireBodyState> key;
-  bool isDeleting;
-  final Map<String, dynamic>? initialData;
-
-  QuestionItem({
-    required this.id,
-    required this.key,
-    this.isDeleting = false,
-    this.initialData,
-  });
 }

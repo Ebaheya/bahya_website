@@ -307,7 +307,9 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
       return ["غير محدد"];
     }
   }
-
+void emitPublishing(bool value) {
+    emit(state.copyWith(isPublishing: value));
+  }
   List<String> _buildVolunteerNames(dynamic assignment) {
     final name = assignment.volunteer?.fullName;
 

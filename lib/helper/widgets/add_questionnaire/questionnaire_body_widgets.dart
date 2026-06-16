@@ -4,7 +4,7 @@ import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/add_questionnaire/questionnaire_body.dart';
 import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-
+import 'package:flutter/services.dart';
 
 class QuestionItem {
   final int id;
@@ -66,6 +66,16 @@ class QuestionTypeSelector extends StatelessWidget {
                     icon: Icons.checklist_rounded,
                     isSelected: selectedType == QuestionType.multiple,
                     onTap: () => onChanged(QuestionType.multiple),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: QuestionTypeCard(
+                    title: 'Scale / Rating',
+                    subtitle: 'اختيار درجة من نطاق رقمي مثل 0 إلى 10',
+                    icon: Icons.linear_scale_rounded,
+                    isSelected: selectedType == QuestionType.scale,
+                    onTap: () => onChanged(QuestionType.scale),
                   ),
                 ),
               ],
@@ -191,59 +201,308 @@ class AnswerOptionTile extends StatelessWidget {
   final bool canDelete;
   final VoidCallback onDelete;
 
+  void _limitScoreTo100(String value) {
+    if (value.trim().isEmpty) return;
+
+    final number = int.tryParse(value);
+    if (number == null) return;
+
+    if (number > 100) {
+      answer.scoreController.text = '100';
+      answer.scoreController.selection = TextSelection.fromPosition(
+        TextPosition(offset: answer.scoreController.text.length),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isMobile = getScreenWidth(context) < 700;
+
     return ValueListenableBuilder<Locale>(
       valueListenable: AppLanguageController.localeNotifier,
       builder: (context, locale, _) {
         final isEnglish = isEnglishLang(locale);
 
-        return Row(
-          textDirection: TextDirection.ltr,
-          mainAxisAlignment: isEnglish
-              ? MainAxisAlignment.start
-              : MainAxisAlignment.end,
-          children: [
-            if (isEnglish) ...[
-              IconButton(
-                onPressed: canDelete ? onDelete : null,
-                icon: Icon(
-                  Icons.close_rounded,
-                  color: canDelete
-                      ? Colors.grey.shade500
-                      : Colors.grey.shade300,
-                ),
-              ),
-            ],
-            Expanded(
-              child: Directionality(
-                textDirection: appTextDirection(isEnglish),
-                child: CustomFormTextField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.text,
-                  hintText: localizedText(context, 'اكتب خيار'),
-                  controller: answer.answerController,
-                  textDirection: appTextDirection(isEnglish),
-                ),
-              ),
+        final answerField = _AnswerField(answer: answer, isEnglish: isEnglish);
+
+        final scoreField = _ScoreField(
+          answer: answer,
+          isEnglish: isEnglish,
+          onChanged: _limitScoreTo100,
+        );
+
+        final deleteButton = _DeleteAnswerButton(
+          canDelete: canDelete,
+          onDelete: onDelete,
+        );
+
+        return Directionality(
+          textDirection: appTextDirection(isEnglish),
+          child: Container(
+            margin: EdgeInsets.only(
+              bottom: responsiveHeight(context, 0.016, min: 12, max: 18),
             ),
-            const SizedBox(width: 12),
-            ScoreInput(controller: answer.scoreController),
-            if (!isEnglish) ...[
-              const SizedBox(width: 12),
-              IconButton(
-                onPressed: canDelete ? onDelete : null,
-                icon: Icon(
-                  Icons.close_rounded,
-                  color: canDelete
-                      ? Colors.grey.shade500
-                      : Colors.grey.shade300,
-                ),
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.012, min: 12, max: 18),
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.012, min: 14, max: 20),
               ),
-            ],
-          ],
+              border: Border.all(color: surveyPink.withOpacity(.18)),
+              boxShadow: [
+                BoxShadow(
+                  color: surveyPink.withOpacity(.055),
+                  blurRadius: responsiveSize(context, 0.018, min: 14, max: 24),
+                  offset: Offset(
+                    0,
+                    responsiveHeight(context, 0.008, min: 5, max: 9),
+                  ),
+                ),
+              ],
+            ),
+            child: isMobile
+                ? Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: answerField),
+                          SizedBox(
+                            width: responsiveSize(
+                              context,
+                              0.025,
+                              min: 10,
+                              max: 14,
+                            ),
+                          ),
+                          deleteButton,
+                        ],
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.014,
+                          min: 10,
+                          max: 14,
+                        ),
+                      ),
+                      scoreField,
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(flex: 5, child: answerField),
+                      SizedBox(
+                        width: responsiveSize(context, 0.018, min: 12, max: 18),
+                      ),
+                      SizedBox(
+                        width: responsiveSize(
+                          context,
+                          0.09,
+                          min: 105,
+                          max: 140,
+                        ),
+                        child: scoreField,
+                      ),
+                      SizedBox(
+                        width: responsiveSize(context, 0.014, min: 10, max: 14),
+                      ),
+                      deleteButton,
+                    ],
+                  ),
+          ),
         );
       },
+    );
+  }
+}
+
+class _AnswerField extends StatelessWidget {
+  const _AnswerField({required this.answer, required this.isEnglish});
+
+  final AnswerItemModel answer;
+  final bool isEnglish;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: appCrossAxisAlignment(isEnglish),
+      children: [
+        customText(
+          text: localizedText(context, 'الإجابة'),
+          size: responsiveSize(context, 0.0085, min: 12, max: 15),
+          color: surveyDark,
+          bold: true,
+          isCenter: false,
+          isEnglish: isEnglish,
+        ),
+        SizedBox(height: responsiveHeight(context, 0.009, min: 7, max: 10)),
+        TextField(
+          controller: answer.answerController,
+          textDirection: appTextDirection(isEnglish),
+          textAlign: isEnglish ? TextAlign.start : TextAlign.right,
+          decoration: InputDecoration(
+            hintText: localizedText(context, 'اكتب خيار'),
+            hintStyle: TextStyle(
+              color: Colors.grey.shade400,
+              fontFamily: 'ArabicCustomFont',
+              fontSize: responsiveSize(context, 0.008, min: 12, max: 15),
+            ),
+            filled: true,
+            fillColor: const Color(0xFFFFFBFE),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: responsiveSize(context, 0.012, min: 12, max: 18),
+              vertical: responsiveHeight(context, 0.016, min: 13, max: 18),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+              borderSide: BorderSide(color: surveyPink.withOpacity(.55)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+              borderSide: const BorderSide(color: surveyPink, width: 1.5),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+            ),
+          ),
+          style: TextStyle(
+            fontFamily: 'ArabicCustomFont',
+            fontWeight: FontWeight.w600,
+            color: surveyDark,
+            fontSize: responsiveSize(context, 0.0085, min: 13, max: 16),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ScoreField extends StatelessWidget {
+  const _ScoreField({
+    required this.answer,
+    required this.isEnglish,
+    required this.onChanged,
+  });
+
+  final AnswerItemModel answer;
+  final bool isEnglish;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = getScreenWidth(context) < 700;
+
+    return Column(
+      crossAxisAlignment: isMobile
+          ? appCrossAxisAlignment(isEnglish)
+          : CrossAxisAlignment.center,
+      children: [
+        customText(
+          text: localizedText(context, 'الدرجة'),
+          size: responsiveSize(context, 0.0085, min: 12, max: 15),
+          color: surveyPurple,
+          bold: true,
+          isCenter: !isMobile,
+          isEnglish: isEnglish,
+        ),
+        SizedBox(height: responsiveHeight(context, 0.009, min: 7, max: 10)),
+        TextField(
+          controller: answer.scoreController,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          maxLength: 3,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(3),
+          ],
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            counterText: '',
+            hintText: '0',
+            hintStyle: TextStyle(
+              color: Colors.grey.shade400,
+              fontFamily: 'ArabicCustomFont',
+              fontSize: responsiveSize(context, 0.008, min: 12, max: 15),
+            ),
+            filled: true,
+            fillColor: const Color(0xFFFFFBFE),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: responsiveSize(context, 0.01, min: 10, max: 14),
+              vertical: responsiveHeight(context, 0.016, min: 13, max: 18),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+              borderSide: BorderSide(color: surveyPurple.withOpacity(.45)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+              borderSide: const BorderSide(color: surveyPurple, width: 1.5),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+            ),
+          ),
+          style: TextStyle(
+            fontFamily: 'ArabicCustomFont',
+            fontWeight: FontWeight.bold,
+            color: surveyDark,
+            fontSize: responsiveSize(context, 0.009, min: 13, max: 17),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DeleteAnswerButton extends StatelessWidget {
+  const _DeleteAnswerButton({required this.canDelete, required this.onDelete});
+
+  final bool canDelete;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: responsiveSize(context, 0.034, min: 40, max: 48),
+      height: responsiveSize(context, 0.034, min: 40, max: 48),
+      decoration: BoxDecoration(
+        color: canDelete
+            ? surveyPink.withOpacity(.08)
+            : Colors.grey.withOpacity(.06),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.01, min: 12, max: 15),
+        ),
+        border: Border.all(
+          color: canDelete
+              ? surveyPink.withOpacity(.25)
+              : Colors.grey.withOpacity(.15),
+        ),
+      ),
+      child: IconButton(
+        onPressed: canDelete ? onDelete : null,
+        icon: Icon(
+          Icons.delete_outline_rounded,
+          color: canDelete ? surveyPink : Colors.grey.shade300,
+          size: responsiveSize(context, 0.015, min: 18, max: 23),
+        ),
+        tooltip: localizedText(context, 'حذف'),
+      ),
     );
   }
 }
@@ -269,6 +528,14 @@ class QuestionnaireBody extends StatefulWidget {
 class QuestionnaireBodyState extends State<QuestionnaireBody> {
   QuestionType questionType = QuestionType.multiple;
   final TextEditingController questionController = TextEditingController();
+  final TextEditingController minValueController = TextEditingController(
+    text: '0',
+  );
+  final TextEditingController maxValueController = TextEditingController(
+    text: '10',
+  );
+  final TextEditingController minLabelController = TextEditingController();
+  final TextEditingController maxLabelController = TextEditingController();
   final List<AnswerItemModel> answers = [];
 
   @override
@@ -289,9 +556,17 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
 
     final type = data["type"]?.toString() ?? "MULTI_SELECT";
 
-    questionType = type == "SINGLE_SELECT"
-        ? QuestionType.single
-        : QuestionType.multiple;
+    if (type == "SCALE") {
+      questionType = QuestionType.scale;
+      minValueController.text = data["scaleMin"]?.toString() ?? "0";
+      maxValueController.text = data["scaleMax"]?.toString() ?? "10";
+      minLabelController.text = data["minLabel"]?.toString() ?? "";
+      maxLabelController.text = data["maxLabel"]?.toString() ?? "";
+    } else {
+      questionType = type == "SINGLE_SELECT" || type == "SINGLE_CHOICE"
+          ? QuestionType.single
+          : QuestionType.multiple;
+    }
 
     final choices = data["choices"] as List? ?? [];
 
@@ -324,12 +599,20 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
           score: int.tryParse(answer.scoreController.text.trim()) ?? -1,
         );
       }).toList(),
+      minValue: int.tryParse(minValueController.text.trim()),
+      maxValue: int.tryParse(maxValueController.text.trim()),
+      minLabel: minLabelController.text.trim(),
+      maxLabel: maxLabelController.text.trim(),
     );
   }
 
   @override
   void dispose() {
     questionController.dispose();
+    minValueController.dispose();
+    maxValueController.dispose();
+    minLabelController.dispose();
+    maxLabelController.dispose();
 
     for (final answer in answers) {
       answer.dispose();
@@ -472,48 +755,136 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                   onChanged: (value) => setState(() => questionType = value),
                 ),
                 const SizedBox(height: 24),
-                sectionLabel(
-                  label: 'الخيارات',
-                  icon: Icons.format_list_bulleted_rounded,
-                  w: w,
-                ),
-                const SizedBox(height: 12),
-                ...List.generate(
-                  answers.length,
-                  (index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: answers[index].isDeleting
-                        ? AnimatedRemove(
-                            onAnimationEnd: () =>
-                                deleteAnswerAfterAnimation(index),
-                            child: AnswerOptionTile(
-                              answer: answers[index],
-                              canDelete: false,
-                              onDelete: () {},
-                            ),
-                          )
-                        : AnimatedAdd(
-                            key: ValueKey(answers[index]),
-                            child: AnswerOptionTile(
-                              answer: answers[index],
-                              canDelete: answers.length > 2,
-                              onDelete: () => removeAnswer(index),
-                            ),
-                          ),
+                if (questionType != QuestionType.scale) ...[
+                  sectionLabel(
+                    label: 'الخيارات',
+                    icon: Icons.format_list_bulleted_rounded,
+                    w: w,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: AddOutlineButton(
-                    title: 'إضافة خيار',
-                    onPressed: addAnswer,
+                  const SizedBox(height: 12),
+                  ...List.generate(
+                    answers.length,
+                    (index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: answers[index].isDeleting
+                          ? AnimatedRemove(
+                              onAnimationEnd: () =>
+                                  deleteAnswerAfterAnimation(index),
+                              child: AnswerOptionTile(
+                                answer: answers[index],
+                                canDelete: false,
+                                onDelete: () {},
+                              ),
+                            )
+                          : AnimatedAdd(
+                              key: ValueKey(answers[index]),
+                              child: AnswerOptionTile(
+                                answer: answers[index],
+                                canDelete: answers.length > 2,
+                                onDelete: () => removeAnswer(index),
+                              ),
+                            ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: AddOutlineButton(
+                      title: 'إضافة خيار',
+                      onPressed: addAnswer,
+                    ),
+                  ),
+                ],
+                if (questionType == QuestionType.scale)
+                  _scaleEditor(w: w, isEnglish: isEnglish),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _scaleEditor({required double w, required bool isEnglish}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.purple.withOpacity(.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: appCrossAxisAlignment(isEnglish),
+        children: [
+          sectionLabel(
+            label: 'Scale / Rating',
+            icon: Icons.linear_scale_rounded,
+            w: w,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: CustomFormTextField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  keyboardType: CustomTextFieldType.score,
+                  labelText: 'minValue',
+                  hintText: '0',
+                  controller: minValueController,
+                  centerHint: true,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomFormTextField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  keyboardType: CustomTextFieldType.score,
+                  labelText: 'maxValue',
+                  hintText: '10',
+                  controller: maxValueController,
+                  centerHint: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: CustomFormTextField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  keyboardType: CustomTextFieldType.text,
+                  labelText: 'minLabel',
+                  hintText: 'لا يوجد',
+                  controller: minLabelController,
+                  isRequired: false,
+                  textDirection: appTextDirection(isEnglish),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomFormTextField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  keyboardType: CustomTextFieldType.text,
+                  labelText: 'maxLabel',
+                  hintText: 'شديد جدًا',
+                  controller: maxLabelController,
+                  isRequired: false,
+                  textDirection: appTextDirection(isEnglish),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          customText(
+            text:
+                'سيتم إنشاء اختيارات تلقائية لكل قيمة داخل النطاق، والـ score يساوي القيمة المختارة.',
+            color: Colors.grey.shade600,
+            size: w * 0.008,
+            isCenter: false,
+            isEnglish: isEnglish,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -532,84 +903,319 @@ class DiagnosisMiniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = getScreenWidth(context) < 700;
+
     return ValueListenableBuilder<Locale>(
       valueListenable: AppLanguageController.localeNotifier,
       builder: (context, locale, _) {
         final isEnglish = isEnglishLang(locale);
 
+        final fromField = _DiagnosisNumberField(
+          label: 'من',
+          hint: '0',
+          controller: item.fromController,
+          isEnglish: isEnglish,
+        );
+
+        final toField = _DiagnosisNumberField(
+          label: 'إلى',
+          hint: '100',
+          controller: item.toController,
+          isEnglish: isEnglish,
+        );
+
+        final diagnosisField = _DiagnosisTextField(
+          controller: item.diagnosisController,
+          isEnglish: isEnglish,
+        );
+
+        final deleteButton = _DeleteDiagnosisButton(
+          canDelete: canDelete,
+          onDelete: onDelete,
+        );
+
         return Directionality(
           textDirection: appTextDirection(isEnglish),
           child: Container(
-            padding: const EdgeInsets.all(14),
+            margin: EdgeInsets.only(
+              bottom: responsiveHeight(context, 0.014, min: 10, max: 16),
+            ),
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.012, min: 12, max: 18),
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: Colors.deepPurpleAccent.withOpacity(.2),
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.014, min: 16, max: 22),
               ),
-            ),
-            child: Row(
-              textDirection: TextDirection.ltr,
-              mainAxisAlignment: isEnglish
-                  ? MainAxisAlignment.start
-                  : MainAxisAlignment.end,
-              children: [
-                if (isEnglish) ...[
-                  IconButton(
-                    onPressed: canDelete ? onDelete : null,
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      color: canDelete ? surveyPink : Colors.grey.shade300,
-                    ),
-                  ),
-                ],
-                Expanded(
-                  child: CustomFormTextField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    keyboardType: CustomTextFieldType.score,
-                    labelText: localizedText(context, 'من'),
-                    centerHint: true,
-                    hintText: localizedText(context, '0'),
-                    controller: item.fromController,
+              border: Border.all(color: surveyPurple.withOpacity(.18)),
+              boxShadow: [
+                BoxShadow(
+                  color: surveyPurple.withOpacity(.07),
+                  blurRadius: responsiveSize(context, 0.018, min: 14, max: 24),
+                  offset: Offset(
+                    0,
+                    responsiveHeight(context, 0.008, min: 5, max: 9),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: CustomFormTextField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    keyboardType: CustomTextFieldType.score,
-                    labelText: localizedText(context, 'إلى'),
-                    centerHint: true,
-                    hintText: localizedText(context, '100'),
-                    controller: item.toController,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 2,
-                  child: CustomFormTextField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    keyboardType: CustomTextFieldType.diagnose,
-                    hintText: localizedText(context, 'اكتب التشخيص'),
-                    controller: item.diagnosisController,
-                    textDirection: appTextDirection(isEnglish),
-                  ),
-                ),
-                if (!isEnglish) ...[
-                  const SizedBox(width: 10),
-                  IconButton(
-                    onPressed: canDelete ? onDelete : null,
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      color: canDelete ? surveyPink : Colors.grey.shade300,
-                    ),
-                  ),
-                ],
               ],
             ),
+            child: isMobile
+                ? Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: fromField),
+                          SizedBox(
+                            width: responsiveSize(
+                              context,
+                              0.025,
+                              min: 10,
+                              max: 14,
+                            ),
+                          ),
+                          Expanded(child: toField),
+                          SizedBox(
+                            width: responsiveSize(
+                              context,
+                              0.025,
+                              min: 10,
+                              max: 14,
+                            ),
+                          ),
+                          deleteButton,
+                        ],
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.014,
+                          min: 10,
+                          max: 14,
+                        ),
+                      ),
+                      diagnosisField,
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      SizedBox(
+                        width: responsiveSize(
+                          context,
+                          0.075,
+                          min: 90,
+                          max: 125,
+                        ),
+                        child: fromField,
+                      ),
+                      SizedBox(
+                        width: responsiveSize(context, 0.014, min: 10, max: 14),
+                      ),
+                      SizedBox(
+                        width: responsiveSize(
+                          context,
+                          0.075,
+                          min: 90,
+                          max: 125,
+                        ),
+                        child: toField,
+                      ),
+                      SizedBox(
+                        width: responsiveSize(context, 0.018, min: 12, max: 18),
+                      ),
+                      Expanded(child: diagnosisField),
+                      SizedBox(
+                        width: responsiveSize(context, 0.014, min: 10, max: 14),
+                      ),
+                      deleteButton,
+                    ],
+                  ),
           ),
         );
       },
+    );
+  }
+}
+
+class _DiagnosisNumberField extends StatelessWidget {
+  const _DiagnosisNumberField({
+    required this.label,
+    required this.hint,
+    required this.controller,
+    required this.isEnglish,
+  });
+
+  final String label;
+  final String hint;
+  final TextEditingController controller;
+  final bool isEnglish;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: appCrossAxisAlignment(isEnglish),
+      children: [
+        customText(
+          text: localizedText(context, label),
+          size: responsiveSize(context, 0.0085, min: 12, max: 15),
+          color: surveyPurple,
+          bold: true,
+          isCenter: false,
+          isEnglish: isEnglish,
+        ),
+        SizedBox(height: responsiveHeight(context, 0.009, min: 7, max: 10)),
+        TextField(
+          controller: controller,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          maxLength: 3,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(3),
+          ],
+          decoration: InputDecoration(
+            counterText: '',
+            hintText: localizedText(context, hint),
+            filled: true,
+            fillColor: const Color(0xFFFFFBFE),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: responsiveSize(context, 0.01, min: 10, max: 14),
+              vertical: responsiveHeight(context, 0.016, min: 13, max: 18),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+              borderSide: BorderSide(color: surveyPurple.withOpacity(.42)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+              borderSide: const BorderSide(color: surveyPurple, width: 1.5),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+            ),
+          ),
+          style: TextStyle(
+            fontFamily: 'ArabicCustomFont',
+            fontWeight: FontWeight.bold,
+            color: surveyDark,
+            fontSize: responsiveSize(context, 0.009, min: 13, max: 17),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DiagnosisTextField extends StatelessWidget {
+  const _DiagnosisTextField({
+    required this.controller,
+    required this.isEnglish,
+  });
+
+  final TextEditingController controller;
+  final bool isEnglish;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: appCrossAxisAlignment(isEnglish),
+      children: [
+        customText(
+          text: localizedText(context, 'التشخيص'),
+          size: responsiveSize(context, 0.0085, min: 12, max: 15),
+          color: surveyDark,
+          bold: true,
+          isCenter: false,
+          isEnglish: isEnglish,
+        ),
+        SizedBox(height: responsiveHeight(context, 0.009, min: 7, max: 10)),
+        TextField(
+          controller: controller,
+          textDirection: appTextDirection(isEnglish),
+          textAlign: isEnglish ? TextAlign.start : TextAlign.right,
+          maxLength: 50,
+          decoration: InputDecoration(
+            counterText: '',
+            hintText: localizedText(context, 'اكتب التشخيص'),
+            filled: true,
+            fillColor: const Color(0xFFFFFBFE),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: responsiveSize(context, 0.012, min: 12, max: 18),
+              vertical: responsiveHeight(context, 0.016, min: 13, max: 18),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+              borderSide: BorderSide(color: surveyPurple.withOpacity(.35)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+              borderSide: const BorderSide(color: surveyPurple, width: 1.5),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.01, min: 12, max: 16),
+              ),
+            ),
+          ),
+          style: TextStyle(
+            fontFamily: 'ArabicCustomFont',
+            fontWeight: FontWeight.w600,
+            color: surveyDark,
+            fontSize: responsiveSize(context, 0.0085, min: 13, max: 16),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DeleteDiagnosisButton extends StatelessWidget {
+  const _DeleteDiagnosisButton({
+    required this.canDelete,
+    required this.onDelete,
+  });
+
+  final bool canDelete;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: responsiveSize(context, 0.034, min: 40, max: 48),
+      height: responsiveSize(context, 0.034, min: 40, max: 48),
+      decoration: BoxDecoration(
+        color: canDelete
+            ? surveyPink.withOpacity(.08)
+            : Colors.grey.withOpacity(.06),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.01, min: 12, max: 15),
+        ),
+        border: Border.all(
+          color: canDelete
+              ? surveyPink.withOpacity(.25)
+              : Colors.grey.withOpacity(.15),
+        ),
+      ),
+      child: IconButton(
+        onPressed: canDelete ? onDelete : null,
+        icon: Icon(
+          Icons.delete_outline_rounded,
+          color: canDelete ? surveyPink : Colors.grey.shade300,
+          size: responsiveSize(context, 0.015, min: 18, max: 23),
+        ),
+        tooltip: localizedText(context, 'حذف'),
+      ),
     );
   }
 }

@@ -1037,3 +1037,4 @@ class _SmallBadge extends StatelessWidget {
     );
   }
 }
+

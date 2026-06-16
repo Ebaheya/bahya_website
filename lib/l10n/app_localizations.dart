@@ -1,3 +1,4 @@
+import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:bahya_website/l10n/ar_to_en.dart';
 import 'package:bahya_website/l10n/en_to_ar.dart';
 import 'package:flutter/material.dart';
@@ -16,9 +17,23 @@ class AppLanguageController {
     Intl.defaultLocale = locale.languageCode;
   }
 
-  static void toggle() {
+  static Future<void> setLocaleAndSave(Locale locale) async {
+    setLocale(locale);
+    await SecureStorageService().saveLanguageCode(locale.languageCode);
+  }
+
+  static Future<void> loadSavedLocale() async {
+    final savedLanguage = await SecureStorageService().getLanguageCode();
+    if (savedLanguage == 'en' || savedLanguage == 'ar') {
+      setLocale(Locale(savedLanguage!));
+    } else {
+      Intl.defaultLocale = localeNotifier.value.languageCode;
+    }
+  }
+
+  static Future<void> toggle() async {
     final currentLanguage = localeNotifier.value.languageCode;
-    setLocale(
+    await setLocaleAndSave(
       currentLanguage == 'ar' ? const Locale('en') : const Locale('ar'),
     );
   }
@@ -123,4 +138,3 @@ const flutterLocalizationDelegates = [
   GlobalWidgetsLocalizations.delegate,
   GlobalCupertinoLocalizations.delegate,
 ];
-

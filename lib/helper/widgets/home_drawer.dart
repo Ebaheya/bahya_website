@@ -114,7 +114,7 @@ class HomeDrawer extends StatelessWidget {
                             ),
                           ),
                           customText(
-                            text: "أهلاً بك،",
+                            text: "Welcome,",
                             size: responsiveSize(
                               context,
                               0.018,
@@ -168,7 +168,7 @@ class HomeDrawer extends StatelessWidget {
                                   context,
                                   index: 1,
                                   icon: Icons.report_problem_rounded,
-                                  title: 'الإبلاغ عن مشكلة',
+                                  title: 'Report a problem',
                                   onTap: () {
                                     Navigator.pop(context);
                                     showReportProblemDialog(context);
@@ -178,7 +178,7 @@ class HomeDrawer extends StatelessWidget {
                                   context,
                                   index: 5,
                                   icon: Icons.forum_rounded,
-                                  title: 'نموذج المتطوعين',
+                                  title: 'Volunteer form',
                                   onTap: () {
                                     Navigator.pop(context);
                                     context.push('/volunteer_survey');
@@ -312,13 +312,13 @@ class HomeDrawer extends StatelessWidget {
             },
             context: context,
             title: 'تم',
-            message: 'تم تسجيل الخروج بنجاح.',
+            message: 'Logged out successfully.',
           );
         } catch (e) {
           customDialog(
             context: context,
-            title: 'خطأ',
-            message: 'حدث خطأ أثناء تسجيل الخروج. حاول مرة أخرى.',
+            title: 'Error',
+            message: 'An error occurred while signing out. Try again.',
           );
         }
       },
@@ -347,7 +347,7 @@ class HomeDrawer extends StatelessWidget {
           children: [
             Expanded(
               child: customText(
-                text: 'تسجيل الخروج',
+                text: 'Sign out',
                 size: responsiveSize(context, 0.01, min: 15, max: 19),
                 color: textColor,
                 bold: true,

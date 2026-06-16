@@ -34,7 +34,7 @@ void customDialog({
     context: context,
     barrierDismissible: true,
     barrierLabel: '',
-    barrierColor: Colors.black.withOpacity(.55),
+    barrierColor: Colors.black.withValues(alpha: .55),
     transitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (dialogContext, __, ___) {
       return Center(
@@ -46,15 +46,15 @@ void customDialog({
               width: 420,
               padding: const EdgeInsets.fromLTRB(22, 16, 22, 24),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(.96),
+                color: Colors.white.withValues(alpha: .96),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: const Color(0xFFFF7BB0).withOpacity(.45),
+                  color: const Color(0xFFFF7BB0).withValues(alpha: .45),
                   width: 1.4,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFF4F93).withOpacity(.25),
+                    color: const Color(0xFFFF4F93).withValues(alpha: .25),
                     blurRadius: 35,
                     offset: const Offset(0, 18),
                   ),
@@ -76,10 +76,12 @@ void customDialog({
                         width: 34,
                         height: 34,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF7BB0).withOpacity(.09),
+                          color: const Color(0xFFFF7BB0).withValues(alpha: .09),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFFFF7BB0).withOpacity(.25),
+                            color: const Color(
+                              0xFFFF7BB0,
+                            ).withValues(alpha: .25),
                           ),
                         ),
                         child: const Icon(
@@ -99,7 +101,7 @@ void customDialog({
                       gradient: LinearGradient(colors: iconColors),
                       boxShadow: [
                         BoxShadow(
-                          color: iconColors.first.withOpacity(.28),
+                          color: iconColors.first.withValues(alpha: .28),
                           blurRadius: 22,
                           offset: const Offset(0, 8),
                         ),
@@ -158,7 +160,7 @@ void customDialog({
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: iconColors.first.withOpacity(.25),
+                            color: iconColors.first.withValues(alpha: .25),
                             blurRadius: 18,
                             offset: const Offset(0, 8),
                           ),
@@ -180,7 +182,7 @@ void customDialog({
                           ),
                         ),
                         child: customText(
-                          text: 'حسنًا',
+                          text: 'OK',
                           size: 16,
                           bold: true,
                           color: Colors.white,

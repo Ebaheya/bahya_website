@@ -235,13 +235,19 @@ class _BottomNavItem extends StatelessWidget {
               SizedBox(
                 height: responsiveHeight(context, 0.004, min: 3, max: 5),
               ),
-              customText(
-                text: title,
-                size: responsiveSize(context, 0.007, min: 10, max: 12),
-                color: color,
-                bold: isSelected,
-                isEnglish: true,
-                maxLines: 1,
+              SizedBox(
+                width: double.infinity,
+                height: responsiveHeight(context, 0.018, min: 14, max: 18),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: customText(
+                    text: title,
+                    size: responsiveSize(context, 0.0075, min: 11, max: 13),
+                    color: color,
+                    bold: isSelected,
+                    maxLines: 1,
+                  ),
+                ),
               ),
             ],
           ),
@@ -443,7 +449,6 @@ class _SidebarItemState extends State<_SidebarItem> {
                         size: responsiveSize(context, 0.01, min: 15, max: 19),
                         color: mainColor,
                         bold: widget.isSelected,
-                        isEnglish: true,
                         isCenter: false,
                         maxLines: 1,
                       ),
@@ -641,7 +646,6 @@ class _LogoutButtonState extends State<_LogoutButton> {
                     size: responsiveSize(context, 0.01, min: 15, max: 18),
                     color: Colors.red,
                     bold: true,
-                    isEnglish: true,
                     isCenter: false,
                   ),
                 ),

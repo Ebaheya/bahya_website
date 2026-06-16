@@ -1,4 +1,5 @@
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -73,6 +74,13 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     _obscureText = widget.obscureText;
   }
 
+  String _localized(String text) {
+    return AppLocalizations.translateByLocaleCode(
+      Localizations.localeOf(context).languageCode,
+      text,
+    );
+  }
+
   TextInputType _mapKeyboardType(CustomTextFieldType type) {
     switch (type) {
       case CustomTextFieldType.email:
@@ -96,13 +104,11 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
   }
 
   String? _validate(String? value) {
-    final isEnglishLocale =
-        Localizations.localeOf(context).languageCode == 'en';
     final text = value?.trim() ?? '';
-    String? error;
+    String? errorKey;
 
     if (widget.isRequired && text.isEmpty) {
-      error = isEnglishLocale ? 'This field is required' : 'هذا الحقل مطلوب';
+      errorKey = 'This field is required';
     } else if (!widget.isRequired && text.isEmpty) {
       floatingError = null;
       return null;
@@ -110,95 +116,69 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
       switch (widget.keyboardType) {
         case CustomTextFieldType.email:
           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$').hasMatch(text)) {
-            error = isEnglishLocale
-                ? 'Enter a valid email address'
-                : 'أدخل بريدًا إلكترونيًا صالحًا';
+            errorKey = 'Enter a valid email address';
           }
           break;
-
         case CustomTextFieldType.name:
           if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(text)) {
-            error = isEnglishLocale
-                ? 'Enter a valid name'
-                : 'أدخل اسمًا صالحًا';
+            errorKey = 'Enter a valid name';
           }
           break;
-
         case CustomTextFieldType.number:
           if (!RegExp(r'^\d+$').hasMatch(text)) {
-            error = isEnglishLocale ? 'Enter numbers only' : 'أدخل أرقامًا فقط';
+            errorKey = 'Enter numbers only';
           }
           break;
-
         case CustomTextFieldType.phone:
           if (!RegExp(r'^\d{11}$').hasMatch(text)) {
-            error = isEnglishLocale
-                ? 'Enter an 11-digit phone number'
-                : 'أدخل رقم هاتف مكون من 11 رقمًا';
+            errorKey = 'Enter an 11-digit phone number';
           }
           break;
-
         case CustomTextFieldType.password:
           final passwordRegex = RegExp(
             r'^[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_+=/\\[\];`~\-]+$',
           );
 
           if (text.length < 8) {
-            error = isEnglishLocale
-                ? 'Password must be at least 8 characters'
-                : 'Password must be at least 8 characters';
+            errorKey = 'Password must be at least 8 characters';
           } else if (!passwordRegex.hasMatch(text)) {
-            error = isEnglishLocale
-                ? 'Password can contain only English letters, numbers, and special characters'
-                : 'Password can contain only English letters, numbers, and special characters';
+            errorKey =
+                'Password can contain only English letters, numbers, and special characters';
           }
           break;
-
         case CustomTextFieldType.date:
           if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(text)) {
-            error = isEnglishLocale
-                ? 'Enter a valid date (mm/dd/yyyy)'
-                : 'أدخل تاريخًا صالحًا (mm/dd/yyyy)';
+            errorKey = 'Enter a valid date (mm/dd/yyyy)';
           }
           break;
-
         case CustomTextFieldType.title:
           if (text.length > 25) {
-            error = isEnglishLocale
-                ? 'The title cannot exceed 25 characters'
-                : 'العنوان لا يمكن أن يتجاوز 25 حرفًا';
+            errorKey = 'The title cannot exceed 25 characters';
           }
           break;
-
         case CustomTextFieldType.score:
           final score = int.tryParse(text);
 
           if (score == null) {
-            error = isEnglishLocale ? 'Enter numbers only' : 'أدخل أرقامًا فقط';
+            errorKey = 'Enter numbers only';
           } else if (score < 0 || score > 100) {
-            error = isEnglishLocale
-                ? 'The score must be between 0 and 100'
-                : 'السكور يجب أن يكون من 0 إلى 100';
+            errorKey = 'The score must be between 0 and 100';
           }
           break;
-
         case CustomTextFieldType.diagnose:
           if (text.length > 50) {
-            error = isEnglishLocale
-                ? 'The diagnosis cannot exceed 50 characters'
-                : 'التشخيص لا يمكن أن يتجاوز 50 حرف';
+            errorKey = 'The diagnosis cannot exceed 50 characters';
           }
           break;
-
         case CustomTextFieldType.text:
           break;
       }
     }
 
-    floatingError = error;
+    floatingError = errorKey == null ? null : _localized(errorKey);
 
-    if (error == null) return null;
-    return widget.showInlineError ? '' : error;
+    if (errorKey == null) return null;
+    return widget.showInlineError ? '' : floatingError;
   }
 
   List<TextInputFormatter> _inputFormatters() {
@@ -243,6 +223,42 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     return [];
   }
 
+  Widget? _iconWithPadding(BuildContext context, Icon? icon, bool isPrefix) {
+    if (icon == null) return null;
+
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: responsiveSize(context, 0.005, min: isPrefix ? 8 : 5, max: 10),
+        end: responsiveSize(context, 0.005, min: isPrefix ? 5 : 8, max: 10),
+      ),
+      child: Center(child: icon),
+    );
+  }
+
+  Widget _passwordToggle(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(responsiveSize(context, 0.005, min: 6, max: 8)),
+      child: Container(
+        width: responsiveSize(context, 0.02, min: 28, max: 34),
+        height: responsiveSize(context, 0.02, min: 28, max: 34),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.pink.shade100.withValues(alpha: 0.5),
+        ),
+        child: InkWell(
+          onTap: () {
+            setState(() => _obscureText = !_obscureText);
+          },
+          child: Icon(
+            _obscureText ? Icons.visibility : Icons.visibility_off,
+            color: Colors.pink,
+            size: responsiveSize(context, 0.014, min: 18, max: 24),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEnglishLocale =
@@ -250,6 +266,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     final effectiveDirection = isEnglishLocale
         ? TextDirection.ltr
         : widget.textDirection;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -300,53 +317,29 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
             alignLabelWithHint: true,
             counterText: '',
             suffixIcon: widget.obscureText
-                ? Padding(
-                    padding: EdgeInsets.all(
-                      responsiveSize(context, 0.005, min: 6, max: 8),
-                    ),
-                    child: Container(
-                      width: responsiveSize(context, 0.02, min: 28, max: 34),
-                      height: responsiveSize(context, 0.02, min: 28, max: 34),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.pink.shade100.withValues(alpha: 0.5),
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          setState(() => _obscureText = !_obscureText);
-                        },
-                        child: Icon(
-                          _obscureText
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: Colors.pink,
-                          size: responsiveSize(
-                            context,
-                            0.014,
-                            min: 18,
-                            max: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                : widget.suffixIcon,
+                ? _passwordToggle(context)
+                : _iconWithPadding(context, widget.suffixIcon, false),
             suffixIconConstraints: BoxConstraints(
               maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
               maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
             ),
-            prefixIcon: Padding(
-              padding: EdgeInsets.all(
-                responsiveSize(context, 0.005, min: 6, max: 8),
-              ),
-              child: widget.prefixIcon,
-            ),
+            prefixIcon: _iconWithPadding(context, widget.prefixIcon, true),
             prefixIconConstraints: BoxConstraints(
               maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
               maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
             ),
-            hintText: widget.hintText,
-            labelText: widget.labelText,
+            hintText: widget.hintText == null
+                ? null
+                : AppLocalizations.translateByLocaleCode(
+                    Localizations.localeOf(context).languageCode,
+                    widget.hintText!,
+                  ),
+            labelText: widget.labelText == null
+                ? null
+                : AppLocalizations.translateByLocaleCode(
+                    Localizations.localeOf(context).languageCode,
+                    widget.labelText!,
+                  ),
             hintTextDirection: widget.centerHint
                 ? TextDirection.ltr
                 : effectiveDirection,
@@ -416,65 +409,77 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                     ),
                   )
                 : InputBorder.none,
-            errorStyle: TextStyle(
-              fontFamily: 'ArabicCustomFont',
-              fontSize: widget.showInlineError
-                  ? 0
-                  : responsiveSize(context, 0.0075, min: 11, max: 14),
-              height: widget.showInlineError ? 0 : null,
-            ),
+            errorStyle: const TextStyle(fontSize: 0, height: 0),
+            errorMaxLines: 1,
           ),
         ),
-
         if (widget.showInlineError && floatingError != null)
-          Positioned(
-            left: 0,
+          PositionedDirectional(
+            start: 0,
             top: -responsiveHeight(context, 0.045, min: 34, max: 42),
             child: CustomPaint(
-              painter: ErrorBubbleArrowPainter(),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 7),
-                padding: EdgeInsets.symmetric(
-                  horizontal: responsiveSize(context, 0.008, min: 10, max: 12),
-                  vertical: responsiveHeight(context, 0.008, min: 6, max: 8),
+              painter: ErrorBubbleArrowPainter(
+                textDirection: effectiveDirection,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: responsiveSize(context, 0.32, min: 220, max: 360),
                 ),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade500,
-                  borderRadius: BorderRadius.circular(
-                    responsiveSize(context, 0.007, min: 8, max: 10),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 7),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: responsiveSize(
+                      context,
+                      0.008,
+                      min: 10,
+                      max: 12,
+                    ),
+                    vertical: responsiveHeight(context, 0.008, min: 6, max: 8),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.red.withValues(alpha: 0.25),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade500,
+                    borderRadius: BorderRadius.circular(
+                      responsiveSize(context, 0.007, min: 8, max: 10),
                     ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      color: Colors.white,
-                      size: responsiveSize(context, 0.01, min: 14, max: 16),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      floatingError!,
-                      style: TextStyle(
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withValues(alpha: 0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    textDirection: effectiveDirection,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
                         color: Colors.white,
-                        fontFamily: 'ArabicCustomFont',
-                        fontWeight: FontWeight.bold,
-                        fontSize: responsiveSize(
-                          context,
-                          0.0068,
-                          min: 10,
-                          max: 12,
+                        size: responsiveSize(context, 0.01, min: 14, max: 16),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          floatingError!,
+                          textDirection: effectiveDirection,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'ArabicCustomFont',
+                            fontWeight: FontWeight.bold,
+                            fontSize: responsiveSize(
+                              context,
+                              0.0068,
+                              min: 10,
+                              max: 12,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -485,19 +490,34 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 }
 
 class ErrorBubbleArrowPainter extends CustomPainter {
+  final TextDirection textDirection;
+
+  ErrorBubbleArrowPainter({this.textDirection = TextDirection.ltr});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.red.shade500;
+    final arrowStart = textDirection == TextDirection.rtl
+        ? size.width - 28
+        : 18.0;
+    final arrowEnd = textDirection == TextDirection.rtl
+        ? size.width - 18
+        : 28.0;
+    final arrowTip = textDirection == TextDirection.rtl
+        ? size.width - 23
+        : 23.0;
 
     final path = Path()
-      ..moveTo(18, size.height - 7)
-      ..lineTo(28, size.height - 7)
-      ..lineTo(23, size.height)
+      ..moveTo(arrowStart, size.height - 7)
+      ..lineTo(arrowEnd, size.height - 7)
+      ..lineTo(arrowTip, size.height)
       ..close();
 
     canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant ErrorBubbleArrowPainter oldDelegate) {
+    return oldDelegate.textDirection != textDirection;
+  }
 }

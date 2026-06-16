@@ -260,6 +260,7 @@ class _PatientInfoState extends State<PatientInfo> {
 
   ClinicalPatient buildClinicalPatient(PatientModel patient) {
     return ClinicalPatient(
+      id: patient.id,
       fileNumber: patient.displayCrn,
       name: patient.fullName,
       age: patient.age,

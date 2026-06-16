@@ -1,5 +1,3 @@
-// ignore_for_file: constant_identifier_names
-
 import 'dart:developer';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/service/Login_service.dart';
@@ -29,7 +27,6 @@ class WebService {
     if (data is String && data.trim().isNotEmpty) return data;
     return fallback;
   }
-
 
   Map<String, dynamic> _sortPatientsResponseLocally({
     required Map<String, dynamic> responseData,
@@ -426,7 +423,12 @@ class WebService {
       throw Exception('Failed to create form');
     } on DioException catch (e) {
       debugPrint("DioException: ${e.response?.data ?? e.message}");
-      throw Exception(e.response?.data ?? 'Failed to create form');
+      throw Exception(
+        _apiErrorMessage(
+          e.response?.data ?? e.message,
+          'Failed to create form',
+        ),
+      );
     } catch (e) {
       debugPrint("Unexpected error: $e");
       throw Exception('Unexpected error');
@@ -626,7 +628,12 @@ class WebService {
       return response.data;
     } on DioException catch (e) {
       debugPrint("Update form DioException: ${e.response?.data ?? e.message}");
-      throw Exception(e.response?.data ?? 'Failed to update form');
+      throw Exception(
+        _apiErrorMessage(
+          e.response?.data ?? e.message,
+          'Failed to update form',
+        ),
+      );
     } catch (e) {
       throw Exception('Unexpected error : $e');
     }
@@ -648,15 +655,17 @@ class WebService {
     }
   }
 
-  Future<Map<String, dynamic>> getPendingSubmissions() async {
+  Future<dynamic> getPendingSubmissions() async {
     try {
       final response = await dio.get('/assessments/submissions/pending');
       return response.data;
     } on DioException catch (e) {
-      debugPrint(
-        "Pending submissions DioException: ${e.response?.data ?? e.message}",
+      throw Exception(
+        _apiErrorMessage(
+          e.response?.data ?? e.message,
+          'Failed to get pending submissions',
+        ),
       );
-      throw Exception(e.response?.data ?? 'Failed to get pending submissions');
     } catch (e) {
       throw Exception('Unexpected error : $e');
     }
@@ -717,4 +726,118 @@ class WebService {
   }) async {
     await dio.patch('/forms/$formId/status', data: {"isActive": isActive});
   }
+
+Future<List<Map<String, dynamic>>> getMyFormAssignments() async {
+    try {
+      final response = await dio.get('/form-assignments/my');
+
+      final data = response.data;
+
+      if (data is List) {
+        return data.map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+
+      if (data is Map && data['data'] is List) {
+        return (data['data'] as List)
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+
+      return [];
+    } on DioException catch (e) {
+      debugPrint(
+        "My assignments DioException: ${e.response?.data ?? e.message}",
+      );
+      throw Exception(
+        _apiErrorMessage(
+          e.response?.data ?? e.message,
+          'Failed to get assignments',
+        ),
+      );
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getFormAssignmentById(
+    String assignmentId,
+  ) async {
+    try {
+      final response = await dio.get('/form-assignments/$assignmentId');
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      debugPrint(
+        "Assignment detail DioException: ${e.response?.data ?? e.message}",
+      );
+      throw Exception(
+        _apiErrorMessage(
+          e.response?.data ?? e.message,
+          'Failed to get assignment',
+        ),
+      );
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> submitFormAssignment({
+    required String assignmentId,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/form-assignments/$assignmentId/submit',
+        data: body,
+      );
+
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      debugPrint(
+        "Submit assignment DioException: ${e.response?.data ?? e.message}",
+      );
+      throw Exception(
+        _apiErrorMessage(
+          e.response?.data ?? e.message,
+          'Failed to submit assignment',
+        ),
+      );
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<dynamic> getSubmissionDetails(String submissionId) async {
+    try {
+      final response = await dio.get('/assessments/submissions/$submissionId');
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(
+        _apiErrorMessage(
+          e.response?.data ?? e.message,
+          'Failed to get submission details',
+        ),
+      );
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<dynamic> createOfficialAssessment({
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final response = await dio.post('/assessments', data: body);
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(
+        _apiErrorMessage(
+          e.response?.data ?? e.message,
+          'Failed to create official assessment',
+        ),
+      );
+    } catch (e) {
+      throw Exception('Unexpected error : $e');
+    }
+  }
+
 }

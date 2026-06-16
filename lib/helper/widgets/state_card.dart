@@ -85,7 +85,7 @@ class _StatCardState extends State<StatCard>
         child: InkWell(
           onTap: () => showDiagnosisPatientsDialog(
             context: context,
-            diagnosisTitle: "المريضات المصابات بحالات طبيعية",
+            diagnosisTitle: "Patients with normal cases",
             patients: widget.demoPatients,
             averageAge: 31,
           ),
@@ -153,7 +153,7 @@ class _StatCardState extends State<StatCard>
                           ),
                           const SizedBox(height: 4),
                           customText(
-                            text: "من إجمالي المرضى",
+                            text: "of total patients",
                             size: 13,
                             color: Colors.black45,
                           ),
@@ -187,7 +187,7 @@ class _StatCardState extends State<StatCard>
                           ],
                         ),
                         child: customText(
-                          text: "انقر للتفاصيل",
+                          text: "Click for details",
                           size: 10,
                           color: const Color(0xFFE91E63),
                           bold: true,

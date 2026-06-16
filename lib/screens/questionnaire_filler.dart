@@ -6,6 +6,7 @@ import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/filler/saved_filler.dart';
 import 'package:bahya_website/helper/widgets/filler/saved_filler_widget.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -49,7 +50,7 @@ class _FormsScreenBody extends StatelessWidget {
       backgroundColor: const Color(0xFFFCEFFE),
       appBar: customAppBar(
         context: context,
-        title: "ملء الاستبيانات",
+        title: 'Fill out questionnaires',
         isHomeBar: false,
       ),
       body: SafeArea(
@@ -60,23 +61,26 @@ class _FormsScreenBody extends StatelessWidget {
           },
           listener: (context, state) {
             if (state.error != null) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.error!)));
+              customSnackBar(context: context, message: state.error!);
             }
 
             if (state.createdAssessment != null) {
               final score = state.createdAssessment?["score"] ?? 0;
               final diagnosis =
-                  state.createdAssessment?["diagnosis"] ?? "غير محدد";
+                  state.createdAssessment?["diagnosis"] ??
+                  localizedText(context, 'Not specified');
               final patientStatus =
-                  state.createdAssessment?["patientStatus"] ?? "غير محدد";
+                  state.createdAssessment?["patientStatus"] ??
+                  localizedText(context, 'Not specified');
+              final diagnosisLabel = localizedText(context, 'Diagnosis');
+              final scoreLabel = localizedText(context, 'Score');
+              final statusLabel = localizedText(context, 'Patient status');
 
               customDialog(
                 context: context,
-                title: "تم حفظ التقييم بنجاح",
+                title: 'Assessment saved successfully',
                 message:
-                    "التشخيص: $diagnosis\nالاسكور: $score\nحالة المريض: $patientStatus",
+                    '$diagnosisLabel: $diagnosis\n$scoreLabel: $score\n$statusLabel: $patientStatus',
                 isError: false,
               );
 

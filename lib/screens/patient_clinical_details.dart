@@ -1,11 +1,16 @@
 import 'dart:typed_data';
 
+import 'package:bahya_website/bloc/cubit/patient_assessment_review_cubit.dart';
+import 'package:bahya_website/data/api/repo/repo.dart';
 import 'package:bahya_website/helper/base.dart';
+import 'package:bahya_website/helper/custom_dropDown.dart';
+import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:excel/excel.dart' hide Border;
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part '../helper/widgets/patient_clinical/patient_clinical_widget.dart';
 part '../helper/widgets/patient_clinical/patient_clinical_components.dart';
@@ -22,7 +27,9 @@ class PatientClinicalDetails extends StatefulWidget {
 class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
   int selectedTab = 0;
   bool showEmergencyInfo = false;
-
+  List<PatientAssessment> officialAssessments = [];
+  bool isLoadingAssessments = false;
+  String? assessmentsError;
   Future<void> exportPatientToExcel() async {
     final patient = widget.patient;
 
@@ -109,7 +116,6 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
     }
 
     final List<int>? bytes = excel.encode();
-
     if (bytes == null) return;
 
     await FileSaver.instance.saveFile(
@@ -120,94 +126,299 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadOfficialAssessments();
+  }
+
+Future<void> _loadOfficialAssessments() async {
+    setState(() {
+      isLoadingAssessments = true;
+      assessmentsError = null;
+    });
+
+    try {
+      final repo = AppRepository();
+      final list = await repo.getPatientAssessments(widget.patient.id);
+
+      final detailedList = <Map<String, dynamic>>[];
+
+      for (final item in list) {
+        final submission = item['submission'];
+        final submissionId =
+            item['submissionId']?.toString() ??
+            (submission is Map ? submission['id']?.toString() : null);
+
+        if (submissionId == null || submissionId.isEmpty) {
+          detailedList.add(item);
+          continue;
+        }
+
+        try {
+          final submissionDetails = await repo.getSubmissionDetails(
+            submissionId,
+          );
+
+          detailedList.add({
+            ...item,
+            'submission': {
+              if (submission is Map) ...submission,
+              ...submissionDetails,
+            },
+          });
+        } catch (e) {
+          debugPrint('ASSESSMENT SUBMISSION DETAILS ERROR => $e');
+          detailedList.add(item);
+        }
+      }
+
+      final mapped = detailedList.map(_mapAssessment).toList();
+
+      if (!mounted) return;
+
+      setState(() {
+        officialAssessments = mapped;
+        isLoadingAssessments = false;
+      });
+
+      debugPrint('OFFICIAL ASSESSMENTS DETAILED => $detailedList');
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoadingAssessments = false;
+        assessmentsError = 'حدث خطأ أثناء تحميل التقييمات.';
+      });
+
+      debugPrint('OFFICIAL ASSESSMENTS ERROR => $e');
+    }
+  }
+
+  PatientAssessment _mapAssessment(Map<String, dynamic> json) {
+    return PatientAssessment(
+      formName:
+          json['templateKey']?.toString() ??
+          json['template']?['name']?.toString() ??
+          json['form']?['name']?.toString() ??
+          'تقييم',
+      submitDate:
+          json['createdAt']?.toString().split('T').first ??
+          json['updatedAt']?.toString().split('T').first ??
+          '-',
+      score: int.tryParse(json['score']?.toString() ?? '') ?? 0,
+      answers: _mapAssessmentAnswers(json),
+    );
+  }
+
+List<PatientAnswer> _mapAssessmentAnswers(Map<String, dynamic> json) {
+    final submission = json['submission'] ?? json['formSubmission'];
+
+    if (submission is! Map) return [];
+
+    final rawAnswers = submission['answers'];
+    final formVersion = submission['formVersion'];
+    final rawQuestions = formVersion is Map ? formVersion['questions'] : null;
+
+    if (rawAnswers is! List || rawQuestions is! List) return [];
+
+    final questionsById = <String, Map<String, dynamic>>{};
+
+    for (final q in rawQuestions) {
+      if (q is Map) {
+        final question = Map<String, dynamic>.from(q);
+        final id = question['id']?.toString();
+        if (id != null && id.isNotEmpty) {
+          questionsById[id] = question;
+        }
+      }
+    }
+
+    return rawAnswers.map((raw) {
+      if (raw is! Map) {
+        return const PatientAnswer(
+          question: 'سؤال غير معروف',
+          answer: '-',
+          score: 0,
+        );
+      }
+
+      final answerMap = Map<String, dynamic>.from(raw);
+      final questionId = answerMap['questionId']?.toString();
+      final question = questionId == null ? null : questionsById[questionId];
+
+      if (question == null) {
+        return const PatientAnswer(
+          question: 'سؤال غير معروف',
+          answer: '-',
+          score: 0,
+        );
+      }
+
+      final questionText =
+          question['text']?.toString() ??
+          question['title']?.toString() ??
+          question['label']?.toString() ??
+          'سؤال غير معروف';
+
+      final choiceIds =
+          (answerMap['choiceIds'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+
+      final choices = question['choices'];
+
+      String answerText = '-';
+      int answerScore = 0;
+
+      if (choices is List && choiceIds.isNotEmpty) {
+        final selectedChoices = choices.where((choice) {
+          if (choice is! Map) return false;
+          return choiceIds.contains(choice['id']?.toString());
+        }).toList();
+
+        answerText = selectedChoices
+            .map((choice) {
+              final c = Map<String, dynamic>.from(choice as Map);
+              return c['label'] ?? c['text'] ?? c['title'] ?? c['value'] ?? '';
+            })
+            .where((e) => e.toString().trim().isNotEmpty)
+            .join('، ');
+
+        answerScore = selectedChoices.fold<int>(0, (sum, choice) {
+          final c = Map<String, dynamic>.from(choice as Map);
+          return sum + (int.tryParse(c['score']?.toString() ?? '') ?? 0);
+        });
+      } else {
+        final value =
+            answerMap['value'] ??
+            answerMap['scaleValue'] ??
+            answerMap['answerValue'];
+
+        answerText = value?.toString() ?? '-';
+        answerScore = int.tryParse(value?.toString() ?? '') ?? 0;
+      }
+
+      return PatientAnswer(
+        question: questionText,
+        answer: answerText.isEmpty ? '-' : answerText,
+        score: answerScore,
+      );
+    }).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Locale>(
       valueListenable: AppLanguageController.localeNotifier,
       builder: (context, locale, _) {
         final isEnglish = locale.languageCode == 'en';
 
-        return Scaffold(
-          appBar: customAppBar(
-            context: context,
-            title: 'معلومات المريض',
-            isHomeBar: false,
-            widgets: [
-              _HeaderButton(
-                title: 'تصدير Excel',
-                icon: Icons.table_chart_outlined,
-                onTap: exportPatientToExcel,
-              ),
-            ],
-          ),
-          backgroundColor: const Color(0xFFFDF7FB),
-          body: Directionality(
-            textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: responsiveSize(context, 0.025, min: 16, max: 42),
-                  vertical: responsiveHeight(context, 0.03, min: 20, max: 40),
+        return BlocProvider(
+          create: (_) =>
+              PatientAssessmentReviewCubit(AppRepository())
+                ..loadPatientPendingSubmissions(widget.patient.id),
+          child: Scaffold(
+            appBar: customAppBar(
+              context: context,
+              title: 'معلومات المريض',
+              isHomeBar: false,
+              widgets: [
+                _HeaderButton(
+                  title: 'تصدير Excel',
+                  icon: Icons.table_chart_outlined,
+                  onTap: exportPatientToExcel,
                 ),
-                child: Column(
-                  children: [
-                    _PatientHeaderCard(
-                      patient: widget.patient,
-                      showEmergencyInfo: showEmergencyInfo,
-                      onMoreInfoTap: () {
-                        setState(() => showEmergencyInfo = !showEmergencyInfo);
-                      },
+              ],
+            ),
+            backgroundColor: const Color(0xFFFDF7FB),
+            body: Directionality(
+              textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: responsiveSize(
+                      context,
+                      0.025,
+                      min: 16,
+                      max: 42,
                     ),
-                    SizedBox(
-                      height: responsiveHeight(
-                        context,
-                        0.025,
-                        min: 18,
-                        max: 28,
+                    vertical: responsiveHeight(context, 0.03, min: 20, max: 40),
+                  ),
+                  child: Column(
+                    children: [
+                      _PatientHeaderCard(
+                        patient: widget.patient,
+                        showEmergencyInfo: showEmergencyInfo,
+                        onMoreInfoTap: () {
+                          setState(() {
+                            showEmergencyInfo = !showEmergencyInfo;
+                          });
+                        },
                       ),
-                    ),
-                    _TabsBar(
-                      selectedTab: selectedTab,
-                      onTabChanged: (index) {
-                        setState(() => selectedTab = index);
-                      },
-                    ),
-                    SizedBox(
-                      height: responsiveHeight(
-                        context,
-                        0.025,
-                        min: 18,
-                        max: 28,
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.025,
+                          min: 18,
+                          max: 28,
+                        ),
                       ),
-                    ),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 350),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (child, animation) {
-                        final slideAnimation = Tween<Offset>(
-                          begin: const Offset(0.04, 0),
-                          end: Offset.zero,
-                        ).animate(animation);
+                      _TabsBar(
+                        selectedTab: selectedTab,
+                        onTabChanged: (index) {
+                          setState(() => selectedTab = index);
 
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: slideAnimation,
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: selectedTab == 0
-                          ? _ClinicalDataTab(
-                              key: const ValueKey('clinical_tab'),
-                              patient: widget.patient,
-                            )
-                          : _AssessmentsTab(
-                              key: const ValueKey('assessments_tab'),
-                              assessments: widget.patient.assessments,
+                          if (index == 1) {
+                            _loadOfficialAssessments();
+                          }
+                        },
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.025,
+                          min: 18,
+                          max: 28,
+                        ),
+                      ),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 350),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) {
+                          final slideAnimation = Tween<Offset>(
+                            begin: const Offset(0.04, 0),
+                            end: Offset.zero,
+                          ).animate(animation);
+
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: slideAnimation,
+                              child: child,
                             ),
-                    ),
-                  ],
+                          );
+                        },
+                        child: selectedTab == 0
+                            ? _ClinicalDataTab(
+                                key: const ValueKey('clinical_tab'),
+                                patient: widget.patient,
+                              )
+                            : selectedTab == 1
+                            ? isLoadingAssessments
+                                  ? Center(child: customLoading())
+                                  : _AssessmentsTab(
+                                      key: const ValueKey('assessments_tab'),
+                                      assessments: officialAssessments,
+                                    )
+                            : _PendingReviewTab(
+                                key: const ValueKey('pending_review_tab'),
+                                patientId: widget.patient.id,
+                              ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -229,6 +440,7 @@ class _DataRowItem {
 }
 
 class ClinicalPatient {
+  final String id;
   final String fileNumber;
   final String name;
   final int age;
@@ -258,6 +470,7 @@ class ClinicalPatient {
   final List<PatientAssessment> assessments;
 
   ClinicalPatient({
+    required this.id,
     required this.fileNumber,
     required this.name,
     required this.age,

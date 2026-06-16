@@ -7,6 +7,7 @@ import 'package:bahya_website/helper/widgets/diagnosis_chart.dart';
 import 'package:bahya_website/helper/widgets/home_drawer.dart';
 import 'package:bahya_website/helper/widgets/home_feature_grid.dart';
 import 'package:bahya_website/helper/widgets/state_card.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
@@ -56,25 +57,43 @@ class _HomePageState extends State<HomePage> {
       drawer: HomeDrawer(userName: userName),
       appBar: customAppBar(
         context: context,
-        title: ' فريق الدعم النفسي',
+        title: 'Psychological Support Team',
         isHomeBar: true,
         scaffoldKey: _scaffoldKey,
       ),
       backgroundColor: const Color(0xFFFDF7FB),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(height: h * 0.03),
+      body: ValueListenableBuilder<Locale>(
+        valueListenable: AppLanguageController.localeNotifier,
+        builder: (context, locale, _) {
+          final isEnglish = locale.languageCode == 'en';
 
-            customText(
-              text: "لوحة التحكم الرئيسية",
-              size: h * 0.02,
-              color: const Color(0xFF831843),
-              bold: true,
-            ),
+          return Directionality(
+            textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  SizedBox(height: h * 0.02),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: w * 0.025),
+                    child: Align(
+                      alignment: isEnglish
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: const LanguageToggleButton(
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: h * 0.02),
+                  customText(
+                    text: "Main dashboard",
+                    size: h * 0.02,
+                    color: const Color(0xFF831843),
+                    bold: true,
+                  ),
             const SizedBox(height: 10),
             customText(
-              text: "اختر الخدمة المناسبة من القائمة التالية",
+              text: "Choose the right service from the list below",
               size: h * 0.015,
               color: const Color(0xFFEB48A0),
               bold: true,
@@ -113,14 +132,14 @@ class _HomePageState extends State<HomePage> {
                           items: getStatCards(context),
                         ),
                       ),
-                      title: "لوحة الإحصائيات العامة",
+                      title: "General statistics dashboard",
                     ),
 
                     SizedBox(height: h * 0.01),
 
                     sectionCard(
                       context: context,
-                      title: "مخطط مقارنة التشخيصات",
+                      title: "Diagnosis comparison chart",
                       child: Column(
                         children: [
                           DiagnosisComparisonChart(
@@ -131,11 +150,14 @@ class _HomePageState extends State<HomePage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              LegendDot(color: Color(0xFFB36BFF), label: 'عدد'),
+                              LegendDot(
+                                color: Color(0xFFB36BFF),
+                                label: 'Count',
+                              ),
                               SizedBox(width: 18),
                               LegendDot(
                                 color: Color(0xFFFF5C9A),
-                                label: 'نسبة',
+                                label: 'Percent',
                               ),
                             ],
                           ),
@@ -152,15 +174,18 @@ class _HomePageState extends State<HomePage> {
 
             sectionCard(
               context: context,
-              title: "الخدمات",
+              title: "Services",
               child: Padding(
                 padding: EdgeInsets.all(16),
                 child: HomeFeaturesGrid(),
               ),
             ),
             SizedBox(height: h * 0.02),
-          ],
-        ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

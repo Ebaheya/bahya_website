@@ -194,25 +194,6 @@ PreferredSizeWidget customAppBar({
                             size: 28,
                           ),
                         ),
-                        const LanguageToggleButton(),
-                        // GestureDetector(
-                        //   onTap: () {
-                        //     scaffoldKey?.currentState?.openDrawer();
-                        //   },
-                        //   child: const Icon(
-                        //     Icons.menu,
-                        //     color: Colors.white,
-                        //     size: 28,
-                        //   ),
-                        //   // child: CircleAvatar(
-                        //   //   radius: h * 0.023,
-                        //   //   backgroundColor: Colors.white,
-                        //   //   child: const Icon(
-                        //   //     Icons.person,
-                        //   //     color: Colors.pinkAccent,
-                        //   //   ),
-                        //   // ),
-                        // ),
                         SizedBox(width: w * 0.02),
                       ],
                     )
@@ -278,11 +259,17 @@ class _LanguageToggleButtonState extends State<LanguageToggleButton> {
 
     setState(() => isSwitching = true);
     final navigator = Navigator.of(context, rootNavigator: true);
+    final languageCode =
+        AppLanguageController.localeNotifier.value.languageCode;
+    final loadingLabel = AppLocalizations.translateByLocaleCode(
+      languageCode,
+      'Changing language',
+    );
 
     showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      barrierLabel: 'Language loading',
+      barrierLabel: loadingLabel,
       barrierColor: const Color(0xFFFDF7FB).withValues(alpha: 0.94),
       transitionDuration: const Duration(milliseconds: 320),
       pageBuilder: (context, animation, secondaryAnimation) {
@@ -309,7 +296,7 @@ class _LanguageToggleButtonState extends State<LanguageToggleButton> {
     );
 
     await Future.delayed(const Duration(milliseconds: 3200));
-    AppLanguageController.toggle();
+    await AppLanguageController.toggle();
     await Future.delayed(const Duration(milliseconds: 350));
 
     if (navigator.canPop()) {
@@ -327,44 +314,58 @@ class _LanguageToggleButtonState extends State<LanguageToggleButton> {
       valueListenable: AppLanguageController.localeNotifier,
       builder: (context, locale, _) {
         final isEnglish = locale.languageCode == 'en';
+        final tooltip = AppLocalizations.translateByLocaleCode(
+          locale.languageCode,
+          isEnglish ? 'Switch to Arabic' : 'Switch to English',
+        );
+        final targetLanguage = isEnglish ? 'Arabic' : 'English';
 
         return Padding(
           padding: widget.padding,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: _toggleLanguageWithLoading,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
+          child: Tooltip(
+            message: tooltip,
+            child: Semantics(
+              button: true,
+              label: tooltip,
+              child: InkWell(
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0xFFFFC7DD)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.10),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
+                onTap: _toggleLanguageWithLoading,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.language,
-                    color: Color(0xFFE83E8C),
-                    size: 18,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: const Color(0xFFFFC7DD)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.10),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    isEnglish ? 'AR' : 'EN',
-                    style: const TextStyle(
-                      color: Color(0xFFE83E8C),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.language,
+                        color: Color(0xFFE83E8C),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 6),
+                      customText(
+                        text: targetLanguage,
+                        size: 12,
+                        color: const Color(0xFFE83E8C),
+                        bold: true,
+                        isCenter: false,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

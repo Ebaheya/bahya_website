@@ -5,6 +5,7 @@ import 'package:bahya_website/data/api/models/patient_model.dart';
 import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/data/api/models/user_model.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 
 class AppRepository {
   WebService webService = WebService();
@@ -90,6 +91,16 @@ class AppRepository {
       throw Exception(e.response?.data ?? 'Failed to get user');
     } catch (e) {
       throw Exception('Unexpected error : $e');
+    }
+  }
+
+  Future<void> createFormRaw({required Map<String, dynamic> body}) async {
+    try {
+      await webService.createForm(body: body);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data ?? 'Failed to create form');
+    } catch (e) {
+      throw Exception(_readableError(e, 'Failed to create form'));
     }
   }
 
@@ -305,17 +316,69 @@ class AppRepository {
   }
 
   Future<List<Map<String, dynamic>>> getPendingSubmissions() async {
-    try {
-      final json = await webService.getPendingSubmissions();
+    final dynamic response = await webService.getPendingSubmissions();
 
-      return (json['data'] as List? ?? [])
+    debugPrint('Pending submissions raw response => $response');
+
+    if (response is List<dynamic>) {
+      return response
+          .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
-    } on DioException catch (e) {
-      throw Exception(e.response?.data ?? 'Failed to get pending submissions');
-    } catch (e) {
-      throw Exception('Unexpected error : $e');
     }
+
+    if (response is Map<String, dynamic>) {
+      final dynamic data = response['data'];
+      final dynamic items = response['items'];
+      final dynamic submissions = response['submissions'];
+
+      if (data is List<dynamic>) {
+        return data
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+
+      if (items is List<dynamic>) {
+        return items
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+
+      if (submissions is List<dynamic>) {
+        return submissions
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+    }
+
+    if (response is Map) {
+      final dynamic data = response['data'];
+      final dynamic items = response['items'];
+      final dynamic submissions = response['submissions'];
+
+      if (data is List) {
+        return data.whereType<Map>().map((e) {
+          return Map<String, dynamic>.from(e);
+        }).toList();
+      }
+
+      if (items is List) {
+        return items.whereType<Map>().map((e) {
+          return Map<String, dynamic>.from(e);
+        }).toList();
+      }
+
+      if (submissions is List) {
+        return submissions.whereType<Map>().map((e) {
+          return Map<String, dynamic>.from(e);
+        }).toList();
+      }
+    }
+
+    return [];
   }
 
   Future<Map<String, dynamic>> getSubmissionById(String submissionId) async {
@@ -373,5 +436,34 @@ class AppRepository {
 
   Future<void> deleteForm({required String formId}) async {
     await webService.deleteForm(formId: formId);
+  }
+
+  Future<Map<String, dynamic>> getSubmissionDetails(String submissionId) async {
+    final response = await webService.getSubmissionDetails(submissionId);
+
+    return Map<String, dynamic>.from(response);
+  }
+
+  Future<Map<String, dynamic>> createOfficialAssessment({
+    required String patientId,
+    required String submissionId,
+    required String templateKey,
+    required String status,
+    String? doctorNote,
+    int? score,
+  }) async {
+    final body = {
+      "patientId": patientId,
+      "submissionId": submissionId,
+      "templateKey": templateKey,
+      "status": status,
+      if (doctorNote != null && doctorNote.trim().isNotEmpty)
+        "doctorNote": doctorNote.trim(),
+      if (score != null) "score": score,
+    };
+
+    final response = await webService.createOfficialAssessment(body: body);
+    debugPrint(response.toString());
+    return Map<String, dynamic>.from(response);
   }
 }

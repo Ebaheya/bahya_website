@@ -1,11 +1,23 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
-import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-enum QuestionType { single, multiple }
+enum QuestionType { single, multiple, scale }
+
+extension QuestionTypePayload on QuestionType {
+  String get apiValue {
+    switch (this) {
+      case QuestionType.single:
+        return 'SINGLE_SELECT';
+      case QuestionType.multiple:
+        return 'MULTI_SELECT';
+      case QuestionType.scale:
+        return 'SCALE';
+    }
+  }
+}
 
 const Color surveyPink = Color(0xFFFF4F93);
 const Color surveyPurple = Color(0xFF8E3FD1);
@@ -55,11 +67,19 @@ class QuestionValidationData {
   final String questionText;
   final QuestionType questionType;
   final List<AnswerValidationData> answers;
+  final int? minValue;
+  final int? maxValue;
+  final String minLabel;
+  final String maxLabel;
 
   QuestionValidationData({
     required this.questionText,
     required this.questionType,
     required this.answers,
+    this.minValue,
+    this.maxValue,
+    this.minLabel = '',
+    this.maxLabel = '',
   });
 }
 
