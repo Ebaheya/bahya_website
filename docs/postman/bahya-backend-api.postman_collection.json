@@ -316,7 +316,7 @@
     {
       "name": "Service Categories",
       "item": [
-        { "name": "List categories (Authenticated)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/service-categories?isActive=true", "host": ["{{baseUrl}}"], "path": ["service-categories"], "query": [{ "key": "kind", "value": "EDUCATIONAL", "disabled": true }, { "key": "isActive", "value": "true" }] } } },
+        { "name": "List categories (Authenticated)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/service-categories?isActive=true", "host": ["{{baseUrl}}"], "path": ["service-categories"], "query": [{ "key": "kind", "value": "EDUCATIONAL", "disabled": true }, { "key": "isActive", "value": "true" }] }, "description": "Patients always see active categories only — the server forces isActive=true for the PATIENT role and ignores any isActive value they send. Staff (Admin/Doctor/etc.) may pass isActive=false to retrieve deactivated categories." } },
         {
           "name": "Create category (Admin, Doctor)",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json(); if (j.id) pm.collectionVariables.set('categoryId', j.id);"] } }],

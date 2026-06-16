@@ -11,8 +11,9 @@ import * as categoryService from './category.service';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!req.user) throw AppError.unauthorized();
     const query = listCategoriesQuerySchema.parse(req.query);
-    const categories = await categoryService.listCategories(query);
+    const categories = await categoryService.listCategories(query, req.user.role);
     res.status(200).json(categories);
   } catch (err) {
     next(err);

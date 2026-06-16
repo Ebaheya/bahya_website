@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, type Role } from '@prisma/client';
 import type { Request } from 'express';
 import { prisma } from '../../config/prisma';
 import { writeAudit } from '../../middleware/audit';
@@ -143,10 +143,17 @@ export async function setCategoryStatus(
   return category;
 }
 
-export async function listCategories(query: ListCategoriesQuery) {
+export async function listCategories(query: ListCategoriesQuery, role: Role) {
   const where: Prisma.ServiceCategoryWhereInput = {
     ...(query.kind ? { kind: query.kind } : {}),
-    ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
+    // Patients browse only active categories; the `isActive` query filter is a
+    // staff-authoring affordance, so a patient's `isActive=false` is ignored.
+    // Mirrors listServices, which scopes patients to status=ACTIVE.
+    ...(role === 'PATIENT'
+      ? { isActive: true }
+      : query.isActive !== undefined
+        ? { isActive: query.isActive }
+        : {}),
   };
   const skip = (query.page - 1) * query.pageSize;
 

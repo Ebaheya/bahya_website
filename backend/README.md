@@ -2229,13 +2229,16 @@ can list; only Admin and Doctor mutate. Base path `/api/v1/service-categories`.
 
 | Method | Path | Access | Description |
 |---|---|---|---|
-| GET | `/service-categories` | Authenticated | List categories (filters: `kind`, `isActive`) |
+| GET | `/service-categories` | Authenticated | List categories (filters: `kind`, `isActive`). Patients always see active categories only — `isActive` is honored for staff and ignored for the `PATIENT` role. |
 | POST | `/service-categories` | Admin, Doctor | Create a category (`name`, `kind`, `iconKey`, `color`) |
 | PATCH | `/service-categories/:id` | Admin, Doctor | Update name / kind / iconKey / color |
 | PATCH | `/service-categories/:id/status` | Admin, Doctor | Activate / deactivate (`{ "isActive": false }`) |
 
 A duplicate `name` (case-insensitive) returns `409 CATEGORY_NAME_TAKEN`. A
-category referenced by services is deactivated, never deleted.
+category referenced by services is deactivated, never deleted. Deactivated
+categories disappear from the patient browse list (the server forces
+`isActive=true` for patients); staff can still retrieve them with `isActive=false`
+for authoring.
 
 ```bash
 curl -X POST localhost:3000/api/v1/service-categories \

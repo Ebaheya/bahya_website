@@ -177,12 +177,15 @@ describe('service category service', () => {
     );
   });
 
-  it('lists categories with kind and isActive filters', async () => {
+  it('lists categories with kind and isActive filters for staff', async () => {
     prismaMock.serviceCategory.findMany.mockResolvedValue([category()]);
     prismaMock.serviceCategory.count.mockResolvedValue(1);
 
     await expect(
-      categoryService.listCategories({ kind: 'EDUCATIONAL', isActive: true, page: 1, pageSize: 20 })
+      categoryService.listCategories(
+        { kind: 'EDUCATIONAL', isActive: true, page: 1, pageSize: 20 },
+        'ADMIN'
+      )
     ).resolves.toMatchObject({
       total: 1,
       data: [expect.objectContaining({ kind: 'EDUCATIONAL' })],
@@ -191,6 +194,33 @@ describe('service category service', () => {
     expect(prismaMock.serviceCategory.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { kind: 'EDUCATIONAL', isActive: true },
+      })
+    );
+  });
+
+  it('lets staff request deactivated categories with isActive=false', async () => {
+    prismaMock.serviceCategory.findMany.mockResolvedValue([category({ isActive: false })]);
+    prismaMock.serviceCategory.count.mockResolvedValue(1);
+
+    await categoryService.listCategories({ isActive: false, page: 1, pageSize: 20 }, 'DOCTOR');
+
+    expect(prismaMock.serviceCategory.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { isActive: false } })
+    );
+  });
+
+  it('forces isActive=true for patients, ignoring an isActive=false filter', async () => {
+    prismaMock.serviceCategory.findMany.mockResolvedValue([category()]);
+    prismaMock.serviceCategory.count.mockResolvedValue(1);
+
+    await categoryService.listCategories(
+      { kind: 'TRIP', isActive: false, page: 1, pageSize: 20 },
+      'PATIENT'
+    );
+
+    expect(prismaMock.serviceCategory.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { kind: 'TRIP', isActive: true },
       })
     );
   });
