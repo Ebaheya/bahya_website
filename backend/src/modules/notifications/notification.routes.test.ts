@@ -4,6 +4,7 @@ import type { Role } from '@prisma/client';
 import express from 'express';
 import { errorHandler } from '../../middleware/errorHandler';
 import { AppError } from '../../utils/httpError';
+import { NotificationErrors } from './notification.errors';
 
 const notificationId = '64b2f0000000000000000001';
 
@@ -17,6 +18,10 @@ const mockUnregisterDevice = jest.fn();
 
 jest.mock('../../middleware/authenticate', () => ({
   authenticate: (req: Request, _res: Response, next: NextFunction): void => {
+    if (req.headers['x-test-unauthenticated'] === 'true') {
+      const { AppError } = jest.requireActual('../../utils/httpError');
+      return next(AppError.unauthorized('Missing or invalid Authorization header'));
+    }
     req.user = {
       id: 'actor-id',
       role: String(req.headers['x-test-role'] ?? 'PATIENT') as Role,
@@ -182,5 +187,73 @@ describe('notification lifecycle routes', () => {
 
     expect(response.status).toBe(404);
     expect(mockRequestBooking).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns 401 when authentication rejects a notification request', async () => {
+    const response = await fetch(`${baseUrl}/notifications/my`, {
+      headers: { 'x-test-unauthenticated': 'true' },
+    });
+
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'UNAUTHORIZED' },
+    });
+    expect(response.status).toBe(401);
+    expect(mockListMyNotifications).not.toHaveBeenCalled();
+  });
+
+  it('maps non-owner lifecycle attempts to 403', async () => {
+    mockMarkRead.mockRejectedValueOnce(NotificationErrors.notRecipient());
+
+    const response = await fetch(`${baseUrl}/notifications/${notificationId}/read`, {
+      method: 'PATCH',
+      headers: { 'x-test-role': 'PATIENT' },
+    });
+
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'NOT_RECIPIENT' },
+    });
+    expect(response.status).toBe(403);
+  });
+
+  it('maps missing notifications to 404 on claim', async () => {
+    mockClaimNotification.mockRejectedValueOnce(AppError.notFound('Notification not found'));
+
+    const response = await fetch(`${baseUrl}/notifications/${notificationId}/claim`, {
+      method: 'PATCH',
+      headers: { 'x-test-role': 'DOCTOR' },
+    });
+
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'NOT_FOUND' },
+    });
+    expect(response.status).toBe(404);
+  });
+
+  it('maps claim conflicts to 409', async () => {
+    mockClaimNotification.mockRejectedValueOnce(NotificationErrors.claimConflict());
+
+    const response = await fetch(`${baseUrl}/notifications/${notificationId}/claim`, {
+      method: 'PATCH',
+      headers: { 'x-test-role': 'DOCTOR' },
+    });
+
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'CLAIM_CONFLICT' },
+    });
+    expect(response.status).toBe(409);
+  });
+
+  it('maps illegal lifecycle transitions to 409', async () => {
+    mockMarkDone.mockRejectedValueOnce(NotificationErrors.illegalTransition());
+
+    const response = await fetch(`${baseUrl}/notifications/${notificationId}/done`, {
+      method: 'PATCH',
+      headers: { 'x-test-role': 'PATIENT' },
+    });
+
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'ILLEGAL_TRANSITION' },
+    });
+    expect(response.status).toBe(409);
   });
 });

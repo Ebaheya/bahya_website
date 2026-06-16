@@ -396,6 +396,46 @@ describe('listMyNotifications', () => {
 
     expect(result.data[0].patient).toBeNull();
   });
+
+  it('formats a few hundred notifications within the 1s list target', async () => {
+    const totalNotifications = 350;
+    const docs = Array.from({ length: 100 }, (_, i) => ({
+      _id: `64b2f0000000000000000${String(i).padStart(3, '0')}`.slice(0, 24),
+      type: 'BOOKING_REQUIRED',
+      severity: 'MEDIUM',
+      status: 'UNREAD',
+      title: 'Doctor booking required',
+      message: 'Patient needs a doctor appointment.',
+      doctorNote: null,
+      claimedAt: null,
+      readAt: null,
+      doneAt: null,
+      createdAt: new Date('2026-06-15T00:00:00Z'),
+      patientId: `patient-${i}`,
+      recipientRole: 'CALL_CENTER',
+      recipientUserId: null,
+    }));
+    notificationModelMock.find.mockReturnValue(findChain(docs));
+    notificationModelMock.countDocuments.mockResolvedValue(totalNotifications);
+    prismaMock.patient.findMany.mockResolvedValue(
+      docs.map((doc, i) => ({
+        id: doc.patientId,
+        phone: `+201000000${String(i).padStart(3, '0')}`,
+        user: { fullName: `Patient ${i}` },
+      }))
+    );
+
+    const startedAt = Date.now();
+    const result = await listMyNotifications(
+      { id: 'cc-1', role: 'CALL_CENTER' },
+      { page: 1, pageSize: 100 }
+    );
+    const elapsedMs = Date.now() - startedAt;
+
+    expect(result.total).toBe(totalNotifications);
+    expect(result.data).toHaveLength(100);
+    expect(elapsedMs).toBeLessThan(1000);
+  });
 });
 
 describe('claimNotification', () => {
@@ -538,5 +578,43 @@ describe('requestBooking', () => {
 
     expect(notificationModelMock.create).not.toHaveBeenCalled();
     expect(pushForNotificationMock).not.toHaveBeenCalled();
+  });
+
+  it('still returns the booking notification when best-effort push fails', async () => {
+    const createdDoc = {
+      _id: '64b2f0000000000000000001',
+      type: 'BOOKING_REQUIRED',
+      severity: 'MEDIUM',
+      status: 'UNREAD',
+      title: 'Doctor booking required',
+      message: 'Patient needs a doctor appointment.',
+      doctorNote: null,
+      claimedAt: null,
+      readAt: null,
+      doneAt: null,
+      createdAt: new Date('2026-06-16T10:00:00Z'),
+      patientId: '11111111-1111-4111-8111-111111111111',
+      recipientRole: 'CALL_CENTER',
+      recipientUserId: null,
+    };
+    prismaMock.patient.findUnique.mockResolvedValue({ id: createdDoc.patientId });
+    notificationModelMock.create.mockResolvedValue(createdDoc);
+    pushForNotificationMock.mockRejectedValueOnce(new Error('invalid firebase credential'));
+
+    await expect(
+      requestBooking({ id: 'doctor-1', role: 'DOCTOR' }, { patientId: createdDoc.patientId })
+    ).resolves.toMatchObject({
+      id: '64b2f0000000000000000001',
+      type: 'BOOKING_REQUIRED',
+      status: 'UNREAD',
+    });
+
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metric: 'notification_push_failure',
+        type: 'BOOKING_REQUIRED',
+      }),
+      'notification push failed'
+    );
   });
 });
