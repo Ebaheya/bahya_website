@@ -13,6 +13,7 @@ import {
   type NotificationSeverity,
   type NotificationStatus,
 } from './notification.model';
+import { pushForNotification } from './push.service';
 
 export interface FormAssignedNotificationInput {
   patientId: string;
@@ -45,9 +46,25 @@ function loggableError(err: unknown): { name?: string; message: string } {
   return { message: String(err) };
 }
 
+async function pushBestEffort(doc: NotificationDoc & { _id: unknown }, type: string): Promise<void> {
+  try {
+    await pushForNotification(doc);
+  } catch (err) {
+    logger.warn(
+      {
+        metric: 'notification_push_failure',
+        type,
+        notificationId: String(doc._id),
+        err: loggableError(err),
+      },
+      'notification push failed'
+    );
+  }
+}
+
 export async function emitFormAssigned(input: FormAssignedNotificationInput): Promise<void> {
   try {
-    await NotificationModel.create({
+    const doc = await NotificationModel.create({
       recipientRole: input.recipientRole,
       recipientUserId: input.recipientUserId,
       patientId: input.patientId,
@@ -61,8 +78,10 @@ export async function emitFormAssigned(input: FormAssignedNotificationInput): Pr
       claimedAt: null,
       readAt: null,
       doneAt: null,
+      pushedAt: null,
       createdAt: new Date(),
     });
+    await pushBestEffort(doc, 'FORM_ASSIGNED');
   } catch (err) {
     logger.warn(
       {
@@ -80,7 +99,7 @@ export async function emitFormAssigned(input: FormAssignedNotificationInput): Pr
 
 export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void> {
   try {
-    await NotificationModel.create({
+    const doc = await NotificationModel.create({
       recipientRole: 'DOCTOR',
       recipientUserId: null,
       patientId: input.patientId,
@@ -96,8 +115,10 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
       claimedAt: null,
       readAt: null,
       doneAt: null,
+      pushedAt: null,
       createdAt: new Date(),
     });
+    await pushBestEffort(doc, 'HIGH_RISK');
   } catch (err) {
     logger.warn(
       {
@@ -117,7 +138,7 @@ export async function emitServiceRequestSubmitted(
 ): Promise<void> {
   try {
     const createdAt = new Date();
-    await NotificationModel.insertMany(
+    const docs = await NotificationModel.insertMany(
       (['ADMIN', 'DOCTOR'] as const).map((recipientRole) => ({
         recipientRole,
         recipientUserId: null,
@@ -132,9 +153,13 @@ export async function emitServiceRequestSubmitted(
         claimedAt: null,
         readAt: null,
         doneAt: null,
+        pushedAt: null,
         createdAt,
       }))
     );
+    for (const doc of docs) {
+      await pushBestEffort(doc, 'SERVICE_REQUEST_SUBMITTED');
+    }
   } catch (err) {
     logger.warn(
       {
@@ -151,7 +176,7 @@ export async function emitServiceRequestDecided(
   input: ServiceRequestDecidedInput
 ): Promise<void> {
   try {
-    await NotificationModel.create({
+    const doc = await NotificationModel.create({
       recipientRole: 'PATIENT',
       recipientUserId: input.recipientUserId,
       patientId: input.patientId,
@@ -167,8 +192,10 @@ export async function emitServiceRequestDecided(
       claimedAt: null,
       readAt: null,
       doneAt: null,
+      pushedAt: null,
       createdAt: new Date(),
     });
+    await pushBestEffort(doc, 'SERVICE_REQUEST_DECIDED');
   } catch (err) {
     logger.warn(
       {

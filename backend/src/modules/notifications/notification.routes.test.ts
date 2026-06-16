@@ -10,6 +10,8 @@ const mockListMyNotifications = jest.fn();
 const mockClaimNotification = jest.fn();
 const mockMarkRead = jest.fn();
 const mockMarkDone = jest.fn();
+const mockRegisterDevice = jest.fn();
+const mockUnregisterDevice = jest.fn();
 
 jest.mock('../../middleware/authenticate', () => ({
   authenticate: (req: Request, _res: Response, next: NextFunction): void => {
@@ -26,6 +28,11 @@ jest.mock('./notification.service', () => ({
   claimNotification: mockClaimNotification,
   markRead: mockMarkRead,
   markDone: mockMarkDone,
+}));
+
+jest.mock('./device.service', () => ({
+  registerDevice: mockRegisterDevice,
+  unregisterDevice: mockUnregisterDevice,
 }));
 
 import { notificationRouter } from './notification.routes';
@@ -53,6 +60,8 @@ describe('notification lifecycle routes', () => {
     jest.clearAllMocks();
     mockMarkRead.mockResolvedValue({ id: notificationId, status: 'READ' });
     mockMarkDone.mockResolvedValue({ id: notificationId, status: 'DONE' });
+    mockRegisterDevice.mockResolvedValue({ registered: true });
+    mockUnregisterDevice.mockResolvedValue({ unregistered: true });
   });
 
   it('routes read and done lifecycle patches to the authenticated actor', async () => {
@@ -81,5 +90,39 @@ describe('notification lifecycle routes', () => {
 
     expect(response.status).toBe(400);
     expect(mockMarkRead).not.toHaveBeenCalled();
+  });
+
+  it('routes device registration and unregistering to the authenticated actor', async () => {
+    const registerResponse = await fetch(`${baseUrl}/notifications/devices`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-test-role': 'PATIENT' },
+      body: JSON.stringify({ token: 'fcm-token-1', platform: 'ANDROID' }),
+    });
+    const unregisterResponse = await fetch(`${baseUrl}/notifications/devices`, {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json', 'x-test-role': 'PATIENT' },
+      body: JSON.stringify({ token: 'fcm-token-1' }),
+    });
+
+    await expect(registerResponse.json()).resolves.toEqual({ registered: true });
+    await expect(unregisterResponse.json()).resolves.toEqual({ unregistered: true });
+    expect(registerResponse.status).toBe(200);
+    expect(unregisterResponse.status).toBe(200);
+    expect(mockRegisterDevice).toHaveBeenCalledWith('actor-id', {
+      token: 'fcm-token-1',
+      platform: 'ANDROID',
+    });
+    expect(mockUnregisterDevice).toHaveBeenCalledWith('actor-id', 'fcm-token-1');
+  });
+
+  it('rejects invalid device payloads before calling device services', async () => {
+    const response = await fetch(`${baseUrl}/notifications/devices`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-test-role': 'PATIENT' },
+      body: JSON.stringify({ token: '', platform: 'DESKTOP' }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(mockRegisterDevice).not.toHaveBeenCalled();
   });
 });

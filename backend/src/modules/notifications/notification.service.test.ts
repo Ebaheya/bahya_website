@@ -2,6 +2,7 @@ import { logger } from '../../config/logger';
 import { prisma } from '../../config/prisma';
 import { writeAudit } from '../../middleware/audit';
 import { NotificationModel } from './notification.model';
+import { pushForNotification } from './push.service';
 import {
   claimNotification,
   emitServiceRequestDecided,
@@ -36,8 +37,13 @@ jest.mock('../../middleware/audit', () => ({
   writeAudit: jest.fn(),
 }));
 
+jest.mock('./push.service', () => ({
+  pushForNotification: jest.fn(),
+}));
+
 const loggerMock = logger as unknown as { warn: jest.Mock };
 const writeAuditMock = writeAudit as jest.Mock;
+const pushForNotificationMock = pushForNotification as jest.Mock;
 const notificationModelMock = NotificationModel as unknown as {
   create: jest.Mock;
   insertMany: jest.Mock;
@@ -66,6 +72,7 @@ function leanResult(result: unknown) {
 describe('service notification emitters', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    pushForNotificationMock.mockResolvedValue(undefined);
   });
 
   it('omits patient identifiers from submitted-request failure logs', async () => {
@@ -100,6 +107,42 @@ describe('service notification emitters', () => {
       type: 'SERVICE_REQUEST_DECIDED',
       approved: true,
     });
+  });
+
+  it('triggers best-effort push after a notification is created', async () => {
+    const created = { _id: 'n1', type: 'SERVICE_REQUEST_DECIDED' };
+    notificationModelMock.create.mockResolvedValue(created);
+
+    await emitServiceRequestDecided({
+      patientId: 'patient-id-1',
+      recipientUserId: 'patient-user-1',
+      approved: true,
+      serviceName: 'Support',
+    });
+
+    expect(pushForNotificationMock).toHaveBeenCalledWith(created);
+  });
+
+  it('triggers push for every inserted broadcast notification and swallows push failures', async () => {
+    const inserted = [
+      { _id: 'n1', type: 'SERVICE_REQUEST_SUBMITTED', recipientRole: 'ADMIN' },
+      { _id: 'n2', type: 'SERVICE_REQUEST_SUBMITTED', recipientRole: 'DOCTOR' },
+    ];
+    notificationModelMock.insertMany.mockResolvedValue(inserted);
+    pushForNotificationMock.mockRejectedValueOnce(new Error('fcm unavailable'));
+
+    await emitServiceRequestSubmitted({ patientId: 'patient-id-1' });
+
+    expect(pushForNotificationMock).toHaveBeenCalledTimes(2);
+    expect(pushForNotificationMock).toHaveBeenNthCalledWith(1, inserted[0]);
+    expect(pushForNotificationMock).toHaveBeenNthCalledWith(2, inserted[1]);
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metric: 'notification_push_failure',
+        type: 'SERVICE_REQUEST_SUBMITTED',
+      }),
+      'notification push failed'
+    );
   });
 });
 

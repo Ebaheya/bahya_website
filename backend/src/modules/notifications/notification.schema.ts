@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 const notificationStatus = z.enum(['UNREAD', 'READ', 'DONE']);
 const notificationSeverity = z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
+const devicePlatform = z.enum(['ANDROID', 'IOS', 'WEB']);
 
 // GET /notifications/my — list filters + pagination (newest-first).
 export const listMyNotificationsQuerySchema = z
@@ -24,3 +25,19 @@ export const notificationIdParamSchema = z
   .strict();
 
 export type NotificationIdParam = z.infer<typeof notificationIdParamSchema>;
+
+export const registerDeviceSchema = z
+  .object({
+    token: z.string().trim().min(1),
+    platform: devicePlatform,
+  })
+  .strict();
+
+export const unregisterDeviceSchema = z
+  .object({
+    token: z.string().trim().min(1),
+  })
+  .strict();
+
+export type RegisterDeviceBody = z.infer<typeof registerDeviceSchema>;
+export type UnregisterDeviceBody = z.infer<typeof unregisterDeviceSchema>;

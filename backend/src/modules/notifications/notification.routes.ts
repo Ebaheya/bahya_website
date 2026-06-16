@@ -14,6 +14,8 @@ export const notificationRouter = Router();
 notificationRouter.use(authenticate);
 
 notificationRouter.get('/my', controller.listMy);
+notificationRouter.post('/devices', controller.registerDevice);
+notificationRouter.delete('/devices', controller.unregisterDevice);
 notificationRouter.patch('/:id/claim', controller.claim);
 notificationRouter.patch('/:id/read', controller.read);
 notificationRouter.patch('/:id/done', controller.done);

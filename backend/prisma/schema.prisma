@@ -15,6 +15,12 @@ enum Role {
   PATIENT
 }
 
+enum DevicePlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -148,8 +154,21 @@ model User {
   authoredServiceCategories ServiceCategory[]    @relation("ServiceCategoryCreatedBy")
   authoredServices          Service[]            @relation("ServiceCreatedBy")
   decidedServiceRequests    ServiceRequest[]     @relation("ServiceRequestDecidedBy")
+  deviceTokens              DeviceToken[]
 
   @@index([role])
+}
+
+model DeviceToken {
+  id         String         @id @default(uuid())
+  userId     String
+  token      String         @unique
+  platform   DevicePlatform
+  createdAt  DateTime       @default(now())
+  lastSeenAt DateTime       @default(now())
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model RefreshToken {

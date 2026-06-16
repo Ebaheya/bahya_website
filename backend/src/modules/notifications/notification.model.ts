@@ -31,6 +31,7 @@ export interface NotificationDoc {
   claimedAt: Date | null;
   readAt: Date | null;
   doneAt: Date | null;
+  pushedAt: Date | null;
   createdAt: Date;
 }
 
@@ -65,6 +66,7 @@ const NotificationSchema = new Schema<NotificationDoc>(
     claimedAt: { type: Date, default: null },
     readAt: { type: Date, default: null },
     doneAt: { type: Date, default: null },
+    pushedAt: { type: Date, default: null },
     createdAt: { type: Date, required: true },
   },
   { collection: 'notifications', versionKey: false, strict: 'throw' }

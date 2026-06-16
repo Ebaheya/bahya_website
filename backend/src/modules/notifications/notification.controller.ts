@@ -3,7 +3,10 @@ import { AppError } from '../../utils/httpError';
 import {
   listMyNotificationsQuerySchema,
   notificationIdParamSchema,
+  registerDeviceSchema,
+  unregisterDeviceSchema,
 } from './notification.schema';
+import * as deviceService from './device.service';
 import * as notificationService from './notification.service';
 
 export async function listMy(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -56,6 +59,36 @@ export async function done(req: Request, res: Response, next: NextFunction): Pro
       { id: req.user.id, role: req.user.role },
       id
     );
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function registerDevice(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) throw AppError.unauthorized();
+    const body = registerDeviceSchema.parse(req.body);
+    const result = await deviceService.registerDevice(req.user.id, body);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function unregisterDevice(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.user) throw AppError.unauthorized();
+    const body = unregisterDeviceSchema.parse(req.body);
+    const result = await deviceService.unregisterDevice(req.user.id, body.token);
     res.status(200).json(result);
   } catch (err) {
     next(err);
