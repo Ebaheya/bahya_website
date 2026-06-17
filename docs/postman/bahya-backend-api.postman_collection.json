@@ -2,7 +2,7 @@
   "info": {
     "name": "Bahya Backend API (Full)",
     "_postman_id": "b0a1d5e2-0006-4f00-9a00-bahyafull0001",
-    "description": "Complete collection for the Bahya backend (`/api/v1`): health, auth, patients, users, volunteers, dynamic assessment forms, form assignments, assessments, and patient services & activities (categories, services, requests).\n\nUsage:\n1. Set the `baseUrl` variable (defaults to http://localhost:3000/api/v1).\n2. Bootstrap the first admin via Auth > Register first admin (bootstrap) using `bootstrapSecret`, or use an existing account.\n3. Run Auth > Login — the test script saves `accessToken` and `refreshToken` automatically. All protected requests inherit `Bearer {{accessToken}}` from collection auth.\n4. To exercise role-specific routes, log in as the appropriate role and re-run Login.\n\nRoles per route follow the server's `authorize(...)` guards and Constitution v2.1.0 RBAC.",
+    "description": "Complete collection for the Bahya backend (`/api/v1`): health, auth, patients, users, volunteers, dynamic assessment forms, form assignments, assessments, and patient services & activities (categories, services, requests).\n\nUsage:\n1. Set the `baseUrl` variable (defaults to http://localhost:3000/api/v1).\n2. Bootstrap the first admin via Auth > Register first admin (bootstrap). Set `bootstrapSecret` to match the server's `BOOTSTRAP_SECRET` in backend/.env. This only works once, on a fresh DB with no admin; if an admin already exists it returns 403 by design — use an existing account and skip to Login.\n3. Run Auth > Login — the test script saves `accessToken` and `refreshToken` automatically. Login uses `{{password}}` (default ChangeMe123!). All protected requests inherit `Bearer {{accessToken}}` from collection auth.\n4. To exercise role-specific routes, log in as the appropriate role and re-run Login.\n\nIdempotency: Auth > Change password rotates `{{password}}` -> `{{newPassword}}`, then Auth > Revert password rotates it back, so the account password is unchanged after a full run and the collection can be re-run. Note the auth endpoints are rate-limited (10 req / 60s); space out repeated full runs.\n\nRoles per route follow the server's `authorize(...)` guards and Constitution v2.1.0 RBAC.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -11,9 +11,11 @@
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
-    { "key": "bootstrapSecret", "value": "change_me_min_16_chars" },
+    { "key": "bootstrapSecret", "value": "<set to backend/.env BOOTSTRAP_SECRET>" },
     { "key": "accessToken", "value": "" },
     { "key": "refreshToken", "value": "" },
+    { "key": "password", "value": "ChangeMe123!" },
+    { "key": "newPassword", "value": "NewPass123!" },
     { "key": "patientId", "value": "" },
     { "key": "patientUserId", "value": "" },
     { "key": "userId", "value": "" },
@@ -24,7 +26,9 @@
     { "key": "assessmentId", "value": "" },
     { "key": "categoryId", "value": "" },
     { "key": "serviceId", "value": "" },
-    { "key": "requestId", "value": "" }
+    { "key": "requestId", "value": "" },
+    { "key": "notificationId", "value": "" },
+    { "key": "deviceToken", "value": "fcm-demo-token" }
   ],
   "item": [
     {
@@ -88,7 +92,7 @@
             "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@bahya.health\",\n  \"password\": \"ChangeMe123!\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@bahya.health\",\n  \"password\": \"{{password}}\"\n}" },
             "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
             "description": "Public. Saves accessToken + refreshToken to collection variables."
           }
@@ -131,9 +135,19 @@
           "request": {
             "method": "PATCH",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"ChangeMe123!\",\n  \"newPassword\": \"NewPass123!\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}" },
             "url": { "raw": "{{baseUrl}}/auth/change-password", "host": ["{{baseUrl}}"], "path": ["auth", "change-password"] },
-            "description": "Authenticated user changes own password."
+            "description": "Authenticated user changes own password ({{password}} -> {{newPassword}}). Paired with Revert password to keep the run idempotent."
+          }
+        },
+        {
+          "name": "Revert password",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"{{newPassword}}\",\n  \"newPassword\": \"{{password}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/change-password", "host": ["{{baseUrl}}"], "path": ["auth", "change-password"] },
+            "description": "Reverts the Change password step ({{newPassword}} -> {{password}}) so the account password is unchanged after a full run and Login keeps working on re-runs."
           }
         },
         {
@@ -365,6 +379,89 @@
         { "name": "Approve request (Admin, Doctor)", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/service-requests/{{requestId}}/approve", "host": ["{{baseUrl}}"], "path": ["service-requests", "{{requestId}}", "approve"] }, "description": "Consumes a seat (atomic). 409 SERVICE_FULL when full; 409 REQUEST_ALREADY_DECIDED if not PENDING." } },
         { "name": "Reject request (Admin, Doctor)", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"decisionNote\": \"اكتمل العدد\"\n}" }, "url": { "raw": "{{baseUrl}}/service-requests/{{requestId}}/reject", "host": ["{{baseUrl}}"], "path": ["service-requests", "{{requestId}}", "reject"] } } },
         { "name": "Cancel own request (Patient)", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/service-requests/{{requestId}}/cancel", "host": ["{{baseUrl}}"], "path": ["service-requests", "{{requestId}}", "cancel"] }, "description": "Owner only; PENDING only -> CANCELLED. 409 REQUEST_NOT_PENDING otherwise." } }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "My notifications",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json();", "const first = Array.isArray(j.data) ? j.data[0] : null;", "if (first && first.id) pm.collectionVariables.set('notificationId', first.id);"] } }],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/my?status=UNREAD&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "my"],
+              "query": [
+                { "key": "status", "value": "UNREAD" },
+                { "key": "severity", "value": "MEDIUM", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "Authenticated. Returns personal notifications plus unclaimed role-broadcast notifications for the caller's role."
+          }
+        },
+        {
+          "name": "Claim notification",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/notifications/{{notificationId}}/claim", "host": ["{{baseUrl}}"], "path": ["notifications", "{{notificationId}}", "claim"] },
+            "description": "Recipient role only. Atomically claims an unclaimed role-broadcast notification; 409 if already claimed."
+          }
+        },
+        {
+          "name": "Mark notification read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/notifications/{{notificationId}}/read", "host": ["{{baseUrl}}"], "path": ["notifications", "{{notificationId}}", "read"] },
+            "description": "Owning recipient only. Forward-only UNREAD -> READ; 409 for repeated/backward transitions."
+          }
+        },
+        {
+          "name": "Mark notification done",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/notifications/{{notificationId}}/done", "host": ["{{baseUrl}}"], "path": ["notifications", "{{notificationId}}", "done"] },
+            "description": "Owning recipient only. Forward-only UNREAD/READ -> DONE."
+          }
+        },
+        {
+          "name": "Request Call Center booking (Doctor)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json();", "if (j.id) pm.collectionVariables.set('notificationId', j.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"doctorNote\": \"Needs urgent follow-up\"\n}" },
+            "url": { "raw": "{{baseUrl}}/notifications/request-booking", "host": ["{{baseUrl}}"], "path": ["notifications", "request-booking"] },
+            "description": "Doctor only. Creates a BOOKING_REQUIRED notification for Call Center; no internal scheduling is created."
+          }
+        },
+        {
+          "name": "Register device token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{deviceToken}}\",\n  \"platform\": \"ANDROID\"\n}" },
+            "url": { "raw": "{{baseUrl}}/notifications/devices", "host": ["{{baseUrl}}"], "path": ["notifications", "devices"] },
+            "description": "Authenticated. Upserts the FCM registration token for the caller and refreshes lastSeenAt."
+          }
+        },
+        {
+          "name": "Unregister device token",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{deviceToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/notifications/devices", "host": ["{{baseUrl}}"], "path": ["notifications", "devices"] },
+            "description": "Authenticated. Deletes the caller-owned token if present; unknown/foreign tokens are a no-op for the caller."
+          }
+        }
       ]
     }
   ]

@@ -63,6 +63,14 @@ const envSchema = z.object({
     .transform((v) => parseInt(v, 10))
     .pipe(z.number().int().positive()),
   APP_URL: z.string().url().default('http://localhost:3000'),
+
+  FCM_ENABLED: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true' || v === '1')
+    .pipe(z.boolean()),
+  FIREBASE_SERVICE_ACCOUNT: z.string().default(''),
+  GOOGLE_APPLICATION_CREDENTIALS: z.string().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -3,6 +3,8 @@
 Node.js + Express + TypeScript API for the Bahya platform. The backend uses
 Prisma with PostgreSQL for relational data, Mongoose with MongoDB for activity
 data, and Mailpit-compatible SMTP for local password-reset email.
+Firebase Cloud Messaging (FCM) is optional and used for best-effort mobile
+notification wakeups when credentials are configured.
 
 This README is split in two: the first half covers running the service locally
 (stack, setup, environment, scripts, architecture). The second half is a
@@ -17,6 +19,7 @@ developers and engineers exercising the API in Postman.
 - [Database](#database)
 - [Dynamic assessment forms](#dynamic-assessment-forms)
 - [Patient services & activities](#patient-services--activities)
+- [Notifications](#notifications)
 - [Tests](#tests)
 - [Postman](#postman)
 - [Authentication](#authentication)
@@ -32,6 +35,7 @@ developers and engineers exercising the API in Postman.
   - [Service Categories](#service-categories)
   - [Services](#services)
   - [Service Requests](#service-requests)
+  - [Notifications](#notifications-1)
 
 ## Stack
 
@@ -43,6 +47,7 @@ developers and engineers exercising the API in Postman.
 - bcrypt for password hashing
 - pino for structured logging, helmet, express-rate-limit, CORS allow-list
 - nodemailer + Mailpit for local password-reset email
+- firebase-admin for optional best-effort FCM push notifications
 
 ## Quick start
 
@@ -99,6 +104,9 @@ refuses to start if required values are missing.
 | `SMTP_FROM` | no | `noreply@bahya.health` | Sender address for password-reset email |
 | `RESET_TOKEN_TTL_MINUTES` | no | `30` | Password-reset token lifetime |
 | `APP_URL` | no | `http://localhost:3000` | Base URL embedded in reset links |
+| `FCM_ENABLED` | no | `false` | Enables best-effort Firebase Cloud Messaging push delivery |
+| `FIREBASE_SERVICE_ACCOUNT` | no | empty | Base64-encoded Firebase service-account JSON |
+| `GOOGLE_APPLICATION_CREDENTIALS` | no | empty | Optional path to a Firebase service-account JSON file |
 
 ## Scripts
 
@@ -129,7 +137,7 @@ src/
     forms/       form authoring, publishing, assignments, scoring, submissions
     assessments/ doctor review and official assessment authorship
     services/    service categories, services, and join requests (enrollment)
-    notifications/ form assignment, high-risk alerts, service-request alerts
+    notifications/ inbox, claim/read/done lifecycle, booking requests, push devices
   routes/        /api/v1 router and health probe
   utils/         passwords, tokens, http errors
   app.ts         Express wiring
@@ -160,6 +168,11 @@ Relational models for patient services & activities:
 - `ServiceCategory` — service classification (`name`, `kind`, `iconKey`, `color`); seeded defaults + custom (`ServiceKind` = `EDUCATIONAL` / `TRIP` / `SUPPORT` / `OTHER`)
 - `Service` — a joinable activity with a seat `capacity` and `seatsTaken`; `ServiceStatus` = `ACTIVE` / `CLOSED`; trip-kind services also carry `endDate`, `departureTime`, `meetingPlace`
 - `ServiceRequest` — a patient's join request; `ServiceRequestStatus` = `PENDING` / `APPROVED` / `REJECTED` / `CANCELLED` (a seat is consumed only on `APPROVED`)
+
+Relational model for mobile push delivery:
+
+- `DeviceToken` - a user's FCM registration token, unique by token and scoped
+  to one current user; used only for best-effort notification push delivery
 
 MongoDB stores audit log entries and timeline source data (assessments,
 interventions) plus emitted notifications. The `/health` probe checks both stores.
@@ -403,6 +416,26 @@ Service-specific errors keep the standard error envelope and status contract:
 The full as-built endpoint, request/response, and error reference lives in
 [`specs/006-patient-services-activities/contracts/services-api.md`](../specs/006-patient-services-activities/contracts/services-api.md).
 
+## Notifications
+
+Notifications are stored in MongoDB and exposed as a recipient-facing inbox.
+Users can list notifications addressed to them, staff can atomically claim
+unclaimed role-broadcast alerts, and owners can mark notifications read or done.
+Doctors can raise a `BOOKING_REQUIRED` notification to the Call Center for an
+existing patient without creating an internal appointment.
+
+Every notification create also attempts a best-effort FCM push after the MongoDB
+write. Push delivery never blocks the triggering request. The visible push uses
+category localization keys and a data payload containing only `notificationId`
+and `type`; full notification content is fetched from the API. If FCM is
+disabled, credentials are missing, or a send fails, the notification remains
+available through `/notifications/my`.
+
+Device tokens are registered through authenticated endpoints and stored in
+PostgreSQL as `DeviceToken` rows. Re-registering the same token rebinds it to
+the latest caller and refreshes `lastSeenAt`; unregistering is scoped to the
+caller.
+
 ## Tests
 
 ```bash
@@ -451,6 +484,11 @@ Recommended Postman setup:
 
 Every example body in the API reference below is copy-paste-ready for
 Postman's **Body → raw → JSON** tab.
+
+The full collection at
+`../docs/postman/bahya-backend-api.postman_collection.json` includes a
+`Notifications` folder with requests for `/notifications/my`, claim, read,
+done, doctor booking requests, and device token registration/removal.
 
 ### Forms workflow variables
 
@@ -2286,6 +2324,93 @@ re-checks capacity inside a transaction so concurrent acceptances never
 oversubscribe, and emits a `SERVICE_REQUEST_DECIDED` notification to the patient;
 a new request emits `SERVICE_REQUEST_SUBMITTED` to staff (Admin and Doctor).
 Deciding an already-decided request returns `409 REQUEST_ALREADY_DECIDED`.
+
+---
+
+### Notifications
+
+Recipient-facing notifications and push-device registration. Base path
+`/api/v1/notifications`. Every route requires an authenticated bearer token.
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| GET | `/notifications/my` | Authenticated | List personal notifications plus unclaimed role-broadcast notifications for the caller's role |
+| PATCH | `/notifications/:id/claim` | Recipient role | Atomically claim an unclaimed role-broadcast notification |
+| PATCH | `/notifications/:id/read` | Owning recipient | Mark an owned notification read |
+| PATCH | `/notifications/:id/done` | Owning recipient | Mark an owned notification done |
+| POST | `/notifications/request-booking` | Doctor | Create a `BOOKING_REQUIRED` notification for Call Center |
+| POST | `/notifications/devices` | Authenticated | Register or refresh the caller's FCM device token |
+| DELETE | `/notifications/devices` | Authenticated | Unregister the caller's FCM device token |
+
+`GET /notifications/my` supports `status`, `severity`, `page`, and `pageSize`
+query parameters. Results are newest-first. Patient-related notifications
+include live patient contact fields when available; if the patient cannot be
+read, the `patient` field is `null` instead of failing the whole list.
+
+```http
+GET /api/v1/notifications/my?status=UNREAD&page=1&pageSize=20
+Authorization: Bearer {{accessToken}}
+```
+
+Claim/read/done are forward-only lifecycle actions. Claim uses a single atomic
+MongoDB update, so concurrent claimers get exactly one winner; the loser gets
+`409 CLAIM_CONFLICT`. Read requires `UNREAD`; done accepts `UNREAD` or `READ`.
+
+```http
+PATCH /api/v1/notifications/{{notificationId}}/claim
+Authorization: Bearer {{callCenterToken}}
+```
+
+```http
+PATCH /api/v1/notifications/{{notificationId}}/read
+Authorization: Bearer {{callCenterToken}}
+```
+
+```http
+PATCH /api/v1/notifications/{{notificationId}}/done
+Authorization: Bearer {{callCenterToken}}
+```
+
+Doctors can request Call Center booking follow-up for an existing patient. This
+records intent only; it does not create an appointment or schedule.
+
+```http
+POST /api/v1/notifications/request-booking
+Authorization: Bearer {{doctorToken}}
+Content-Type: application/json
+
+{
+  "patientId": "{{patientId}}",
+  "doctorNote": "Needs urgent follow-up"
+}
+```
+
+Device registration is scoped to the signed-in user. Register is an upsert by
+token and supports `ANDROID`, `IOS`, or `WEB`.
+
+```http
+POST /api/v1/notifications/devices
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{ "token": "{{deviceToken}}", "platform": "ANDROID" }
+```
+
+```http
+DELETE /api/v1/notifications/devices
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{ "token": "{{deviceToken}}" }
+```
+
+Push delivery is best-effort. Missing or invalid Firebase credentials, disabled
+FCM, no registered device tokens, and FCM send failures do not change the API
+response for the action that created the notification. Invalid or unregistered
+tokens reported by FCM are pruned automatically.
+
+**Common errors:** `400 VALIDATION_ERROR`, `403 FORBIDDEN` or `NOT_RECIPIENT`,
+`404 NOT_FOUND`, `409 CLAIM_CONFLICT`, `409 ILLEGAL_TRANSITION`.
 
 ---
 
