@@ -171,7 +171,7 @@ class _PatientHeaderIdentity extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       textDirection: _activeTextDirection,
-      mainAxisSize: MainAxisSize.max,
+      mainAxisSize: MainAxisSize.min,
       children: [
         CircleAvatar(
           radius: responsiveSize(context, 0.03, min: 34, max: 42),
@@ -185,12 +185,11 @@ class _PatientHeaderIdentity extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 18),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: _activeCrossAxisStart,
-            children: [
-              customText(
-                text: patient.name,
+        Column(
+          crossAxisAlignment: _activeCrossAxisStart,
+          children: [
+            customText(
+              text: patient.name,
               size: responsiveSize(context, 0.015, min: 18, max: 26),
               color: const Color(0xFF271648),
               bold: true,
@@ -205,9 +204,8 @@ class _PatientHeaderIdentity extends StatelessWidget {
               isCenter: false,
             ),
             const SizedBox(height: 6),
-              _SmallBadge(text: _translateStatus(patient.diseaseStatus)),
-            ],
-          ),
+            _SmallBadge(text: _translateStatus(patient.diseaseStatus)),
+          ],
         ),
       ],
     );
@@ -278,15 +276,11 @@ class _TabsBar extends StatelessWidget {
       ),
       child: isMobile
           ? Column(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(tabs.length, (tabIndex) {
-                final tab = tabs[tabIndex];
+              children: tabs.map((tab) {
                 final index = tab['index'] as int;
 
                 return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: tabIndex == tabs.length - 1 ? 0 : 8,
-                  ),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: _TabItem(
                     title: tab['title'] as String,
                     icon: tab['icon'] as IconData,
@@ -294,7 +288,7 @@ class _TabsBar extends StatelessWidget {
                     onTap: () => onTabChanged(index),
                   ),
                 );
-              }),
+              }).toList(),
             )
           : SizedBox(
               height: responsiveHeight(context, 0.07, min: 52, max: 58),
@@ -1852,7 +1846,9 @@ final answers = assessment.answers;
               bold: true,
               isCenter: false,
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: responsiveHeight(context, 0.018, min: 14, max: 18)),
+            _DoctorNoteCard(note: assessment.doctorNote),
+            SizedBox(height: responsiveHeight(context, 0.018, min: 14, max: 18)),
             if (isSmall)
               Column(
                 children: List.generate(answers.length, (index) {
@@ -1861,6 +1857,78 @@ final answers = assessment.answers;
               )
             else
               _AnswersTable(answers: answers),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DoctorNoteCard extends StatelessWidget {
+  const _DoctorNoteCard({required this.note});
+
+  final String note;
+
+  @override
+  Widget build(BuildContext context) {
+    final cleanNote = note.trim();
+    final hasNote = cleanNote.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(responsiveSize(context, 0.014, min: 12, max: 18)),
+      decoration: BoxDecoration(
+        color: hasNote ? const Color(0xFFFFF4FA) : const Color(0xFFF8F8FA),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: hasNote ? const Color(0xFFF7CFE0) : const Color(0xFFE7E7EC),
+        ),
+      ),
+      child: Directionality(
+        textDirection: _activeTextDirection,
+        child: Column(
+          crossAxisAlignment: _activeCrossAxisStart,
+          children: [
+            Row(
+              textDirection: _activeTextDirection,
+              children: [
+                Container(
+                  width: responsiveSize(context, 0.032, min: 34, max: 42),
+                  height: responsiveSize(context, 0.032, min: 34, max: 42),
+                  decoration: BoxDecoration(
+                    color: hasNote
+                        ? const Color(0xFFFFE5F1)
+                        : Colors.grey.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.sticky_note_2_outlined,
+                    color: hasNote ? const Color(0xFFE83E8C) : Colors.grey,
+                    size: responsiveSize(context, 0.016, min: 19, max: 24),
+                  ),
+                ),
+                SizedBox(width: responsiveSize(context, 0.01, min: 8, max: 12)),
+                Expanded(
+                  child: customText(
+                    text: 'ملاحظات الدكتور',
+                    size: responsiveSize(context, 0.0095, min: 14, max: 17),
+                    color: const Color(0xFF271648),
+                    bold: true,
+                    isCenter: false,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: responsiveHeight(context, 0.012, min: 8, max: 12)),
+            customText(
+              text: hasNote ? cleanNote : 'لا توجد ملاحظات مسجلة من الدكتور.',
+              size: responsiveSize(context, 0.0085, min: 12, max: 15),
+              color: hasNote ? const Color(0xFF4B445C) : const Color(0xFF8B8796),
+              bold: true,
+              isCenter: false,
+              maxLines: 6,
+            ),
           ],
         ),
       ),

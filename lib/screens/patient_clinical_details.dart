@@ -93,6 +93,7 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
       TextCellValue('Form Name'),
       TextCellValue('Submit Date'),
       TextCellValue('Total Score'),
+      TextCellValue('Doctor Note'),
       TextCellValue('Question'),
       TextCellValue('Answer'),
       TextCellValue('Answer Score'),
@@ -108,6 +109,7 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
           TextCellValue(assessment.formName),
           TextCellValue(assessment.submitDate),
           TextCellValue(assessment.score.toString()),
+          TextCellValue(assessment.doctorNote.isEmpty ? '-' : assessment.doctorNote),
           TextCellValue(answer.question),
           TextCellValue(answer.answer),
           TextCellValue(answer.score.toString()),
@@ -195,6 +197,9 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
   }
 
   PatientAssessment _mapAssessment(Map<String, dynamic> json) {
+    final submission = json['submission'];
+    final assessment = submission is Map ? submission['assessment'] : null;
+
     return PatientAssessment(
       formName:
           json['templateKey']?.toString() ??
@@ -206,8 +211,33 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
           json['updatedAt']?.toString().split('T').first ??
           '-',
       score: int.tryParse(json['score']?.toString() ?? '') ?? 0,
+      doctorNote: _readDoctorNote(json, assessment),
       answers: _mapAssessmentAnswers(json),
     );
+  }
+
+  String _readDoctorNote(
+    Map<String, dynamic> json,
+    dynamic nestedAssessment,
+  ) {
+    final direct = json['doctorNote'];
+    if (direct != null && direct.toString().trim().isNotEmpty) {
+      return direct.toString().trim();
+    }
+
+    if (nestedAssessment is Map) {
+      final nested = nestedAssessment['doctorNote'] ?? nestedAssessment['note'];
+      if (nested != null && nested.toString().trim().isNotEmpty) {
+        return nested.toString().trim();
+      }
+    }
+
+    final note = json['note'] ?? json['doctor_notes'] ?? json['doctorNotes'];
+    if (note != null && note.toString().trim().isNotEmpty) {
+      return note.toString().trim();
+    }
+
+    return '';
   }
 
   List<PatientAnswer> _mapAssessmentAnswers(Map<String, dynamic> json) {
@@ -579,12 +609,14 @@ class PatientAssessment {
   final String formName;
   final String submitDate;
   final int score;
+  final String doctorNote;
   final List<PatientAnswer> answers;
 
   PatientAssessment({
     required this.formName,
     required this.submitDate,
     required this.score,
+    this.doctorNote = '',
     this.answers = const [],
   });
 }

@@ -206,8 +206,8 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                             _TextDialogField(
                               title: 'CRN',
                               controller: crnController,
-                              hint: 'مثال: BH-2026-001',
-                              type: CustomTextFieldType.text,
+                              hint: 'رقم المريض',
+                              type: CustomTextFieldType.number,
                               isEnglish: true,
                             ),
                             _TextDialogField(

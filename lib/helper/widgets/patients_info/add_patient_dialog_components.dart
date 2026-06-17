@@ -469,10 +469,15 @@ class _DialogFooter extends StatelessWidget {
         ),
         child: isPhone
             ? Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: buttons,
               )
-            : Row(children: buttons),
+            : Row(
+                children: buttons
+                    .map((button) => Expanded(child: button))
+                    .toList(),
+              ),
       ),
     );
   }
@@ -497,48 +502,47 @@ class _DialogButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEnglish = _activeTextDirection == TextDirection.ltr;
 
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: isPrimary ? const Color(0xFFE83E8C) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isPrimary
-                    ? const Color(0xFFE83E8C)
-                    : Colors.grey.shade300,
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isPrimary ? const Color(0xFFE83E8C) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isPrimary
+                  ? const Color(0xFFE83E8C)
+                  : Colors.grey.shade300,
             ),
-            child: Row(
-              textDirection: _activeTextDirection,
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isLoading)
-                  SizedBox(width: 18, height: 18, child: customLoading())
-                else
-                  Icon(
-                    icon,
-                    size: 18,
-                    color: isPrimary ? Colors.white : const Color(0xFFE83E8C),
-                  ),
-                const SizedBox(width: 8),
-                customText(
-                  text: title,
-                  size: 13,
+          ),
+          child: Row(
+            textDirection: _activeTextDirection,
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isLoading)
+                SizedBox(width: 18, height: 18, child: customLoading())
+              else
+                Icon(
+                  icon,
+                  size: 18,
                   color: isPrimary ? Colors.white : const Color(0xFFE83E8C),
-                  bold: true,
-                  isEnglish: isEnglish,
                 ),
-              ],
-            ),
+              const SizedBox(width: 8),
+              customText(
+                text: title,
+                size: 13,
+                color: isPrimary ? Colors.white : const Color(0xFFE83E8C),
+                bold: true,
+                isEnglish: isEnglish,
+              ),
+            ],
           ),
         ),
       ),

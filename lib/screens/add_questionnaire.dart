@@ -181,112 +181,278 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
     );
   }
 
-  Widget _availableFormsWidget(double h, double w) {
+ Widget _availableFormsWidget(double h, double w) {
+    final isMobile = w < 700;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(responsiveSize(context, 0.018, min: 14, max: 20)),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(.95),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.02, min: 18, max: 24),
+        ),
         border: Border.all(color: Colors.pink.shade100),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            blurRadius: responsiveSize(context, 0.02, min: 16, max: 22),
+            offset: Offset(0, responsiveHeight(context, 0.01, min: 6, max: 10)),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const Icon(Icons.list_alt_rounded, color: Color(0xFFE40070)),
-              const SizedBox(width: 10),
               customText(
                 text: 'النماذج المتاحة',
-                size: w * 0.015,
+                size: responsiveSize(context, 0.014, min: 15, max: 24),
                 bold: true,
                 color: textColor,
               ),
+              SizedBox(width: responsiveSize(context, 0.01, min: 8, max: 12)),
+              Icon(
+                Icons.list_alt_rounded,
+                color: const Color(0xFFE40070),
+                size: responsiveSize(context, 0.018, min: 22, max: 30),
+              ),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: responsiveHeight(context, 0.024, min: 16, max: 24)),
           if (controller.isLoadingForms)
-            customLoading()
+            Center(child: customLoading())
           else if (controller.availableForms.isEmpty)
-            customText(
-              text: 'لا توجد نماذج محفوظة حتى الآن.',
-              size: w * 0.02,
-              color: Colors.grey,
-              bold: true,
+            Center(
+              child: customText(
+                text: 'لا توجد نماذج محفوظة حتى الآن.',
+                size: responsiveSize(context, 0.014, min: 15, max: 22),
+                color: Colors.grey,
+                bold: true,
+              ),
             )
           else
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: controller.availableForms.map((form) {
-                final bool active = controller.editingFormId == form["id"];
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final cardWidth = isMobile
+                    ? constraints.maxWidth
+                    : constraints.maxWidth < 850
+                    ? (constraints.maxWidth - 16) / 2
+                    : 320.0;
 
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  width: 320,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: active
-                        ? const Color(0xFFFFEAF5)
-                        : const Color(0xFFFFF7FC),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: active ? Colors.pink : Colors.pink.shade100,
-                      width: active ? 1.5 : 1,
-                    ),
+                return Wrap(
+                  spacing: responsiveSize(context, 0.014, min: 12, max: 18),
+                  runSpacing: responsiveHeight(
+                    context,
+                    0.018,
+                    min: 14,
+                    max: 20,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.description_rounded, color: Colors.pink),
-                      const SizedBox(height: 8),
-                      customText(
-                        text: form["name"].toString(),
-                        size: h * 0.018,
-                        bold: true,
-                        color: const Color(0xFF7A004C),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomGlowButton(
-                              title: 'تعديل',
-                              onPressed: () =>
-                                  controller.editForm(context, form["id"]),
-                              icon: Icons.edit,
-                              height: h * 0.035,
-                              textSize: w * 0.0085,
+                  children: controller.availableForms.map((form) {
+                    final bool active = controller.editingFormId == form["id"];
 
-                              isGradient: true,
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      width: cardWidth,
+                      padding: EdgeInsets.all(
+                        responsiveSize(context, 0.016, min: 14, max: 20),
+                      ),
+                      decoration: BoxDecoration(
+                        color: active
+                            ? const Color(0xFFFFEAF5)
+                            : const Color(0xFFFFF7FC),
+                        borderRadius: BorderRadius.circular(
+                          responsiveSize(context, 0.018, min: 16, max: 22),
+                        ),
+                        border: Border.all(
+                          color: active ? Colors.pink : Colors.pink.shade100,
+                          width: active ? 1.5 : 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.pink.withOpacity(.06),
+                            blurRadius: responsiveSize(
+                              context,
+                              0.018,
+                              min: 14,
+                              max: 22,
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: CustomGlowButton(
-                              title: 'حذف',
-                              onPressed: () =>
-                                  controller.deleteForm(context, form["id"]),
-                              icon: Icons.delete_outline,
-                              textSize: w * 0.0085,
-                              height: h * 0.035,
-                              textColor: Colors.pink,
+                            offset: Offset(
+                              0,
+                              responsiveHeight(context, 0.008, min: 5, max: 8),
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Icon(
+                            Icons.description_rounded,
+                            color: Colors.pink,
+                            size: responsiveSize(
+                              context,
+                              0.022,
+                              min: 26,
+                              max: 34,
+                            ),
+                          ),
+                          SizedBox(
+                            height: responsiveHeight(
+                              context,
+                              0.012,
+                              min: 8,
+                              max: 12,
+                            ),
+                          ),
+                          customText(
+                            text: form["name"].toString(),
+                            size: responsiveSize(
+                              context,
+                              0.013,
+                              min: 15,
+                              max: 20,
+                            ),
+                            bold: true,
+                            color: const Color(0xFF7A004C),
+                            isCenter: false,
+                            maxLines: 2,
+                          ),
+                          SizedBox(
+                            height: responsiveHeight(
+                              context,
+                              0.018,
+                              min: 14,
+                              max: 18,
+                            ),
+                          ),
+                          isMobile
+                              ? Column(
+                                  children: [
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: CustomGlowButton(
+                                        title: 'تعديل',
+                                        onPressed: () => controller.editForm(
+                                          context,
+                                          form["id"],
+                                        ),
+                                        icon: Icons.edit,
+                                        height: responsiveHeight(
+                                          context,
+                                          0.048,
+                                          min: 42,
+                                          max: 50,
+                                        ),
+                                        textSize: responsiveSize(
+                                          context,
+                                          0.011,
+                                          min: 13,
+                                          max: 16,
+                                        ),
+                                        isGradient: true,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: responsiveHeight(
+                                        context,
+                                        0.012,
+                                        min: 10,
+                                        max: 14,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: CustomGlowButton(
+                                        title: 'حذف',
+                                        onPressed: () => controller.deleteForm(
+                                          context,
+                                          form["id"],
+                                        ),
+                                        icon: Icons.delete_outline,
+                                        height: responsiveHeight(
+                                          context,
+                                          0.048,
+                                          min: 42,
+                                          max: 50,
+                                        ),
+                                        textSize: responsiveSize(
+                                          context,
+                                          0.011,
+                                          min: 13,
+                                          max: 16,
+                                        ),
+                                        textColor: Colors.pink,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  children: [
+                                    Expanded(
+                                      child: CustomGlowButton(
+                                        title: 'حذف',
+                                        onPressed: () => controller.deleteForm(
+                                          context,
+                                          form["id"],
+                                        ),
+                                        icon: Icons.delete_outline,
+                                        textSize: responsiveSize(
+                                          context,
+                                          0.0085,
+                                          min: 12,
+                                          max: 15,
+                                        ),
+                                        height: responsiveHeight(
+                                          context,
+                                          0.042,
+                                          min: 36,
+                                          max: 44,
+                                        ),
+                                        textColor: Colors.pink,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: responsiveSize(
+                                        context,
+                                        0.012,
+                                        min: 10,
+                                        max: 14,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: CustomGlowButton(
+                                        title: 'تعديل',
+                                        onPressed: () => controller.editForm(
+                                          context,
+                                          form["id"],
+                                        ),
+                                        icon: Icons.edit,
+                                        height: responsiveHeight(
+                                          context,
+                                          0.042,
+                                          min: 36,
+                                          max: 44,
+                                        ),
+                                        textSize: responsiveSize(
+                                          context,
+                                          0.0085,
+                                          min: 12,
+                                          max: 15,
+                                        ),
+                                        isGradient: true,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 );
-              }).toList(),
+              },
             ),
         ],
       ),

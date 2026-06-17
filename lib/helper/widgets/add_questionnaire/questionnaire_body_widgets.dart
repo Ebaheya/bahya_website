@@ -32,10 +32,37 @@ class QuestionTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = getScreenWidth(context);
+    final isMobile = w < 700;
+
     return ValueListenableBuilder<Locale>(
       valueListenable: AppLanguageController.localeNotifier,
       builder: (context, locale, _) {
         final isEnglish = isEnglishLang(locale);
+
+        final cards = [
+          QuestionTypeCard(
+            title: 'اختيار واحد',
+            subtitle: 'يمكن للمستخدم اختيار إجابة واحدة فقط',
+            icon: Icons.radio_button_checked_rounded,
+            isSelected: selectedType == QuestionType.single,
+            onTap: () => onChanged(QuestionType.single),
+          ),
+          QuestionTypeCard(
+            title: 'اختيار متعدد',
+            subtitle: 'يمكن للمستخدم اختيار أكثر من إجابة',
+            icon: Icons.checklist_rounded,
+            isSelected: selectedType == QuestionType.multiple,
+            onTap: () => onChanged(QuestionType.multiple),
+          ),
+          QuestionTypeCard(
+            title: 'Scale / Rating',
+            subtitle: 'اختيار درجة من نطاق رقمي مثل 0 إلى 10',
+            icon: Icons.linear_scale_rounded,
+            isSelected: selectedType == QuestionType.scale,
+            onTap: () => onChanged(QuestionType.scale),
+          ),
+        ];
 
         return Column(
           crossAxisAlignment: appCrossAxisAlignment(isEnglish),
@@ -43,43 +70,31 @@ class QuestionTypeSelector extends StatelessWidget {
             sectionLabel(
               label: 'نوع السؤال',
               icon: Icons.format_list_bulleted_rounded,
-              w: 1,
+              w: w,
             ),
             const SizedBox(height: 12),
-            Row(
-              textDirection: appTextDirection(isEnglish),
-              children: [
-                Expanded(
-                  child: QuestionTypeCard(
-                    title: 'اختيار واحد',
-                    subtitle: 'يمكن للمستخدم اختيار إجابة واحدة فقط',
-                    icon: Icons.radio_button_checked_rounded,
-                    isSelected: selectedType == QuestionType.single,
-                    onTap: () => onChanged(QuestionType.single),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: QuestionTypeCard(
-                    title: 'اختيار متعدد',
-                    subtitle: 'يمكن للمستخدم اختيار أكثر من إجابة',
-                    icon: Icons.checklist_rounded,
-                    isSelected: selectedType == QuestionType.multiple,
-                    onTap: () => onChanged(QuestionType.multiple),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: QuestionTypeCard(
-                    title: 'Scale / Rating',
-                    subtitle: 'اختيار درجة من نطاق رقمي مثل 0 إلى 10',
-                    icon: Icons.linear_scale_rounded,
-                    isSelected: selectedType == QuestionType.scale,
-                    onTap: () => onChanged(QuestionType.scale),
-                  ),
-                ),
-              ],
-            ),
+            if (isMobile)
+              Column(
+                children: cards
+                    .map(
+                      (card) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: SizedBox(width: double.infinity, child: card),
+                      ),
+                    )
+                    .toList(),
+              )
+            else
+              Row(
+                textDirection: appTextDirection(isEnglish),
+                children: [
+                  Expanded(child: cards[0]),
+                  const SizedBox(width: 14),
+                  Expanded(child: cards[1]),
+                  const SizedBox(width: 14),
+                  Expanded(child: cards[2]),
+                ],
+              ),
           ],
         );
       },
@@ -105,7 +120,7 @@ class QuestionTypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
+    final isMobile = getScreenWidth(context) < 700;
 
     return ValueListenableBuilder<Locale>(
       valueListenable: AppLanguageController.localeNotifier,
@@ -113,78 +128,129 @@ class QuestionTypeCard extends StatelessWidget {
         final isEnglish = isEnglishLang(locale);
 
         return InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(
+            responsiveSize(context, 0.014, min: 14, max: 18),
+          ),
           onTap: onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
-            padding: const EdgeInsets.all(16),
+            curve: Curves.easeOutCubic,
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.014, min: 14, max: 18),
+            ),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.purple.withOpacity(.07) : Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              color: isSelected ? surveyPurple.withOpacity(.07) : Colors.white,
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.014, min: 14, max: 18),
+              ),
               border: Border.all(
-                color: isSelected ? Colors.purple : Colors.grey.shade200,
+                color: isSelected ? surveyPurple : Colors.grey.shade200,
                 width: isSelected ? 1.4 : 1,
               ),
-            ),
-            child: Row(
-              textDirection: TextDirection.ltr,
-              mainAxisAlignment: isEnglish
-                  ? MainAxisAlignment.start
-                  : MainAxisAlignment.end,
-              children: [
-                if (isEnglish) ...[
-                  Icon(
-                    isSelected
-                        ? Icons.check_circle_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color: isSelected ? surveyPurple : Colors.grey.shade400,
-                  ),
-                  const SizedBox(width: 10),
-                  Icon(icon, color: isSelected ? surveyPurple : surveyPink),
-                  const SizedBox(width: 10),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: appCrossAxisAlignment(isEnglish),
-                    children: [
-                      customText(
-                        text: title,
-                        color: surveyDark,
-                        bold: true,
-                        size: w * 0.01,
-                        isCenter: false,
-                        align: isEnglish ? TextAlign.end : TextAlign.start,
-                        isEnglish: isEnglish,
-                      ),
-                      const SizedBox(height: 5),
-                      customText(
-                        text: subtitle,
-                        color: Colors.grey.shade500,
-                        size: w * 0.009,
-                        bold: false,
-                        isCenter: false,
-                        align: isEnglish ? TextAlign.end : TextAlign.start,
-                        isEnglish: isEnglish,
-                      ),
-                    ],
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: isSelected
+                      ? surveyPurple.withOpacity(.12)
+                      : Colors.black.withOpacity(.035),
+                  blurRadius: isSelected ? 18 : 10,
+                  offset: const Offset(0, 6),
                 ),
-                if (!isEnglish) ...[
-                  const SizedBox(width: 10),
-                  Icon(icon, color: isSelected ? surveyPurple : surveyPink),
-                  const SizedBox(width: 10),
-                  Icon(
-                    isSelected
-                        ? Icons.check_circle_rounded
-                        : Icons.radio_button_unchecked_rounded,
-                    color: isSelected ? surveyPurple : Colors.grey.shade400,
-                  ),
-                ],
               ],
             ),
+            child: isMobile
+                ? Row(
+                    textDirection: appTextDirection(isEnglish),
+                    children: [
+                      _typeIcon(context),
+                      const SizedBox(width: 12),
+                      Expanded(child: _textBlock(context, isEnglish)),
+                      const SizedBox(width: 8),
+                      _selectedIcon(context),
+                    ],
+                  )
+                : Row(
+                    textDirection: TextDirection.ltr,
+                    mainAxisAlignment: isEnglish
+                        ? MainAxisAlignment.start
+                        : MainAxisAlignment.end,
+                    children: [
+                      if (isEnglish) ...[
+                        _selectedIcon(context),
+                        const SizedBox(width: 10),
+                        _typeIcon(context),
+                        const SizedBox(width: 10),
+                      ],
+                      Expanded(child: _textBlock(context, isEnglish)),
+                      if (!isEnglish) ...[
+                        const SizedBox(width: 10),
+                        _typeIcon(context),
+                        const SizedBox(width: 10),
+                        _selectedIcon(context),
+                      ],
+                    ],
+                  ),
           ),
         );
       },
+    );
+  }
+
+  Widget _typeIcon(BuildContext context) {
+    return Container(
+      width: responsiveSize(context, 0.034, min: 40, max: 48),
+      height: responsiveSize(context, 0.034, min: 40, max: 48),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? surveyPurple.withOpacity(.12)
+            : surveyPink.withOpacity(.08),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.01, min: 12, max: 15),
+        ),
+      ),
+      child: Icon(
+        icon,
+        color: isSelected ? surveyPurple : surveyPink,
+        size: responsiveSize(context, 0.018, min: 22, max: 28),
+      ),
+    );
+  }
+
+  Widget _selectedIcon(BuildContext context) {
+    return Icon(
+      isSelected
+          ? Icons.check_circle_rounded
+          : Icons.radio_button_unchecked_rounded,
+      color: isSelected ? surveyPurple : Colors.grey.shade400,
+      size: responsiveSize(context, 0.018, min: 22, max: 27),
+    );
+  }
+
+  Widget _textBlock(BuildContext context, bool isEnglish) {
+    return Column(
+      crossAxisAlignment: appCrossAxisAlignment(isEnglish),
+      children: [
+        customText(
+          text: title,
+          color: surveyDark,
+          bold: true,
+          size: responsiveSize(context, 0.0095, min: 13, max: 17),
+          isCenter: false,
+          align: isEnglish ? TextAlign.start : TextAlign.right,
+          isEnglish: isEnglish,
+          maxLines: 1,
+        ),
+        const SizedBox(height: 5),
+        customText(
+          text: subtitle,
+          color: Colors.grey.shade500,
+          size: responsiveSize(context, 0.008, min: 11, max: 14),
+          bold: false,
+          isCenter: false,
+          align: isEnglish ? TextAlign.start : TextAlign.right,
+          isEnglish: isEnglish,
+          maxLines: 2,
+        ),
+      ],
     );
   }
 }
@@ -648,6 +714,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+    final isMobile = w < 700;
 
     return ValueListenableBuilder<Locale>(
       valueListenable: AppLanguageController.localeNotifier,
@@ -657,15 +724,19 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
         return Directionality(
           textDirection: appTextDirection(isEnglish),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.018, min: 14, max: 24),
+            ),
             decoration: BoxDecoration(
               color: surveyCard,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.018, min: 16, max: 22),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(.2),
-                  blurRadius: 28,
-                  offset: const Offset(0, 12),
+                  color: Colors.black.withOpacity(.08),
+                  blurRadius: 22,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
@@ -679,69 +750,17 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                       : MainAxisAlignment.end,
                   children: [
                     if (isEnglish) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: gradientColors),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: customText(
-                          text: 'السؤال ${widget.questionIndex}',
-                          color: Colors.white,
-                          size: w * 0.009,
-                          isEnglish: isEnglish,
-                        ),
-                      ),
+                      _questionBadge(context, w, isEnglish),
                       const Spacer(),
-                      IconButton(
-                        onPressed: widget.canDeleteQuestion
-                            ? widget.onDeleteQuestion
-                            : null,
-                        icon: Icon(
-                          Icons.delete_outline_rounded,
-                          color: widget.canDeleteQuestion
-                              ? surveyPink
-                              : Colors.grey.shade300,
-                          size: w * 0.014,
-                        ),
-                      ),
+                      _deleteQuestionButton(w),
                     ] else ...[
-                      IconButton(
-                        onPressed: widget.canDeleteQuestion
-                            ? widget.onDeleteQuestion
-                            : null,
-                        icon: Icon(
-                          Icons.delete_outline_rounded,
-                          color: widget.canDeleteQuestion
-                              ? surveyPink
-                              : Colors.grey.shade300,
-                          size: w * 0.014,
-                        ),
-                      ),
+                      _deleteQuestionButton(w),
                       const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: gradientColors),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: customText(
-                          text: 'السؤال ${widget.questionIndex}',
-                          color: Colors.white,
-                          size: w * 0.009,
-                          isEnglish: isEnglish,
-                        ),
-                      ),
+                      _questionBadge(context, w, isEnglish),
                     ],
                   ],
                 ),
-                const SizedBox(height: 25),
+                SizedBox(height: isMobile ? 18 : 25),
                 LabeledInput(
                   w: w,
                   label: localizedText(context, 'نص السؤال'),
@@ -749,12 +768,12 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                   controller: questionController,
                   icon: Icons.help_outline_rounded,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: isMobile ? 18 : 24),
                 QuestionTypeSelector(
                   selectedType: questionType,
                   onChanged: (value) => setState(() => questionType = value),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: isMobile ? 18 : 24),
                 if (questionType != QuestionType.scale) ...[
                   sectionLabel(
                     label: 'الخيارات',
@@ -804,9 +823,41 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
     );
   }
 
-  Widget _scaleEditor({required double w, required bool isEnglish}) {
+  Widget _questionBadge(BuildContext context, double w, bool isEnglish) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.018, min: 16, max: 22),
+        vertical: responsiveHeight(context, 0.012, min: 8, max: 10),
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: gradientColors),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: customText(
+        text: 'السؤال ${widget.questionIndex}',
+        color: Colors.white,
+        size: responsiveSize(context, 0.0085, min: 12, max: 15),
+        isEnglish: isEnglish,
+      ),
+    );
+  }
+
+  Widget _deleteQuestionButton(double w) {
+    return IconButton(
+      onPressed: widget.canDeleteQuestion ? widget.onDeleteQuestion : null,
+      icon: Icon(
+        Icons.delete_outline_rounded,
+        color: widget.canDeleteQuestion ? surveyPink : Colors.grey.shade300,
+        size: responsiveSize(context, 0.018, min: 22, max: 28),
+      ),
+    );
+  }
+
+  Widget _scaleEditor({required double w, required bool isEnglish}) {
+    final isMobile = w < 700;
+
+    return Container(
+      padding: EdgeInsets.all(responsiveSize(context, 0.014, min: 14, max: 18)),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -821,67 +872,108 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
             w: w,
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: CustomFormTextField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.score,
-                  labelText: 'minValue',
-                  hintText: '0',
-                  controller: minValueController,
-                  centerHint: true,
+          if (isMobile) ...[
+            CustomFormTextField(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              keyboardType: CustomTextFieldType.score,
+              labelText: 'minValue',
+              hintText: '0',
+              controller: minValueController,
+              centerHint: true,
+            ),
+            const SizedBox(height: 12),
+            CustomFormTextField(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              keyboardType: CustomTextFieldType.score,
+              labelText: 'maxValue',
+              hintText: '10',
+              controller: maxValueController,
+              centerHint: true,
+            ),
+            const SizedBox(height: 12),
+            CustomFormTextField(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              keyboardType: CustomTextFieldType.text,
+              labelText: 'minLabel',
+              hintText: 'لا يوجد',
+              controller: minLabelController,
+              isRequired: false,
+              textDirection: appTextDirection(isEnglish),
+            ),
+            const SizedBox(height: 12),
+            CustomFormTextField(
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              keyboardType: CustomTextFieldType.text,
+              labelText: 'maxLabel',
+              hintText: 'شديد جدًا',
+              controller: maxLabelController,
+              isRequired: false,
+              textDirection: appTextDirection(isEnglish),
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: CustomFormTextField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    keyboardType: CustomTextFieldType.score,
+                    labelText: 'minValue',
+                    hintText: '0',
+                    controller: minValueController,
+                    centerHint: true,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: CustomFormTextField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.score,
-                  labelText: 'maxValue',
-                  hintText: '10',
-                  controller: maxValueController,
-                  centerHint: true,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: CustomFormTextField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    keyboardType: CustomTextFieldType.score,
+                    labelText: 'maxValue',
+                    hintText: '10',
+                    controller: maxValueController,
+                    centerHint: true,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: CustomFormTextField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.text,
-                  labelText: 'minLabel',
-                  hintText: 'لا يوجد',
-                  controller: minLabelController,
-                  isRequired: false,
-                  textDirection: appTextDirection(isEnglish),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: CustomFormTextField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    keyboardType: CustomTextFieldType.text,
+                    labelText: 'minLabel',
+                    hintText: 'لا يوجد',
+                    controller: minLabelController,
+                    isRequired: false,
+                    textDirection: appTextDirection(isEnglish),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: CustomFormTextField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  keyboardType: CustomTextFieldType.text,
-                  labelText: 'maxLabel',
-                  hintText: 'شديد جدًا',
-                  controller: maxLabelController,
-                  isRequired: false,
-                  textDirection: appTextDirection(isEnglish),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: CustomFormTextField(
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    keyboardType: CustomTextFieldType.text,
+                    labelText: 'maxLabel',
+                    hintText: 'شديد جدًا',
+                    controller: maxLabelController,
+                    isRequired: false,
+                    textDirection: appTextDirection(isEnglish),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           const SizedBox(height: 10),
           customText(
             text:
                 'سيتم إنشاء اختيارات تلقائية لكل قيمة داخل النطاق، والـ score يساوي القيمة المختارة.',
             color: Colors.grey.shade600,
-            size: w * 0.008,
+            size: responsiveSize(context, 0.008, min: 11, max: 14),
             isCenter: false,
             isEnglish: isEnglish,
+            maxLines: 3,
           ),
         ],
       ),
@@ -1311,6 +1403,7 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
+    final isMobile = w < 700;
 
     return ValueListenableBuilder<Locale>(
       valueListenable: AppLanguageController.localeNotifier,
@@ -1320,15 +1413,19 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
         return Directionality(
           textDirection: appTextDirection(isEnglish),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.018, min: 14, max: 24),
+            ),
             decoration: BoxDecoration(
               color: const Color(0xFFFCF7FF),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.018, min: 16, max: 22),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(.2),
-                  blurRadius: 28,
-                  offset: const Offset(0, 12),
+                  color: Colors.black.withOpacity(.08),
+                  blurRadius: 22,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
@@ -1340,8 +1437,9 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
                     text: 'إعداد التشخيص الكلي للفورم',
                     color: Colors.deepPurple[400],
                     bold: true,
-                    size: w * 0.011,
+                    size: responsiveSize(context, 0.011, min: 15, max: 20),
                     isEnglish: isEnglish,
+                    maxLines: 2,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -1349,11 +1447,12 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
                   child: customText(
                     text: 'يمكنك تحديد تشخيص لكل نطاق من السكور الكلي',
                     color: Colors.deepPurple[300],
-                    size: w * 0.009,
+                    size: responsiveSize(context, 0.009, min: 12, max: 16),
                     isEnglish: isEnglish,
+                    maxLines: 2,
                   ),
                 ),
-                const SizedBox(height: 22),
+                SizedBox(height: isMobile ? 16 : 22),
                 ...List.generate(
                   diagnosisItems.length,
                   (index) => Padding(
@@ -1408,20 +1507,27 @@ class QuestionnairePageHeader extends StatelessWidget {
 
         return Column(
           children: [
-            Icon(Icons.assignment_add, size: w * 0.04, color: Colors.pink),
+            Icon(
+              Icons.assignment_add,
+              size: responsiveSize(context, 0.04, min: 44, max: 72),
+              color: Colors.pink,
+            ),
             const SizedBox(height: 8),
             customText(
               text: 'إنشاء استبيان جديد',
               color: surveyDark,
-              size: w * 0.013,
+              size: responsiveSize(context, 0.013, min: 18, max: 26),
+              bold: true,
               isEnglish: isEnglish,
+              maxLines: 2,
             ),
             const SizedBox(height: 7),
             customText(
               text: 'قم بإضافة الأسئلة والإجابات',
               color: Colors.grey.shade500,
-              size: w * 0.009,
+              size: responsiveSize(context, 0.009, min: 12, max: 16),
               isEnglish: isEnglish,
+              maxLines: 2,
             ),
           ],
         );
@@ -1452,14 +1558,16 @@ class SurveyTitleCard extends StatelessWidget {
         return Directionality(
           textDirection: appTextDirection(isEnglish),
           child: Container(
-            padding: const EdgeInsets.all(22),
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.018, min: 14, max: 22),
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(.2),
-                  blurRadius: 18,
+                  color: Colors.black.withOpacity(.08),
+                  blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
               ],
