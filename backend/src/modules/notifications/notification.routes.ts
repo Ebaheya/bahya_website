@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
+import { userRateLimiter } from '../../middleware/userRateLimit';
 import * as controller from './notification.controller';
 
 export const notificationRouter = Router();
@@ -13,6 +14,7 @@ export const notificationRouter = Router();
 //   POST   /request-booking           (US4 — Doctor → Call Center)
 //   POST   /devices, DELETE /devices  (US5 — push device registration)
 notificationRouter.use(authenticate);
+notificationRouter.use(userRateLimiter(120));
 
 notificationRouter.get('/my', controller.listMy);
 notificationRouter.post('/request-booking', authorize('DOCTOR'), controller.requestBooking);
