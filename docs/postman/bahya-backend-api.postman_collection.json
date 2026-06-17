@@ -2,7 +2,7 @@
   "info": {
     "name": "Bahya Backend API (Full)",
     "_postman_id": "b0a1d5e2-0006-4f00-9a00-bahyafull0001",
-    "description": "Complete collection for the Bahya backend (`/api/v1`): health, auth, patients, users, volunteers, dynamic assessment forms, form assignments, assessments, and patient services & activities (categories, services, requests).\n\nUsage:\n1. Set the `baseUrl` variable (defaults to http://localhost:3000/api/v1).\n2. Bootstrap the first admin via Auth > Register first admin (bootstrap) using `bootstrapSecret`, or use an existing account.\n3. Run Auth > Login — the test script saves `accessToken` and `refreshToken` automatically. All protected requests inherit `Bearer {{accessToken}}` from collection auth.\n4. To exercise role-specific routes, log in as the appropriate role and re-run Login.\n\nRoles per route follow the server's `authorize(...)` guards and Constitution v2.1.0 RBAC.",
+    "description": "Complete collection for the Bahya backend (`/api/v1`): health, auth, patients, users, volunteers, dynamic assessment forms, form assignments, assessments, and patient services & activities (categories, services, requests).\n\nUsage:\n1. Set the `baseUrl` variable (defaults to http://localhost:3000/api/v1).\n2. Bootstrap the first admin via Auth > Register first admin (bootstrap). Set `bootstrapSecret` to match the server's `BOOTSTRAP_SECRET` in backend/.env. This only works once, on a fresh DB with no admin; if an admin already exists it returns 403 by design — use an existing account and skip to Login.\n3. Run Auth > Login — the test script saves `accessToken` and `refreshToken` automatically. Login uses `{{password}}` (default ChangeMe123!). All protected requests inherit `Bearer {{accessToken}}` from collection auth.\n4. To exercise role-specific routes, log in as the appropriate role and re-run Login.\n\nIdempotency: Auth > Change password rotates `{{password}}` -> `{{newPassword}}`, then Auth > Revert password rotates it back, so the account password is unchanged after a full run and the collection can be re-run. Note the auth endpoints are rate-limited (10 req / 60s); space out repeated full runs.\n\nRoles per route follow the server's `authorize(...)` guards and Constitution v2.1.0 RBAC.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -11,9 +11,11 @@
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
-    { "key": "bootstrapSecret", "value": "change_me_min_16_chars" },
+    { "key": "bootstrapSecret", "value": "<set to backend/.env BOOTSTRAP_SECRET>" },
     { "key": "accessToken", "value": "" },
     { "key": "refreshToken", "value": "" },
+    { "key": "password", "value": "ChangeMe123!" },
+    { "key": "newPassword", "value": "NewPass123!" },
     { "key": "patientId", "value": "" },
     { "key": "patientUserId", "value": "" },
     { "key": "userId", "value": "" },
@@ -90,7 +92,7 @@
             "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@bahya.health\",\n  \"password\": \"ChangeMe123!\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@bahya.health\",\n  \"password\": \"{{password}}\"\n}" },
             "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
             "description": "Public. Saves accessToken + refreshToken to collection variables."
           }
@@ -133,9 +135,19 @@
           "request": {
             "method": "PATCH",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"ChangeMe123!\",\n  \"newPassword\": \"NewPass123!\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}" },
             "url": { "raw": "{{baseUrl}}/auth/change-password", "host": ["{{baseUrl}}"], "path": ["auth", "change-password"] },
-            "description": "Authenticated user changes own password."
+            "description": "Authenticated user changes own password ({{password}} -> {{newPassword}}). Paired with Revert password to keep the run idempotent."
+          }
+        },
+        {
+          "name": "Revert password",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"{{newPassword}}\",\n  \"newPassword\": \"{{password}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/change-password", "host": ["{{baseUrl}}"], "path": ["auth", "change-password"] },
+            "description": "Reverts the Change password step ({{newPassword}} -> {{password}}) so the account password is unchanged after a full run and Login keeps working on re-runs."
           }
         },
         {
