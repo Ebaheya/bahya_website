@@ -37,7 +37,7 @@ class PatientAssessmentReviewCubit extends Cubit<PatientAssessmentReviewState> {
 
   final AppRepository repo;
 
-Future<void> loadPatientPendingSubmissions(String patientId) async {
+  Future<void> loadPatientPendingSubmissions(String patientId) async {
     emit(state.copyWith(isLoading: true, clearError: true));
 
     try {
@@ -80,10 +80,6 @@ Future<void> loadPatientPendingSubmissions(String patientId) async {
         try {
           final details = await repo.getSubmissionDetails(id);
 
-          debugPrint('========== SUBMISSION DETAILS ==========');
-          debugPrint(details.toString());
-          debugPrint('========================================');
-
           detailedSubmissions.add({...item, ...details});
         } catch (_) {
           detailedSubmissions.add(item);
@@ -102,6 +98,7 @@ Future<void> loadPatientPendingSubmissions(String patientId) async {
       );
     }
   }
+
   Future<bool> approveSubmission({
     required String patientId,
     required Map<String, dynamic> submission,

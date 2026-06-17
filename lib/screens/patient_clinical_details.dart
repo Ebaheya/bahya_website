@@ -14,6 +14,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 part '../helper/widgets/patient_clinical/patient_clinical_widget.dart';
 part '../helper/widgets/patient_clinical/patient_clinical_components.dart';
+part '../helper/widgets/patient_clinical/patient_clinical_models.dart';
+part '../helper/widgets/patient_clinical/patient_clinical_pending_shell.dart';
+part '../helper/widgets/patient_clinical/patient_clinical_pending_card.dart';
+part '../helper/widgets/patient_clinical/patient_clinical_review_answers.dart';
+part '../helper/widgets/patient_clinical/patient_clinical_assessment_details.dart';
+part '../helper/widgets/patient_clinical/patient_clinical_data_cards.dart';
+part '../helper/widgets/patient_clinical/patient_clinical_header_components.dart';
 
 class PatientClinicalDetails extends StatefulWidget {
   final ClinicalPatient patient;
@@ -109,7 +116,9 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
           TextCellValue(assessment.formName),
           TextCellValue(assessment.submitDate),
           TextCellValue(assessment.score.toString()),
-          TextCellValue(assessment.doctorNote.isEmpty ? '-' : assessment.doctorNote),
+          TextCellValue(
+            assessment.doctorNote.isEmpty ? '-' : assessment.doctorNote,
+          ),
           TextCellValue(answer.question),
           TextCellValue(answer.answer),
           TextCellValue(answer.score.toString()),
@@ -182,8 +191,6 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
         officialAssessments = mapped;
         isLoadingAssessments = false;
       });
-
-      debugPrint('OFFICIAL ASSESSMENTS DETAILED => $detailedList');
     } catch (e) {
       if (!mounted) return;
 
@@ -216,10 +223,7 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
     );
   }
 
-  String _readDoctorNote(
-    Map<String, dynamic> json,
-    dynamic nestedAssessment,
-  ) {
+  String _readDoctorNote(Map<String, dynamic> json, dynamic nestedAssessment) {
     final direct = json['doctorNote'];
     if (direct != null && direct.toString().trim().isNotEmpty) {
       return direct.toString().trim();
@@ -345,8 +349,9 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
         final isEnglish = locale.languageCode == 'en';
 
         return BlocProvider(
-          create: (_) => PatientAssessmentReviewCubit(AppRepository())
-            ..loadPatientPendingSubmissions(widget.patient.id),
+          create: (_) =>
+              PatientAssessmentReviewCubit(AppRepository())
+                ..loadPatientPendingSubmissions(widget.patient.id),
           child: Scaffold(
             appBar: customAppBar(
               context: context,
@@ -434,15 +439,17 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
                                 duration: const Duration(milliseconds: 350),
                                 switchInCurve: Curves.easeOutCubic,
                                 switchOutCurve: Curves.easeInCubic,
-                                layoutBuilder: (currentChild, previousChildren) {
-                                  return Stack(
-                                    alignment: Alignment.topCenter,
-                                    children: [
-                                      ...previousChildren,
-                                      if (currentChild != null) currentChild,
-                                    ],
-                                  );
-                                },
+                                layoutBuilder:
+                                    (currentChild, previousChildren) {
+                                      return Stack(
+                                        alignment: Alignment.topCenter,
+                                        children: [
+                                          ...previousChildren,
+                                          if (currentChild != null)
+                                            currentChild,
+                                        ],
+                                      );
+                                    },
                                 transitionBuilder: (child, animation) {
                                   final slideAnimation = Tween<Offset>(
                                     begin: Offset(isEnglish ? 0.04 : -0.04, 0),
@@ -536,101 +543,6 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
       patientId: widget.patient.id,
     );
   }
-}
-enum BadgeType { success, warning, danger, info, status, neutral }
-
-class _DataRowItem {
-  final String label;
-  final String value;
-  final BadgeType? badgeType;
-
-  _DataRowItem(this.label, this.value, {this.badgeType});
-}
-
-class ClinicalPatient {
-  final String id;
-  final String fileNumber;
-  final String name;
-  final int age;
-  final String phone;
-  final String emergencyContactName;
-  final String emergencyContactPhone;
-  final String registrationDate;
-
-  final String comorbidities;
-  final String bmi;
-  final String familyHistory;
-  final String menopausalStatus;
-
-  final String diagnosisDate;
-  final String stageAtDiagnosis;
-  final String diseaseStatus;
-  final String tumorBiology;
-
-  final String surgery;
-  final String chemotherapy;
-  final String radiotherapy;
-  final String hormonalTherapy;
-  final String targetedTherapy;
-  final String immunotherapy;
-
-  final List<String> drugs;
-  final List<PatientAssessment> assessments;
-
-  ClinicalPatient({
-    required this.id,
-    required this.fileNumber,
-    required this.name,
-    required this.age,
-    required this.phone,
-    required this.emergencyContactName,
-    required this.emergencyContactPhone,
-    required this.registrationDate,
-    required this.comorbidities,
-    required this.bmi,
-    required this.familyHistory,
-    required this.menopausalStatus,
-    required this.diagnosisDate,
-    required this.stageAtDiagnosis,
-    required this.diseaseStatus,
-    required this.tumorBiology,
-    required this.surgery,
-    required this.chemotherapy,
-    required this.radiotherapy,
-    required this.hormonalTherapy,
-    required this.targetedTherapy,
-    required this.immunotherapy,
-    required this.drugs,
-    required this.assessments,
-  });
-}
-
-class PatientAssessment {
-  final String formName;
-  final String submitDate;
-  final int score;
-  final String doctorNote;
-  final List<PatientAnswer> answers;
-
-  PatientAssessment({
-    required this.formName,
-    required this.submitDate,
-    required this.score,
-    this.doctorNote = '',
-    this.answers = const [],
-  });
-}
-
-class PatientAnswer {
-  final String question;
-  final String answer;
-  final int score;
-
-  const PatientAnswer({
-    required this.question,
-    required this.answer,
-    required this.score,
-  });
 }
 
 const List<PatientAnswer> _demoAnswers = [
