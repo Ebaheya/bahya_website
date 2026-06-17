@@ -21,7 +21,7 @@ class _TabItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
-        height: double.infinity,
+        height: responsiveHeight(context, 0.056, min: 46, max: 56),
         decoration: BoxDecoration(
           color: active
               ? Colors.pink[200]!.withValues(alpha: 0.3)

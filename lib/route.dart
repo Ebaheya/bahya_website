@@ -1,3 +1,4 @@
+import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/screens/add_questionnaire.dart';
@@ -16,16 +17,31 @@ class AuthNotifier extends ChangeNotifier {
   bool _isLoggedIn = false;
   bool _passwordResetDone = false;
   bool _isLoading = true;
+  String? _role;
 
   bool get isLoggedIn => _isLoggedIn;
   bool get passwordResetDone => _passwordResetDone;
   bool get isLoading => _isLoading;
+  String? get role => _role;
+
+  bool get isAdmin => _role == 'ADMIN';
+  bool get isDoctor => _role == 'DOCTOR';
+  bool get isVolunteer => _role == 'VOLUNTEER';
+
+  String get homePath {
+    if (isAdmin) return '/admin';
+    if (isDoctor) return '/home';
+    if (isVolunteer) return '/volunteer_survey';
+    return '/login';
+  }
+
   Future<void> forceLogout() async {
     final storage = SecureStorageService();
     await storage.clearTokens();
 
     _isLoggedIn = false;
     _isLoading = false;
+    _role = null;
 
     notifyListeners();
   }
@@ -39,17 +55,45 @@ class AuthNotifier extends ChangeNotifier {
     final accessToken = await storage.getAccessToken();
     final refreshToken = await storage.getRefreshToken();
 
-    _isLoggedIn =
+    final hasTokens =
         accessToken != null &&
         accessToken.isNotEmpty &&
         refreshToken != null &&
         refreshToken.isNotEmpty;
 
+    if (!hasTokens) {
+      _isLoggedIn = false;
+      _role = null;
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final userInfo = await WebService().getUserInfo();
+      final user = userInfo['user'] is Map ? userInfo['user'] : userInfo;
+      final role = user['role']?.toString();
+
+      if (role == 'ADMIN' || role == 'DOCTOR' || role == 'VOLUNTEER') {
+        _role = role;
+        _isLoggedIn = true;
+      } else {
+        await storage.clearTokens();
+        _role = null;
+        _isLoggedIn = false;
+      }
+    } catch (_) {
+      await storage.clearTokens();
+      _role = null;
+      _isLoggedIn = false;
+    }
+
     _isLoading = false;
     notifyListeners();
   }
 
-  void login() {
+  void login({required String role}) {
+    _role = role;
     _isLoggedIn = true;
     _isLoading = false;
     notifyListeners();
@@ -63,7 +107,9 @@ class AuthNotifier extends ChangeNotifier {
     await storage.clearTokens();
 
     _isLoggedIn = false;
+    _role = null;
     _isLoading = false;
+
     notifyListeners();
   }
 
@@ -75,6 +121,7 @@ class AuthNotifier extends ChangeNotifier {
     await storage.clearTokens();
 
     _isLoggedIn = false;
+    _role = null;
     _passwordResetDone = true;
 
     _isLoading = false;
@@ -100,27 +147,56 @@ class AppRouter {
       final isLoginPage = currentPath == '/login';
       final isResetPasswordPage = currentPath == '/reset-password';
 
+      final adminRoutes = <String>{'/admin'};
+
+      final doctorRoutes = <String>{
+        '/home',
+        '/patient_info',
+        '/add_questionnaire',
+        '/publish_schedule',
+        '/questionnaire_filler',
+      };
+
+      final volunteerRoutes = <String>{
+        '/volunteer_survey',
+        '/questionnaire_filler',
+      };
+
       if (authNotifier.isLoading) {
         return isLoadingPage ? null : '/loading';
       }
 
       if (isLoadingPage) {
-        return authNotifier.isLoggedIn ? '/home' : '/login';
+        return authNotifier.isLoggedIn ? authNotifier.homePath : '/login';
       }
 
       if (isResetPasswordPage) {
         return null;
       }
 
-      if (!authNotifier.isLoggedIn && !isLoginPage) {
-        return '/login';
+      if (!authNotifier.isLoggedIn) {
+        return isLoginPage ? null : '/login';
       }
 
       if (authNotifier.isLoggedIn && isLoginPage) {
-        return '/home';
+        return authNotifier.homePath;
       }
 
-      return null;
+      if (authNotifier.isAdmin) {
+        return adminRoutes.contains(currentPath) ? null : '/admin';
+      }
+
+      if (authNotifier.isDoctor) {
+        return doctorRoutes.contains(currentPath) ? null : '/home';
+      }
+
+      if (authNotifier.isVolunteer) {
+        return volunteerRoutes.contains(currentPath)
+            ? null
+            : '/volunteer_survey';
+      }
+
+      return '/login';
     },
     routes: [
       GoRoute(
@@ -129,17 +205,15 @@ class AppRouter {
           return Scaffold(body: Center(child: customLoading()));
         },
       ),
-
       GoRoute(
         path: '/login',
         builder: (context, state) {
           if (authNotifier.passwordResetDone) {
             authNotifier.clearPasswordReset();
           }
-          return LoginPage();
+          return const LoginPage();
         },
       ),
-
       GoRoute(
         path: '/reset-password',
         builder: (context, state) {
@@ -160,31 +234,24 @@ class AppRouter {
           return ResetPassword(token: token);
         },
       ),
-
       GoRoute(path: '/admin', builder: (context, state) => AdminPanelPage()),
-
       GoRoute(path: '/home', builder: (context, state) => HomePage()),
-
       GoRoute(
         path: '/patient_info',
         builder: (context, state) => PatientInfo(),
       ),
-
       GoRoute(
         path: '/add_questionnaire',
         builder: (context, state) => AddQuestionnaire(),
       ),
-
       GoRoute(
         path: '/publish_schedule',
         builder: (context, state) => PublishScheduleScreen(),
       ),
-
       GoRoute(
         path: '/questionnaire_filler',
         builder: (context, state) => FormsScreen(),
       ),
-
       GoRoute(
         path: '/volunteer_survey',
         builder: (context, state) => VolunteerPatientsScreen(),

@@ -171,7 +171,7 @@ class _PatientHeaderIdentity extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       textDirection: _activeTextDirection,
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       children: [
         CircleAvatar(
           radius: responsiveSize(context, 0.03, min: 34, max: 42),
@@ -185,11 +185,12 @@ class _PatientHeaderIdentity extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 18),
-        Column(
-          crossAxisAlignment: _activeCrossAxisStart,
-          children: [
-            customText(
-              text: patient.name,
+        Flexible(
+          child: Column(
+            crossAxisAlignment: _activeCrossAxisStart,
+            children: [
+              customText(
+                text: patient.name,
               size: responsiveSize(context, 0.015, min: 18, max: 26),
               color: const Color(0xFF271648),
               bold: true,
@@ -204,8 +205,9 @@ class _PatientHeaderIdentity extends StatelessWidget {
               isCenter: false,
             ),
             const SizedBox(height: 6),
-            _SmallBadge(text: _translateStatus(patient.diseaseStatus)),
-          ],
+              _SmallBadge(text: _translateStatus(patient.diseaseStatus)),
+            ],
+          ),
         ),
       ],
     );
@@ -276,11 +278,15 @@ class _TabsBar extends StatelessWidget {
       ),
       child: isMobile
           ? Column(
-              children: tabs.map((tab) {
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(tabs.length, (tabIndex) {
+                final tab = tabs[tabIndex];
                 final index = tab['index'] as int;
 
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(
+                    bottom: tabIndex == tabs.length - 1 ? 0 : 8,
+                  ),
                   child: _TabItem(
                     title: tab['title'] as String,
                     icon: tab['icon'] as IconData,
@@ -288,7 +294,7 @@ class _TabsBar extends StatelessWidget {
                     onTap: () => onTabChanged(index),
                   ),
                 );
-              }).toList(),
+              }),
             )
           : SizedBox(
               height: responsiveHeight(context, 0.07, min: 52, max: 58),

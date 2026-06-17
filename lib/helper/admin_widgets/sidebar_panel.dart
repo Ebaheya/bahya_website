@@ -2,7 +2,9 @@ import 'dart:math' as math;
 
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/route.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class Sidebar extends StatelessWidget {
   final int selectedIndex;
@@ -67,59 +69,88 @@ class AdminSidebarContainer extends StatelessWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
+      child: Stack(
         children: [
-          const _SidebarHeader(),
-          SizedBox(height: responsiveHeight(context, 0.03, min: 20, max: 34)),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: responsiveSize(context, 0.012, min: 14, max: 22),
+          Column(
+            children: [
+              const _SidebarHeader(),
+              SizedBox(
+                height: responsiveHeight(context, 0.03, min: 20, max: 34),
               ),
-              child: Column(
-                children: [
-                  _SidebarItem(
-                    icon: Icons.dashboard_rounded,
-                    title: 'Dashboard',
-                    isSelected: selectedIndex == 0,
-                    onTap: () => onItemSelected(0),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: responsiveSize(
+                      context,
+                      0.012,
+                      min: 14,
+                      max: 22,
+                    ),
                   ),
-                  _SidebarItem(
-                    icon: Icons.people_alt_rounded,
-                    title: 'Users',
-                    isSelected: selectedIndex == 1,
-                    onTap: () => onItemSelected(1),
+                  child: Column(
+                    children: [
+                      _SidebarItem(
+                        icon: Icons.dashboard_rounded,
+                        title: 'Dashboard',
+                        isSelected: selectedIndex == 0,
+                        onTap: () => onItemSelected(0),
+                      ),
+                      _SidebarItem(
+                        icon: Icons.people_alt_rounded,
+                        title: 'Users',
+                        isSelected: selectedIndex == 1,
+                        onTap: () => onItemSelected(1),
+                      ),
+                      _SidebarItem(
+                        icon: Icons.description_rounded,
+                        title: 'Reports',
+                        isSelected: selectedIndex == 2,
+                        onTap: () => onItemSelected(2),
+                      ),
+                      _SidebarItem(
+                        icon: Icons.settings_rounded,
+                        title: 'Settings',
+                        isSelected: selectedIndex == 3,
+                        onTap: () => onItemSelected(3),
+                      ),
+                    ],
                   ),
-                  _SidebarItem(
-                    icon: Icons.description_rounded,
-                    title: 'Reports',
-                    isSelected: selectedIndex == 2,
-                    onTap: () => onItemSelected(2),
-                  ),
-                  _SidebarItem(
-                    icon: Icons.settings_rounded,
-                    title: 'Settings',
-                    isSelected: selectedIndex == 3,
-                    onTap: () => onItemSelected(3),
-                  ),
-                  const Spacer(),
-                  Divider(color: Colors.pink.withValues(alpha: 0.25)),
-                  SizedBox(
-                    height: responsiveHeight(context, 0.02, min: 14, max: 24),
-                  ),
-                  _LogoutButton(
-                    onTap: () {
-                      debugPrint('Logout');
-                    },
-                  ),
-                  SizedBox(
-                    height: responsiveHeight(context, 0.025, min: 18, max: 28),
-                  ),
-                ],
+                ),
               ),
+              SizedBox(
+                height: responsiveHeight(context, 0.17, min: 135, max: 160),
+              ),
+            ],
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: const _SidebarWaveFooter(),
+          ),
+          Positioned(
+            left: responsiveSize(context, 0.012, min: 14, max: 22),
+            right: responsiveSize(context, 0.012, min: 14, max: 22),
+            bottom: responsiveHeight(context, 0.105, min: 88, max: 105),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Divider(color: Colors.pink.withValues(alpha: 0.25)),
+                SizedBox(
+                  height: responsiveHeight(context, 0.018, min: 10, max: 16),
+                ),
+               _LogoutButton(
+                  onTap: () async {
+                    await authNotifier.logout();
+
+                    if (!context.mounted) return;
+
+                    context.go('/login');
+                  },
+                ),
+              ],
             ),
           ),
-          const _SidebarWaveFooter(),
         ],
       ),
     );
@@ -139,11 +170,8 @@ class AdminBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: responsiveHeight(context, 0.082, min: 78, max: 92),
       margin: EdgeInsets.all(responsiveSize(context, 0.012, min: 12, max: 16)),
-      padding: EdgeInsets.symmetric(
-        horizontal: responsiveSize(context, 0.012, min: 10, max: 14),
-        vertical: responsiveHeight(context, 0.012, min: 10, max: 14),
-      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(
@@ -157,31 +185,48 @@ class AdminBottomNavigation extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          _BottomNavItem(
-            icon: Icons.dashboard_rounded,
-            title: 'Dashboard',
-            isSelected: selectedIndex == 0,
-            onTap: () => onItemSelected(0),
+          Positioned.fill(child: const _SidebarWaveFooter()),
+
+          Positioned.fill(
+            child: Container(color: Colors.white.withValues(alpha: 0.72)),
           ),
-          _BottomNavItem(
-            icon: Icons.people_alt_rounded,
-            title: 'Users',
-            isSelected: selectedIndex == 1,
-            onTap: () => onItemSelected(1),
-          ),
-          _BottomNavItem(
-            icon: Icons.description_rounded,
-            title: 'Reports',
-            isSelected: selectedIndex == 2,
-            onTap: () => onItemSelected(2),
-          ),
-          _BottomNavItem(
-            icon: Icons.settings_rounded,
-            title: 'Settings',
-            isSelected: selectedIndex == 3,
-            onTap: () => onItemSelected(3),
+
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: responsiveSize(context, 0.012, min: 10, max: 14),
+              vertical: responsiveHeight(context, 0.008, min: 7, max: 9),
+            ),
+            child: Row(
+              children: [
+                _BottomNavItem(
+                  icon: Icons.dashboard_rounded,
+                  title: 'Dashboard',
+                  isSelected: selectedIndex == 0,
+                  onTap: () => onItemSelected(0),
+                ),
+                _BottomNavItem(
+                  icon: Icons.people_alt_rounded,
+                  title: 'Users',
+                  isSelected: selectedIndex == 1,
+                  onTap: () => onItemSelected(1),
+                ),
+                _BottomNavItem(
+                  icon: Icons.description_rounded,
+                  title: 'Reports',
+                  isSelected: selectedIndex == 2,
+                  onTap: () => onItemSelected(2),
+                ),
+                _BottomNavItem(
+                  icon: Icons.settings_rounded,
+                  title: 'Settings',
+                  isSelected: selectedIndex == 3,
+                  onTap: () => onItemSelected(3),
+                ),
+              ],
+            ),
           ),
         ],
       ),

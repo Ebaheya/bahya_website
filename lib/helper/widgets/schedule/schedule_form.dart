@@ -475,42 +475,55 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
       ),
     );
   }
+  Future<bool> _ensureFormReadyForPublish(FormModel form) async {
+    final status = form.currentVersion?.status.trim().toUpperCase();
 
-  Future<void> publishForm() async {
+    if (status == "PUBLISHED") return true;
+
+    try {
+      await web.publishFormVersion(formId: form.id);
+      return true;
+    } catch (e) {
+      final text = e.toString();
+
+      if (text.contains("FORM_VERSION_NOT_DRAFT")) {
+        return true;
+      }
+
+      debugPrint("publish-version before volunteer publish failed: $e");
+      return false;
+    }
+  }
+ Future<void> publishForm() async {
     if (selectedForm == null) {
-      logic.showError("يجب اختيار نموذج للنشر.");
+      logic.showError("اختر نموذجًا للنشر.");
+      return;
+    }
+
+    if (selectedForm!.isActive != true) {
+      logic.showError("هذا النموذج غير مفعّل. فعّله أولاً قبل إعادة النشر.");
       return;
     }
 
     if (targetType == null) {
-      logic.showError("يجب اختيار الفئة المستهدفة.");
+      logic.showError("اختر الفئة المستهدفة.");
       return;
     }
 
     if (targetType == "المرضى") {
-      if (patientPublishType == null) {
-        logic.showError("يجب اختيار نوع النشر.");
-        return;
-      }
-
-      if (patientPublishType == "مجموعه من المرضى" &&
-          selectedPatients.isEmpty) {
-        logic.showError("يجب اختيار مريض واحد على الأقل.");
-        return;
-      }
-
       await logic.publishForm(
         selectedForm: selectedForm,
         selectedDate: selectedDate,
         selectedTime: selectedTime,
         targetType: targetType,
         patientPublishType: patientPublishType,
-        selectedSinglePatient: selectedPatients.isNotEmpty
-            ? selectedPatients.first
-            : null,
+        selectedSinglePatient: selectedSinglePatient,
         selectedPatients: selectedPatients,
         selectedVolunteers: selectedVolunteers,
-        onSuccess: afterSuccess,
+        onSuccess: () {
+          logic.showPublishSuccess();
+          context.read<PublishScheduleCubit>().loadForms();
+        },
       );
 
       return;
@@ -527,67 +540,34 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
         return;
       }
 
-      final cubit = context.read<PublishScheduleCubit>();
-      final publishAt = _buildPublishAt();
+      final ready = await _ensureFormReadyForPublish(selectedForm!);
 
-      cubit.emitPublishing(true);
-
-      try {
-        final skippedPatients = <String>[];
-        int publishedCount = 0;
-
-        for (int i = 0; i < selectedPatients.length; i++) {
-          final patient = selectedPatients[i];
-          final volunteer = selectedVolunteers[i % selectedVolunteers.length];
-
-          final body = {
-            "target": "VOLUNTEER_FOR_PATIENT",
-            "patientId": patient.id,
-            "volunteerId": volunteer.id,
-            if (publishAt != null) "publishAt": publishAt,
-          };
-
-          try {
-            await web.publishForm(formId: selectedForm!.id, body: body);
-
-            publishedCount++;
-          } catch (e) {
-            if (_isDuplicateAssignmentError(e)) {
-              skippedPatients.add(_optionName(patient));
-              continue;
-            }
-
-            rethrow;
-          }
-        }
-
-        if (!mounted) return;
-
-        if (publishedCount == 0 && skippedPatients.isNotEmpty) {
-          logic.showError(
-            "كل المرضى المختارين لديهم نسخة مفتوحة من هذا النموذج بالفعل.",
-          );
-          return;
-        }
-
-        final skippedCount = skippedPatients.length;
-
-        logic.showPublishSuccess();
-
-        if (skippedCount > 0) {
-          logic.showError(
-            "تم النشر لـ $publishedCount مريض، وتم تخطي $skippedCount لأن لديهم نسخة مفتوحة بالفعل.",
-          );
-        }
-
-        _resetAfterPublish();
-      } catch (_) {
-        if (!mounted) return;
-        logic.showError("حدث خطأ أثناء نشر النموذج للمتطوعين.");
-      } finally {
-        if (mounted) cubit.emitPublishing(false);
+      if (!ready) {
+        logic.showError(
+          "النموذج غير جاهز للنشر. تأكد أنه يحتوي أسئلة و ranges صحيحة.",
+        );
+        return;
       }
+
+      await logic.publishForm(
+        selectedForm: selectedForm,
+        selectedDate: selectedDate,
+        selectedTime: selectedTime,
+        targetType: targetType,
+        patientPublishType: patientPublishType,
+        selectedSinglePatient: selectedSinglePatient,
+        selectedPatients: selectedPatients,
+        selectedVolunteers: selectedVolunteers,
+        onSuccess: () {
+          logic.showPublishSuccess();
+          context.read<PublishScheduleCubit>().loadForms();
+        },
+      );
+
+      return;
     }
+
+    logic.showError("نوع النشر غير صحيح.");
   }
 
   void _resetAfterPublish() {

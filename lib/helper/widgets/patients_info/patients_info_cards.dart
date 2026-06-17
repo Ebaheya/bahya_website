@@ -6,6 +6,7 @@ class _PatientsGrid extends StatelessWidget {
   final double mainAxisExtent;
   final String? loadingPatientId;
   final ValueChanged<PatientModel> onPatientTap;
+  final ValueChanged<PatientModel> onPatientEdit;
 
   const _PatientsGrid({
     super.key,
@@ -14,6 +15,7 @@ class _PatientsGrid extends StatelessWidget {
     required this.mainAxisExtent,
     required this.loadingPatientId,
     required this.onPatientTap,
+    required this.onPatientEdit,
   });
 
   @override
@@ -36,6 +38,7 @@ class _PatientsGrid extends StatelessWidget {
           patient: patient,
           isLoading: loadingPatientId == patient.id,
           onTap: () => onPatientTap(patient),
+          onEdit: () => onPatientEdit(patient),
         );
       },
     );
@@ -47,33 +50,26 @@ class _PatientCard extends StatelessWidget {
   final PatientModel patient;
   final bool isLoading;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
 
   const _PatientCard({
     required this.index,
     required this.patient,
     required this.isLoading,
     required this.onTap,
+    required this.onEdit,
   });
-
-  String get patientName => patient.fullName;
 
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
     final isSmall = w < 700;
 
-    final fileNumber = patient.displayCrn;
-    final diseaseStatus = readablePatientValue(patient.diseaseStatus);
-    final tumorBiology = readablePatientValue(patient.tumorBiology);
-    final surgery = readablePatientValue(patient.surgery);
-    final chemo = readablePatientValue(patient.chemotherapy);
-    final registerDate = patient.displayRegistrationDate;
-
     final profile = _PatientCardProfile(
-      patientName: patientName,
-      fileNumber: fileNumber,
-      diseaseStatus: diseaseStatus,
-      registerDate: registerDate,
+      patientName: patient.fullName,
+      fileNumber: patient.displayCrn,
+      diseaseStatus: readablePatientValue(patient.diseaseStatus),
+      registerDate: patient.displayRegistrationDate,
     );
 
     final details = Column(
@@ -81,26 +77,28 @@ class _PatientCard extends StatelessWidget {
         _PatientInfoTile(
           icon: Icons.assignment_outlined,
           label: 'الحالة',
-          value: diseaseStatus,
+          value: readablePatientValue(patient.diseaseStatus),
         ),
         SizedBox(height: responsiveHeight(context, 0.012, min: 8, max: 10)),
         _PatientInfoTile(
           icon: Icons.biotech_outlined,
           label: 'البيولوجيا الورمية',
-          value: tumorBiology,
+          value: readablePatientValue(patient.tumorBiology),
         ),
         SizedBox(height: responsiveHeight(context, 0.012, min: 8, max: 10)),
         _PatientInfoTile(
           icon: Icons.medical_services_outlined,
           label: 'الجراحة',
-          value: surgery,
+          value: readablePatientValue(patient.surgery),
         ),
         SizedBox(height: responsiveHeight(context, 0.012, min: 8, max: 10)),
         _PatientInfoTile(
           icon: Icons.science_outlined,
           label: 'العلاج الكيميائي',
-          value: chemo,
+          value: readablePatientValue(patient.chemotherapy),
         ),
+        SizedBox(height: responsiveHeight(context, 0.014, min: 10, max: 14)),
+        _EditClinicalButton(isLoading: isLoading, onTap: onEdit),
       ],
     );
 
@@ -127,98 +125,138 @@ class _PatientCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Directionality(
-            textDirection: Directionality.of(context),
-            child: Stack(
-              children: [
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  opacity: isLoading ? 0.28 : 1,
-                  child: isSmall
-                      ? Column(
-                          children: [
-                            profile,
-                            const SizedBox(height: 16),
-                            Container(
-                              height: 2,
-                              color: const Color(0xFFFFC6DD),
-                            ),
-                            const SizedBox(height: 16),
-                            details,
-                          ],
-                        )
-                      : Row(
-                          children: [
-                            Expanded(flex: 5, child: profile),
-                            Container(
-                              width: 1,
-                              margin: EdgeInsets.symmetric(
-                                horizontal: responsiveSize(
-                                  context,
-                                  0.012,
-                                  min: 14,
-                                  max: 18,
-                                ),
+          child: Stack(
+            children: [
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 220),
+                opacity: isLoading ? 0.28 : 1,
+                child: isSmall
+                    ? Column(
+                        children: [
+                          profile,
+                          const SizedBox(height: 16),
+                          Container(height: 2, color: const Color(0xFFFFC6DD)),
+                          const SizedBox(height: 16),
+                          details,
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(flex: 5, child: profile),
+                          Container(
+                            width: 1,
+                            margin: EdgeInsets.symmetric(
+                              horizontal: responsiveSize(
+                                context,
+                                0.012,
+                                min: 14,
+                                max: 18,
                               ),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  right: BorderSide(
-                                    color: const Color(
-                                      0xFFFFC6DD,
-                                    ).withValues(alpha: 0.9),
-                                    width: 2,
-                                  ),
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                right: BorderSide(
+                                  color: const Color(
+                                    0xFFFFC6DD,
+                                  ).withValues(alpha: 0.9),
+                                  width: 2,
                                 ),
                               ),
                             ),
-                            Expanded(flex: 6, child: details),
-                          ],
-                        ),
-                ),
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 260),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: ScaleTransition(
-                            scale: Tween<double>(begin: 0.88, end: 1).animate(
-                              CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeOutCubic,
-                              ),
-                            ),
-                            child: child,
                           ),
-                        );
-                      },
-                      child: isLoading
-                          ? Center(
-                              key: const ValueKey('patient_card_loading'),
-                              child: Transform.scale(
-                                scale: 0.62,
-                                child: customLoading(),
-                              ),
-                            )
-                          : const SizedBox.shrink(
-                              key: ValueKey('patient_card_idle'),
-                            ),
-                    ),
+                          Expanded(flex: 6, child: details),
+                        ],
+                      ),
+              ),
+              if (isLoading)
+                Positioned.fill(
+                  child: Center(
+                    child: Transform.scale(scale: 0.62, child: customLoading()),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
 }
+class _EditClinicalButton extends StatefulWidget {
+  final bool isLoading;
+  final VoidCallback onTap;
 
+  const _EditClinicalButton({required this.isLoading, required this.onTap});
+
+  @override
+  State<_EditClinicalButton> createState() => _EditClinicalButtonState();
+}
+
+class _EditClinicalButtonState extends State<_EditClinicalButton> {
+  bool hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: widget.isLoading
+          ? SystemMouseCursors.basic
+          : SystemMouseCursors.click,
+      onEnter: (_) => setState(() => hover = true),
+      onExit: (_) => setState(() => hover = false),
+      child: InkWell(
+        onTap: widget.isLoading ? null : widget.onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            horizontal: responsiveSize(context, 0.01, min: 12, max: 16),
+            vertical: responsiveHeight(context, 0.014, min: 10, max: 13),
+          ),
+          decoration: BoxDecoration(
+            gradient: hover
+                ? const LinearGradient(
+                    colors: [Color(0xFFE83E8C), Color(0xFFFF7BB0)],
+                  )
+                : null,
+            color: hover ? null : const Color(0xFFFFEAF4),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: hover ? const Color(0xFFE83E8C) : const Color(0xFFFFC6DD),
+            ),
+            boxShadow: hover
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFE83E8C).withOpacity(0.18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.edit_note_rounded,
+                color: hover ? Colors.white : const Color(0xFFE83E8C),
+                size: responsiveSize(context, 0.012, min: 17, max: 20),
+              ),
+              const SizedBox(width: 8),
+              customText(
+                text: 'تعديل البيانات الطبية',
+                size: responsiveSize(context, 0.0078, min: 12, max: 14),
+                color: hover ? Colors.white : const Color(0xFFE83E8C),
+                bold: true,
+                isCenter: false,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 class _PatientCardProfile extends StatelessWidget {
   final String patientName;
   final String fileNumber;

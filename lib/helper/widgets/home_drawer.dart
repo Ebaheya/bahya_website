@@ -174,26 +174,6 @@ class HomeDrawer extends StatelessWidget {
                                     showReportProblemDialog(context);
                                   },
                                 ),
-                                _drawerItem(
-                                  context,
-                                  index: 5,
-                                  icon: Icons.forum_rounded,
-                                  title: 'Volunteer form',
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    context.push('/volunteer_survey');
-                                  },
-                                ),
-                                _drawerItem(
-                                  context,
-                                  index: 6,
-                                  icon: Icons.admin_panel_settings_rounded,
-                                  title: 'Admin panel',
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    context.push('/admin');
-                                  },
-                                ),
                               ],
                             ),
                           ),

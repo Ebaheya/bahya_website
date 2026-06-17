@@ -131,7 +131,7 @@ class _PatientClinicalDetailsState extends State<PatientClinicalDetails> {
     _loadOfficialAssessments();
   }
 
-Future<void> _loadOfficialAssessments() async {
+  Future<void> _loadOfficialAssessments() async {
     setState(() {
       isLoadingAssessments = true;
       assessmentsError = null;
@@ -210,7 +210,7 @@ Future<void> _loadOfficialAssessments() async {
     );
   }
 
-List<PatientAnswer> _mapAssessmentAnswers(Map<String, dynamic> json) {
+  List<PatientAnswer> _mapAssessmentAnswers(Map<String, dynamic> json) {
     final submission = json['submission'] ?? json['formSubmission'];
 
     if (submission is! Map) return [];
@@ -315,9 +315,8 @@ List<PatientAnswer> _mapAssessmentAnswers(Map<String, dynamic> json) {
         final isEnglish = locale.languageCode == 'en';
 
         return BlocProvider(
-          create: (_) =>
-              PatientAssessmentReviewCubit(AppRepository())
-                ..loadPatientPendingSubmissions(widget.patient.id),
+          create: (_) => PatientAssessmentReviewCubit(AppRepository())
+            ..loadPatientPendingSubmissions(widget.patient.id),
           child: Scaffold(
             appBar: customAppBar(
               context: context,
@@ -334,91 +333,111 @@ List<PatientAnswer> _mapAssessmentAnswers(Map<String, dynamic> json) {
             backgroundColor: const Color(0xFFFDF7FB),
             body: Directionality(
               textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: responsiveSize(
+              child: SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isMobile = constraints.maxWidth < 700;
+                    final horizontalPadding = responsiveSize(
                       context,
-                      0.025,
-                      min: 16,
-                      max: 42,
-                    ),
-                    vertical: responsiveHeight(context, 0.03, min: 20, max: 40),
-                  ),
-                  child: Column(
-                    children: [
-                      _PatientHeaderCard(
-                        patient: widget.patient,
-                        showEmergencyInfo: showEmergencyInfo,
-                        onMoreInfoTap: () {
-                          setState(() {
-                            showEmergencyInfo = !showEmergencyInfo;
-                          });
-                        },
-                      ),
-                      SizedBox(
-                        height: responsiveHeight(
-                          context,
-                          0.025,
-                          min: 18,
-                          max: 28,
-                        ),
-                      ),
-                      _TabsBar(
-                        selectedTab: selectedTab,
-                        onTabChanged: (index) {
-                          setState(() => selectedTab = index);
+                      isMobile ? 0.018 : 0.025,
+                      min: isMobile ? 10 : 16,
+                      max: isMobile ? 14 : 42,
+                    );
+                    final verticalPadding = responsiveHeight(
+                      context,
+                      isMobile ? 0.018 : 0.03,
+                      min: isMobile ? 12 : 20,
+                      max: isMobile ? 18 : 40,
+                    );
 
-                          if (index == 1) {
-                            _loadOfficialAssessments();
-                          }
-                        },
+                    return SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: verticalPadding,
                       ),
-                      SizedBox(
-                        height: responsiveHeight(
-                          context,
-                          0.025,
-                          min: 18,
-                          max: 28,
-                        ),
-                      ),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 350),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
-                        transitionBuilder: (child, animation) {
-                          final slideAnimation = Tween<Offset>(
-                            begin: const Offset(0.04, 0),
-                            end: Offset.zero,
-                          ).animate(animation);
-
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: slideAnimation,
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: selectedTab == 0
-                            ? _ClinicalDataTab(
-                                key: const ValueKey('clinical_tab'),
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: isMobile ? constraints.maxWidth : 1320,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _PatientHeaderCard(
                                 patient: widget.patient,
-                              )
-                            : selectedTab == 1
-                            ? isLoadingAssessments
-                                  ? Center(child: customLoading())
-                                  : _AssessmentsTab(
-                                      key: const ValueKey('assessments_tab'),
-                                      assessments: officialAssessments,
-                                    )
-                            : _PendingReviewTab(
-                                key: const ValueKey('pending_review_tab'),
-                                patientId: widget.patient.id,
+                                showEmergencyInfo: showEmergencyInfo,
+                                onMoreInfoTap: () {
+                                  setState(() {
+                                    showEmergencyInfo = !showEmergencyInfo;
+                                  });
+                                },
                               ),
+                              SizedBox(
+                                height: responsiveHeight(
+                                  context,
+                                  0.025,
+                                  min: 18,
+                                  max: 28,
+                                ),
+                              ),
+                              _TabsBar(
+                                selectedTab: selectedTab,
+                                onTabChanged: (index) {
+                                  setState(() => selectedTab = index);
+
+                                  if (index == 1) {
+                                    _loadOfficialAssessments();
+                                  }
+                                },
+                              ),
+                              SizedBox(
+                                height: responsiveHeight(
+                                  context,
+                                  0.025,
+                                  min: 18,
+                                  max: 28,
+                                ),
+                              ),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 350),
+                                switchInCurve: Curves.easeOutCubic,
+                                switchOutCurve: Curves.easeInCubic,
+                                layoutBuilder: (currentChild, previousChildren) {
+                                  return Stack(
+                                    alignment: Alignment.topCenter,
+                                    children: [
+                                      ...previousChildren,
+                                      if (currentChild != null) currentChild,
+                                    ],
+                                  );
+                                },
+                                transitionBuilder: (child, animation) {
+                                  final slideAnimation = Tween<Offset>(
+                                    begin: Offset(isEnglish ? 0.04 : -0.04, 0),
+                                    end: Offset.zero,
+                                  ).animate(animation);
+
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: SlideTransition(
+                                      position: slideAnimation,
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: child,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: _currentTabContent(),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -427,8 +446,67 @@ List<PatientAnswer> _mapAssessmentAnswers(Map<String, dynamic> json) {
       },
     );
   }
-}
 
+  Widget _currentTabContent() {
+    if (selectedTab == 0) {
+      return _ClinicalDataTab(
+        key: const ValueKey('clinical_tab'),
+        patient: widget.patient,
+      );
+    }
+
+    if (selectedTab == 1) {
+      if (isLoadingAssessments) {
+        return Container(
+          key: const ValueKey('assessments_loading'),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 70),
+          child: Center(child: customLoading()),
+        );
+      }
+
+      if (assessmentsError != null) {
+        return Container(
+          key: const ValueKey('assessments_error'),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFF7D6E6)),
+          ),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Color(0xFFE83E8C),
+                size: 42,
+              ),
+              const SizedBox(height: 12),
+              customText(
+                text: assessmentsError!,
+                size: responsiveSize(context, 0.01, min: 14, max: 18),
+                color: const Color(0xFF271648),
+                bold: true,
+                maxLines: 3,
+              ),
+            ],
+          ),
+        );
+      }
+
+      return _AssessmentsTab(
+        key: const ValueKey('assessments_tab'),
+        assessments: officialAssessments,
+      );
+    }
+
+    return _PendingReviewTab(
+      key: const ValueKey('pending_review_tab'),
+      patientId: widget.patient.id,
+    );
+  }
+}
 enum BadgeType { success, warning, danger, info, status, neutral }
 
 class _DataRowItem {

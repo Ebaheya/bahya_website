@@ -29,6 +29,7 @@ class AddQuestionnaireController extends ChangeNotifier {
   bool isEditMode = false;
 
   String? editingFormId;
+  String? editingFormKey;
 
   List<Map<String, dynamic>> availableForms = [];
 
@@ -39,9 +40,8 @@ class AddQuestionnaireController extends ChangeNotifier {
 
   AddQuestionnaireController() {
     surveyTitleController.addListener(() {
-      formKeyController.text = _generatedKeyFromName(
-        surveyTitleController.text,
-      );
+      if (isEditMode) return;
+      formKeyController.text = '';
     });
   }
 
@@ -137,34 +137,6 @@ class AddQuestionnaireController extends ChangeNotifier {
     return scores.reduce((a, b) => a > b ? a : b);
   }
 
-  String _generatedKeyFromName(String name) {
-    final cleaned = name
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^\u0621-\u064Aa-zA-Z0-9\s_-]'), '')
-        .replaceAll(RegExp(r'\s+'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
-        .replaceAll(RegExp(r'^_+|_+$'), '');
-
-    if (cleaned.length >= 2) return cleaned;
-
-    return '';
-  }
-
-  String _buildFormKey() {
-    final manualKey = formKeyController.text.trim();
-
-    if (manualKey.length >= 2) {
-      return _generatedKeyFromName(manualKey);
-    }
-
-    final generated = _generatedKeyFromName(surveyTitleController.text);
-
-    if (generated.length >= 2) return generated;
-
-    return 'form_${DateTime.now().millisecondsSinceEpoch}';
-  }
-
   String _buildCategory() {
     final category = categoryController.text.trim();
 
@@ -176,8 +148,16 @@ class AddQuestionnaireController extends ChangeNotifier {
   String _readableError(Object error) {
     final text = error.toString().replaceFirst('Exception: ', '').trim();
 
+    if (text.contains('FORM_SCALE_HAS_CHOICES')) {
+      return 'سؤال Scale لا يجب أن يحتوي على choices.';
+    }
+
     if (text.contains('Unrecognized key')) {
       return 'البيانات المرسلة تحتوي حقول غير مدعومة من السيرفر.';
+    }
+
+    if (text.contains('FORM_KEY_INVALID')) {
+      return 'مشكلة في form key. حاول إنشاء الاستبيان من جديد.';
     }
 
     if (text.contains('String must contain at least 2 character')) {
@@ -193,20 +173,8 @@ class AddQuestionnaireController extends ChangeNotifier {
     return text;
   }
 
-  List<Map<String, dynamic>> _scaleChoices({
-    required int minValue,
-    required int maxValue,
-  }) {
-    return List.generate(maxValue - minValue + 1, (index) {
-      final value = minValue + index;
-
-      return {"order": index + 1, "label": value.toString(), "score": value};
-    });
-  }
-
   String? validateFormForSubmit() {
     final formName = surveyTitleController.text.trim();
-    final generatedKey = _buildFormKey();
     final category = _buildCategory();
 
     if (formName.isEmpty) return 'اكتب اسم الاستبيان أولاً.';
@@ -215,8 +183,8 @@ class AddQuestionnaireController extends ChangeNotifier {
       return 'اسم الاستبيان يجب أن يكون حرفين على الأقل.';
     }
 
-    if (generatedKey.length < 2) {
-      return 'Form key يجب أن يكون حرفين على الأقل.';
+    if (isEditMode && (editingFormKey == null || editingFormKey!.isEmpty)) {
+      return 'لا يمكن تعديل الاستبيان لأن key القديم غير موجود.';
     }
 
     if (category.isEmpty) {
@@ -374,16 +342,13 @@ class AddQuestionnaireController extends ChangeNotifier {
 
         questionsBody.add({
           "order": i + 1,
-          "text": question.questionText,
+          "text": question.questionText.trim(),
           "type": QuestionType.scale.apiValue,
           "subscale": null,
           "required": true,
           "scaleMin": minValue,
           "scaleMax": maxValue,
           "scaleStep": 1,
-          "minLabel": question.minLabel.isEmpty ? null : question.minLabel,
-          "maxLabel": question.maxLabel.isEmpty ? null : question.maxLabel,
-          "choices": _scaleChoices(minValue: minValue, maxValue: maxValue),
         });
 
         continue;
@@ -391,7 +356,7 @@ class AddQuestionnaireController extends ChangeNotifier {
 
       questionsBody.add({
         "order": i + 1,
-        "text": question.questionText,
+        "text": question.questionText.trim(),
         "type": question.questionType.apiValue,
         "subscale": null,
         "required": true,
@@ -400,7 +365,7 @@ class AddQuestionnaireController extends ChangeNotifier {
 
           return {
             "order": answerIndex + 1,
-            "label": answer.answerText,
+            "label": answer.answerText.trim(),
             "score": answer.score,
           };
         }),
@@ -420,16 +385,15 @@ class AddQuestionnaireController extends ChangeNotifier {
     return ranges.map((range) {
       return {
         "subscale": null,
-        "label": range.diagnosis,
+        "label": range.diagnosis.trim(),
         "minScore": range.from,
         "maxScore": range.to,
       };
     }).toList();
   }
 
-  Map<String, dynamic> buildFormBody() {
-    return {
-      "key": _buildFormKey(),
+Map<String, dynamic> buildFormBody() {
+    final body = <String, dynamic>{
       "name": surveyTitleController.text.trim(),
       "category": _buildCategory(),
       "scoringType": scoringTypeController.text.trim().isEmpty
@@ -441,6 +405,12 @@ class AddQuestionnaireController extends ChangeNotifier {
       "questions": buildQuestionsBody(),
       "scoreRanges": buildScoreRangesBody(),
     };
+
+    if (isEditMode && editingFormKey != null && editingFormKey!.isNotEmpty) {
+      body["key"] = editingFormKey;
+    }
+
+    return body;
   }
 
   Future<void> saveSurvey(BuildContext context) async {
@@ -506,8 +476,7 @@ class AddQuestionnaireController extends ChangeNotifier {
       final json = await formRepository.getFormByIdRaw(formId);
 
       final formName = json["name"]?.toString() ?? "";
-      final formKey =
-          json["key"]?.toString() ?? _generatedKeyFromName(formName);
+      final formKey = json["key"]?.toString() ?? "";
 
       final currentVersion = json["currentVersion"] ?? {};
       final apiQuestions = currentVersion["questions"] as List? ?? [];
@@ -515,6 +484,7 @@ class AddQuestionnaireController extends ChangeNotifier {
 
       isEditMode = true;
       editingFormId = formId;
+      editingFormKey = formKey;
 
       surveyTitleController.text = formName;
       formKeyController.text = formKey;
@@ -530,7 +500,7 @@ class AddQuestionnaireController extends ChangeNotifier {
           QuestionItem(
             id: DateTime.now().millisecondsSinceEpoch + i,
             key: GlobalKey<QuestionnaireBodyState>(),
-            initialData: apiQuestions[i],
+            initialData: Map<String, dynamic>.from(apiQuestions[i]),
           ),
         );
       }
@@ -638,6 +608,7 @@ class AddQuestionnaireController extends ChangeNotifier {
   void resetEditor() {
     isEditMode = false;
     editingFormId = null;
+    editingFormKey = null;
 
     formKeyController.clear();
     surveyTitleController.clear();

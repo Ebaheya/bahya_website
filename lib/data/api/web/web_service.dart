@@ -840,4 +840,59 @@ Future<List<Map<String, dynamic>>> getMyFormAssignments() async {
     }
   }
 
+Future<Map<String, dynamic>> updateUser({
+    required String userId,
+    required String fullName,
+  }) async {
+    final res = await dio.patch('/users/$userId', data: {"fullName": fullName});
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<Map<String, dynamic>> changeUserStatus({
+    required String userId,
+    required bool isActive,
+  }) async {
+    final res = await dio.patch(
+      '/users/$userId/status',
+      data: {"isActive": isActive},
+    );
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  Future<void> triggerUserReset({required String userId}) async {
+    await dio.post('/users/$userId/trigger-reset');
+  }
+
+Future<Map<String, dynamic>> updatePatientClinical({
+    required String patientId,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final requestBody = Map<String, dynamic>.from(body)
+        ..removeWhere((key, value) => value == null);
+
+      final res = await dio.patch('/patients/$patientId', data: requestBody);
+
+      final data = res.data;
+      if (data is Map && data['data'] is Map) {
+        return Map<String, dynamic>.from(data['data']);
+      }
+
+      return Map<String, dynamic>.from(data);
+    } on DioException catch (e) {
+      debugPrint(
+        "Update patient DioException: ${e.response?.data ?? e.message}",
+      );
+      throw Exception(
+        _apiErrorMessage(
+          e.response?.data ?? e.message,
+          'Failed to update patient',
+        ),
+      );
+    } catch (e) {
+      debugPrint("Unexpected update patient error: $e");
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
 }

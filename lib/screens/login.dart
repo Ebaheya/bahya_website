@@ -1,3 +1,5 @@
+import 'package:bahya_website/data/api/web/web_service.dart';
+import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:bahya_website/helper/animated_background.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
@@ -9,6 +11,7 @@ import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:bahya_website/route.dart';
 import 'package:bahya_website/service/Login_service.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,16 +20,95 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
+class _CurrentUserData {
+  final String? role;
+  final bool isActive;
+
+  const _CurrentUserData({required this.role, required this.isActive});
+}
+
+class _InactiveAccountException implements Exception {}
+
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  bool isLoggingIn = false;
 
   @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  bool _isAllowedRole(String? role) {
+    return role == 'ADMIN' || role == 'DOCTOR' || role == 'VOLUNTEER';
+  }
+
+  bool _isInactiveLoginError(Object error) {
+    final text = error.toString().toLowerCase();
+
+    return text.contains('inactive') ||
+        text.contains('not active') ||
+        text.contains('deactivated') ||
+        text.contains('disabled') ||
+        text.contains('account_not_active') ||
+        text.contains('user_inactive') ||
+        text.contains('user_disabled');
+  }
+
+  Future<_CurrentUserData> _getCurrentUserData() async {
+    final userInfo = await WebService().getUserInfo();
+    final user = userInfo['user'] is Map ? userInfo['user'] : userInfo;
+
+    final role = user['role']?.toString();
+
+    final isActiveRaw =
+        user['isActive'] ??
+        user['active'] ??
+        user['is_active'] ??
+        user['status'];
+
+    bool isActive = false;
+
+    if (isActiveRaw is bool) {
+      isActive = isActiveRaw;
+    } else if (isActiveRaw is String) {
+      final value = isActiveRaw.toLowerCase().trim();
+      isActive = value == 'true' || value == 'active';
+    } else if (isActiveRaw is num) {
+      isActive = isActiveRaw == 1;
+    }
+
+    return _CurrentUserData(role: role, isActive: isActive);
+  }
+
+  Future<void> _clearLoginData() async {
+    await SecureStorageService().clearTokens();
+    await authNotifier.forceLogout();
+  }
+
+  void _goToHomeByRole(String role) {
+    authNotifier.login(role: role);
+
+    if (role == 'ADMIN') {
+      context.go('/admin');
+    } else if (role == 'VOLUNTEER') {
+      context.go('/volunteer_survey');
+    } else {
+      context.go('/home');
+    }
+  }
+
+  void _showInactiveMessage() {
+    customDialog(
+      context: context,
+      title: 'الحساب غير مفعل',
+      message: 'هذا الحساب غير مفعل، برجاء التواصل مع IT.',
+      isError: true,
+    );
   }
 
   @override
@@ -237,21 +319,25 @@ class _LoginPageState extends State<LoginPage> {
                                               max: 26,
                                             ),
                                           ),
-                                          CustomGlowButton(
-                                            title: 'Sign in',
-                                            backgroundColor: const Color(
-                                              0xFFFF7BB0,
-                                            ),
-                                            textColor: Colors.white,
-                                            glowColor: const Color(0xFFFF7BB0),
-                                            textSize: responsiveHeight(
-                                              context,
-                                              0.02,
-                                              min: 15,
-                                              max: 20,
-                                            ),
-                                            onPressed: _submitLogin,
-                                          ),
+                                          isLoggingIn
+                                              ? Center(child: customLoading())
+                                              : CustomGlowButton(
+                                                  title: 'Sign in',
+                                                  backgroundColor: const Color(
+                                                    0xFFFF7BB0,
+                                                  ),
+                                                  textColor: Colors.white,
+                                                  glowColor: const Color(
+                                                    0xFFFF7BB0,
+                                                  ),
+                                                  textSize: responsiveHeight(
+                                                    context,
+                                                    0.02,
+                                                    min: 15,
+                                                    max: 20,
+                                                  ),
+                                                  onPressed: _submitLogin,
+                                                ),
                                           SizedBox(
                                             height: responsiveHeight(
                                               context,
@@ -323,6 +409,8 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _submitLogin() async {
     FocusScope.of(context).unfocus();
 
+    if (isLoggingIn) return;
+
     if (!(_formKey.currentState?.validate() ?? false)) {
       customDialog(
         context: context,
@@ -333,13 +421,37 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    setState(() => isLoggingIn = true);
+
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
     try {
       await login(email: email, password: password);
 
+      final currentUser = await _getCurrentUserData();
+      final role = currentUser.role;
+
       if (!mounted) return;
+
+      if (!_isAllowedRole(role)) {
+        await _clearLoginData();
+
+        if (!mounted) return;
+
+        customDialog(
+          context: context,
+          title: 'غير مصرح',
+          message: 'الدخول غير مصرح به لهذا الحساب.',
+          isError: true,
+        );
+
+        return;
+      }
+
+      if (!currentUser.isActive) {
+        throw _InactiveAccountException();
+      }
 
       customDialog(
         context: context,
@@ -348,11 +460,18 @@ class _LoginPageState extends State<LoginPage> {
         isSuccess: true,
         onClose: () {
           Navigator.of(context).pop();
-          authNotifier.login();
+          _goToHomeByRole(role!);
         },
       );
-    } catch (_) {
+    } catch (e) {
+      await _clearLoginData();
+
       if (!mounted) return;
+
+      if (e is _InactiveAccountException || _isInactiveLoginError(e)) {
+        _showInactiveMessage();
+        return;
+      }
 
       customDialog(
         context: context,
@@ -360,6 +479,10 @@ class _LoginPageState extends State<LoginPage> {
         message: 'Incorrect email or password',
         isError: true,
       );
+    } finally {
+      if (mounted) {
+        setState(() => isLoggingIn = false);
+      }
     }
   }
 }

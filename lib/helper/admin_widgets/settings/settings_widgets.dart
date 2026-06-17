@@ -1,6 +1,8 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/route.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class SettingsColors {
   static const Color pink = Color(0xFFE83E9B);
@@ -144,13 +146,20 @@ class _MobileLogoutButtonState extends State<_MobileLogoutButton> {
   bool hover = false;
 
   @override
+ @override
   Widget build(BuildContext context) {
     return MouseRegion(
       onEnter: (_) => setState(() => hover = true),
       onExit: (_) => setState(() => hover = false),
       cursor: SystemMouseCursors.click,
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: () async {
+          await authNotifier.logout();
+
+          if (!context.mounted) return;
+
+          context.go('/login');
+        },
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.014, min: 14, max: 18),
         ),

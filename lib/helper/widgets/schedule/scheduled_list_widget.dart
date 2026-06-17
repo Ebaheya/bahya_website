@@ -42,9 +42,59 @@ class _ScheduledListWidgetState extends State<ScheduledListWidget> {
     );
   }
 
+  List<ScheduledItemModel> _groupPublishedAssignments(
+    List<ScheduledItemModel> items,
+  ) {
+    final Map<String, ScheduledItemModel> grouped = {};
+
+    for (final item in items) {
+      final key = [
+        item.form,
+        item.date,
+        item.hour,
+        item.repeat,
+        item.publishType,
+      ].join('|');
+
+      if (!grouped.containsKey(key)) {
+        grouped[key] = ScheduledItemModel(
+          form: item.form,
+          date: item.date,
+          repeat: item.repeat,
+          hour: item.hour,
+          publishType: item.publishType,
+          patientNames: [...item.patientNames],
+          volunteerNames: [...item.volunteerNames],
+          isDeleting: item.isDeleting,
+        );
+      } else {
+        final old = grouped[key]!;
+
+        grouped[key] = ScheduledItemModel(
+          form: old.form,
+          date: old.date,
+          repeat: old.repeat,
+          hour: old.hour,
+          publishType: old.publishType,
+          patientNames: {...old.patientNames, ...item.patientNames}.toList(),
+          volunteerNames: {
+            ...old.volunteerNames,
+            ...item.volunteerNames,
+          }.toList(),
+          isDeleting: old.isDeleting,
+        );
+      }
+    }
+
+    return grouped.values.toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMobile = getScreenWidth(context) < 650;
+    final groupedPublishedAssignments = _groupPublishedAssignments(
+      widget.publishedAssignments,
+    );
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -88,7 +138,7 @@ class _ScheduledListWidgetState extends State<ScheduledListWidget> {
             SizedBox(height: responsiveHeight(context, 0.04, min: 22, max: 40)),
             if (widget.isLoadingAssignments)
               customLoading()
-            else if (widget.publishedAssignments.isEmpty)
+            else if (groupedPublishedAssignments.isEmpty)
               customText(
                 text: "لا توجد نماذج منشورة حالياً",
                 size: responsiveSize(context, 0.011, min: 14, max: 20),
@@ -97,7 +147,7 @@ class _ScheduledListWidgetState extends State<ScheduledListWidget> {
               )
             else
               _CardsList(
-                items: widget.publishedAssignments,
+                items: groupedPublishedAssignments,
                 showDelete: false,
                 onDelete: (_) {},
                 onAnimationEnd: (_) {},
@@ -323,20 +373,6 @@ class ScheduledItemCard extends StatelessWidget {
     return publishType;
   }
 
-  String get patientText {
-    if (isAllPatients) return "كل المرضى";
-
-    if (patientNames.isEmpty) return "غير محدد";
-
-    return patientNames.join("، ");
-  }
-
-  String get volunteerText {
-    if (volunteerNames.isEmpty) return "غير محدد";
-
-    return volunteerNames.join("، ");
-  }
-
   @override
   Widget build(BuildContext context) {
     final isMobile = getScreenWidth(context) < 750;
@@ -427,7 +463,6 @@ class ScheduledItemCard extends StatelessWidget {
             SizedBox(
               height: responsiveHeight(context, 0.014, min: 10, max: 14),
             ),
-
             if (isAllPatients)
               const _NamesBlock(
                 title: "المرضى",
