@@ -109,23 +109,45 @@ enum AssessmentStatus {
   CRITICAL
 }
 
+enum ServiceKind {
+  EDUCATIONAL
+  TRIP
+  SUPPORT
+  OTHER
+}
+
+enum ServiceStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum ServiceRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 model User {
-  id                   String               @id @default(uuid())
-  email                String               @unique
-  passwordHash         String
-  fullName             String
-  role                 Role
-  isActive             Boolean              @default(true)
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
-  refreshTokens        RefreshToken[]
-  patient              Patient?
-  passwordResetTokens  PasswordResetToken[]
-  createdFormTemplates FormTemplate[]       @relation("FormTemplateCreatedBy")
-  assignedForms        FormAssignment[]     @relation("FormAssignmentAssignedBy")
-  formAssignments      FormAssignment[]     @relation("FormAssignmentAssignedTo")
-  formSubmissions      FormSubmission[]     @relation("FormSubmissionSubmittedBy")
-  assessments          Assessment[]         @relation("AssessmentDoctor")
+  id                        String               @id @default(uuid())
+  email                     String               @unique
+  passwordHash              String
+  fullName                  String
+  role                      Role
+  isActive                  Boolean              @default(true)
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  refreshTokens             RefreshToken[]
+  patient                   Patient?
+  passwordResetTokens       PasswordResetToken[]
+  createdFormTemplates      FormTemplate[]       @relation("FormTemplateCreatedBy")
+  assignedForms             FormAssignment[]     @relation("FormAssignmentAssignedBy")
+  formAssignments           FormAssignment[]     @relation("FormAssignmentAssignedTo")
+  formSubmissions           FormSubmission[]     @relation("FormSubmissionSubmittedBy")
+  assessments               Assessment[]         @relation("AssessmentDoctor")
+  authoredServiceCategories ServiceCategory[]    @relation("ServiceCategoryCreatedBy")
+  authoredServices          Service[]            @relation("ServiceCreatedBy")
+  decidedServiceRequests    ServiceRequest[]     @relation("ServiceRequestDecidedBy")
 
   @@index([role])
 }
@@ -176,6 +198,7 @@ model Patient {
   formAssignments       FormAssignment[]
   formSubmissions       FormSubmission[]
   assessments           Assessment[]
+  serviceRequests       ServiceRequest[]
 
   @@index([phone])
   @@index([diseaseStatus])
@@ -299,16 +322,16 @@ model FormAssignment {
   assignedTo       User?                @relation("FormAssignmentAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   assignedBy       User                 @relation("FormAssignmentAssignedBy", fields: [assignedById], references: [id])
   submission       FormSubmission?
+  // NOTE: a partial UNIQUE index on (templateId, patientId) WHERE status IN
+  // ('SCHEDULED','PUBLISHED') enforces the one-outstanding-copy-per-form rule at
+  // the DB level. Prisma cannot express a filtered index, so it lives in the
+  // 20260601000000_form_assignment_expiry_and_open_copy migration only.
 
   @@index([patientId, status])
   @@index([assignedToUserId, status])
   @@index([status, publishAt])
   @@index([templateId])
   @@index([formVersionId])
-  // NOTE: a partial UNIQUE index on (templateId, patientId) WHERE status IN
-  // ('SCHEDULED','PUBLISHED') enforces the one-outstanding-copy-per-form rule at
-  // the DB level. Prisma cannot express a filtered index, so it lives in the
-  // 20260601000000_form_assignment_expiry_and_open_copy migration only.
 }
 
 model FormSubmission {
@@ -349,4 +372,63 @@ model Assessment {
 
   @@index([patientId, createdAt])
   @@index([doctorId])
+}
+
+model ServiceCategory {
+  id          String      @id @default(uuid())
+  name        String
+  kind        ServiceKind @default(OTHER)
+  iconKey     String
+  color       String
+  isDefault   Boolean     @default(false)
+  isActive    Boolean     @default(true)
+  createdById String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  createdBy   User?       @relation("ServiceCategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  services    Service[]
+
+  @@index([kind, isActive])
+  @@index([name])
+}
+
+model Service {
+  id             String           @id @default(uuid())
+  categoryId     String
+  name           String
+  locationBranch String
+  startDate      DateTime
+  startTime      String
+  endDate        DateTime?
+  departureTime  String?
+  meetingPlace   String?
+  capacity       Int
+  seatsTaken     Int              @default(0)
+  status         ServiceStatus    @default(ACTIVE)
+  createdById    String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  category       ServiceCategory  @relation(fields: [categoryId], references: [id])
+  createdBy      User             @relation("ServiceCreatedBy", fields: [createdById], references: [id])
+  requests       ServiceRequest[]
+
+  @@index([status, categoryId])
+  @@index([startDate])
+}
+
+model ServiceRequest {
+  id           String               @id @default(uuid())
+  serviceId    String
+  patientId    String
+  status       ServiceRequestStatus @default(PENDING)
+  decisionNote String?
+  decidedById  String?
+  requestedAt  DateTime             @default(now())
+  decidedAt    DateTime?
+  service      Service              @relation(fields: [serviceId], references: [id])
+  patient      Patient              @relation(fields: [patientId], references: [id])
+  decidedBy    User?                @relation("ServiceRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([serviceId, status])
+  @@index([patientId, status])
 }

@@ -20,6 +20,17 @@ export interface HighRiskAlertInput {
   templateKey?: string;
 }
 
+export interface ServiceRequestSubmittedInput {
+  patientId: string;
+}
+
+export interface ServiceRequestDecidedInput {
+  patientId: string;
+  recipientUserId: string;
+  approved: boolean;
+  serviceName: string;
+}
+
 function loggableError(err: unknown): { name?: string; message: string } {
   if (err instanceof Error) return { name: err.name, message: err.message };
   return { message: String(err) };
@@ -85,6 +96,76 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
         type: 'HIGH_RISK',
         patientId: input.patientId,
         severity: input.severity,
+        err: loggableError(err),
+      },
+      'notification emit failed'
+    );
+  }
+}
+
+export async function emitServiceRequestSubmitted(
+  input: ServiceRequestSubmittedInput
+): Promise<void> {
+  try {
+    const createdAt = new Date();
+    await NotificationModel.insertMany(
+      (['ADMIN', 'DOCTOR'] as const).map((recipientRole) => ({
+        recipientRole,
+        recipientUserId: null,
+        patientId: input.patientId,
+        type: 'SERVICE_REQUEST_SUBMITTED',
+        title: 'Service request submitted',
+        message: 'A patient submitted a new service join request.',
+        severity: 'MEDIUM',
+        reason: null,
+        doctorNote: null,
+        status: 'UNREAD',
+        claimedAt: null,
+        readAt: null,
+        doneAt: null,
+        createdAt,
+      }))
+    );
+  } catch (err) {
+    logger.warn(
+      {
+        metric: 'notification_emit_failure',
+        type: 'SERVICE_REQUEST_SUBMITTED',
+        err: loggableError(err),
+      },
+      'notification emit failed'
+    );
+  }
+}
+
+export async function emitServiceRequestDecided(
+  input: ServiceRequestDecidedInput
+): Promise<void> {
+  try {
+    await NotificationModel.create({
+      recipientRole: 'PATIENT',
+      recipientUserId: input.recipientUserId,
+      patientId: input.patientId,
+      type: 'SERVICE_REQUEST_DECIDED',
+      title: input.approved ? 'Service request approved' : 'Service request rejected',
+      message: input.approved
+        ? `Your request for ${input.serviceName} was approved.`
+        : `Your request for ${input.serviceName} was rejected.`,
+      severity: 'LOW',
+      reason: null,
+      doctorNote: null,
+      status: 'UNREAD',
+      claimedAt: null,
+      readAt: null,
+      doneAt: null,
+      createdAt: new Date(),
+    });
+  } catch (err) {
+    logger.warn(
+      {
+        metric: 'notification_emit_failure',
+        type: 'SERVICE_REQUEST_DECIDED',
+        approved: input.approved,
         err: loggableError(err),
       },
       'notification emit failed'

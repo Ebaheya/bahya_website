@@ -6,6 +6,9 @@ import { assessmentRouter } from '../modules/assessments/assessment.routes';
 import { assignmentRouter } from '../modules/forms/assignment.routes';
 import { formRouter } from '../modules/forms/form.routes';
 import { patientRouter } from '../modules/patients/patient.routes';
+import { categoryRouter } from '../modules/services/category.routes';
+import { requestRouter } from '../modules/services/request.routes';
+import { serviceRouter } from '../modules/services/service.routes';
 import { userRouter } from '../modules/users/user.routes';
 import { volunteerRouter } from '../modules/users/volunteer.routes';
 
@@ -57,3 +60,6 @@ apiRouter.use('/assessments', assessmentRouter);
 apiRouter.use('/patients', patientRouter);
 apiRouter.use('/users', userRouter);
 apiRouter.use('/volunteers', volunteerRouter);
+apiRouter.use('/service-categories', categoryRouter);
+apiRouter.use('/services', serviceRouter);
+apiRouter.use('/service-requests', requestRouter);

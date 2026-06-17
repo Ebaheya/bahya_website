@@ -1,0 +1,443 @@
+{
+  "info": {
+    "name": "Mental Health Clinic API - Patient Services & Activities",
+    "description": "Feature 006 patient services and activities. Covers service categories, services, patient join requests, staff queue/summary, approve/reject/cancel, and a management RBAC negative.\n\nEnvironment variables expected: baseUrl, accessToken (ADMIN), patientToken. Optional: doctorToken.\nCollection variables captured while running: serviceCategoryId, approveServiceId, approveRequestId, cancelServiceId, cancelRequestId, rejectServiceId, rejectRequestId.\n\nAll routes are mounted under {{baseUrl}}/api/v1.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "serviceCategoryId", "value": "" },
+    { "key": "approveServiceId", "value": "" },
+    { "key": "approveRequestId", "value": "" },
+    { "key": "cancelServiceId", "value": "" },
+    { "key": "cancelRequestId", "value": "" },
+    { "key": "rejectServiceId", "value": "" },
+    { "key": "rejectRequestId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "Create Service Category (ADMIN/DOCTOR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created or duplicate category handled', function () {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('serviceCategoryId', body.id);",
+                  "  pm.environment.set('serviceCategoryId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-categories"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Education Services Postman\",\n  \"kind\": \"EDUCATIONAL\",\n  \"iconKey\": \"school\",\n  \"color\": \"#6CCB4F\"\n}"
+            },
+            "description": "Creates a custom category. If a duplicate name already exists, use List Categories and set {{serviceCategoryId}} manually from a seeded/default category."
+          }
+        },
+        {
+          "name": "List Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('categories list succeeds', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "const list = Array.isArray(body) ? body : (body.data || []);",
+                  "if (!pm.collectionVariables.get('serviceCategoryId') && list[0] && list[0].id) {",
+                  "  pm.collectionVariables.set('serviceCategoryId', list[0].id);",
+                  "  pm.environment.set('serviceCategoryId', list[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-categories?kind=EDUCATIONAL&isActive=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-categories"],
+              "query": [
+                { "key": "kind", "value": "EDUCATIONAL" },
+                { "key": "isActive", "value": "true" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patient Cannot Create Category (403)",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-categories"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Blocked Category\",\n  \"kind\": \"OTHER\",\n  \"iconKey\": \"block\",\n  \"color\": \"#FF4FA3\"\n}"
+            },
+            "description": "Expected 403 FORBIDDEN."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Approve Flow",
+      "item": [
+        {
+          "name": "Create Service For Approval",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('service created', function () { pm.expect(pm.response.code).to.equal(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('approveServiceId', body.id);",
+                  "pm.environment.set('approveServiceId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{serviceCategoryId}}\",\n  \"name\": \"Postman Literacy Class - Approve\",\n  \"locationBranch\": \"Main Branch\",\n  \"startDate\": \"2026-07-20\",\n  \"startTime\": \"10:00\",\n  \"capacity\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Patient Browse Services",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services?kind=EDUCATIONAL&q=Postman&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services"],
+              "query": [
+                { "key": "kind", "value": "EDUCATIONAL" },
+                { "key": "q", "value": "Postman" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patient Request To Join",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('request created', function () { pm.expect(pm.response.code).to.equal(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('approveRequestId', body.id);",
+                  "pm.environment.set('approveRequestId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/{{approveServiceId}}/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", "{{approveServiceId}}", "requests"]
+            }
+          }
+        },
+        {
+          "name": "Duplicate Request Is Rejected",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/{{approveServiceId}}/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", "{{approveServiceId}}", "requests"]
+            },
+            "description": "Expected 409 DUPLICATE_SERVICE_REQUEST."
+          }
+        },
+        {
+          "name": "Staff Queue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests?status=PENDING&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-requests"],
+              "query": [
+                { "key": "status", "value": "PENDING" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Dashboard Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-requests", "summary"]
+            }
+          }
+        },
+        {
+          "name": "Approve Request",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{approveRequestId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-requests", "{{approveRequestId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Patient My Requests",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-requests", "my"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cancel Flow",
+      "item": [
+        {
+          "name": "Create Service For Cancellation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('service created', function () { pm.expect(pm.response.code).to.equal(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('cancelServiceId', body.id);",
+                  "pm.environment.set('cancelServiceId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{serviceCategoryId}}\",\n  \"name\": \"Postman Literacy Class - Cancel\",\n  \"locationBranch\": \"Main Branch\",\n  \"startDate\": \"2026-07-21\",\n  \"startTime\": \"11:00\",\n  \"capacity\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Patient Request To Join Cancel Service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('request created', function () { pm.expect(pm.response.code).to.equal(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('cancelRequestId', body.id);",
+                  "pm.environment.set('cancelRequestId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/{{cancelServiceId}}/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", "{{cancelServiceId}}", "requests"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Pending Request",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{cancelRequestId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-requests", "{{cancelRequestId}}", "cancel"]
+            },
+            "description": "Expected 200 with status CANCELLED."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reject Flow",
+      "item": [
+        {
+          "name": "Create Service For Rejection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('service created', function () { pm.expect(pm.response.code).to.equal(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('rejectServiceId', body.id);",
+                  "pm.environment.set('rejectServiceId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{serviceCategoryId}}\",\n  \"name\": \"Postman Literacy Class - Reject\",\n  \"locationBranch\": \"Main Branch\",\n  \"startDate\": \"2026-07-22\",\n  \"startTime\": \"12:00\",\n  \"capacity\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Patient Request To Join Reject Service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('request created', function () { pm.expect(pm.response.code).to.equal(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('rejectRequestId', body.id);",
+                  "pm.environment.set('rejectRequestId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/{{rejectServiceId}}/requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", "{{rejectServiceId}}", "requests"]
+            }
+          }
+        },
+        {
+          "name": "Reject Request",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{rejectRequestId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "service-requests", "{{rejectRequestId}}", "reject"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decisionNote\": \"Capacity is reserved for another cohort\"\n}"
+            },
+            "description": "Expected 200 with status REJECTED."
+          }
+        }
+      ]
+    }
+  ]
+}
