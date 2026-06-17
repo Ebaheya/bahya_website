@@ -784,7 +784,7 @@ class _MoreButton extends StatelessWidget {
             Navigator.pop(dialogContext);
             await Future.delayed(const Duration(milliseconds: 100));
 
-            if (!context.mounted) return;
+            if (!dialogContext.mounted || !context.mounted) return;
 
             await showDialog(
               context: context,
@@ -826,7 +826,7 @@ class _MoreButton extends StatelessWidget {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) {
+      builder: (dialogContext) {
         return _ConfirmDialogCard(
           icon: newStatus
               ? Icons.person_add_alt_1_rounded
@@ -845,12 +845,16 @@ class _MoreButton extends StatelessWidget {
             onRefresh();
 
             customDialog(
-              context: context,
+              context: dialogContext,
               title: "Success",
               message: newStatus
                   ? "User activated successfully."
                   : "User deactivated successfully.",
               isSuccess: true,
+              onClose: () {
+                Navigator.pop(dialogContext);
+                Navigator.pop(dialogContext);
+              },
             );
           },
         );
@@ -989,7 +993,6 @@ class _EditUserDialogState extends State<_EditUserDialog> {
 
       if (!mounted) return;
 
-      Navigator.pop(context);
       widget.onRefresh();
 
       customDialog(
@@ -997,6 +1000,10 @@ class _EditUserDialogState extends State<_EditUserDialog> {
         title: "Success",
         message: "User updated successfully.",
         isSuccess: true,
+        onClose: () {
+          Navigator.pop(context);
+          Navigator.pop(context);
+        },
       );
     } catch (e) {
       if (!mounted) return;

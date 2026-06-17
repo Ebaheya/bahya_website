@@ -192,6 +192,7 @@ class ScheduleFormLogic {
         publishAt: publishAt,
       );
 
+      if (!context.mounted) return;
       if (success) onSuccess();
       return;
     }
@@ -201,6 +202,7 @@ class ScheduleFormLogic {
       publishAt: publishAt,
     );
 
+    if (!context.mounted) return;
     if (success) onSuccess();
   }
 
@@ -236,9 +238,11 @@ class ScheduleFormLogic {
         publishAt: publishAt,
       );
 
+      if (!context.mounted) return;
       if (!success) allSuccess = false;
     }
 
+    if (!context.mounted) return;
     if (allSuccess) {
       onSuccess();
     } else {
@@ -282,11 +286,13 @@ class ScheduleFormLogic {
       },
     );
 
+    if (!context.mounted) return;
     if (confirm != true) return;
 
     try {
       await deactivateForm(form);
 
+      if (!context.mounted) return;
       customDialog(
         context: context,
         title: "تم إلغاء النشر",
@@ -307,6 +313,7 @@ class ScheduleFormLogic {
     try {
       await activateForm(form);
 
+      if (!context.mounted) return;
       customDialog(
         context: context,
         title: "تم التفعيل",

@@ -28,6 +28,17 @@ class AuthNotifier extends ChangeNotifier {
   bool get isDoctor => _role == 'DOCTOR';
   bool get isVolunteer => _role == 'VOLUNTEER';
 
+  bool _isActiveUser(Object? rawValue) {
+    if (rawValue is bool) return rawValue;
+    if (rawValue is num) return rawValue == 1;
+    if (rawValue is String) {
+      final value = rawValue.toLowerCase().trim();
+      return value == 'true' || value == 'active';
+    }
+
+    return false;
+  }
+
   String get homePath {
     if (isAdmin) return '/admin';
     if (isDoctor) return '/home';
@@ -73,8 +84,15 @@ class AuthNotifier extends ChangeNotifier {
       final userInfo = await WebService().getUserInfo();
       final user = userInfo['user'] is Map ? userInfo['user'] : userInfo;
       final role = user['role']?.toString();
+      final isActive = _isActiveUser(
+        user['isActive'] ??
+            user['active'] ??
+            user['is_active'] ??
+            user['status'],
+      );
 
-      if (role == 'ADMIN' || role == 'DOCTOR' || role == 'VOLUNTEER') {
+      if ((role == 'ADMIN' || role == 'DOCTOR' || role == 'VOLUNTEER') &&
+          isActive) {
         _role = role;
         _isLoggedIn = true;
       } else {

@@ -63,9 +63,17 @@ class _FilterDropdownState extends State<FilterDropdown> {
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
     final isMobile = w < 650;
+    final dropdownItems = widget.items
+        .where((item) => item.trim().isNotEmpty)
+        .toSet()
+        .toList();
+    final safeSelectedValue =
+        dropdownItems.where((item) => item == selectedValue).length == 1
+        ? selectedValue
+        : null;
 
-    final currentText = selectedValue ?? widget.hint;
-    final currentColor = getItemColor(selectedValue ?? "All");
+    final currentText = safeSelectedValue ?? widget.hint;
+    final currentColor = getItemColor(safeSelectedValue ?? "All");
 
     return MouseRegion(
       onEnter: (_) => setState(() => isHover = true),
@@ -127,7 +135,7 @@ class _FilterDropdownState extends State<FilterDropdown> {
                 menuWidth: isMobile
                     ? (w * 0.78).clamp(240.0, 330.0)
                     : (w * 0.16).clamp(180.0, 260.0),
-                value: selectedValue,
+                value: safeSelectedValue,
                 isExpanded: true,
                 dropdownColor: Colors.white,
                 borderRadius:
@@ -150,7 +158,7 @@ class _FilterDropdownState extends State<FilterDropdown> {
                   showDefaultIcon: false,
                 ),
                 selectedItemBuilder: (context) {
-                  return widget.items.map((item) {
+                  return dropdownItems.map((item) {
                     final color = getItemColor(item);
 
                     return _DropdownSelectedContent(
@@ -162,8 +170,8 @@ class _FilterDropdownState extends State<FilterDropdown> {
                     );
                   }).toList();
                 },
-                items: widget.items.map((item) {
-                  final isSelected = selectedValue == item;
+                items: dropdownItems.map((item) {
+                  final isSelected = safeSelectedValue == item;
                   final color = getItemColor(item);
 
                   return DropdownMenuItem(

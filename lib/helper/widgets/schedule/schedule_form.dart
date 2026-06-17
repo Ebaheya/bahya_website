@@ -475,6 +475,7 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
       ),
     );
   }
+
   Future<bool> _ensureFormReadyForPublish(FormModel form) async {
     final status = form.currentVersion?.status.trim().toUpperCase();
 
@@ -494,7 +495,8 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
       return false;
     }
   }
- Future<void> publishForm() async {
+
+  Future<void> publishForm() async {
     if (selectedForm == null) {
       logic.showError("اختر نموذجًا للنشر.");
       return;
@@ -541,6 +543,8 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
       }
 
       final ready = await _ensureFormReadyForPublish(selectedForm!);
+
+      if (!mounted) return;
 
       if (!ready) {
         logic.showError(
@@ -600,6 +604,8 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
       initialTime: selectedTime,
     );
 
+    if (!mounted) return;
+
     if (t != null) {
       setState(() => selectedTime = t);
     }
@@ -610,6 +616,8 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
       context: context,
       initialDate: selectedDate,
     );
+
+    if (!mounted) return;
 
     if (d != null) {
       setState(() => selectedDate = d);

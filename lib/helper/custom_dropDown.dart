@@ -11,6 +11,14 @@ Widget customDropdown({
   required IconData icon,
   required ValueChanged<String?> onChanged,
 }) {
+  final dropdownItems = items
+      .where((item) => item.trim().isNotEmpty)
+      .toSet()
+      .toList();
+  final safeValue = dropdownItems.where((item) => item == value).length == 1
+      ? value
+      : null;
+
   return Container(
     height: responsiveHeight(context, 0.065, min: 48, max: 58),
     padding: EdgeInsets.symmetric(
@@ -25,7 +33,7 @@ Widget customDropdown({
     ),
     child: DropdownButtonHideUnderline(
       child: DropdownButton<String>(
-        value: value,
+        value: safeValue,
         isExpanded: true,
         alignment: Alignment.center,
         dropdownColor: Colors.white,
@@ -61,7 +69,7 @@ Widget customDropdown({
         ),
 
         selectedItemBuilder: (context) {
-          return items.map((e) {
+          return dropdownItems.map((e) {
             return Center(
               child: customText(
                 text: localizedText(context, e),
@@ -75,7 +83,7 @@ Widget customDropdown({
           }).toList();
         },
 
-        items: items.map((e) {
+        items: dropdownItems.map((e) {
           return DropdownMenuItem<String>(
             alignment: Alignment.center,
             value: e,

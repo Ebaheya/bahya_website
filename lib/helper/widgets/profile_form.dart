@@ -23,6 +23,15 @@ class _ProfileFormState extends State<ProfileForm> {
   bool expandEmail = false;
   bool expandPassword = false;
 
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    oldPasswordController.dispose();
+    newPasswordController.dispose();
+    super.dispose();
+  }
+
   Widget buildSectionCard({
     required String title,
     required IconData icon,
@@ -238,12 +247,16 @@ class _ProfileFormState extends State<ProfileForm> {
                         newPassword: newPasswordController.text.trim(),
                       );
 
+                      if (!context.mounted) return;
+
                       customDialog(
                         context: context,
                         title: "تم بنجاح",
                         message: "تم تغيير كلمة المرور بنجاح",
                       );
                     } catch (e) {
+                      if (!context.mounted) return;
+
                       customDialog(
                         context: context,
                         title: 'خطأ',

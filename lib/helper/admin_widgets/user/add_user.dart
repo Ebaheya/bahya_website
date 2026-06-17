@@ -29,7 +29,7 @@ class _AddUserDialogState extends State<AddUserDialog>
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController fullNameController = TextEditingController();
-final TextEditingController crnController = TextEditingController();
+  final TextEditingController crnController = TextEditingController();
   final TextEditingController patientFullNameController =
       TextEditingController();
   final TextEditingController patientEmailController = TextEditingController();
@@ -49,6 +49,7 @@ final TextEditingController crnController = TextEditingController();
     emailController.dispose();
     passwordController.dispose();
     fullNameController.dispose();
+    crnController.dispose();
 
     patientFullNameController.dispose();
     patientEmailController.dispose();
@@ -66,7 +67,6 @@ final TextEditingController crnController = TextEditingController();
     if (isStaff) {
       try {
         await webService.createStaff(
-      
           email: emailController.text,
           password: passwordController.text,
           fullName: fullNameController.text,
@@ -100,7 +100,7 @@ final TextEditingController crnController = TextEditingController();
     } else {
       try {
         await webService.createPatient(
-              crn: crnController.text,
+          crn: crnController.text,
           fullName: patientFullNameController.text,
           email: patientEmailController.text,
           password: patientPasswordController.text,

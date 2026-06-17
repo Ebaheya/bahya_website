@@ -243,11 +243,20 @@ class _FormSelectorState extends State<FormSelector> {
   @override
   void initState() {
     super.initState();
-    selectedForm = widget.forms.first;
+    selectedForm = widget.forms.isNotEmpty ? widget.forms.first : null;
   }
 
   @override
   Widget build(BuildContext context) {
+    final dropdownItems = widget.forms
+        .where((form) => form.trim().isNotEmpty)
+        .toSet()
+        .toList();
+    final safeSelectedForm =
+        dropdownItems.where((form) => form == selectedForm).length == 1
+        ? selectedForm
+        : null;
+
     return Container(
       width: widget.w * 0.55,
       padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -258,7 +267,7 @@ class _FormSelectorState extends State<FormSelector> {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: selectedForm,
+          value: safeSelectedForm,
           icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF7A004C)),
           style: TextStyle(
             fontFamily: 'ArabicCustomFont',
@@ -266,7 +275,7 @@ class _FormSelectorState extends State<FormSelector> {
             color: const Color(0xFF7A004C),
             fontSize: widget.h * 0.018,
           ),
-          items: widget.forms.map((form) {
+          items: dropdownItems.map((form) {
             return DropdownMenuItem(
               value: form,
               child: Row(
@@ -287,8 +296,9 @@ class _FormSelectorState extends State<FormSelector> {
             );
           }).toList(),
           onChanged: (value) {
+            if (value == null) return;
             setState(() => selectedForm = value);
-            widget.onSelect(value!);
+            widget.onSelect(value);
           },
         ),
       ),

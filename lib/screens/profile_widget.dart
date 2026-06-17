@@ -37,6 +37,15 @@ class _ProfileDialogState extends State<ProfileDialog> {
   bool expandPassword = false;
 
   @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    oldPasswordController.dispose();
+    newPasswordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
 

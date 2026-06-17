@@ -68,6 +68,15 @@ class _DiagnosisRangeWidgetState extends State<DiagnosisRangeWidget> {
     setState(() {
       diagnosisList.remove(item);
     });
+    item.dispose();
+  }
+
+  @override
+  void dispose() {
+    for (final item in diagnosisList) {
+      item.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -144,6 +153,11 @@ class _DiagnosisItem {
   final TextEditingController from = TextEditingController(text: "0");
   final TextEditingController to = TextEditingController(text: "0");
   bool isRemoving = false;
+
+  void dispose() {
+    from.dispose();
+    to.dispose();
+  }
 }
 
 class DiagnosisScoreRow extends StatelessWidget {

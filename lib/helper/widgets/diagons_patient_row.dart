@@ -97,6 +97,8 @@ class _PatientRowState extends State<PatientRow> {
                       Navigator.of(context).pop();
 
                       Future.microtask(() {
+                        if (!context.mounted) return;
+
                         showPatientProgressDialog(
                           context: context,
                           patient: widget.item,

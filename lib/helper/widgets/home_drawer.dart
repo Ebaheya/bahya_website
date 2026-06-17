@@ -242,7 +242,6 @@ class HomeDrawer extends StatelessWidget {
                 ? TextDirection.ltr
                 : TextDirection.rtl,
             children: [
-             
               Icon(
                 icon,
                 color: buttonColor,
@@ -261,8 +260,7 @@ class HomeDrawer extends StatelessWidget {
                 ),
               ),
 
-            
-               Icon(
+              Icon(
                 Localizations.localeOf(context).languageCode == 'en'
                     ? Icons.arrow_forward_ios_rounded
                     : Icons.arrow_forward_ios_rounded,
@@ -283,7 +281,13 @@ class HomeDrawer extends StatelessWidget {
           final String? refreshToken = await SecureStorageService()
               .getRefreshToken();
 
-          await logout(refreshToken: refreshToken!);
+          if (refreshToken != null && refreshToken.isNotEmpty) {
+            await logout(refreshToken: refreshToken);
+          } else {
+            await authNotifier.logout();
+          }
+
+          if (!context.mounted) return;
 
           customDialog(
             onClose: () {
@@ -295,11 +299,11 @@ class HomeDrawer extends StatelessWidget {
             message: 'Logged out successfully.',
           );
         } catch (e) {
-          customDialog(
-            context: context,
-            title: 'Error',
-            message: 'An error occurred while signing out. Try again.',
-          );
+          await authNotifier.logout();
+
+          if (context.mounted) {
+            context.go('/login');
+          }
         }
       },
       borderRadius: BorderRadius.circular(18),

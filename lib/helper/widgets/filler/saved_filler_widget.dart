@@ -268,6 +268,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
             trailing: const Icon(Icons.person, color: Color(0xFFE40070)),
             onTap: () async {
               await context.read<DoctorFormsCubit>().selectPatient(patient);
+              if (!mounted) return;
               patientSearchController.clear();
               setState(() {});
             },
@@ -291,6 +292,14 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
       {"value": "SEVERE", "label": "شديد", "icon": Icons.priority_high_rounded},
       {"value": "CRITICAL", "label": "حرج", "icon": Icons.dangerous_outlined},
     ];
+
+    final statusValues = statuses
+        .map((item) => item["value"])
+        .whereType<String>()
+        .toSet();
+    final safeSelectedStatus = statusValues.contains(state.selectedStatus)
+        ? state.selectedStatus
+        : null;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -316,7 +325,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
-            value: state.selectedStatus,
+            value: safeSelectedStatus,
             isExpanded: true,
             icon: const Icon(
               Icons.keyboard_arrow_down_rounded,

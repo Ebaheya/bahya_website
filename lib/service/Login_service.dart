@@ -12,8 +12,56 @@ void initDio() {
   setupInterceptors(dio);
 }
 
+class _LoginAuthorizationException implements Exception {
+  final String message;
+
+  const _LoginAuthorizationException(this.message);
+}
+
+bool _isAllowedRole(String? role) {
+  return role == 'ADMIN' || role == 'DOCTOR' || role == 'VOLUNTEER';
+}
+
+bool _isActiveUser(Object? rawValue) {
+  if (rawValue is bool) return rawValue;
+  if (rawValue is num) return rawValue == 1;
+  if (rawValue is String) {
+    final value = rawValue.toLowerCase().trim();
+    return value == 'true' || value == 'active';
+  }
+
+  return false;
+}
+
+Future<void> _validateStoredLoginSession() async {
+  final userInfo = await dio.get('/auth/me');
+  final data = userInfo.data;
+  final user = data is Map && data['user'] is Map ? data['user'] as Map : data;
+
+  if (user is! Map) {
+    throw Exception('Invalid user info received');
+  }
+
+  final role = user['role']?.toString();
+  final isActive = _isActiveUser(
+    user['isActive'] ?? user['active'] ?? user['is_active'] ?? user['status'],
+  );
+
+  if (!_isAllowedRole(role)) {
+    throw const _LoginAuthorizationException('Unauthorized role');
+  }
+
+  if (!isActive) {
+    throw const _LoginAuthorizationException('Inactive account');
+  }
+}
+
 Future<void> login({required String email, required String password}) async {
+  final storage = SecureStorageService();
+
   try {
+    await storage.clearTokens();
+
     final response = await dio.post(
       '/auth/login',
 
@@ -32,13 +80,21 @@ Future<void> login({required String email, required String password}) async {
       throw Exception('Invalid tokens received');
     }
 
-    await SecureStorageService().saveTokens(
+    await storage.saveTokens(
       accessToken: accessToken,
 
       refreshToken: refreshToken,
     );
+
+    try {
+      await _validateStoredLoginSession();
+    } catch (_) {
+      await storage.clearTokens();
+      rethrow;
+    }
   } on DioException catch (e) {
-    debugPrint('Login Error: ${e.response?.data}');
+    await storage.clearTokens();
+    debugPrint('Login failed');
 
     final errorMessage =
         e.response?.data?['error']?['message'] ??
@@ -47,6 +103,13 @@ Future<void> login({required String email, required String password}) async {
 
     throw Exception(errorMessage);
   } catch (e) {
+    await storage.clearTokens();
+
+    if (e is _LoginAuthorizationException) {
+      debugPrint('Login authorization failed');
+      throw Exception(e.message);
+    }
+
     debugPrint('Unexpected error: $e');
 
     throw Exception('Something went wrong');
@@ -223,8 +286,8 @@ Future<void> logoutAndRedirect() async {
   await authNotifier.forceLogout();
 
   AppRouter.router.go('/login');
-  
 }
+
 // final response = await safeRequest((token) {
 //   return dio.get(
 //     '/profile',
