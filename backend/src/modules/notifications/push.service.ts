@@ -17,6 +17,20 @@ const STALE_TOKEN_CODES = new Set([
   'messaging/invalid-argument',
 ]);
 
+// Firebase rejects a multicast carrying more than 500 tokens, so a single
+// role broadcast that resolves more devices than this must be split — otherwise
+// the whole send throws and (being best-effort) is swallowed, silently dropping
+// the push for every recipient.
+const FCM_MULTICAST_LIMIT = 500;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
 function notificationId(doc: PushableNotification): string {
   return String(doc._id);
 }
@@ -92,12 +106,18 @@ export async function pushForNotification(doc: PushableNotification): Promise<vo
     const tokens = await resolveTokens(doc);
     if (tokens.length === 0) return;
 
-    const response = await sendFcmMulticast(buildMessage(doc, tokens));
-    if (!response) return;
+    let anySuccess = false;
+    for (const batch of chunk(tokens, FCM_MULTICAST_LIMIT)) {
+      const response = await sendFcmMulticast(buildMessage(doc, batch));
+      // null means FCM is disabled/unconfigured — no point trying further batches.
+      if (!response) return;
 
-    await pruneStaleTokens(tokens, response);
+      // Prune per batch so the index alignment with the batch's tokens holds.
+      await pruneStaleTokens(batch, response);
+      if (response.successCount > 0) anySuccess = true;
+    }
 
-    if (response.successCount > 0) {
+    if (anySuccess) {
       await NotificationModel.updateOne(
         { _id: doc._id },
         { $set: { pushedAt: new Date() } }

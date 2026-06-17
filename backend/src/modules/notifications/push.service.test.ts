@@ -156,6 +156,42 @@ describe('pushForNotification', () => {
     );
   });
 
+  it('splits broadcasts over the 500-token FCM limit into batches and prunes per batch', async () => {
+    // 650 tokens => two multicasts (500 + 150). Firebase rejects a single
+    // multicast above 500, so without chunking none of these would be delivered.
+    const tokens = Array.from({ length: 650 }, (_, i) => ({ token: `token-${i}` }));
+    prismaMock.deviceToken.findMany.mockResolvedValue(tokens);
+    sendFcmMulticastMock
+      .mockResolvedValueOnce({
+        successCount: 499,
+        failureCount: 1,
+        responses: [
+          ...Array.from({ length: 499 }, () => ({ success: true })),
+          { success: false, error: { code: 'messaging/registration-token-not-registered' } },
+        ],
+      })
+      .mockResolvedValueOnce({
+        successCount: 150,
+        failureCount: 0,
+        responses: Array.from({ length: 150 }, () => ({ success: true })),
+      });
+    notificationModelMock.updateOne.mockResolvedValue({ modifiedCount: 1 });
+
+    await pushForNotification(
+      notificationDoc({ recipientRole: 'DOCTOR', recipientUserId: null, type: 'HIGH_RISK' })
+    );
+
+    expect(sendFcmMulticastMock).toHaveBeenCalledTimes(2);
+    expect(sendFcmMulticastMock.mock.calls[0][0].tokens).toHaveLength(500);
+    expect(sendFcmMulticastMock.mock.calls[1][0].tokens).toHaveLength(150);
+    // The stale token in batch one (index 499 => 'token-499') is pruned.
+    expect(prismaMock.deviceToken.deleteMany).toHaveBeenCalledWith({
+      where: { token: { in: ['token-499'] } },
+    });
+    // pushedAt set once after at least one batch succeeded.
+    expect(notificationModelMock.updateOne).toHaveBeenCalledTimes(1);
+  });
+
   it('no-ops without device tokens or when the FCM sender is disabled', async () => {
     prismaMock.deviceToken.findMany.mockResolvedValueOnce([]);
     await pushForNotification(notificationDoc());
