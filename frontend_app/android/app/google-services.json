@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "572097350444",
+    "project_id": "refk-app",
+    "storage_bucket": "refk-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:572097350444:android:c8d3e7a8edee33a24a7a89",
+        "android_client_info": {
+          "package_name": "com.example.bahya_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBV32CVgofi6jBsXVJJuRcART_8hWMdnaw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
