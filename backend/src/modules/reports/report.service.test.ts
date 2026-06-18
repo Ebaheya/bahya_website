@@ -12,6 +12,7 @@ jest.mock('../../config/prisma', () => ({
       count: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       groupBy: jest.fn(),
     },
   },
@@ -29,6 +30,7 @@ const prismaMock = prisma as unknown as {
     count: jest.Mock;
     findUnique: jest.Mock;
     update: jest.Mock;
+    updateMany: jest.Mock;
     groupBy: jest.Mock;
   };
 };
@@ -217,7 +219,7 @@ describe('report service', () => {
       handledAt: new Date('2026-06-18T11:00:00.000Z'),
     });
     prismaMock.report.findUnique.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
-    prismaMock.report.update.mockResolvedValue(updated);
+    prismaMock.report.updateMany.mockResolvedValue({ count: 1 });
 
     await expect(reportService.changeStatus(reportId, 'RESOLVED', adminId)).resolves.toMatchObject({
       id: reportId,
@@ -225,14 +227,14 @@ describe('report service', () => {
       handledById: adminId,
     });
 
-    expect(prismaMock.report.update).toHaveBeenCalledWith({
-      where: { id: reportId },
+    // Compare-and-set: only updates the row while it is still in the source status.
+    expect(prismaMock.report.updateMany).toHaveBeenCalledWith({
+      where: { id: reportId, status: 'PENDING' },
       data: {
         status: 'RESOLVED',
         handledById: adminId,
         handledAt: expect.any(Date),
       },
-      select: expect.any(Object),
     });
     expect(writeAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -255,7 +257,35 @@ describe('report service', () => {
       status: 'PENDING',
     });
 
-    expect(prismaMock.report.update).not.toHaveBeenCalled();
+    expect(prismaMock.report.updateMany).not.toHaveBeenCalled();
+    expect(writeAuditMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects an illegal status transition (RESOLVED cannot be reopened)', async () => {
+    prismaMock.report.findUnique.mockResolvedValue(reportRow({ status: 'RESOLVED' }));
+
+    await expect(
+      reportService.changeStatus(reportId, 'PENDING', adminId)
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: ReportErrors.invalidStatusTransition('RESOLVED', 'PENDING').code,
+    });
+
+    expect(prismaMock.report.updateMany).not.toHaveBeenCalled();
+    expect(writeAuditMock).not.toHaveBeenCalled();
+  });
+
+  it('raises a conflict when the report was changed concurrently (compare-and-set miss)', async () => {
+    prismaMock.report.findUnique.mockResolvedValue(reportRow({ status: 'PENDING' }));
+    prismaMock.report.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      reportService.changeStatus(reportId, 'INVESTIGATING', adminId)
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: ReportErrors.statusConflict().code,
+    });
+
     expect(writeAuditMock).not.toHaveBeenCalled();
   });
 });

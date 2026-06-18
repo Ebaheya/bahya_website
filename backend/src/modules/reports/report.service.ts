@@ -165,6 +165,14 @@ export async function getSummary() {
   return summary;
 }
 
+// Reports progress forward only: PENDING → INVESTIGATING → RESOLVED. A report
+// cannot be re-opened or skip backwards; setting the current status is a no-op.
+const ALLOWED_STATUS_TRANSITIONS: Record<ReportStatus, ReportStatus[]> = {
+  PENDING: ['INVESTIGATING', 'RESOLVED'],
+  INVESTIGATING: ['RESOLVED'],
+  RESOLVED: [],
+};
+
 export async function changeStatus(
   id: string,
   status: ReportStatus,
@@ -174,15 +182,25 @@ export async function changeStatus(
   const existing = await getDetailOrThrow(id);
   if (existing.status === status) return toDetail(existing);
 
-  const updated = await prisma.report.update({
-    where: { id },
+  if (!ALLOWED_STATUS_TRANSITIONS[existing.status].includes(status)) {
+    throw ReportErrors.invalidStatusTransition(existing.status, status);
+  }
+
+  // Compare-and-set: only transition if the row is still in the status we
+  // validated against, so two concurrent admins can't both write (lost update).
+  const result = await prisma.report.updateMany({
+    where: { id, status: existing.status },
     data: {
       status,
       handledById: actorId,
       handledAt: new Date(),
     },
-    select: detailReportSelect,
   });
+  if (result.count !== 1) {
+    throw ReportErrors.statusConflict();
+  }
+
+  const updated = await getDetailOrThrow(id);
 
   await writeAudit({
     actorId,

@@ -23,7 +23,11 @@ export const listAuditLogsQuerySchema = z
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
   })
-  .strict();
+  .strict()
+  .refine((q) => !q.from || !q.to || q.from <= q.to, {
+    message: 'from must be on or before to',
+    path: ['from'],
+  });
 
 export type AuditIdParam = z.infer<typeof auditIdParamSchema>;
 export type ListAuditLogsQuery = z.infer<typeof listAuditLogsQuerySchema>;
