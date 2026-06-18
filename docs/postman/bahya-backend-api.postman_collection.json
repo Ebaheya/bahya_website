@@ -2,7 +2,7 @@
   "info": {
     "name": "Bahya Backend API (Full)",
     "_postman_id": "b0a1d5e2-0006-4f00-9a00-bahyafull0001",
-    "description": "Complete collection for the Bahya backend (`/api/v1`): health, auth, patients, users, volunteers, dynamic assessment forms, form assignments, assessments, and patient services & activities (categories, services, requests).\n\nUsage:\n1. Set the `baseUrl` variable (defaults to http://localhost:3000/api/v1).\n2. Bootstrap the first admin via Auth > Register first admin (bootstrap). Set `bootstrapSecret` to match the server's `BOOTSTRAP_SECRET` in backend/.env. This only works once, on a fresh DB with no admin; if an admin already exists it returns 403 by design — use an existing account and skip to Login.\n3. Run Auth > Login — the test script saves `accessToken` and `refreshToken` automatically. Login uses `{{password}}` (default ChangeMe123!). All protected requests inherit `Bearer {{accessToken}}` from collection auth.\n4. To exercise role-specific routes, log in as the appropriate role and re-run Login.\n\nIdempotency: Auth > Change password rotates `{{password}}` -> `{{newPassword}}`, then Auth > Revert password rotates it back, so the account password is unchanged after a full run and the collection can be re-run. Note the auth endpoints are rate-limited (10 req / 60s); space out repeated full runs.\n\nRoles per route follow the server's `authorize(...)` guards and Constitution v2.1.0 RBAC.",
+    "description": "Complete collection for the Bahya backend (`/api/v1`): health, auth, patients, users, volunteers, dynamic assessment forms, form assignments, assessments, patient services & activities (categories, services, requests), user reports (البلاغات), the admin dashboard, and audit-log reads.\n\nUsage:\n1. Set the `baseUrl` variable (defaults to http://localhost:3000/api/v1).\n2. Bootstrap the first admin via Auth > Register first admin (bootstrap). Set `bootstrapSecret` to match the server's `BOOTSTRAP_SECRET` in backend/.env. This only works once, on a fresh DB with no admin; if an admin already exists it returns 403 by design — use an existing account and skip to Login.\n3. Run Auth > Login — the test script saves `accessToken` and `refreshToken` automatically. Login uses `{{password}}` (default ChangeMe123!). All protected requests inherit `Bearer {{accessToken}}` from collection auth.\n4. To exercise role-specific routes, log in as the appropriate role and re-run Login.\n\nIdempotency: Auth > Change password rotates `{{password}}` -> `{{newPassword}}`, then Auth > Revert password rotates it back, so the account password is unchanged after a full run and the collection can be re-run. Note the auth endpoints are rate-limited (10 req / 60s); space out repeated full runs.\n\nRoles per route follow the server's `authorize(...)` guards and Constitution v2.2.0 RBAC.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -28,7 +28,9 @@
     { "key": "serviceId", "value": "" },
     { "key": "requestId", "value": "" },
     { "key": "notificationId", "value": "" },
-    { "key": "deviceToken", "value": "fcm-demo-token" }
+    { "key": "deviceToken", "value": "fcm-demo-token" },
+    { "key": "reportId", "value": "" },
+    { "key": "auditId", "value": "" }
   ],
   "item": [
     {
@@ -460,6 +462,159 @@
             "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{deviceToken}}\"\n}" },
             "url": { "raw": "{{baseUrl}}/notifications/devices", "host": ["{{baseUrl}}"], "path": ["notifications", "devices"] },
             "description": "Authenticated. Deletes the caller-owned token if present; unknown/foreign tokens are a no-op for the caller."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "File report (any role)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const b = pm.response.json();",
+                  "  pm.collectionVariables.set('reportId', b.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Content Report\",\n  \"body\": \"Some content contains inappropriate language and needs admin review.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/reports", "host": ["{{baseUrl}}"], "path": ["reports"] },
+            "description": "Any authenticated role may file an issue (title 1-200, body 1-5000). Defaults to PENDING; emits REPORT_CREATED audit. Rate-limited per user. The test script saves {{reportId}}."
+          }
+        },
+        {
+          "name": "List reports (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports?status=PENDING&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports"],
+              "query": [
+                { "key": "status", "value": "PENDING" },
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "ADMIN only. Filter by status, search q over reporter name/email/title. Reporter identity is resolved fresh from PostgreSQL."
+          }
+        },
+        {
+          "name": "Reports summary (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/reports/summary", "host": ["{{baseUrl}}"], "path": ["reports", "summary"] },
+            "description": "ADMIN only. Returns { pending, investigating, resolved } counts for the overview cards."
+          }
+        },
+        {
+          "name": "Report detail (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/reports/{{reportId}}", "host": ["{{baseUrl}}"], "path": ["reports", "{{reportId}}"] },
+            "description": "ADMIN only. Full report incl. body + reporter (current identity) + handledBy. 404 if not found."
+          }
+        },
+        {
+          "name": "Change report status (ADMIN)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"INVESTIGATING\"\n}" },
+            "url": { "raw": "{{baseUrl}}/reports/{{reportId}}/status", "host": ["{{baseUrl}}"], "path": ["reports", "{{reportId}}", "status"] },
+            "description": "ADMIN only. status in PENDING|INVESTIGATING|RESOLVED. Records handledBy/handledAt and emits REPORT_STATUS_CHANGED audit. Setting the current status is a no-op; concurrent changes are last-write-wins."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Dashboard summary (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/dashboard/summary", "host": ["{{baseUrl}}"], "path": ["dashboard", "summary"] },
+            "description": "ADMIN only. { users:{total,active,byRole}, reports:{open}, assessments:{byStatus}, notifications:{open} }. reports.open counts non-RESOLVED reports."
+          }
+        },
+        {
+          "name": "Dashboard activity (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/activity?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "activity"],
+              "query": [{ "key": "limit", "value": "10" }]
+            },
+            "description": "ADMIN only. Recent audit entries, newest first, with actor names resolved from PostgreSQL (null when system/unknown)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit Logs",
+      "item": [
+        {
+          "name": "List audit logs (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const b = pm.response.json();",
+                  "  if (b.data && b.data[0]) pm.collectionVariables.set('auditId', b.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs?action=REPORT_STATUS_CHANGED&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit-logs"],
+              "query": [
+                { "key": "action", "value": "REPORT_STATUS_CHANGED" },
+                { "key": "actorId", "value": "", "disabled": true },
+                { "key": "from", "value": "", "disabled": true },
+                { "key": "to", "value": "", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "ADMIN only. Append-only audit log read; filter by action, actorId, from/to ISO dates. Newest first. The test script saves {{auditId}}."
+          }
+        },
+        {
+          "name": "Audit log detail (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/audit-logs/{{auditId}}", "host": ["{{baseUrl}}"], "path": ["audit-logs", "{{auditId}}"] },
+            "description": "ADMIN only. Full entry incl. oldValues/newValues/userAgent. 404 if not found."
           }
         }
       ]
