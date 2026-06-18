@@ -33,9 +33,27 @@ export const AUDIT_ACTIONS = [
   'SERVICE_REQUEST_APPROVED',
   'SERVICE_REQUEST_REJECTED',
   'SERVICE_REQUEST_CANCELLED',
+  'REPORT_CREATED',
+  'REPORT_STATUS_CHANGED',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+export const AUDIT_ENTITY_TYPES = [
+  'USER',
+  'PATIENT',
+  'REFRESH_TOKEN',
+  'FormTemplate',
+  'FormSubmission',
+  'Assessment',
+  'NOTIFICATION',
+  'SERVICE_CATEGORY',
+  'SERVICE',
+  'SERVICE_REQUEST',
+  'REPORT',
+] as const;
+
+export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];
 
 export const STRICT_AUDIT_ACTIONS: ReadonlySet<AuditAction> = new Set([
   'LOGIN',
