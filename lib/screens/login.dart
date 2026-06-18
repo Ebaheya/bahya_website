@@ -1,4 +1,5 @@
 import 'package:bahya_app/data/remote/web/web_service.dart';
+import 'package:bahya_app/helper/animated_background.dart';
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/custom_form_textfield.dart';
@@ -6,6 +7,8 @@ import 'package:bahya_app/helper/custom_glow_buttom.dart';
 import 'package:bahya_app/helper/custom_loading.dart';
 import 'package:bahya_app/helper/massage_dialog.dart';
 import 'package:bahya_app/helper/widgets/forget_password_dialog.dart';
+import 'package:bahya_app/helper/widgets/patient/patient_home_widgets.dart';
+import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/route.dart';
 import 'package:flutter/material.dart';
 
@@ -32,116 +35,215 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  String _cleanError(Object error) {
+    if (error is ApiException) return error.message;
+
+    final text = error.toString();
+
+    if (text.contains('Invalid email or password')) {
+      return 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+    }
+
+    if (text.contains('VALIDATION_ERROR')) {
+      return 'تأكد من إدخال البريد الإلكتروني وكلمة المرور بشكل صحيح.';
+    }
+
+    if (text.contains('SocketException') || text.contains('Connection')) {
+      return 'تعذر الاتصال بالسيرفر، تأكد من الإنترنت.';
+    }
+
+    return 'حدث خطأ أثناء تسجيل الدخول، حاول مرة أخرى.';
+  }
+
   Future<void> _login() async {
+    FocusScope.of(context).unfocus();
+
     if (!(_formKey.currentState?.validate() ?? false)) {
       customDialog(
         context: context,
-        title: 'خطأ',
-        message: 'يرجى إدخال البريد الإلكتروني وكلمة المرور.',
+        title: context.tr('خطأ'),
+        message: context.tr('يرجى إدخال البريد الإلكتروني وكلمة المرور.'),
         isError: true,
       );
       return;
     }
 
+    if (isLoading) return;
+
     setState(() => isLoading = true);
 
     try {
-      await web.login(
+      final role = await web.login(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
 
-      authNotifier.login();
+      final roleUpper = role?.toUpperCase();
+
+      authNotifier.login(role: roleUpper);
 
       if (!mounted) return;
 
-      Navigator.pushReplacementNamed(context, '/formGate');
+      if (roleUpper == 'ADMIN') {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/adminHome',
+          (route) => false,
+        );
+        return;
+      }
+
+      if (roleUpper == 'PATIENT') {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/formGate',
+          (route) => false,
+        );
+        return;
+      }
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/unauthorized',
+        (route) => false,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+
+      customDialog(
+        context: context,
+        title: context.tr('خطأ'),
+        message: context.tr(e.message),
+        isError: true,
+      );
     } catch (e) {
       if (!mounted) return;
 
       customDialog(
         context: context,
-        title: 'خطأ',
-        message: 'البريد أو كلمة المرور غير صحيحة',
+        title: context.tr('خطأ'),
+        message: context.tr(_cleanError(e)),
         isError: true,
       );
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() => isLoading = false);
     }
+  }
+
+  void _showLanguageSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          padding: EdgeInsets.all(
+            responsiveSize(context, 0.045, min: 16, max: 22),
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Directionality(
+            textDirection: context.appTextDirection,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 46,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                SizedBox(height: responsiveHeight(context, 0.025)),
+                customText(
+                  text: context.tr('تغيير اللغة'),
+                  size: responsiveSize(context, 0.05, min: 18, max: 24),
+                  color: const Color(0xFF7A104F),
+                  bold: true,
+                ),
+                SizedBox(height: responsiveHeight(context, 0.025)),
+                languageFloatingButton(context: context),
+                SizedBox(height: responsiveHeight(context, 0.02)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final width = getScreenWidth(context);
-    final height = getScreenHeight(context);
-    final isMobile = width < 700;
 
-    final horizontalPadding = responsiveSize(
-      context,
-      isMobile ? 0.055 : 0.03,
-      min: 18,
-      max: 36,
-    );
-
-    final cardRadius = responsiveSize(context, 0.065, min: 24, max: 34);
-
-    final logoSize = responsiveSize(
-      context,
-      isMobile ? 0.31 : 0.16,
-      min: 115,
-      max: 145,
-    );
-
-    final cardPadding = responsiveSize(
-      context,
-      isMobile ? 0.055 : 0.035,
-      min: 20,
-      max: 34,
-    );
+    final horizontalPadding = responsiveSize(context, 0.055, min: 18, max: 24);
+    final cardPadding = responsiveSize(context, 0.055, min: 20, max: 26);
+    final cardRadius = responsiveSize(context, 0.065, min: 24, max: 32);
+    final logoSize = responsiveSize(context, 0.31, min: 112, max: 142);
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: context.appTextDirection,
       child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                'assets/pics/background.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-
-            Positioned.fill(
-              child: Container(color: Colors.white.withOpacity(0.04)),
-            ),
-
-            SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: responsiveHeight(
-                      context,
-                      0.035,
-                      min: 24,
-                      max: 44,
+        resizeToAvoidBottomInset: false,
+        body: AnimatedBackground(
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Positioned(
+                  top: responsiveHeight(context, 0.02, min: 14, max: 22),
+                  right: context.appTextDirection == TextDirection.rtl
+                      ? horizontalPadding
+                      : null,
+                  left: context.appTextDirection == TextDirection.ltr
+                      ? horizontalPadding
+                      : null,
+                  child: InkWell(
+                    onTap: _showLanguageSheet,
+                    borderRadius: BorderRadius.circular(99),
+                    child: Container(
+                      width: responsiveSize(context, 0.12, min: 46, max: 54),
+                      height: responsiveSize(context, 0.12, min: 46, max: 54),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.95),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.pink.withOpacity(0.18),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.pink.withOpacity(0.14),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.language_rounded,
+                        color: Color(0xFFE7549B),
+                      ),
                     ),
                   ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: isMobile ? width : 430,
+                ),
+
+                Center(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      responsiveHeight(context, 0.11, min: 86, max: 106),
+                      horizontalPadding,
+                      responsiveHeight(context, 0.04, min: 26, max: 38),
                     ),
                     child: Container(
+                      width: width,
                       padding: EdgeInsets.fromLTRB(
                         cardPadding,
                         0,
                         cardPadding,
-                        cardPadding,
+                        responsiveHeight(context, 0.026, min: 18, max: 24),
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.94),
@@ -152,7 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFE91E63).withOpacity(0.16),
+                            color: Colors.pink.withOpacity(0.14),
                             blurRadius: 35,
                             offset: const Offset(0, 18),
                           ),
@@ -170,7 +272,7 @@ class _LoginPageState extends State<LoginPage> {
                                   context,
                                   0.055,
                                   min: 42,
-                                  max: 56,
+                                  max: 54,
                                 ),
                               ),
                               child: Container(
@@ -189,9 +291,7 @@ class _LoginPageState extends State<LoginPage> {
                                   color: Colors.white,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(
-                                        0xFFE91E63,
-                                      ).withOpacity(0.16),
+                                      color: Colors.pink.withOpacity(0.16),
                                       blurRadius: 28,
                                       offset: const Offset(0, 12),
                                     ),
@@ -217,12 +317,12 @@ class _LoginPageState extends State<LoginPage> {
                               child: Column(
                                 children: [
                                   customText(
-                                    text: 'فريق الدعم النفسي',
+                                    text: context.tr('مرحبا بك فى رِفْق'),
                                     size: responsiveSize(
                                       context,
-                                      isMobile ? 0.075 : 0.04,
+                                      0.075,
                                       min: 28,
-                                      max: 38,
+                                      max: 36,
                                     ),
                                     color: const Color(0xFF7A104F),
                                     bold: true,
@@ -239,32 +339,33 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
 
                                   customText(
-                                    text: 'مرحباً بك في منصة الدعم والرعاية',
+                                    text: context.tr(
+                                      'نأمل ان تكون صحتكم النفسية بخير',
+                                    ),
                                     size: responsiveSize(
                                       context,
-                                      isMobile ? 0.038 : 0.022,
+                                      0.038,
                                       min: 15,
                                       max: 18,
                                     ),
-                                    color: const Color(0xFFFF5F9E),
-                                    bold: false,
+                                    color: Colors.pink,
                                     maxLines: 2,
                                   ),
 
                                   SizedBox(
                                     height: responsiveHeight(
                                       context,
-                                      0.04,
-                                      min: 28,
-                                      max: 42,
+                                      0.026,
+                                      min: 18,
+                                      max: 26,
                                     ),
                                   ),
 
                                   CustomFormTextField(
                                     controller: emailController,
                                     keyboardType: CustomTextFieldType.email,
-                                    hintText: 'البريد الإلكتروني',
-                                    labelText: 'البريد الإلكتروني',
+                                    hintText: context.tr('البريد الإلكتروني'),
+                                    labelText: context.tr('البريد الإلكتروني'),
                                     textDirection: TextDirection.rtl,
                                     autovalidateMode: AutovalidateMode.disabled,
                                     prefixIcon: const Icon(
@@ -272,7 +373,7 @@ class _LoginPageState extends State<LoginPage> {
                                       color: Color(0xFFE7549B),
                                     ),
                                     bordered: true,
-                                    borderRadius: 28,
+                                    borderRadius: 18,
                                     centerHint: false,
                                     isRequired: true,
                                   ),
@@ -290,16 +391,16 @@ class _LoginPageState extends State<LoginPage> {
                                     controller: passwordController,
                                     keyboardType: CustomTextFieldType.password,
                                     obscureText: true,
-                                    hintText: 'كلمة المرور',
-                                    labelText: 'كلمة المرور',
+                                    hintText: context.tr('كلمة المرور'),
+                                    labelText: context.tr('كلمة المرور'),
                                     textDirection: TextDirection.rtl,
                                     autovalidateMode: AutovalidateMode.disabled,
                                     prefixIcon: const Icon(
-                                      Icons.visibility_rounded,
+                                      Icons.lock_outline_rounded,
                                       color: Color(0xFFE7549B),
                                     ),
                                     bordered: true,
-                                    borderRadius: 28,
+                                    borderRadius: 18,
                                     centerHint: false,
                                     isRequired: true,
                                   ),
@@ -307,25 +408,41 @@ class _LoginPageState extends State<LoginPage> {
                                   SizedBox(
                                     height: responsiveHeight(
                                       context,
-                                      0.028,
-                                      min: 20,
-                                      max: 28,
+                                      0.02,
+                                      min: 14,
+                                      max: 20,
                                     ),
                                   ),
+
                                   isLoading
-                                      ? customLoading()
-                                      : CustomGlowButton(
-                                          title: 'تسجيل الدخول',
-                                          backgroundColor: const Color(
-                                            0xFFFF5F9E,
+                                      ? SizedBox(
+                                          height: responsiveHeight(
+                                            context,
+                                            0.055,
+                                            min: 44,
+                                            max: 52,
                                           ),
+                                          child: Center(
+                                            child: customLoading(
+                                              size: responsiveSize(
+                                                context,
+                                                0.08,
+                                                min: 30,
+                                                max: 38,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : CustomGlowButton(
+                                          title: context.tr('تسجيل الدخول'),
+                                          backgroundColor: Colors.pink,
                                           textColor: Colors.white,
-                                          glowColor: const Color(0xFFFF5F9E),
+                                          glowColor: Colors.pink,
                                           textSize: responsiveSize(
                                             context,
                                             0.055,
                                             min: 20,
-                                            max: 24,
+                                            max: 23,
                                           ),
                                           onPressed: _login,
                                         ),
@@ -333,9 +450,9 @@ class _LoginPageState extends State<LoginPage> {
                                   SizedBox(
                                     height: responsiveHeight(
                                       context,
-                                      0.026,
-                                      min: 20,
-                                      max: 26,
+                                      0.018,
+                                      min: 12,
+                                      max: 18,
                                     ),
                                   ),
 
@@ -352,7 +469,7 @@ class _LoginPageState extends State<LoginPage> {
                                           horizontal: 16,
                                         ),
                                         child: customText(
-                                          text: 'أو',
+                                          text: context.tr('أو'),
                                           size: responsiveSize(
                                             context,
                                             0.038,
@@ -360,7 +477,6 @@ class _LoginPageState extends State<LoginPage> {
                                             max: 16,
                                           ),
                                           color: const Color(0xFF777777),
-                                          bold: false,
                                         ),
                                       ),
                                       Expanded(
@@ -382,18 +498,18 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
 
                                   GestureDetector(
-                                    onTap: () {
-                                      forgetPasswordDialog(context);
-                                    },
+                                    onTap: isLoading
+                                        ? null
+                                        : () => forgetPasswordDialog(context),
                                     child: customText(
-                                      text: 'نسيت كلمة المرور؟',
+                                      text: context.tr('نسيت كلمة المرور؟'),
                                       size: responsiveSize(
                                         context,
                                         0.041,
                                         min: 15,
                                         max: 17,
                                       ),
-                                      color: const Color(0xFFFF3F86),
+                                      color: Colors.pink,
                                       bold: true,
                                     ),
                                   ),
@@ -406,9 +522,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

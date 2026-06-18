@@ -125,3 +125,73 @@ final List<Map<String, dynamic>> listOfCategories = [
     "color": Color(0xFF3B82F6),
   },
 ];
+
+final List<Map<String, dynamic>> categoryIconOptions = [
+  {'key': 'shopping_bag', 'icon': Icons.shopping_bag_outlined},
+  {'key': 'bus', 'icon': Icons.directions_bus_rounded},
+  {'key': 'support', 'icon': Icons.groups_rounded},
+  {'key': 'home', 'icon': Icons.home_outlined},
+  {'key': 'fitness', 'icon': Icons.fitness_center_rounded},
+  {'key': 'heart', 'icon': Icons.favorite_border_rounded},
+  {'key': 'school', 'icon': Icons.school_outlined},
+  {'key': 'restaurant', 'icon': Icons.restaurant_rounded},
+  {'key': 'more', 'icon': Icons.more_horiz_rounded},
+  {'key': 'gaming', 'icon': Icons.sports_esports_rounded},
+  {'key': 'trip', 'icon': Icons.beach_access_rounded},
+  {'key': 'business', 'icon': Icons.business_center_outlined},
+  {'key': 'laundry', 'icon': Icons.local_laundry_service_outlined},
+  {'key': 'pets', 'icon': Icons.pets_rounded},
+  {'key': 'cleaning', 'icon': Icons.cleaning_services_rounded},
+  {'key': 'medical', 'icon': Icons.medical_services_outlined},
+  {'key': 'tools', 'icon': Icons.build_rounded},
+  {'key': 'child', 'icon': Icons.child_care_rounded},
+];
+
+Color colorFromHex(String hex) {
+  final value = hex.replaceAll('#', '');
+  final parsed = int.tryParse('FF$value', radix: 16);
+  return Color(parsed ?? 0xFFE7549B);
+}
+
+IconData iconFromKey(String key) {
+  switch (key) {
+    case 'shopping_bag':
+      return Icons.shopping_bag_outlined;
+    case 'bus':
+      return Icons.directions_bus_rounded;
+    case 'support':
+      return Icons.groups_rounded;
+    case 'home':
+      return Icons.home_outlined;
+    case 'fitness':
+      return Icons.fitness_center_rounded;
+    case 'heart':
+      return Icons.favorite_border_rounded;
+    case 'school':
+      return Icons.school_outlined;
+    case 'restaurant':
+      return Icons.restaurant_rounded;
+    case 'more':
+      return Icons.more_horiz_rounded;
+    case 'gaming':
+      return Icons.sports_esports_rounded;
+    case 'trip':
+      return Icons.beach_access_rounded;
+    case 'business':
+      return Icons.business_center_outlined;
+    case 'laundry':
+      return Icons.local_laundry_service_outlined;
+    case 'pets':
+      return Icons.pets_rounded;
+    case 'cleaning':
+      return Icons.cleaning_services_rounded;
+    case 'medical':
+      return Icons.medical_services_outlined;
+    case 'tools':
+      return Icons.build_rounded;
+    case 'child':
+      return Icons.child_care_rounded;
+    default:
+      return Icons.category_outlined;
+  }
+}

@@ -4,6 +4,7 @@ class PatientFormsState {
   final bool isLoading;
   final bool isLoadingDetails;
   final bool isSubmitting;
+  final bool hasLoaded;
 
   final List<MyAssignmentModel> assignments;
   final AssignmentDetailsModel? selectedAssignment;
@@ -15,6 +16,7 @@ class PatientFormsState {
     this.isLoading = false,
     this.isLoadingDetails = false,
     this.isSubmitting = false,
+    this.hasLoaded = false,
     this.assignments = const [],
     this.selectedAssignment,
     this.submitResponse,
@@ -25,6 +27,7 @@ class PatientFormsState {
     bool? isLoading,
     bool? isLoadingDetails,
     bool? isSubmitting,
+    bool? hasLoaded,
     List<MyAssignmentModel>? assignments,
     AssignmentDetailsModel? selectedAssignment,
     SubmitFormResponseModel? submitResponse,
@@ -36,6 +39,7 @@ class PatientFormsState {
       isLoading: isLoading ?? this.isLoading,
       isLoadingDetails: isLoadingDetails ?? this.isLoadingDetails,
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      hasLoaded: hasLoaded ?? this.hasLoaded,
       assignments: assignments ?? this.assignments,
       selectedAssignment: selectedAssignment ?? this.selectedAssignment,
       submitResponse: clearSubmitResponse
@@ -43,5 +47,9 @@ class PatientFormsState {
           : submitResponse ?? this.submitResponse,
       error: clearError ? null : error ?? this.error,
     );
+  }
+
+  PatientFormsState clearError() {
+    return copyWith(clearError: true);
   }
 }

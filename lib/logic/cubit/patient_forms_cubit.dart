@@ -1,63 +1,94 @@
 import 'package:bahya_app/data/remote/repo/repo.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../state/patient_forms_state.dart';
 
 class PatientFormsCubit extends Cubit<PatientFormsState> {
-  final AppRepository repo;
-final Map<String, dynamic> answers = {};
   PatientFormsCubit(this.repo) : super(const PatientFormsState());
 
+  final AppRepository repo;
+  final Map<String, dynamic> answers = {};
+
+  bool get _canEmit => !isClosed;
+
+  void _safeEmit(PatientFormsState newState) {
+    if (!_canEmit) return;
+    emit(newState);
+  }
+
   Future<void> loadMyAssignments() async {
-    emit(state.copyWith(isLoading: true, clearError: true));
+    if (!_canEmit) return;
+
+    _safeEmit(
+      state.copyWith(isLoading: true, hasLoaded: false, clearError: true),
+    );
 
     try {
       final assignments = await repo.getMyAssignments();
+      if (!_canEmit) return;
 
-      emit(state.copyWith(isLoading: false, assignments: assignments));
-    } catch (e) {
-      emit(
-        state.copyWith(isLoading: false, error: "حدث خطأ أثناء تحميل النماذج."),
+      _safeEmit(
+        state.copyWith(
+          isLoading: false,
+          hasLoaded: true,
+          assignments: assignments,
+        ),
+      );
+    } catch (_) {
+      if (!_canEmit) return;
+
+      _safeEmit(
+        state.copyWith(
+          isLoading: false,
+          hasLoaded: true,
+          assignments: const [],
+          error: 'تعذر تحميل النموذج حالياً. حاول مرة أخرى لاحقاً.',
+        ),
       );
     }
   }
 
   Future<void> loadAssignmentDetails(String assignmentId) async {
-    emit(state.copyWith(isLoadingDetails: true, clearError: true));
+    if (!_canEmit) return;
+
+    _safeEmit(state.copyWith(isLoadingDetails: true, clearError: true));
 
     try {
       final details = await repo.getAssignmentDetails(assignmentId);
+      if (!_canEmit) return;
 
-      emit(
+      _safeEmit(
         state.copyWith(isLoadingDetails: false, selectedAssignment: details),
       );
-    } catch (e) {
-      emit(
+    } catch (_) {
+      if (!_canEmit) return;
+
+      _safeEmit(
         state.copyWith(
           isLoadingDetails: false,
-          error: "حدث خطأ أثناء تحميل النموذج.",
+          error: 'تعذر تحميل النموذج حالياً. حاول مرة أخرى لاحقاً.',
         ),
       );
     }
   }
+
   void setSingleChoiceAnswer({
     required String questionId,
     required String choiceId,
   }) {
     answers[questionId] = {
-      "questionId": questionId,
-      "choiceIds": [choiceId],
+      'questionId': questionId,
+      'choiceIds': [choiceId],
     };
 
-    emit(state.copyWith());
+    _safeEmit(state.copyWith());
   }
 
   String? getSingleChoiceAnswer(String questionId) {
     final current = answers[questionId];
-
     if (current == null) return null;
 
-    final choiceIds = List<String>.from(current["choiceIds"] ?? []);
-
+    final choiceIds = List<String>.from(current['choiceIds'] ?? []);
     if (choiceIds.isEmpty) return null;
 
     return choiceIds.first;
@@ -71,7 +102,7 @@ final Map<String, dynamic> answers = {};
 
     final List<String> choiceIds = current == null
         ? []
-        : List<String>.from(current["choiceIds"] ?? []);
+        : List<String>.from(current['choiceIds'] ?? []);
 
     if (choiceIds.contains(choiceId)) {
       choiceIds.remove(choiceId);
@@ -79,9 +110,9 @@ final Map<String, dynamic> answers = {};
       choiceIds.add(choiceId);
     }
 
-    answers[questionId] = {"questionId": questionId, "choiceIds": choiceIds};
+    answers[questionId] = {'questionId': questionId, 'choiceIds': choiceIds};
 
-    emit(state.copyWith());
+    _safeEmit(state.copyWith());
   }
 
   bool isChoiceSelected({
@@ -89,51 +120,56 @@ final Map<String, dynamic> answers = {};
     required String choiceId,
   }) {
     final current = answers[questionId];
-
     if (current == null) return false;
 
-    final choiceIds = List<String>.from(current["choiceIds"] ?? []);
-
+    final choiceIds = List<String>.from(current['choiceIds'] ?? []);
     return choiceIds.contains(choiceId);
   }
 
   void setScaleAnswer({required String questionId, required int value}) {
-    answers[questionId] = {"questionId": questionId, "value": value};
+    answers[questionId] = {'questionId': questionId, 'value': value};
 
-    emit(state.copyWith());
+    _safeEmit(state.copyWith());
   }
 
   int? getScaleAnswer(String questionId) {
     final current = answers[questionId];
-
     if (current == null) return null;
 
-    return current["value"];
+    return current['value'];
   }
-   Future<void> submitCurrentAssignment() async {
+
+  Future<void> submitCurrentAssignment() async {
     final details = state.selectedAssignment;
 
     if (details == null) {
-      emit(state.copyWith(error: "لا يوجد نموذج محدد."));
+      _safeEmit(
+        state.copyWith(
+          error: 'تعذر تحميل النموذج حالياً. حاول مرة أخرى لاحقاً.',
+        ),
+      );
       return;
     }
 
-    emit(state.copyWith(isSubmitting: true, clearError: true));
+    _safeEmit(state.copyWith(isSubmitting: true, clearError: true));
 
     try {
-      final body = {"answers": answers.values.toList()};
+      final body = {'answers': answers.values.toList()};
 
       final response = await repo.submitAssignment(
         assignmentId: details.id,
         body: body,
       );
+      if (!_canEmit) return;
 
-      emit(state.copyWith(isSubmitting: false, submitResponse: response));
-    } catch (e) {
-      emit(
+      _safeEmit(state.copyWith(isSubmitting: false, submitResponse: response));
+    } catch (_) {
+      if (!_canEmit) return;
+
+      _safeEmit(
         state.copyWith(
           isSubmitting: false,
-          error: "حدث خطأ أثناء إرسال النموذج.",
+          error: 'تعذر تحميل النموذج حالياً. حاول مرة أخرى لاحقاً.',
         ),
       );
     }

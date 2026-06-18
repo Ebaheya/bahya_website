@@ -47,13 +47,19 @@ class SecureStorageService {
 
   static const String _accessKey = 'accessToken';
   static const String _refreshKey = 'refreshToken';
+  static const String _roleKey = 'userRole';
+  static const String _localeKey = 'localeCode';
 
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
+    String? role,
   }) async {
     await write(key: _accessKey, value: accessToken);
     await write(key: _refreshKey, value: refreshToken);
+    if (role != null && role.isNotEmpty) {
+      await write(key: _roleKey, value: role);
+    }
     log('Tokens saved');
   }
 
@@ -65,9 +71,26 @@ class SecureStorageService {
     return await read(_refreshKey);
   }
 
+  Future<String?> getUserRole() async {
+    return await read(_roleKey);
+  }
+
+  Future<void> saveUserRole(String role) async {
+    await write(key: _roleKey, value: role);
+  }
+
+  Future<String?> getLocaleCode() async {
+    return await read(_localeKey);
+  }
+
+  Future<void> saveLocaleCode(String code) async {
+    await write(key: _localeKey, value: code);
+  }
+
   Future<void> clearTokens() async {
     await delete(_accessKey);
     await delete(_refreshKey);
+    await delete(_roleKey);
     log('Tokens cleared');
   }
 }

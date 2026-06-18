@@ -1,6 +1,7 @@
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/constant.dart';
-import 'package:bahya_app/helper/widgets/custom_app_bar.dart';
+import 'package:bahya_app/helper/custom_app_bar.dart';
+import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class ArticleDetailsScreen extends StatelessWidget {
@@ -33,9 +34,6 @@ class ArticleDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
-    final h = getScreenHeight(context);
-
     return Scaffold(
       extendBody: true,
       extendBodyBehindAppBar: true,
@@ -46,87 +44,84 @@ class ArticleDetailsScreen extends StatelessWidget {
         subTitle: 'تعرفي على المزيد من المعلومات المفيدة',
         isHome: false,
         isArticle: true,
-        preferredSize: Size.fromHeight(h * 0.12),
+        preferredSize: Size.fromHeight(
+          responsiveHeight(context, 0.12, min: 92, max: 110),
+        ),
       ),
       body: SingleChildScrollView(
         child: Directionality(
-          textDirection: TextDirection.rtl,
+          textDirection: context.appTextDirection,
           child: Column(
             children: [
-              SizedBox(height: h * 0.14),
+              SizedBox(height: responsiveHeight(context, 0.14, min: 112, max: 132)),
               Padding(
-                padding: EdgeInsets.all(8),
+                padding: EdgeInsets.all(responsiveSize(context, 0.018, min: 8, max: 12)),
                 child: Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(w * 0.055),
+                  padding: EdgeInsets.all(
+                    responsiveSize(context, 0.055, min: 20, max: 28),
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(
+                      responsiveSize(context, 0.065, min: 22, max: 28),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.pink.withOpacity(0.08),
-                        blurRadius: 22,
-                        offset: const Offset(0, 10),
+                        blurRadius: responsiveSize(context, 0.05, min: 18, max: 22),
+                        offset: Offset(
+                          0,
+                          responsiveHeight(context, 0.012, min: 8, max: 10),
+                        ),
                       ),
                     ],
                   ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        customText(
-                          text: title,
-                          size: w * 0.045,
-                          bold: true,
-                          color: const Color(0xff8A1745),
-                          maxLines: 3,
-                        ),
-
-                        SizedBox(height: h * 0.025),
-
-                        articleSectionTitle(w: w, title: "مقدمة"),
-
-                        articleParagraph(w: w, text: introduction),
-
-                        articleDivider(),
-
-                        articleQuestion(
-                          w: w,
-                          number: "01",
-                          question: firstQuestion,
-                          answer: firstAnswer,
-                        ),
-
-                        articleQuestion(
-                          w: w,
-                          number: "02",
-                          question: secondQuestion,
-                          answer: secondAnswer,
-                        ),
-
-                        articleQuestion(
-                          w: w,
-                          number: "03",
-                          question: thirdQuestion,
-                          answer: thirdAnswer,
-                        ),
-
-                        articleQuestion(
-                          w: w,
-                          number: "04",
-                          question: fourthQuestion,
-                          answer: fourthAnswer,
-                          isLast: true,
-                        ),
-
-                        articleSectionTitle(w: w, title: "خاتمة"),
-
-                        articleParagraph(w: w, text: conclusion),
-                      ],
-                    ),
+                  child: Column(
+                    children: [
+                      customText(
+                        text: title,
+                        size: responsiveSize(context, 0.045, min: 18, max: 22),
+                        bold: true,
+                        color: const Color(0xff8A1745),
+                        maxLines: 3,
+                      ),
+                      SizedBox(height: responsiveHeight(context, 0.025, min: 18, max: 24)),
+                      articleSectionTitle(context: context, title: 'مقدمة'),
+                      articleParagraph(context: context, text: introduction),
+                      articleDivider(context),
+                      articleQuestion(
+                        context: context,
+                        number: '01',
+                        question: firstQuestion,
+                        answer: firstAnswer,
+                      ),
+                      articleQuestion(
+                        context: context,
+                        number: '02',
+                        question: secondQuestion,
+                        answer: secondAnswer,
+                      ),
+                      articleQuestion(
+                        context: context,
+                        number: '03',
+                        question: thirdQuestion,
+                        answer: thirdAnswer,
+                      ),
+                      articleQuestion(
+                        context: context,
+                        number: '04',
+                        question: fourthQuestion,
+                        answer: fourthAnswer,
+                        isLast: true,
+                      ),
+                      articleSectionTitle(context: context, title: 'خاتمة'),
+                      articleParagraph(context: context, text: conclusion),
+                    ],
                   ),
                 ),
               ),
-              SizedBox(height: 20),
+              SizedBox(height: responsiveHeight(context, 0.024, min: 16, max: 22)),
             ],
           ),
         ),
@@ -134,21 +129,24 @@ class ArticleDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget articleSectionTitle({required double w, required String title}) {
+  Widget articleSectionTitle({
+    required BuildContext context,
+    required String title,
+  }) {
     return Row(
       children: [
         Container(
-          width: 4,
-          height: 24,
+          width: responsiveSize(context, 0.01, min: 4, max: 5),
+          height: responsiveHeight(context, 0.03, min: 22, max: 26),
           decoration: BoxDecoration(
             color: const Color(0xffEA4C89),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: responsiveSize(context, 0.018, min: 7, max: 9)),
         customText(
           text: title,
-          size: w * 0.038,
+          size: responsiveSize(context, 0.038, min: 15, max: 18),
           isCenter: false,
           bold: true,
           color: const Color(0xffEA4C89),
@@ -157,15 +155,21 @@ class ArticleDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget articleParagraph({required double w, required String text}) {
+  Widget articleParagraph({
+    required BuildContext context,
+    required String text,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
+      padding: EdgeInsets.only(
+        top: responsiveHeight(context, 0.014, min: 10, max: 14),
+      ),
       child: Text(
-        text,
-        textAlign: TextAlign.right,
+        context.tr(text),
+        textAlign: localeNotifier.isArabic ? TextAlign.right : TextAlign.left,
+        textDirection: context.appTextDirection,
         style: TextStyle(
           height: 1.8,
-          fontSize: w * 0.034,
+          fontSize: responsiveSize(context, 0.034, min: 14, max: 16),
           color: Colors.grey[700],
           fontFamily: 'ArabicCustomFont',
         ),
@@ -174,7 +178,7 @@ class ArticleDetailsScreen extends StatelessWidget {
   }
 
   Widget articleQuestion({
-    required double w,
+    required BuildContext context,
     required String number,
     required String question,
     required String answer,
@@ -186,37 +190,43 @@ class ArticleDetailsScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            customText(text: number, size: w * 0.05, bold: true),
-            const SizedBox(width: 8),
+            customText(
+              text: number,
+              size: responsiveSize(context, 0.05, min: 18, max: 22),
+              bold: true,
+            ),
+            SizedBox(width: responsiveSize(context, 0.018, min: 6, max: 8)),
             Container(
-              width: 12,
-              height: 12,
+              width: responsiveSize(context, 0.028, min: 10, max: 12),
+              height: responsiveSize(context, 0.028, min: 10, max: 12),
               decoration: BoxDecoration(
                 color: iconColor.withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: responsiveSize(context, 0.018, min: 6, max: 8)),
             Expanded(
               child: customText(
                 text: question,
-                size: w * 0.033,
+                size: responsiveSize(context, 0.033, min: 14, max: 16),
                 isCenter: false,
                 bold: true,
-                maxLines: 2,
+                maxLines: 3,
               ),
             ),
           ],
         ),
-        articleParagraph(w: w, text: answer),
-        articleDivider(isDashed: !isLast),
+        articleParagraph(context: context, text: answer),
+        articleDivider(context, isDashed: !isLast),
       ],
     );
   }
 
-  Widget articleDivider({bool isDashed = false}) {
+  Widget articleDivider(BuildContext context, {bool isDashed = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: EdgeInsets.symmetric(
+        vertical: responsiveHeight(context, 0.012, min: 8, max: 10),
+      ),
       child: Divider(
         color: isDashed
             ? const Color(0xffEA4C89).withOpacity(0.18)
@@ -225,35 +235,4 @@ class ArticleDetailsScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class ArticleWaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-
-    path.lineTo(0, size.height - 35);
-
-    path.quadraticBezierTo(
-      size.width * 0.30,
-      size.height,
-      size.width * 0.55,
-      size.height - 25,
-    );
-
-    path.quadraticBezierTo(
-      size.width * 0.80,
-      size.height - 50,
-      size.width,
-      size.height - 25,
-    );
-
-    path.lineTo(size.width, 0);
-    path.close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

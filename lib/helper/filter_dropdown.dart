@@ -318,7 +318,6 @@ class _DropdownMenuItemContent extends StatelessWidget {
               size: responsiveSize(context, 0.0085, min: 12, max: 15),
               color: isSelected ? color : const Color(0xFF272044),
               bold: true,
-              isEnglish: true,
               maxLines: 1,
               isCenter: false,
             ),

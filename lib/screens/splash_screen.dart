@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:bahya_app/route.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -57,26 +58,40 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
+    _startAnimation();
+    _decideNextScreen();
+  }
+
+  void _startAnimation() {
     _lineController.forward().then((_) {
+      if (!mounted) return;
       _splitController.forward().then((_) {
+        if (!mounted) return;
         _pulseController.repeat(reverse: true);
       });
     });
+  }
 
-    Timer(const Duration(milliseconds: 7200), () {
-      if (mounted) {
-        _pulseController.stop();
-        _splitController.reverse().then((_) {
-          _lineController.reverse();
-        });
-      }
-    });
+Future<void> _decideNextScreen() async {
+    await authNotifier.checkLogin();
 
-    Timer(const Duration(seconds: 10), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
+    await Future.delayed(const Duration(seconds: 4));
+
+    if (!mounted) return;
+
+    String nextRoute = '/login';
+
+    if (authNotifier.isLoggedIn) {
+      if (authNotifier.isAdmin) {
+        nextRoute = '/adminHome';
+      } else if (authNotifier.isPatient) {
+        nextRoute = '/formGate';
+      } else {
+        nextRoute = '/unauthorized';
       }
-    });
+    }
+
+    Navigator.pushNamedAndRemoveUntil(context, nextRoute, (route) => false);
   }
 
   @override
@@ -101,8 +116,9 @@ class _SplashScreenState extends State<SplashScreen>
             AnimatedBuilder(
               animation: Listenable.merge([_splitController, _pulseController]),
               builder: (context, child) {
-                double currentLogoPosition =
+                final currentLogoPosition =
                     maxMove - (_moveAnimation.value * maxMove);
+
                 return Transform.translate(
                   offset: Offset(currentLogoPosition, -20),
                   child: Opacity(
@@ -124,7 +140,8 @@ class _SplashScreenState extends State<SplashScreen>
             AnimatedBuilder(
               animation: Listenable.merge([_lineController, _splitController]),
               builder: (context, child) {
-                double currentLinePosition = _moveAnimation.value * maxMove;
+                final currentLinePosition = _moveAnimation.value * maxMove;
+
                 return Transform.translate(
                   offset: Offset(-currentLinePosition, -20),
                   child: Container(

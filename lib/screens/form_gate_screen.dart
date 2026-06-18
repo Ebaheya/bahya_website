@@ -1,7 +1,10 @@
 import 'package:bahya_app/data/remote/repo/repo.dart';
 import 'package:bahya_app/helper/custom_loading.dart';
+import 'package:bahya_app/helper/massage_dialog.dart';
+import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/logic/cubit/patient_forms_cubit.dart';
 import 'package:bahya_app/logic/state/patient_forms_state.dart';
+import 'package:bahya_app/route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,61 +15,31 @@ class FormGateScreen extends StatelessWidget {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
 
-      Navigator.pushReplacementNamed(context, routeName, arguments: arguments);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        routeName,
+        (route) => false,
+        arguments: arguments,
+      );
     });
   }
 
-  void _showErrorDialog(BuildContext context, String message) {
+  void _showErrorDialog(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
 
-      showDialog(
+      customDialog(
         context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            backgroundColor: Colors.white,
-            title: const Text(
-              'حدث خطأ',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF8A2BE2),
-              ),
-            ),
-            content: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: Color(0xFF333333),
-              ),
-            ),
-            actionsAlignment: MainAxisAlignment.center,
-            actions: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8A2BE2),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 12,
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(dialogContext).pop();
-                  _goTo(context, '/patientsHome');
-                },
-                child: const Text('حسنًا'),
-              ),
-            ],
+        title: context.tr('خطأ'),
+        message: context.tr(
+          'تعذر تحميل النموذج حالياً. سيتم فتح الصفحة الرئيسية.',
+        ),
+        isError: true,
+        onClose: () {
+          navigatorKey.currentState?.pop();
+          navigatorKey.currentState?.pushNamedAndRemoveUntil(
+            '/patientsHome',
+            (route) => false,
           );
         },
       );
@@ -75,22 +48,33 @@ class FormGateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!authNotifier.isLoggedIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/login',
+          (route) => false,
+        );
+      });
+
+      return Scaffold(
+        backgroundColor: const Color(0xFFFFF6FC),
+        body: Center(child: customLoading()),
+      );
+    }
+
     return BlocProvider(
       create: (_) => PatientFormsCubit(AppRepository())..loadMyAssignments(),
       child: BlocConsumer<PatientFormsCubit, PatientFormsState>(
         listenWhen: (previous, current) {
-          return previous.isLoading != current.isLoading ||
+          return previous.hasLoaded != current.hasLoaded ||
               previous.error != current.error ||
               previous.assignments != current.assignments;
         },
         listener: (context, state) {
-          if (state.isLoading) return;
+          if (!state.hasLoaded || state.isLoading) return;
 
           if (state.error != null) {
-            _showErrorDialog(
-              context,
-              state.error ?? 'حدث خطأ أثناء تحميل النماذج.',
-            );
+            _showErrorDialog(context);
             return;
           }
 
@@ -100,9 +84,10 @@ class FormGateScreen extends StatelessWidget {
               '/questionnaire_screen',
               arguments: state.assignments.first.id,
             );
-          } else {
-            _goTo(context, '/patientsHome');
+            return;
           }
+
+          _goTo(context, '/patientsHome');
         },
         builder: (context, state) {
           return Scaffold(

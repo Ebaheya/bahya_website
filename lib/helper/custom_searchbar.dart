@@ -1,3 +1,4 @@
+import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class CustomSearchBarWithFilter extends StatelessWidget {
@@ -21,7 +22,7 @@ class CustomSearchBarWithFilter extends StatelessWidget {
     final w = MediaQuery.of(context).size.width;
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: context.appTextDirection,
       child: Container(
         height: 58,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -62,9 +63,11 @@ class CustomSearchBarWithFilter extends StatelessWidget {
               child: TextField(
                 controller: controller,
                 onChanged: onChanged,
-                textDirection: TextDirection.rtl,
+                textDirection: context.appTextDirection,
+                textAlign:
+                    context.l10n.isArabic ? TextAlign.right : TextAlign.left,
                 decoration: InputDecoration(
-                  hintText: hintText,
+                  hintText: context.tr(hintText),
                   border: InputBorder.none,
                   hintStyle: TextStyle(
                     color: Colors.grey,

@@ -1,15 +1,17 @@
 import 'package:bahya_app/helper/constant.dart';
 import 'package:flutter/material.dart';
 
-Widget customLoading() {
-  return const Padding(
-    padding: EdgeInsets.all(20),
-    child: Center(child: PulsingHeartLoader()),
+Widget customLoading({double size = 85}) {
+  return Padding(
+    padding: EdgeInsets.all(size * 0.22),
+    child: Center(child: PulsingHeartLoader(size: size)),
   );
 }
 
 class PulsingHeartLoader extends StatefulWidget {
-  const PulsingHeartLoader({super.key});
+  final double size;
+
+  const PulsingHeartLoader({super.key, this.size = 85});
 
   @override
   State<PulsingHeartLoader> createState() => _PulsingHeartLoaderState();
@@ -57,9 +59,9 @@ class _PulsingHeartLoaderState extends State<PulsingHeartLoader>
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: Container(
-            width: 85,
-            height: 85,
-            padding: const EdgeInsets.all(18),
+            width: widget.size,
+            height: widget.size,
+            padding: EdgeInsets.all(widget.size * 0.21),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -75,10 +77,10 @@ class _PulsingHeartLoaderState extends State<PulsingHeartLoader>
                 ),
               ],
             ),
-            child: const Icon(
+            child: Icon(
               Icons.favorite_rounded,
               color: Colors.white,
-              size: 36,
+              size: widget.size * 0.42,
             ),
           ),
         );

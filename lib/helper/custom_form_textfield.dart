@@ -1,4 +1,5 @@
 import 'package:bahya_app/helper/constant.dart';
+import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -227,7 +228,10 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final isScore = widget.keyboardType == CustomTextFieldType.score;
+    final effectiveTextDirection =
+        widget.textDirection == TextDirection.ltr || localeNotifier.isArabic
+        ? widget.textDirection
+        : TextDirection.ltr;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -236,7 +240,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           onChanged: (value) {
             widget.onChange?.call(value);
 
-            if (isScore) {
+            if (floatingError != null) {
               setState(() {
                 _validate(value);
               });
@@ -245,7 +249,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           keyboardType: _mapKeyboardType(widget.keyboardType),
           textAlign: widget.centerHint
               ? TextAlign.center
-              : widget.textDirection == TextDirection.ltr
+              : effectiveTextDirection == TextDirection.ltr
               ? TextAlign.left
               : TextAlign.right,
           controller: widget.controller,
@@ -253,11 +257,9 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           validator: (value) {
             final result = _validate(value);
 
-            if (isScore) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) setState(() {});
-              });
-            }
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() {});
+            });
 
             return result;
           },
@@ -266,7 +268,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           inputFormatters: _inputFormatters(),
           obscuringCharacter: '•',
           autovalidateMode: widget.autovalidateMode,
-          textDirection: widget.textDirection,
+          textDirection: effectiveTextDirection,
           maxLines: widget.maxLines,
           minLines: 1,
           expands: false,
@@ -281,7 +283,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
             suffixIcon: widget.obscureText
                 ? Padding(
                     padding: EdgeInsets.all(
-                      responsiveSize(context, 0.005, min: 6, max: 8),
+                      responsiveSize(context, 0.008, min: 8, max: 12),
                     ),
                     child: Container(
                       width: responsiveSize(context, 0.02, min: 28, max: 34),
@@ -309,26 +311,39 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                       ),
                     ),
                   )
-                : widget.suffixIcon,
+                : widget.suffixIcon == null
+                ? null
+                : Padding(
+                    padding: EdgeInsets.all(
+                      responsiveSize(context, 0.008, min: 8, max: 12),
+                    ),
+                    child: widget.suffixIcon,
+                  ),
             suffixIconConstraints: BoxConstraints(
               maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
               maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
             ),
-            prefixIcon: Padding(
-              padding: EdgeInsets.all(
-                responsiveSize(context, 0.005, min: 6, max: 8),
-              ),
-              child: widget.prefixIcon,
-            ),
+            prefixIcon: widget.prefixIcon == null
+                ? null
+                : Padding(
+                    padding: EdgeInsets.all(
+                      responsiveSize(context, 0.008, min: 8, max: 12),
+                    ),
+                    child: widget.prefixIcon,
+                  ),
             prefixIconConstraints: BoxConstraints(
               maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
               maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
             ),
-            hintText: widget.hintText,
-            labelText: widget.labelText,
+            hintText: widget.hintText == null
+                ? null
+                : context.tr(widget.hintText!),
+            labelText: widget.labelText == null
+                ? null
+                : context.tr(widget.labelText!),
             hintTextDirection: widget.centerHint
                 ? TextDirection.ltr
-                : widget.textDirection,
+                : effectiveTextDirection,
             labelStyle: TextStyle(
               color: widget.textColor ?? Colors.black,
               fontSize: responsiveSize(context, 0.008, min: 12, max: 16),
@@ -387,17 +402,18 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                 : InputBorder.none,
             errorStyle: TextStyle(
               fontFamily: 'ArabicCustomFont',
-              fontSize: isScore && widget.showInlineError
+              fontSize: widget.showInlineError
                   ? 0
                   : responsiveSize(context, 0.0075, min: 11, max: 14),
-              height: isScore && widget.showInlineError ? 0 : null,
+              height: widget.showInlineError ? 0 : null,
             ),
           ),
         ),
 
-        if (isScore && widget.showInlineError && floatingError != null)
+        if (widget.showInlineError && floatingError != null)
           Positioned(
-            left: 0,
+            left: localeNotifier.isArabic ? null : 0,
+            right: localeNotifier.isArabic ? 0 : null,
             top: -responsiveHeight(context, 0.045, min: 34, max: 42),
             child: CustomPaint(
               painter: ErrorBubbleArrowPainter(),
@@ -427,17 +443,22 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                       size: responsiveSize(context, 0.01, min: 14, max: 16),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      floatingError!,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'ArabicCustomFont',
-                        fontWeight: FontWeight.bold,
-                        fontSize: responsiveSize(
-                          context,
-                          0.0068,
-                          min: 10,
-                          max: 12,
+                    Flexible(
+                      child: Text(
+                        context.tr(floatingError!),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textDirection: context.appTextDirection,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'ArabicCustomFont',
+                          fontWeight: FontWeight.bold,
+                          fontSize: responsiveSize(
+                            context,
+                            0.0068,
+                            min: 10,
+                            max: 12,
+                          ),
                         ),
                       ),
                     ),
