@@ -2,7 +2,7 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
-import { corsOrigins } from './config/env';
+import { corsOrigins, corsCredentials, env } from './config/env';
 import { logger } from './config/logger';
 import { apiRouter } from './routes';
 import { requestId } from './middleware/requestId';
@@ -12,7 +12,7 @@ export function createApp(): Express {
   const app = express();
 
   app.disable('x-powered-by');
-  app.set('trust proxy', 1);
+  if (env.TRUST_PROXY) app.set('trust proxy', 1);
 
   app.use(requestId);
   app.use(
@@ -29,7 +29,9 @@ export function createApp(): Express {
   app.use(
     cors({
       origin: corsOrigins,
-      credentials: true,
+      // credentials only when a real allow-list is set; wildcard + credentials
+      // is rejected by browsers and is a security posture issue.
+      credentials: corsCredentials,
     })
   );
   app.use(express.json({ limit: '1mb' }));

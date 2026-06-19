@@ -1,6 +1,7 @@
 import type { Request } from 'express';
 import type { Role } from '@prisma/client';
 import { prisma } from '../../config/prisma';
+import { logger } from '../../config/logger';
 import { AppError } from '../../utils/httpError';
 import { hashPassword, verifyPassword } from '../../utils/passwords';
 import {
@@ -8,18 +9,157 @@ import {
   hashRefreshToken,
   signAccessToken,
 } from '../../utils/tokens';
-import { writeAudit, getClientIp } from '../../middleware/audit';
+import { writeAudit, getClientIp, type AuditInput } from '../../middleware/audit';
+import { sendEmail } from '../email/email.service';
+import { buildPasswordResetEmail } from '../email/templates/password-reset';
 import * as users from '../users/user.service';
+import {
+  buildResetUrl,
+  hashResetToken,
+  invalidateResetToken,
+  issueResetToken,
+} from './reset-tokens';
 import type {
   LoginInput,
-  RegisterPatientInput,
   RegisterStaffInput,
 } from './auth.schema';
+
+// LOGIN_FAIL is strict-tier (FR-007): when the Mongo write fails, the audit
+// service throws AppError(503, 'AUDIT_UNAVAILABLE'). For LOGIN_FAIL specifically
+// the contract (contracts/audit-service.md § 1.3) says the client MUST still
+// receive the standard 401, with the audit failure surfaced server-side only.
+async function writeLoginFailAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_preserved_response',
+          actorId: input.actorId ?? null,
+        },
+        'login_fail audit failed; preserving 401 to client'
+      );
+      return;
+    }
+    throw err;
+  }
+}
+
+// USER_CREATED is strict-tier, but these callers invoke audit after PostgreSQL
+// has already committed. Returning 503 at that point makes the successful create
+// look failed and retries collide on the unique email constraint.
+async function writeCommittedUserCreatedAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit user-created audit failed; preserving successful response'
+      );
+      return;
+    }
+    throw err;
+  }
+}
+
+// LOGIN is written after refresh-token persistence so audit records only
+// represent usable sessions. At that point the auth side effect has committed,
+// so Mongo audit downtime must not turn the successful login into a 503.
+async function writeCommittedLoginAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit login audit failed; preserving successful response'
+      );
+      return;
+    }
+    throw err;
+  }
+}
+
+// PASSWORD_RESET_COMPLETED is strict-tier, but resetPassword writes it after the
+// password, refresh-token revocations, and one-time token consumption commit.
+// Preserve the successful reset response if Mongo audit is unavailable.
+async function writeCommittedPasswordResetAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit password-reset audit failed; preserving successful response'
+      );
+      return;
+    }
+    throw err;
+  }
+}
+
+// PASSWORD_CHANGED is strict-tier, but changePassword writes it after the new
+// password hash and refresh-token revocations have already committed. A 503
+// here would make the caller retry with a now-stale current password.
+async function writeCommittedPasswordChangedAudit(input: AuditInput): Promise<void> {
+  try {
+    await writeAudit(input);
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'AUDIT_UNAVAILABLE') {
+      logger.error(
+        {
+          err,
+          metric: 'audit_write_failure',
+          action: input.action,
+          tier: 'strict_post_commit',
+          actorId: input.actorId ?? null,
+          entityType: input.entityType ?? null,
+          entityId: input.entityId ?? null,
+        },
+        'post-commit password-changed audit failed; preserving successful response'
+      );
+      return;
+    }
+    throw err;
+  }
+}
 
 interface TokenBundle {
   accessToken: string;
   refreshToken: string;
 }
+
+export const forgotPasswordMessage =
+  'If an account with that email exists, a password reset link has been sent';
 
 async function issueTokens(
   userId: string,
@@ -54,34 +194,10 @@ export async function registerStaff(input: RegisterStaffInput, req?: Request) {
     role: input.role as Role,
   });
 
-  await writeAudit({
-    userId: req?.user?.id ?? null,
-    actionType: 'CREATE',
-    entity: 'User',
-    entityId: user.id,
-    newValues: { email: user.email, role: user.role, fullName: user.fullName },
-    req,
-  });
-
-  return user;
-}
-
-export async function registerPatient(input: RegisterPatientInput, req?: Request) {
-  const existing = await users.findByEmail(input.email);
-  if (existing) throw AppError.conflict('Email already registered');
-
-  const passwordHash = await hashPassword(input.password);
-  const user = await users.createUser({
-    email: input.email,
-    fullName: input.fullName,
-    passwordHash,
-    role: 'PATIENT',
-  });
-
-  await writeAudit({
-    userId: req?.user?.id ?? null,
-    actionType: 'CREATE',
-    entity: 'User',
+  await writeCommittedUserCreatedAudit({
+    actorId: req?.user?.id ?? null,
+    action: 'USER_CREATED',
+    entityType: 'USER',
     entityId: user.id,
     newValues: { email: user.email, role: user.role, fullName: user.fullName },
     req,
@@ -93,9 +209,9 @@ export async function registerPatient(input: RegisterPatientInput, req?: Request
 export async function login(input: LoginInput, req?: Request) {
   const user = await users.findByEmail(input.email);
   if (!user || !user.isActive) {
-    await writeAudit({
-      actionType: 'LOGIN_FAIL',
-      entity: 'User',
+    await writeLoginFailAudit({
+      action: 'LOGIN_FAIL',
+      entityType: 'USER',
       newValues: { email: input.email, reason: 'not_found_or_inactive' },
       req,
     });
@@ -104,10 +220,10 @@ export async function login(input: LoginInput, req?: Request) {
 
   const ok = await verifyPassword(input.password, user.passwordHash);
   if (!ok) {
-    await writeAudit({
-      userId: user.id,
-      actionType: 'LOGIN_FAIL',
-      entity: 'User',
+    await writeLoginFailAudit({
+      actorId: user.id,
+      action: 'LOGIN_FAIL',
+      entityType: 'USER',
       entityId: user.id,
       newValues: { reason: 'bad_password' },
       req,
@@ -117,10 +233,10 @@ export async function login(input: LoginInput, req?: Request) {
 
   const tokens = await issueTokens(user.id, user.role, req);
 
-  await writeAudit({
-    userId: user.id,
-    actionType: 'LOGIN',
-    entity: 'User',
+  await writeCommittedLoginAudit({
+    actorId: user.id,
+    action: 'LOGIN',
+    entityType: 'USER',
     entityId: user.id,
     req,
   });
@@ -130,15 +246,14 @@ export async function login(input: LoginInput, req?: Request) {
 
 export async function refresh(rawRefreshToken: string, req?: Request) {
   const tokenHash = hashRefreshToken(rawRefreshToken);
+
+  // Load the existing token first (outside the tx) for validation.
   const existing = await prisma.refreshToken.findUnique({
     where: { tokenHash },
     include: { user: true },
   });
 
   if (!existing) throw AppError.unauthorized('Invalid refresh token');
-  if (existing.revokedAt) {
-    throw AppError.unauthorized('Refresh token has been revoked');
-  }
   if (existing.expiresAt.getTime() < Date.now()) {
     throw AppError.unauthorized('Refresh token expired');
   }
@@ -146,23 +261,45 @@ export async function refresh(rawRefreshToken: string, req?: Request) {
     throw AppError.unauthorized('User is inactive');
   }
 
-  const newTokens = await issueTokens(existing.user.id, existing.user.role, req);
-  const replacement = await prisma.refreshToken.findUnique({
-    where: { tokenHash: hashRefreshToken(newTokens.refreshToken) },
-  });
+  // Atomically revoke the old token and create the replacement in one transaction.
+  // updateMany with revokedAt: null as a guard ensures only the first concurrent
+  // caller wins; a duplicate request gets count=0 and is rejected as token reuse.
+  const newTokens = await prisma.$transaction(async (tx) => {
+    const revoked = await tx.refreshToken.updateMany({
+      where: { id: existing.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
 
-  await prisma.refreshToken.update({
-    where: { id: existing.id },
-    data: {
-      revokedAt: new Date(),
-      replacedBy: replacement?.id ?? null,
-    },
+    if (revoked.count !== 1) {
+      throw AppError.unauthorized('Refresh token has already been used or revoked');
+    }
+
+    const accessToken = signAccessToken({ sub: existing.user.id, role: existing.user.role });
+    const { raw, hash, expiresAt } = generateRefreshToken();
+
+    const newRow = await tx.refreshToken.create({
+      data: {
+        userId: existing.user.id,
+        tokenHash: hash,
+        expiresAt,
+        userAgent: req?.get('user-agent') ?? null,
+        ip: req ? getClientIp(req) : null,
+      },
+    });
+
+    // Link old token to its replacement for audit trail.
+    await tx.refreshToken.update({
+      where: { id: existing.id },
+      data: { replacedBy: newRow.id },
+    });
+
+    return { accessToken, refreshToken: raw };
   });
 
   await writeAudit({
-    userId: existing.user.id,
-    actionType: 'REFRESH',
-    entity: 'RefreshToken',
+    actorId: existing.user.id,
+    action: 'REFRESH',
+    entityType: 'REFRESH_TOKEN',
     entityId: existing.id,
     req,
   });
@@ -181,10 +318,152 @@ export async function logout(rawRefreshToken: string, req?: Request) {
   });
 
   await writeAudit({
-    userId: existing.userId,
-    actionType: 'LOGOUT',
-    entity: 'RefreshToken',
+    actorId: existing.userId,
+    action: 'LOGOUT',
+    entityType: 'REFRESH_TOKEN',
     entityId: existing.id,
+    req,
+  });
+}
+
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+  req?: Request
+) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.isActive) throw AppError.unauthorized();
+
+  const ok = await verifyPassword(currentPassword, user.passwordHash);
+  if (!ok) throw AppError.invalidCredentials();
+
+  const now = new Date();
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    }),
+    prisma.refreshToken.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: now },
+    }),
+    prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: now },
+    }),
+  ]);
+
+  await writeCommittedPasswordChangedAudit({
+    actorId: user.id,
+    action: 'PASSWORD_CHANGED',
+    entityType: 'USER',
+    entityId: user.id,
+    req,
+  });
+}
+
+export async function forgotPassword(email: string, req?: Request) {
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+    select: users.publicUserSelect,
+  });
+
+  if (!user || !user.isActive) return { message: forgotPasswordMessage };
+
+  const issuedToken = await issueResetToken(user.id);
+
+  const emailContent = buildPasswordResetEmail(
+    buildResetUrl(issuedToken.rawToken),
+    user.fullName
+  );
+  try {
+    await sendEmail(user.email, emailContent.subject, emailContent.html);
+  } catch (err) {
+    try {
+      await invalidateResetToken(issuedToken.id);
+    } catch (cleanupErr) {
+      logger.error(
+        {
+          err: cleanupErr,
+          metric: 'password_reset_token_cleanup_failed',
+          userId: user.id,
+        },
+        'failed to invalidate undelivered password reset token'
+      );
+    }
+    logger.error(
+      { err, metric: 'password_reset_email_delivery_failed', userId: user.id },
+      'password reset email failed; returning generic forgot-password response'
+    );
+    return { message: forgotPasswordMessage };
+  }
+
+  await writeAudit({
+    actorId: null,
+    action: 'PASSWORD_RESET_REQUESTED',
+    entityType: 'USER',
+    entityId: user.id,
+    newValues: { email: user.email },
+    req,
+  });
+
+  return { message: forgotPasswordMessage };
+}
+
+export async function resetPassword(
+  rawToken: string,
+  newPassword: string,
+  req?: Request
+) {
+  const tokenHash = hashResetToken(rawToken);
+  const token = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+    include: { user: true },
+  });
+
+  const now = new Date();
+  if (
+    !token ||
+    token.usedAt ||
+    token.expiresAt.getTime() <= now.getTime() ||
+    !token.user.isActive
+  ) {
+    throw AppError.invalidOrExpiredToken();
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.$transaction(async (tx) => {
+    const transactionNow = new Date();
+    const marked = await tx.passwordResetToken.updateMany({
+      where: {
+        id: token.id,
+        usedAt: null,
+        expiresAt: { gt: transactionNow },
+        user: { is: { isActive: true } },
+      },
+      data: { usedAt: transactionNow },
+    });
+    if (marked.count !== 1) throw AppError.invalidOrExpiredToken();
+
+    const updatedUser = await tx.user.updateMany({
+      where: { id: token.userId, isActive: true },
+      data: { passwordHash },
+    });
+    if (updatedUser.count !== 1) throw AppError.invalidOrExpiredToken();
+
+    await tx.refreshToken.updateMany({
+      where: { userId: token.userId, revokedAt: null },
+      data: { revokedAt: transactionNow },
+    });
+  });
+
+  await writeCommittedPasswordResetAudit({
+    actorId: token.userId,
+    action: 'PASSWORD_RESET_COMPLETED',
+    entityType: 'USER',
+    entityId: token.userId,
     req,
   });
 }
@@ -192,4 +471,52 @@ export async function logout(rawRefreshToken: string, req?: Request) {
 export async function adminExists(): Promise<boolean> {
   const count = await users.countByRole('ADMIN');
   return count > 0;
+}
+
+// Creates the very first ADMIN under a Postgres advisory lock so that two
+// simultaneous bootstrap requests cannot both observe "no admin" and both succeed.
+// pg_advisory_xact_lock is released automatically at transaction end.
+export async function bootstrapFirstAdmin(input: RegisterStaffInput, req?: Request) {
+  const user = await prisma.$transaction(async (tx) => {
+    // Lock key: arbitrary stable bigint scoped to this operation.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(9876543210)`;
+
+    const existingCount = await tx.user.count({ where: { role: 'ADMIN' } });
+    if (existingCount > 0) {
+      throw AppError.forbidden(
+        'Bootstrap path is disabled: an admin already exists. Use an ADMIN access token.'
+      );
+    }
+
+    // Guard against an existing patient/staff row that already owns this email.
+    // Without this check, tx.user.create would throw a Prisma unique-constraint
+    // error (P2002) that the error middleware cannot map, producing a 500.
+    const emailTaken = await tx.user.findUnique({
+      where: { email: input.email.toLowerCase() },
+      select: { id: true },
+    });
+    if (emailTaken) throw AppError.conflict('Email already registered');
+
+    const passwordHash = await hashPassword(input.password);
+    return tx.user.create({
+      data: {
+        email: input.email.toLowerCase(),
+        fullName: input.fullName,
+        passwordHash,
+        role: 'ADMIN',
+      },
+      select: users.publicUserSelect,
+    });
+  });
+
+  await writeCommittedUserCreatedAudit({
+    actorId: null,
+    action: 'USER_CREATED',
+    entityType: 'USER',
+    entityId: user.id,
+    newValues: { email: user.email, role: user.role, fullName: user.fullName, bootstrap: true },
+    req,
+  });
+
+  return user;
 }

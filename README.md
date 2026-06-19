@@ -88,8 +88,12 @@ flutter run -d chrome
 
 ## Backend Notes
 
-- Current backend phase focuses on authentication and role-based access.
-- Main auth endpoints are under `/api/v1/auth`.
+- Backend supports authentication, RBAC, patient records, dynamic assessment
+  forms, services/activities, and recipient-facing notifications.
+- Main auth endpoints are under `/api/v1/auth`; notification inbox, lifecycle,
+  booking request, and device-token endpoints are under `/api/v1/notifications`.
+- Mobile push through Firebase Cloud Messaging is optional and best-effort; the
+  notification document in MongoDB remains the source of truth.
 - Database schema is defined in `backend/prisma/schema.prisma`.
 
 For backend-only details, see `backend/README.md`.
