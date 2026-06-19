@@ -112,6 +112,7 @@ class ServiceRequestModel {
   final String requestDate;
   final String patientName;
   final String medicalNumber;
+  final bool patientIsActive;
   final PatientServiceModel? service;
 
   const ServiceRequestModel({
@@ -120,6 +121,7 @@ class ServiceRequestModel {
     required this.requestDate,
     required this.patientName,
     required this.medicalNumber,
+    required this.patientIsActive,
     this.service,
   });
 
@@ -127,29 +129,74 @@ class ServiceRequestModel {
     final serviceJson = json['service'];
     final patientJson = json['patient'] ?? json['user'];
 
+    String name = '';
+    String crn = '';
+    bool isActive = true;
+
+    if (patientJson is Map<String, dynamic>) {
+      final userJson = patientJson['user'];
+
+      name =
+          patientJson['fullName']?.toString() ??
+          patientJson['name']?.toString() ??
+          patientJson['displayName']?.toString() ??
+          '';
+
+      if (name.isEmpty && userJson is Map<String, dynamic>) {
+        name = userJson['fullName']?.toString() ?? '';
+      }
+
+      crn =
+          patientJson['crn']?.toString() ??
+          patientJson['medicalNumber']?.toString() ??
+          patientJson['medicalRecordNumber']?.toString() ??
+          '';
+
+      isActive =
+          patientJson['isActive'] == true ||
+          patientJson['isActive']?.toString().toLowerCase() == 'true';
+
+      if (userJson is Map<String, dynamic>) {
+        isActive =
+            userJson['isActive'] == true ||
+            userJson['isActive']?.toString().toLowerCase() == 'true';
+      }
+    }
+
     return ServiceRequestModel(
       id: json['id']?.toString() ?? '',
       status: json['status']?.toString() ?? 'PENDING',
-      requestDate:
-          (json['requestDate'] ?? json['createdAt'] ?? json['created_at'] ?? '')
-              .toString(),
-      patientName: patientJson is Map<String, dynamic>
-          ? (patientJson['name'] ??
-                    patientJson['fullName'] ??
-                    patientJson['displayName'] ??
-                    '')
-                .toString()
+      requestDate: (json['requestDate'] ?? json['createdAt'] ?? '').toString(),
+      patientName: name.isNotEmpty
+          ? name
           : (json['patientName'] ?? '').toString(),
-      medicalNumber: patientJson is Map<String, dynamic>
-          ? (patientJson['medicalNumber'] ??
-                    patientJson['crn'] ??
-                    patientJson['medicalRecordNumber'] ??
-                    '')
-                .toString()
-          : (json['medicalNumber'] ?? json['crn'] ?? '').toString(),
+      medicalNumber: crn.isNotEmpty
+          ? crn
+          : (json['medicalNumber'] ?? '').toString(),
+      patientIsActive: isActive,
       service: serviceJson is Map<String, dynamic>
           ? PatientServiceModel.fromJson(serviceJson)
           : null,
     );
   }
+  ServiceRequestModel copyWith({
+    String? id,
+    String? status,
+    String? requestDate,
+    String? patientName,
+    String? medicalNumber,
+    bool? patientIsActive,
+    PatientServiceModel? service,
+  }) {
+    return ServiceRequestModel(
+      id: id ?? this.id,
+      status: status ?? this.status,
+      requestDate: requestDate ?? this.requestDate,
+      patientName: patientName ?? this.patientName,
+      medicalNumber: medicalNumber ?? this.medicalNumber,
+      patientIsActive: patientIsActive ?? this.patientIsActive,
+      service: service ?? this.service,
+    );
+  }
+  
 }

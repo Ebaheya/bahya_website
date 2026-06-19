@@ -69,10 +69,9 @@ class _ChatBotCardState extends State<ChatBotCard>
   Widget build(BuildContext context) {
     final cardWidth = widget.w * 0.92;
     final cardHeight =
-        widget.h * 0.4; // الارتفاع الكلي لمنطقة الـ Stack ليعطي مساحة مريحة
+        widget.h * 0.4;
 
-    // 🛠️ هنا يمكنك التحكم في حجم الصورة (الروبوت) بالكامل
-    // تعديل هذا الرقم (0.42) يغير العرض والارتفاع مئوياً ليظل متناسقاً (Responsive)
+
     final botSize = widget.w * 0.53;
 
     return Center(
@@ -85,7 +84,6 @@ class _ChatBotCardState extends State<ChatBotCard>
             clipBehavior: Clip.none,
             alignment: Alignment.topCenter,
             children: [
-              // ---------------- جسم الكارت الخلفي ----------------
               Positioned(
                 top: 0,
                 left: 0,
@@ -150,15 +148,12 @@ class _ChatBotCardState extends State<ChatBotCard>
                 ),
               ),
 
-              // ---------------- الروبوت ----------------
-              // 🛠️ هنا يمكنك ضبط مكان الصورة رأسيًا (ارتفاع الشخصية)
-              // غيّر قيمة bottom (مثلا لـ 10 أو 20) لرفع الشخصية أو خفضها مقارنة بأسفل الكارت
               Positioned(
                 bottom: widget.h * 0.0075,
                 child: IgnorePointer(
                   child: SizedBox(
                     width:
-                        botSize, // الحجم يتم التحكم به من المتغير المكتوب في الأعلى
+                        botSize, 
                     height: botSize,
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 150),
@@ -181,9 +176,7 @@ class _ChatBotCardState extends State<ChatBotCard>
                 ),
               ),
 
-              // ---------------- زر "تحدثى الان" ----------------
-              // 🛠️ هنا يمكنك ضبط مكان الزر الأبيض تماماً ليلامس يد الروبوت المرفوعة
-              // بزيادة هذا الرقم (مثلاً 0.05) يرتفع الزر للأعلى، وبتقليله ينزل للأسفل
+
               Positioned(
                 bottom: widget.h * 0.175,
                 left: cardWidth * 0.06,

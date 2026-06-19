@@ -164,8 +164,11 @@ Widget serviceInfo({
   double? availableSeats,
   bool isAccepted = false,
   bool isUnderReview = false,
+  bool isRejected = false,
   bool isSupport = false,
   String? meetingPlace,
+  String? departureTime,
+  String? endDate,
   bool isTravel = false,
   bool isRequested = false,
   VoidCallback? onJoinPressed,
@@ -186,29 +189,63 @@ Widget serviceInfo({
           ? Icons.directions_bus_rounded
           : (isSupport ? Icons.groups_rounded : Icons.menu_book_rounded));
 
+  String statusText() {
+    if (isAccepted) {
+      return forAdmin ? 'تمت الموافقة على الطلب' : 'تمت الموافقة على طلبك';
+    }
+    if (isUnderReview) {
+      return forAdmin ? 'الطلب قيد المراجعة' : 'طلبك قيد المراجعة';
+    }
+    return forAdmin ? 'تم رفض الطلب' : 'تم رفض طلبك';
+  }
+
+  Color statusColor() {
+    if (isAccepted) return Colors.green;
+    if (isUnderReview) return Colors.orange;
+    return Colors.red;
+  }
+
+  Widget statusChip() {
+    return Container(
+      width: forAdmin ? double.infinity : null,
+      padding: EdgeInsets.symmetric(horizontal: w * 0.035, vertical: h * 0.01),
+      decoration: BoxDecoration(
+        color: statusColor().withOpacity(0.10),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: customText(
+        text: statusText(),
+        size: w * 0.031,
+        color: statusColor(),
+        bold: true,
+        maxLines: 1,
+      ),
+    );
+  }
+
   Widget infoRow({
     required IconData icon,
-    required String title,
+    required String label,
     required String value,
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: h * 0.01),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: w * 0.03, vertical: h * 0.012),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: mainColor.withOpacity(0.14)),
       ),
       child: Row(
         children: [
           Container(
-            width: h * 0.035,
-            height: h * 0.035,
+            width: h * 0.04,
+            height: h * 0.04,
             decoration: BoxDecoration(
               color: lightColor,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(11),
             ),
-            child: Icon(icon, color: mainColor, size: w * 0.04),
+            child: Icon(icon, color: mainColor, size: w * 0.045),
           ),
           SizedBox(width: w * 0.025),
           Expanded(
@@ -216,18 +253,18 @@ Widget serviceInfo({
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: _localizedText(title),
+                    text: _localizedText(label),
                     style: TextStyle(
-                      fontSize: w * 0.036,
+                      fontSize: w * 0.034,
                       color: Colors.grey[700],
                       fontFamily: 'ArabicCustomFont',
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   TextSpan(
-                    text: value,
+                    text: value.trim().isEmpty ? 'غير محدد' : value,
                     style: TextStyle(
-                      fontSize: w * 0.035,
+                      fontSize: w * 0.034,
                       color: mainColor,
                       fontFamily: 'ArabicCustomFont',
                       fontWeight: FontWeight.bold,
@@ -245,15 +282,16 @@ Widget serviceInfo({
   return Padding(
     padding: const EdgeInsets.all(8.0),
     child: Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(w * 0.04),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: mainColor.withOpacity(0.10)),
         boxShadow: [
           BoxShadow(
             color: mainColor.withOpacity(0.12),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            blurRadius: 22,
+            offset: const Offset(0, 9),
           ),
         ],
       ),
@@ -277,59 +315,51 @@ Widget serviceInfo({
                   size: w * 0.043,
                   bold: true,
                   color: const Color(0xff14213D),
-                  maxLines: 2,
+                  maxLines: 3,
                 ),
               ),
-              if (forAdmin)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isAccepted
-                        ? Colors.green[50]
-                        : (isUnderReview ? Colors.orange[50] : Colors.red[50]),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: customText(
-                    text: isAccepted
-                        ? "تمت الموافقة على الطلب"
-                        : (isUnderReview
-                              ? "الطلب قيد المراجعة"
-                              : "تم رفض الطلب"),
-                    size: w * 0.03,
-                    color: isAccepted
-                        ? Colors.green[800]
-                        : (isUnderReview
-                              ? Colors.orange[800]
-                              : Colors.red[800]),
-                  ),
-                ),
+              if (!forAdmin && isRequested) statusChip(),
             ],
           ),
-          SizedBox(height: h * 0.02),
+
+          if (forAdmin) ...[SizedBox(height: h * 0.014), statusChip()],
+
+          SizedBox(height: h * 0.018),
+
           infoRow(
             icon: Icons.calendar_month_rounded,
-            title: isTravel ? 'موعد الانطلاق: ' : 'التاريخ: ',
+            label: isTravel ? 'تاريخ الرحلة: ' : 'التاريخ: ',
             value: date,
           ),
+
+          if (isTravel && endDate != null && endDate.trim().isNotEmpty)
+            infoRow(
+              icon: Icons.event_available_rounded,
+              label: 'تاريخ النهاية: ',
+              value: endDate,
+            ),
+
           infoRow(
             icon: Icons.access_time_rounded,
-            title: isTravel ? 'المده: ' : 'الوقت: ',
-            value: time,
+            label: isTravel ? 'وقت الانطلاق: ' : 'الوقت: ',
+            value: isTravel && departureTime != null && departureTime.isNotEmpty
+                ? departureTime
+                : time,
           ),
+
           infoRow(
             icon: Icons.location_on_rounded,
-            title: isTravel ? "المكان: " : "الفرع: ",
+            label: isTravel ? 'الموقع أو الفرع: ' : 'الفرع: ',
             value: location,
           ),
+
           if (isTravel)
             infoRow(
               icon: Icons.directions_bus_rounded,
-              title: "موقع التجمع: ",
-              value: meetingPlace ?? "غير محدد",
+              label: 'مكان التجمع: ',
+              value: meetingPlace ?? '',
             ),
+
           if (!forAdmin) ...[
             Padding(
               padding: EdgeInsets.symmetric(vertical: h * 0.008),
@@ -339,65 +369,56 @@ Widget serviceInfo({
                 height: 1,
               ),
             ),
-            SizedBox(height: h * 0.012),
-          ],
-          if (isRequested && !forAdmin)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: isAccepted
-                    ? Colors.green[50]
-                    : (isUnderReview ? Colors.orange[50] : Colors.red[50]),
-                borderRadius: BorderRadius.circular(10),
+                color: isRequested
+                    ? statusColor().withOpacity(0.10)
+                    : lightColor,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: customText(
-                text: isAccepted
-                    ? "تمت الموافقة على طلبك"
-                    : (isUnderReview ? "طلبك قيد المراجعة" : "تم رفض طلبك"),
-                size: w * 0.033,
-                color: isAccepted
-                    ? Colors.green[800]
-                    : (isUnderReview ? Colors.orange[800] : Colors.red[800]),
-              ),
-            )
-          else if (!forAdmin)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-              decoration: BoxDecoration(
-                color: lightColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.groups_rounded, color: mainColor, size: w * 0.045),
-                  Expanded(
-                    child: customText(
-                      text: localeNotifier.isArabic
-                          ? "متاح ${availableSeats?.toStringAsFixed(0) ?? '0'} مقعد"
-                          : "${availableSeats?.toStringAsFixed(0) ?? '0'} seats available",
+              child: isRequested
+                  ? customText(
+                      text: statusText(),
                       size: w * 0.033,
-                      color: mainColor,
+                      color: statusColor(),
                       bold: true,
+                    )
+                  : Row(
+                      children: [
+                        Icon(
+                          Icons.groups_rounded,
+                          color: mainColor,
+                          size: w * 0.045,
+                        ),
+                        Expanded(
+                          child: customText(
+                            text: localeNotifier.isArabic
+                                ? 'متاح ${availableSeats?.toStringAsFixed(0) ?? '0'} مقعد'
+                                : '${availableSeats?.toStringAsFixed(0) ?? '0'} seats available',
+                            size: w * 0.033,
+                            color: mainColor,
+                            bold: true,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+            ),
+            SizedBox(height: h * 0.012),
+            if (!isRequested)
+              CustomGlowButton(
+                title: 'الانضمام الآن',
+                width: double.infinity,
+                height: h * 0.052,
+                textSize: w * 0.035,
+                glowColor: mainColor.withOpacity(0.45),
+                backgroundColor: mainColor,
+                textColor: Colors.white,
+                borderRadius: 10,
+                onPressed: onJoinPressed ?? () {},
               ),
-            ),
-          SizedBox(height: h * 0.012),
-          if (!isRequested && !forAdmin)
-            CustomGlowButton(
-              title: "الانضمام الآن",
-              width: double.infinity,
-              height: h * 0.052,
-              textSize: w * 0.035,
-              glowColor: mainColor.withOpacity(0.45),
-              backgroundColor: mainColor,
-              textColor: Colors.white,
-              borderRadius: 10,
-              onPressed: onJoinPressed ?? () {},
-            ),
+          ],
         ],
       ),
     ),

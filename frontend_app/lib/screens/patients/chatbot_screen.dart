@@ -76,7 +76,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
                               "ألم الرأس قد يكون بسبب التوتر، قلة النوم أو الجفاف.\n\nأنصحك بـ:\n✓ شرب كمية كافية من الماء\n✓ أخذ قسط من الراحة\n✓ تجنب الشاشات لفترات طويلة\n\nإذا استمر الألم، يفضل استشارة الطبيب.",
                           time: "07:21 PM",
                         ),
-                        // مساحة سفلية إضافية مريحة لتجنب تداخل السكرول مع الروبوت
+
                         SizedBox(height: responsiveHeight(context, 0.15)),
                       ],
                     ),
@@ -87,7 +87,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
             ),
 
             Positioned(
-              left: 0,
+              left: -70,
               bottom: getScreenHeight(context) * 0.4,
               child: InteractiveBotCharacter(responsiveSize: botSize),
             ),
@@ -447,7 +447,6 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
   }
 }
 
-// --- الويدجيت المعدل: أنيميشن رأسي فائق السرعة وخاطف ---
 class InteractiveBotCharacter extends StatefulWidget {
   final double responsiveSize;
 
@@ -480,12 +479,9 @@ class _InteractiveBotCharacterState extends State<InteractiveBotCharacter>
     super.initState();
     _slideController = AnimationController(
       vsync: this,
-      duration: const Duration(
-        milliseconds: 150,
-      ), // تسريع الأنيميشن بشكل ملحوظ ليكون خاطفاً وفورياً
+      duration: const Duration(milliseconds: 150),
     );
 
-    // حركة قصيرة ناعمة لأسفل
     _slideAnimation = Tween<Offset>(
       begin: Offset.zero,
       end: const Offset(0.0, 0.3),
@@ -495,16 +491,13 @@ class _InteractiveBotCharacterState extends State<InteractiveBotCharacter>
   void _handleTap() async {
     if (_slideController.isAnimating || _isHiMode) return;
 
-    // 1. إخفاء فقاعة الكلام فوراً
     setState(() {
       _showSupportBubble = false;
     });
     _bubbleTimer?.cancel();
 
-    // نزول سريع جداً لأسفل
     await _slideController.forward();
 
-    // 2. تغيير الصورة والرسالة خلف الكواليس فوراً وهو بالأسفل
     if (mounted) {
       setState(() {
         _isHiMode = true;
@@ -513,7 +506,6 @@ class _InteractiveBotCharacterState extends State<InteractiveBotCharacter>
       });
     }
 
-    // 3. صعود سريع جداً مع ارتداد خفيف وممتع للاستقرار
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0.0, 0.3), end: Offset.zero).animate(
           CurvedAnimation(parent: _slideController, curve: Curves.easeOutBack),
@@ -522,21 +514,18 @@ class _InteractiveBotCharacterState extends State<InteractiveBotCharacter>
     _slideController.reset();
     await _slideController.forward();
 
-    // 4. إظهار فقاعة رسالة الدعم الجديدة
     if (mounted) {
       setState(() {
         _showSupportBubble = true;
       });
     }
 
-    // 5. مؤقت للعودة للهيئة الطبيعية الأولى بعد 4.5 ثانية
     _bubbleTimer = Timer(const Duration(milliseconds: 4500), () async {
       if (mounted) {
         setState(() {
           _showSupportBubble = false;
         });
 
-        // نزول سريع وخاطف
         _slideAnimation =
             Tween<Offset>(
               begin: Offset.zero,
@@ -554,7 +543,6 @@ class _InteractiveBotCharacterState extends State<InteractiveBotCharacter>
           });
         }
 
-        // صعود فوري ومستقر للوضعية الافتراضية
         _slideAnimation =
             Tween<Offset>(
               begin: const Offset(0.0, 0.3),
@@ -582,14 +570,13 @@ class _InteractiveBotCharacterState extends State<InteractiveBotCharacter>
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // الفقاعة المنبثقة
         AnimatedOpacity(
           opacity: _showSupportBubble ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 150),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             transform: Matrix4.translationValues(
-              0,
+              80,
               _showSupportBubble ? 0 : 5,
               0,
             ),
@@ -625,7 +612,6 @@ class _InteractiveBotCharacterState extends State<InteractiveBotCharacter>
           ),
         ),
 
-        // الروبوت التفاعلي بالسرعة الجديدة
         GestureDetector(
           onTap: _handleTap,
           child: SlideTransition(
@@ -635,7 +621,7 @@ class _InteractiveBotCharacterState extends State<InteractiveBotCharacter>
               height: widget.responsiveSize,
               alignment: Alignment.bottomLeft,
               child: Image.asset(
-                _isHiMode ? 'assets/bot/bot_hi.png' : 'assets/bot/bot.png',
+                _isHiMode ? 'assets/bot/bot_hi_1.png' : 'assets/bot/bot.png',
                 fit: BoxFit.contain,
               ),
             ),

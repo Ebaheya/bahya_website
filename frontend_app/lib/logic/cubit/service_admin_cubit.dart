@@ -132,7 +132,51 @@ class ServiceAdminCubit extends Cubit<ServiceAdminState> {
       emit(state.copyWith(isSaving: false, error: 'حدث خطأ أثناء رفض الطلب.'));
     }
   }
+Future<void> loadPatientRequestsDetails() async {
+    if (isClosed) return;
 
+    emit(state.copyWith(isLoading: true, clearError: true));
+
+    try {
+      final requests = await repo.getServiceRequests(pageSize: 100);
+      final services = await repo.getServices(pageSize: 100);
+
+      final hydratedRequests = requests.map((request) {
+        final requestServiceId = request.service?.id ?? '';
+
+        final matchedService = services
+            .where((service) {
+              return service.id == requestServiceId;
+            })
+            .cast<PatientServiceModel?>()
+            .firstOrNull;
+
+        if (matchedService == null) return request;
+
+        return request.copyWith(service: matchedService);
+      }).toList();
+
+      if (isClosed) return;
+
+      emit(
+        state.copyWith(
+          isLoading: false,
+          requests: hydratedRequests,
+          services: services,
+        ),
+      );
+    } catch (_) {
+      if (isClosed) return;
+
+      emit(
+        state.copyWith(
+          isLoading: false,
+          requests: const [],
+          error: 'حدث خطأ أثناء تحميل طلبات المريضات.',
+        ),
+      );
+    }
+  }
   void selectCategory(ServiceCategoryModel? category) {
     if (isClosed) return;
     emit(state.copyWith(selectedCategory: category, clearError: true));

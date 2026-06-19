@@ -275,7 +275,6 @@ class _DynamicCategoriesSection extends StatelessWidget {
               onTap: () {
                 debugPrint('[Home] clicked category id=${category.id}');
                 debugPrint('[Home] clicked category name=${category.name}');
-
                 Navigator.pushNamed(
                   context,
                   '/servicesScreen',
@@ -283,6 +282,7 @@ class _DynamicCategoriesSection extends StatelessWidget {
                     'categoryId': category.id.trim(),
                     'title': category.name,
                     'subTitle': 'اختاري ما يناسبك وانضمي الآن',
+                    'iconKey': category.iconKey.trim(),
                   },
                 );
               },

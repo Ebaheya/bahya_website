@@ -272,6 +272,7 @@ class _ServiceFormCard extends StatelessWidget {
       padding: EdgeInsets.all(w * 0.045),
       decoration: BoxDecoration(
         color: Colors.white,
+        border: Border.all(color: Colors.red),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
@@ -287,9 +288,33 @@ class _ServiceFormCard extends StatelessWidget {
             value: selectedCategory,
             isExpanded: true,
             decoration: InputDecoration(
-              labelText: context.tr('اختر نوع الخدمه'),
+              hintText: context.tr('اختر نوع الخدمه'),
+              hintStyle: TextStyle(
+                color: Colors.black,
+                fontSize: responsiveSize(context, 0.04, min: 14, max: 18),
+                fontFamily: 'ArabicCustomFont',
+              ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Colors.grey, width: 1.2),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: Color(0xFFFF7BB0),
+                  width: 1.5,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: Color(0xFFFF7BB0),
+                  width: 1.5,
+                ),
+              ),
+              errorStyle: TextStyle(
+                fontFamily: 'ArabicCustomFont',
+                fontSize: responsiveSize(context, 0.032, min: 11, max: 14),
               ),
             ),
             items: categories

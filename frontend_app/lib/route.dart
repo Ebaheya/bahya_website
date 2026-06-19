@@ -42,7 +42,8 @@ class AuthNotifier extends ChangeNotifier {
     if (isPatient) return '/formGate';
     return '/unauthorized';
   }
-Future<void> checkLogin() async {
+
+  Future<void> checkLogin() async {
     _isLoading = true;
     notifyListeners();
 
@@ -189,7 +190,7 @@ class AppRoute {
           ),
         );
 
-    case '/servicesScreen':
+      case '/servicesScreen':
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const ServicesScreen(),
@@ -215,7 +216,14 @@ class AppRoute {
         );
 
       case '/patientsSearch':
-        return MaterialPageRoute(builder: (_) => const PatientsSearch());
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) =>
+                ServiceAdminCubit(AppRepository())
+                  ..loadPatientRequestsDetails(),
+            child: const PatientsSearch(),
+          ),
+        );
       case '/addCategory':
         return MaterialPageRoute(
           builder: (_) => BlocProvider(
@@ -226,9 +234,14 @@ class AppRoute {
 
       case '/chatbotScreen':
         return MaterialPageRoute(builder: (_) => const ChatBotScreen());
+
       case '/patientRequestsDetails':
         return MaterialPageRoute(
-          builder: (_) => const PatientRequestsDetails(),
+          settings: settings,
+          builder: (_) => BlocProvider(
+            create: (_) => ServiceAdminCubit(AppRepository()),
+            child: const PatientRequestsDetails(),
+          ),
         );
 
       case '/articleDetails':
@@ -280,7 +293,7 @@ class AppRoute {
           ),
         );
 
-     case '/formGate':
+      case '/formGate':
         if (!authNotifier.isPatient) {
           return MaterialPageRoute(builder: (_) => _screenForHomeRoute());
         }

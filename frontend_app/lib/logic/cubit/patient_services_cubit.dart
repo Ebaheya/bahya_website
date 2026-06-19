@@ -1,3 +1,4 @@
+import 'package:bahya_app/data/models/service_models.dart';
 import 'package:bahya_app/data/remote/repo/repo.dart';
 import 'package:bahya_app/logic/state/patient_services_state.dart';
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,64 @@ class PatientServicesCubit extends Cubit<PatientServicesState> {
   PatientServicesCubit(this.repo) : super(const PatientServicesState());
 
   final AppRepository repo;
+
+  Future<void> loadMyRequests() async {
+    if (isClosed) return;
+
+    emit(state.copyWith(isLoading: true, hasLoaded: false, clearError: true));
+
+    try {
+      final requests = await repo.getMyServiceRequests();
+
+      final hydratedRequests = await Future.wait(
+        requests.map((request) async {
+          final service = request.service;
+
+          if (service == null || service.id.trim().isEmpty) {
+            return request;
+          }
+
+          final hasFullCategory =
+              service.category != null &&
+              service.category!.iconKey.trim().isNotEmpty &&
+              service.category!.color.trim().isNotEmpty;
+
+          if (hasFullCategory) {
+            return request;
+          }
+
+          try {
+            final fullService = await repo.getServiceDetails(service.id);
+            return request.copyWith(service: fullService);
+          } catch (_) {
+            return request;
+          }
+        }),
+      );
+
+      if (isClosed) return;
+
+      emit(
+        state.copyWith(
+          isLoading: false,
+          hasLoaded: true,
+          requests: hydratedRequests,
+        ),
+      );
+    } catch (e) {
+      if (isClosed) return;
+
+      debugPrint('[PatientServices] my requests error: $e');
+
+      emit(
+        state.copyWith(
+          isLoading: false,
+          hasLoaded: true,
+          error: 'حدث خطأ أثناء تحميل طلباتك.',
+        ),
+      );
+    }
+  }
 
 Future<void> loadServices({required String categoryId, String? q}) async {
     if (isClosed) return;
@@ -44,6 +103,15 @@ Future<void> loadServices({required String categoryId, String? q}) async {
       final myRequests = await repo.getMyServiceRequests();
       if (isClosed) return;
 
+      final requestedServiceIds = myRequests
+          .where((request) {
+            final status = request.status.trim().toUpperCase();
+            return status != 'CANCELLED' && status != 'REJECTED';
+          })
+          .map((request) => request.service?.id.trim() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet();
+
       final filteredServices = allServices.where((service) {
         final serviceCategoryId = service.categoryId.trim();
         final nestedCategoryId = service.category?.id.trim() ?? '';
@@ -54,12 +122,21 @@ Future<void> loadServices({required String categoryId, String? q}) async {
                 nestedCategoryId == selectedCategoryId);
       }).toList();
 
+      final sortedServices = [...filteredServices]
+        ..sort((a, b) {
+          final aRequested = requestedServiceIds.contains(a.id.trim());
+          final bRequested = requestedServiceIds.contains(b.id.trim());
+
+          if (aRequested == bRequested) return 0;
+          return aRequested ? 1 : -1;
+        });
+
       emit(
         state.copyWith(
           isLoading: false,
           hasLoaded: true,
           categories: categories,
-          services: filteredServices,
+          services: sortedServices,
           requests: myRequests,
         ),
       );
@@ -103,16 +180,7 @@ Future<void> loadServices({required String categoryId, String? q}) async {
       await repo.requestService(serviceId);
       if (isClosed) return;
 
-      final myRequests = await repo.getMyServiceRequests();
-      if (isClosed) return;
-
-      emit(
-        state.copyWith(
-          isSubmitting: false,
-          hasLoaded: true,
-          requests: myRequests,
-        ),
-      );
+      await loadServices(categoryId: categoryId);
     } catch (e) {
       if (isClosed) return;
 
@@ -122,32 +190,6 @@ Future<void> loadServices({required String categoryId, String? q}) async {
         state.copyWith(
           isSubmitting: false,
           error: 'حدث خطأ أثناء إرسال طلب الانضمام.',
-        ),
-      );
-    }
-  }
-  Future<void> loadMyRequests() async {
-    if (isClosed) return;
-
-    emit(state.copyWith(isLoading: true, hasLoaded: false, clearError: true));
-
-    try {
-      final requests = await repo.getMyServiceRequests();
-      if (isClosed) return;
-
-      emit(
-        state.copyWith(isLoading: false, hasLoaded: true, requests: requests),
-      );
-    } catch (e) {
-      if (isClosed) return;
-
-      debugPrint('[PatientServices] my requests error: $e');
-
-      emit(
-        state.copyWith(
-          isLoading: false,
-          hasLoaded: true,
-          error: 'حدث خطأ أثناء تحميل طلباتك.',
         ),
       );
     }
@@ -162,17 +204,7 @@ Future<void> loadServices({required String categoryId, String? q}) async {
       await repo.cancelServiceRequest(requestId);
       if (isClosed) return;
 
-      final requests = await repo.getMyServiceRequests();
-      if (isClosed) return;
-
-      emit(
-        state.copyWith(
-          isSubmitting: false,
-          isLoading: false,
-          hasLoaded: true,
-          requests: requests,
-        ),
-      );
+      await loadMyRequests();
     } catch (e) {
       if (isClosed) return;
 
