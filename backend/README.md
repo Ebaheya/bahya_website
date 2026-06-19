@@ -2545,7 +2545,12 @@ The reporter join is not filtered by `isActive`, so reports from deactivated use
 #### `PATCH /reports/:id/status`
 
 Changes status, sets `handledBy`/`handledAt`, and emits `REPORT_STATUS_CHANGED`.
-Setting the current status is a no-op; concurrent changes are last-write-wins.
+
+Status moves **forward only**: `PENDING → INVESTIGATING → RESOLVED`. Setting the
+current status is a no-op (returns `200`). A backward or skip-back change (e.g.
+reopening a `RESOLVED` report) is rejected. Updates use a compare-and-set guard,
+so if another admin changes the row first the losing request gets a conflict
+rather than silently overwriting — clients should reload and retry.
 
 **Auth:** Bearer token. **Roles:** ADMIN.
 
@@ -2555,7 +2560,12 @@ Setting the current status is a no-op; concurrent changes are last-write-wins.
 
 **Response 200** — the updated report (detail shape).
 
-**Errors:** `400 VALIDATION_ERROR` (invalid status); `404 NOT_FOUND`.
+**Errors:**
+- `400 VALIDATION_ERROR` — invalid/unknown status value.
+- `404 NOT_FOUND` — `REPORT_NOT_FOUND`; no report with that id.
+- `409 REPORT_INVALID_STATUS_TRANSITION` — illegal transition (backward / reopen).
+- `409 REPORT_STATUS_CONFLICT` — another admin changed the report concurrently;
+  reload and retry.
 
 ---
 

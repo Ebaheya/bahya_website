@@ -209,7 +209,7 @@
               "path": ["api", "v1", "reports", "{{reportId}}", "status"]
             },
             "body": { "mode": "raw", "raw": "{\n  \"status\": \"INVESTIGATING\"\n}" },
-            "description": "Move PENDING -> INVESTIGATING -> RESOLVED. Records handledBy/handledAt and emits REPORT_STATUS_CHANGED audit. Last-write-wins; setting the current status is a no-op."
+            "description": "Move forward only PENDING -> INVESTIGATING -> RESOLVED. Records handledBy/handledAt and emits REPORT_STATUS_CHANGED audit. Setting the current status is a no-op (200). Errors: 409 REPORT_INVALID_STATUS_TRANSITION on a backward/reopen attempt; 409 REPORT_STATUS_CONFLICT when another admin changes the report first (compare-and-set; reload and retry); 404 REPORT_NOT_FOUND; 400 VALIDATION_ERROR."
           }
         },
         {
