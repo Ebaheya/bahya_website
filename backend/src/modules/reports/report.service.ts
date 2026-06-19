@@ -200,17 +200,20 @@ export async function changeStatus(
     throw ReportErrors.statusConflict();
   }
 
-  const updated = await getDetailOrThrow(id);
-
+  // Audit the transition this request actually performed. The compare-and-set
+  // above guarantees we moved the row from `existing.status` to `status`; the
+  // reread below is only for the response and may already reflect a later
+  // concurrent transition, so it must NOT be the source of the audit values.
   await writeAudit({
     actorId,
     action: 'REPORT_STATUS_CHANGED',
     entityType: 'REPORT',
     entityId: id,
     oldValues: { status: existing.status },
-    newValues: { status: updated.status },
+    newValues: { status },
     req,
   });
 
+  const updated = await getDetailOrThrow(id);
   return toDetail(updated);
 }
