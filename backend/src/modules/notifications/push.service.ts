@@ -23,6 +23,12 @@ const STALE_TOKEN_CODES = new Set([
 // the push for every recipient.
 const FCM_MULTICAST_LIMIT = 500;
 
+// Must match the Android notification channel the app creates and declares as the
+// FCM default (`com.google.firebase.messaging.default_notification_channel_id`).
+// Without a high-importance channel + high priority, a push to a terminated/dozing
+// device lands on a silent fallback channel or is deferred and never surfaces.
+const ANDROID_NOTIFICATION_CHANNEL_ID = 'default_channel';
+
 function chunk<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < items.length; i += size) {
@@ -71,18 +77,26 @@ function buildMessage(doc: PushableNotification, tokens: string[]): MulticastMes
       type: doc.type,
     },
     android: {
+      // High priority wakes a terminated/dozing device so the alert is shown
+      // immediately rather than batched by the OS.
+      priority: 'high',
       notification: {
         titleLocKey: keys.titleLocKey,
         bodyLocKey: keys.bodyLocKey,
+        channelId: ANDROID_NOTIFICATION_CHANNEL_ID,
+        defaultSound: true,
       },
     },
     apns: {
+      // apns-priority 10 = deliver immediately (alert).
+      headers: { 'apns-priority': '10' },
       payload: {
         aps: {
           alert: {
             titleLocKey: keys.titleLocKey,
             locKey: keys.bodyLocKey,
           },
+          sound: 'default',
         },
       },
     },

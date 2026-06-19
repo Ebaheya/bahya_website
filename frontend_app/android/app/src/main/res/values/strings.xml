@@ -1,4 +1,22 @@
 <resources>
+    <!-- One pair per backend NotificationType. The OS resolves these loc keys
+         when the app is backgrounded/terminated (Dart does not run then), so every
+         type the backend emits must be defined here or the banner shows empty. -->
+    <string name="NOTIFICATION_FORM_ASSIGNED_TITLE">New questionnaire</string>
+    <string name="NOTIFICATION_FORM_ASSIGNED_BODY">A new questionnaire has been assigned to you</string>
+
+    <string name="NOTIFICATION_HIGH_RISK_TITLE">High-risk alert</string>
+    <string name="NOTIFICATION_HIGH_RISK_BODY">A patient needs immediate attention</string>
+
+    <string name="NOTIFICATION_BOOKING_REQUIRED_TITLE">Booking required</string>
+    <string name="NOTIFICATION_BOOKING_REQUIRED_BODY">A patient needs a booking</string>
+
+    <string name="NOTIFICATION_DOCTOR_REVIEW_TITLE">Doctor review needed</string>
+    <string name="NOTIFICATION_DOCTOR_REVIEW_BODY">A case is waiting for your review</string>
+
+    <string name="NOTIFICATION_FOLLOW_UP_REQUIRED_TITLE">Follow-up required</string>
+    <string name="NOTIFICATION_FOLLOW_UP_REQUIRED_BODY">A patient needs a follow-up</string>
+
     <string name="NOTIFICATION_SERVICE_REQUEST_SUBMITTED_TITLE">New service request</string>
     <string name="NOTIFICATION_SERVICE_REQUEST_SUBMITTED_BODY">A patient sent a new service request</string>
 

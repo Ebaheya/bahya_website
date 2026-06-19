@@ -90,9 +90,12 @@ describe('pushForNotification', () => {
           type: 'SERVICE_REQUEST_DECIDED',
         },
         android: {
+          priority: 'high',
           notification: {
             titleLocKey: 'NOTIFICATION_SERVICE_REQUEST_DECIDED_TITLE',
             bodyLocKey: 'NOTIFICATION_SERVICE_REQUEST_DECIDED_BODY',
+            channelId: 'default_channel',
+            defaultSound: true,
           },
         },
       })
