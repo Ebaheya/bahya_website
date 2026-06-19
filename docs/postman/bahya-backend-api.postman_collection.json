@@ -1,0 +1,468 @@
+{
+  "info": {
+    "name": "Bahya Backend API (Full)",
+    "_postman_id": "b0a1d5e2-0006-4f00-9a00-bahyafull0001",
+    "description": "Complete collection for the Bahya backend (`/api/v1`): health, auth, patients, users, volunteers, dynamic assessment forms, form assignments, assessments, and patient services & activities (categories, services, requests).\n\nUsage:\n1. Set the `baseUrl` variable (defaults to http://localhost:3000/api/v1).\n2. Bootstrap the first admin via Auth > Register first admin (bootstrap). Set `bootstrapSecret` to match the server's `BOOTSTRAP_SECRET` in backend/.env. This only works once, on a fresh DB with no admin; if an admin already exists it returns 403 by design — use an existing account and skip to Login.\n3. Run Auth > Login — the test script saves `accessToken` and `refreshToken` automatically. Login uses `{{password}}` (default ChangeMe123!). All protected requests inherit `Bearer {{accessToken}}` from collection auth.\n4. To exercise role-specific routes, log in as the appropriate role and re-run Login.\n\nIdempotency: Auth > Change password rotates `{{password}}` -> `{{newPassword}}`, then Auth > Revert password rotates it back, so the account password is unchanged after a full run and the collection can be re-run. Note the auth endpoints are rate-limited (10 req / 60s); space out repeated full runs.\n\nRoles per route follow the server's `authorize(...)` guards and Constitution v2.1.0 RBAC.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "bootstrapSecret", "value": "<set to backend/.env BOOTSTRAP_SECRET>" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "password", "value": "ChangeMe123!" },
+    { "key": "newPassword", "value": "NewPass123!" },
+    { "key": "patientId", "value": "" },
+    { "key": "patientUserId", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "formId", "value": "" },
+    { "key": "version", "value": "1" },
+    { "key": "assignmentId", "value": "" },
+    { "key": "submissionId", "value": "" },
+    { "key": "assessmentId", "value": "" },
+    { "key": "categoryId", "value": "" },
+    { "key": "serviceId", "value": "" },
+    { "key": "requestId", "value": "" },
+    { "key": "notificationId", "value": "" },
+    { "key": "deviceToken", "value": "fcm-demo-token" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register first admin (bootstrap)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-bootstrap-secret", "value": "{{bootstrapSecret}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Root Admin\",\n  \"email\": \"admin@bahya.health\",\n  \"password\": \"ChangeMe123!\",\n  \"role\": \"ADMIN\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/register-staff", "host": ["{{baseUrl}}"], "path": ["auth", "register-staff"] },
+            "description": "Creates the first ADMIN when no admin exists, authorized by the x-bootstrap-secret header. After bootstrap, an authenticated ADMIN uses the same endpoint (without the header) to create staff."
+          }
+        },
+        {
+          "name": "Register staff (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Dr. Ahmed\",\n  \"email\": \"doctor@bahya.health\",\n  \"password\": \"ChangeMe123!\",\n  \"role\": \"DOCTOR\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/register-staff", "host": ["{{baseUrl}}"], "path": ["auth", "register-staff"] },
+            "description": "ADMIN only. Roles: ADMIN, DOCTOR, VOLUNTEER, CALL_CENTER."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "pm.test('has tokens', function () { pm.expect(json.accessToken).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@bahya.health\",\n  \"password\": \"{{password}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Public. Saves accessToken + refreshToken to collection variables."
+          }
+        },
+        {
+          "name": "Refresh token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/change-password", "host": ["{{baseUrl}}"], "path": ["auth", "change-password"] },
+            "description": "Authenticated user changes own password ({{password}} -> {{newPassword}}). Paired with Revert password to keep the run idempotent."
+          }
+        },
+        {
+          "name": "Revert password",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"{{newPassword}}\",\n  \"newPassword\": \"{{password}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/change-password", "host": ["{{baseUrl}}"], "path": ["auth", "change-password"] },
+            "description": "Reverts the Change password step ({{newPassword}} -> {{password}}) so the account password is unchanged after a full run and Login keeps working on re-runs."
+          }
+        },
+        {
+          "name": "Forgot password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"patient@example.com\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth", "forgot-password"] }
+          }
+        },
+        {
+          "name": "Reset password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"<reset-token-from-email>\",\n  \"newPassword\": \"NewPass123!\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["auth", "reset-password"] }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients",
+      "item": [
+        {
+          "name": "Create patient (Admin, Call Center)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json(); if (j.id) pm.collectionVariables.set('patientId', j.id); if (j.userId) pm.collectionVariables.set('patientUserId', j.userId);"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Sara Ali\",\n  \"email\": \"sara@example.com\",\n  \"password\": \"ChangeMe123!\",\n  \"crn\": \"PT-2504\",\n  \"phone\": \"+201234567890\",\n  \"dateOfBirth\": \"1995-04-12\",\n  \"gender\": \"FEMALE\",\n  \"emergencyContactName\": \"Mother\",\n  \"emergencyContactPhone\": \"+201112223334\",\n  \"medicalHistory\": { \"comorbidities\": [\"Diabetes\"], \"drugs\": [\"Tamoxifen 20mg daily\"], \"familyHistory\": \"Yes - breast cancer\" },\n  \"bmi\": 27.4,\n  \"menopausalStatus\": \"POST_MENOPAUSAL\",\n  \"dateOfDiagnosis\": \"2024-11-10\",\n  \"stageAtDiagnosis\": \"STAGE_II\",\n  \"diseaseStatus\": \"ACTIVE_TREATMENT\",\n  \"tumorBiology\": \"LUMINAL_A\",\n  \"surgery\": \"BREAST_CONSERVATIVE\",\n  \"chemotherapy\": \"ADJUVANT\",\n  \"radiotherapy\": true,\n  \"hormonalTherapy\": true,\n  \"targetedTherapy\": false,\n  \"immunotherapy\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/patients", "host": ["{{baseUrl}}"], "path": ["patients"] }
+          }
+        },
+        {
+          "name": "List patients (Admin, Doctor, Call Center, Volunteer)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients?q=&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["patients"],
+              "query": [
+                { "key": "q", "value": "" },
+                { "key": "phone", "value": "", "disabled": true },
+                { "key": "diseaseStatus", "value": "ACTIVE_TREATMENT", "disabled": true },
+                { "key": "tumorBiology", "value": "LUMINAL_A", "disabled": true },
+                { "key": "surgery", "value": "MASTECTOMY", "disabled": true },
+                { "key": "chemotherapy", "value": "ADJUVANT", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List patient options (Admin, Doctor)",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/patients/options", "host": ["{{baseUrl}}"], "path": ["patients", "options"] } }
+        },
+        {
+          "name": "Get patient by id (Admin, Doctor, Call Center, Volunteer, owner)",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/patients/{{patientId}}", "host": ["{{baseUrl}}"], "path": ["patients", "{{patientId}}"] } }
+        },
+        {
+          "name": "Get patient timeline (Admin, Doctor)",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/patients/{{patientId}}/timeline", "host": ["{{baseUrl}}"], "path": ["patients", "{{patientId}}", "timeline"] } }
+        },
+        {
+          "name": "Update patient (Admin, Call Center; Doctor clinical-only)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"diseaseStatus\": \"FOLLOW_UP\",\n  \"medicalHistory\": { \"comorbidities\": [\"Diabetes\", \"Hypertension\"] }\n}" },
+            "url": { "raw": "{{baseUrl}}/patients/{{patientId}}", "host": ["{{baseUrl}}"], "path": ["patients", "{{patientId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users (Admin only)",
+      "item": [
+        { "name": "List users", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/users?q=&page=1&pageSize=20", "host": ["{{baseUrl}}"], "path": ["users"], "query": [{ "key": "q", "value": "" }, { "key": "role", "value": "DOCTOR", "disabled": true }, { "key": "page", "value": "1" }, { "key": "pageSize", "value": "20" }] } } },
+        { "name": "Get user by id", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] } } },
+        { "name": "Update user (incl. admin password reset)", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"fullName\": \"Dr. Ahmed M.\",\n  \"newPassword\": \"NewPass123!\"\n}" }, "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] } } },
+        { "name": "Set user status", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"isActive\": false\n}" }, "url": { "raw": "{{baseUrl}}/users/{{userId}}/status", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}", "status"] } } },
+        { "name": "Trigger password reset", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/users/{{userId}}/trigger-reset", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}", "trigger-reset"] } } }
+      ]
+    },
+    {
+      "name": "Volunteers (Doctor, Admin)",
+      "item": [
+        { "name": "List volunteer options", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/volunteers", "host": ["{{baseUrl}}"], "path": ["volunteers"] } } }
+      ]
+    },
+    {
+      "name": "Forms (Doctor, Admin)",
+      "item": [
+        {
+          "name": "Create form",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json(); if (j.id) pm.collectionVariables.set('formId', j.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"key\": \"CLINIC_INTAKE\",\n  \"name\": \"Clinic Intake Distress Check\",\n  \"category\": \"Distress\",\n  \"scoringType\": \"SUM\",\n  \"interpretationMode\": \"RANGE\",\n  \"questions\": [\n    {\n      \"order\": 1,\n      \"text\": \"Over the last 2 weeks, how often have you felt down?\",\n      \"subscale\": null,\n      \"required\": true,\n      \"choices\": [\n        { \"order\": 1, \"label\": \"Not at all\", \"score\": 0 },\n        { \"order\": 2, \"label\": \"Several days\", \"score\": 1 },\n        { \"order\": 3, \"label\": \"More than half the days\", \"score\": 2 },\n        { \"order\": 4, \"label\": \"Nearly every day\", \"score\": 3 }\n      ]\n    }\n  ],\n  \"scoreRanges\": [\n    { \"subscale\": null, \"label\": \"Normal\", \"minScore\": 0, \"maxScore\": 1 },\n    { \"subscale\": null, \"label\": \"Moderate\", \"minScore\": 2, \"maxScore\": 2 },\n    { \"subscale\": null, \"label\": \"Severe\", \"minScore\": 3, \"maxScore\": 3 }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/forms", "host": ["{{baseUrl}}"], "path": ["forms"] }
+          }
+        },
+        { "name": "List forms", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/forms?isActive=true", "host": ["{{baseUrl}}"], "path": ["forms"], "query": [{ "key": "isActive", "value": "true" }, { "key": "isDefault", "value": "true", "disabled": true }, { "key": "category", "value": "", "disabled": true }, { "key": "q", "value": "", "disabled": true }] } } },
+        { "name": "Get form by id", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/forms/{{formId}}", "host": ["{{baseUrl}}"], "path": ["forms", "{{formId}}"] } } },
+        { "name": "List form versions", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/forms/{{formId}}/versions", "host": ["{{baseUrl}}"], "path": ["forms", "{{formId}}", "versions"] } } },
+        { "name": "Get form version", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/forms/{{formId}}/versions/{{version}}", "host": ["{{baseUrl}}"], "path": ["forms", "{{formId}}", "versions", "{{version}}"] } } },
+        { "name": "Update form (edit structure / new version)", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Clinic Intake Distress Check (v2)\",\n  \"scoringType\": \"SUM\",\n  \"interpretationMode\": \"RANGE\",\n  \"questions\": [],\n  \"scoreRanges\": []\n}" }, "url": { "raw": "{{baseUrl}}/forms/{{formId}}", "host": ["{{baseUrl}}"], "path": ["forms", "{{formId}}"] } } },
+        { "name": "Publish current draft version", "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/forms/{{formId}}/publish-version", "host": ["{{baseUrl}}"], "path": ["forms", "{{formId}}", "publish-version"] } } },
+        { "name": "Set form status (activate/deactivate)", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"isActive\": false\n}" }, "url": { "raw": "{{baseUrl}}/forms/{{formId}}/status", "host": ["{{baseUrl}}"], "path": ["forms", "{{formId}}", "status"] } } },
+        {
+          "name": "Publish form (assign)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json(); const a = Array.isArray(j) ? j[0] : j; if (a && a.id) pm.collectionVariables.set('assignmentId', a.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"target\": \"SINGLE_PATIENT\",\n  \"patientId\": \"{{patientId}}\",\n  \"publishAt\": null\n}" },
+            "url": { "raw": "{{baseUrl}}/forms/{{formId}}/publish", "host": ["{{baseUrl}}"], "path": ["forms", "{{formId}}", "publish"] },
+            "description": "target: SINGLE_PATIENT | ALL_PATIENTS | VOLUNTEER_FOR_PATIENT (the last also needs volunteerId). publishAt null = immediate."
+          }
+        },
+        { "name": "List form assignments", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/forms/{{formId}}/assignments", "host": ["{{baseUrl}}"], "path": ["forms", "{{formId}}", "assignments"] } } }
+      ]
+    },
+    {
+      "name": "Form Assignments",
+      "item": [
+        { "name": "My assignments (Patient, Volunteer)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/form-assignments/my", "host": ["{{baseUrl}}"], "path": ["form-assignments", "my"] } } },
+        { "name": "Get assignment (Patient, Volunteer, Doctor, Admin)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/form-assignments/{{assignmentId}}", "host": ["{{baseUrl}}"], "path": ["form-assignments", "{{assignmentId}}"] } } },
+        {
+          "name": "Submit assignment (Patient, Volunteer)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json(); if (j.id) pm.collectionVariables.set('submissionId', j.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"answers\": [\n    { \"questionId\": \"<questionId>\", \"choiceId\": \"<choiceId>\" }\n  ]\n}" },
+            "url": { "raw": "{{baseUrl}}/form-assignments/{{assignmentId}}/submit", "host": ["{{baseUrl}}"], "path": ["form-assignments", "{{assignmentId}}", "submit"] }
+          }
+        },
+        { "name": "Cancel assignment (Doctor, Admin)", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/form-assignments/{{assignmentId}}/cancel", "host": ["{{baseUrl}}"], "path": ["form-assignments", "{{assignmentId}}", "cancel"] } } }
+      ]
+    },
+    {
+      "name": "Assessments",
+      "item": [
+        { "name": "List pending submissions (Doctor, Admin)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/assessments/submissions/pending", "host": ["{{baseUrl}}"], "path": ["assessments", "submissions", "pending"] } } },
+        { "name": "Get submission (Doctor, Admin)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/assessments/submissions/{{submissionId}}", "host": ["{{baseUrl}}"], "path": ["assessments", "submissions", "{{submissionId}}"] } } },
+        {
+          "name": "Create official assessment (Doctor)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json(); if (j.id) pm.collectionVariables.set('assessmentId', j.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"submissionId\": \"{{submissionId}}\",\n  \"templateKey\": \"PHQ9\",\n  \"score\": 12,\n  \"status\": \"MODERATE\",\n  \"doctorNote\": \"Recommend follow-up in 2 weeks\"\n}" },
+            "url": { "raw": "{{baseUrl}}/assessments", "host": ["{{baseUrl}}"], "path": ["assessments"] }
+          }
+        },
+        { "name": "List assessments by patient (Doctor, Admin)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/assessments/patient/{{patientId}}", "host": ["{{baseUrl}}"], "path": ["assessments", "patient", "{{patientId}}"] } } },
+        { "name": "Get assessment by id (Doctor, Admin)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/assessments/{{assessmentId}}", "host": ["{{baseUrl}}"], "path": ["assessments", "{{assessmentId}}"] } } }
+      ]
+    },
+    {
+      "name": "Service Categories",
+      "item": [
+        { "name": "List categories (Authenticated)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/service-categories?isActive=true", "host": ["{{baseUrl}}"], "path": ["service-categories"], "query": [{ "key": "kind", "value": "EDUCATIONAL", "disabled": true }, { "key": "isActive", "value": "true" }] }, "description": "Patients always see active categories only — the server forces isActive=true for the PATIENT role and ignores any isActive value they send. Staff (Admin/Doctor/etc.) may pass isActive=false to retrieve deactivated categories." } },
+        {
+          "name": "Create category (Admin, Doctor)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json(); if (j.id) pm.collectionVariables.set('categoryId', j.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"خدمات تعليمية\",\n  \"kind\": \"EDUCATIONAL\",\n  \"iconKey\": \"school\",\n  \"color\": \"#6CCB4F\"\n}" },
+            "url": { "raw": "{{baseUrl}}/service-categories", "host": ["{{baseUrl}}"], "path": ["service-categories"] },
+            "description": "kind: EDUCATIONAL | TRIP | SUPPORT | OTHER. Duplicate name (case-insensitive) -> 409 CATEGORY_NAME_TAKEN."
+          }
+        },
+        { "name": "Update category (Admin, Doctor)", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"خدمات تعليمية متقدمة\",\n  \"color\": \"#4F8CFF\"\n}" }, "url": { "raw": "{{baseUrl}}/service-categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["service-categories", "{{categoryId}}"] } } },
+        { "name": "Set category status (Admin, Doctor)", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"isActive\": false\n}" }, "url": { "raw": "{{baseUrl}}/service-categories/{{categoryId}}/status", "host": ["{{baseUrl}}"], "path": ["service-categories", "{{categoryId}}", "status"] } } }
+      ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        { "name": "Browse services (Authenticated; Patient sees ACTIVE)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/services?page=1&pageSize=20", "host": ["{{baseUrl}}"], "path": ["services"], "query": [{ "key": "kind", "value": "EDUCATIONAL", "disabled": true }, { "key": "categoryId", "value": "{{categoryId}}", "disabled": true }, { "key": "q", "value": "", "disabled": true }, { "key": "status", "value": "ACTIVE", "disabled": true }, { "key": "page", "value": "1" }, { "key": "pageSize", "value": "20" }] } } },
+        { "name": "Get service by id (Authenticated)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/services/{{serviceId}}", "host": ["{{baseUrl}}"], "path": ["services", "{{serviceId}}"] } } },
+        {
+          "name": "Create service (Admin, Doctor)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json(); if (j.id) pm.collectionVariables.set('serviceId', j.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"محو أمية مستوى ثالث\",\n  \"locationBranch\": \"الرياض - حي العليا\",\n  \"startDate\": \"2024-10-20\",\n  \"startTime\": \"10:00\",\n  \"capacity\": 20,\n  \"endDate\": null,\n  \"departureTime\": null,\n  \"meetingPlace\": null\n}" },
+            "url": { "raw": "{{baseUrl}}/services", "host": ["{{baseUrl}}"], "path": ["services"] },
+            "description": "Trip-kind categories require endDate, departureTime, meetingPlace. capacity must be > 0."
+          }
+        },
+        { "name": "Update / close service (Admin, Doctor)", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"capacity\": 25,\n  \"status\": \"CLOSED\"\n}" }, "url": { "raw": "{{baseUrl}}/services/{{serviceId}}", "host": ["{{baseUrl}}"], "path": ["services", "{{serviceId}}"] }, "description": "Lowering capacity below seatsTaken -> 400 SERVICE_CAPACITY_BELOW_TAKEN. status CLOSED hides it from patients." } },
+        {
+          "name": "Request to join service (Patient)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json(); if (j.id) pm.collectionVariables.set('requestId', j.id);"] } }],
+          "request": { "method": "POST", "header": [], "url": { "raw": "{{baseUrl}}/services/{{serviceId}}/requests", "host": ["{{baseUrl}}"], "path": ["services", "{{serviceId}}", "requests"] }, "description": "Patient only. 409 DUPLICATE_SERVICE_REQUEST / SERVICE_FULL / SERVICE_NOT_ACCEPTING as applicable." }
+        }
+      ]
+    },
+    {
+      "name": "Service Requests",
+      "item": [
+        { "name": "My requests (Patient)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/service-requests/my", "host": ["{{baseUrl}}"], "path": ["service-requests", "my"] } } },
+        { "name": "Queue (Admin, Doctor)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/service-requests?status=PENDING&page=1&pageSize=20", "host": ["{{baseUrl}}"], "path": ["service-requests"], "query": [{ "key": "status", "value": "PENDING" }, { "key": "serviceId", "value": "{{serviceId}}", "disabled": true }, { "key": "page", "value": "1" }, { "key": "pageSize", "value": "20" }] } } },
+        { "name": "Summary counts (Admin, Doctor)", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/service-requests/summary", "host": ["{{baseUrl}}"], "path": ["service-requests", "summary"] } } },
+        { "name": "Approve request (Admin, Doctor)", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/service-requests/{{requestId}}/approve", "host": ["{{baseUrl}}"], "path": ["service-requests", "{{requestId}}", "approve"] }, "description": "Consumes a seat (atomic). 409 SERVICE_FULL when full; 409 REQUEST_ALREADY_DECIDED if not PENDING." } },
+        { "name": "Reject request (Admin, Doctor)", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"decisionNote\": \"اكتمل العدد\"\n}" }, "url": { "raw": "{{baseUrl}}/service-requests/{{requestId}}/reject", "host": ["{{baseUrl}}"], "path": ["service-requests", "{{requestId}}", "reject"] } } },
+        { "name": "Cancel own request (Patient)", "request": { "method": "PATCH", "header": [], "url": { "raw": "{{baseUrl}}/service-requests/{{requestId}}/cancel", "host": ["{{baseUrl}}"], "path": ["service-requests", "{{requestId}}", "cancel"] }, "description": "Owner only; PENDING only -> CANCELLED. 409 REQUEST_NOT_PENDING otherwise." } }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "My notifications",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json();", "const first = Array.isArray(j.data) ? j.data[0] : null;", "if (first && first.id) pm.collectionVariables.set('notificationId', first.id);"] } }],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/my?status=UNREAD&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "my"],
+              "query": [
+                { "key": "status", "value": "UNREAD" },
+                { "key": "severity", "value": "MEDIUM", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "Authenticated. Returns personal notifications plus unclaimed role-broadcast notifications for the caller's role."
+          }
+        },
+        {
+          "name": "Claim notification",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/notifications/{{notificationId}}/claim", "host": ["{{baseUrl}}"], "path": ["notifications", "{{notificationId}}", "claim"] },
+            "description": "Recipient role only. Atomically claims an unclaimed role-broadcast notification; 409 if already claimed."
+          }
+        },
+        {
+          "name": "Mark notification read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/notifications/{{notificationId}}/read", "host": ["{{baseUrl}}"], "path": ["notifications", "{{notificationId}}", "read"] },
+            "description": "Owning recipient only. Forward-only UNREAD -> READ; 409 for repeated/backward transitions."
+          }
+        },
+        {
+          "name": "Mark notification done",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/notifications/{{notificationId}}/done", "host": ["{{baseUrl}}"], "path": ["notifications", "{{notificationId}}", "done"] },
+            "description": "Owning recipient only. Forward-only UNREAD/READ -> DONE."
+          }
+        },
+        {
+          "name": "Request Call Center booking (Doctor)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const j = pm.response.json();", "if (j.id) pm.collectionVariables.set('notificationId', j.id);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"doctorNote\": \"Needs urgent follow-up\"\n}" },
+            "url": { "raw": "{{baseUrl}}/notifications/request-booking", "host": ["{{baseUrl}}"], "path": ["notifications", "request-booking"] },
+            "description": "Doctor only. Creates a BOOKING_REQUIRED notification for Call Center; no internal scheduling is created."
+          }
+        },
+        {
+          "name": "Register device token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{deviceToken}}\",\n  \"platform\": \"ANDROID\"\n}" },
+            "url": { "raw": "{{baseUrl}}/notifications/devices", "host": ["{{baseUrl}}"], "path": ["notifications", "devices"] },
+            "description": "Authenticated. Upserts the FCM registration token for the caller and refreshes lastSeenAt."
+          }
+        },
+        {
+          "name": "Unregister device token",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{deviceToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/notifications/devices", "host": ["{{baseUrl}}"], "path": ["notifications", "devices"] },
+            "description": "Authenticated. Deletes the caller-owned token if present; unknown/foreign tokens are a no-op for the caller."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "info": {
+    "name": "Mental Health Clinic API - Patients (Clinical Data + CRN)",
+    "description": "Patient endpoints with the clinical dataset (staging, treatment, tumour biology, BMI, comorbidities, drugs) and the unique CRN file number.\n\nReuses environment variables: baseUrl, accessToken (an ADMIN/CALL_CENTER token for create/full edit), doctorToken (a DOCTOR token for clinical-only edit), patientId.\nAdds: crn (auto-captured on create).\n\nAll routes are mounted under {{baseUrl}}/api/v1.\n\nRBAC summary:\n- POST /patients: ADMIN, CALL_CENTER (sets crn + demographics).\n- PATCH /patients/:id: ADMIN/CALL_CENTER (all fields); DOCTOR (clinical fields + medicalHistory only — any other field => 403).\n- Volunteers see basic identity/contact info only; clinical list filters are ignored for them.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "patientId", "value": "" },
+    { "key": "crn", "value": "PT-2504" }
+  ],
+  "item": [
+    {
+      "name": "Create Patient (ADMIN/CALL_CENTER)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  const body = pm.response.json();",
+              "  if (body.id) {",
+              "    pm.collectionVariables.set('patientId', body.id);",
+              "    pm.environment.set('patientId', body.id);",
+              "  }",
+              "  if (body.crn) {",
+              "    pm.collectionVariables.set('crn', body.crn);",
+              "    pm.environment.set('crn', body.crn);",
+              "  }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/patients",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "patients"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Sara Patient\",\n  \"email\": \"sara.patient@example.com\",\n  \"password\": \"Welcome123!\",\n  \"crn\": \"PT-2504\",\n  \"phone\": \"+201001112222\",\n  \"dateOfBirth\": \"1990-05-12\",\n  \"gender\": \"FEMALE\",\n  \"address\": \"12 Tahrir Square, Cairo\",\n  \"emergencyContactName\": \"Ahmed Patient\",\n  \"emergencyContactPhone\": \"+201003334444\",\n  \"medicalHistory\": {\n    \"allergies\": [\"penicillin\"],\n    \"conditions\": [\"anxiety\"],\n    \"comorbidities\": [\"Diabetes\", \"Hypertension\"],\n    \"drugs\": [\"Tamoxifen 20mg daily\", \"Calcium + Vitamin D\"],\n    \"familyHistory\": \"Yes - breast cancer\"\n  },\n  \"socialStatus\": { \"maritalStatus\": \"single\", \"familySupport\": \"moderate\" },\n  \"financials\": { \"incomeBracket\": \"low\" },\n  \"bmi\": 27.4,\n  \"menopausalStatus\": \"POST_MENOPAUSAL\",\n  \"dateOfDiagnosis\": \"2024-11-10\",\n  \"stageAtDiagnosis\": \"STAGE_II\",\n  \"diseaseStatus\": \"ACTIVE_TREATMENT\",\n  \"tumorBiology\": \"LUMINAL_A\",\n  \"surgery\": \"BREAST_CONSERVATIVE\",\n  \"chemotherapy\": \"ADJUVANT\",\n  \"radiotherapy\": true,\n  \"hormonalTherapy\": true,\n  \"targetedTherapy\": true,\n  \"immunotherapy\": true\n}"
+        },
+        "description": "Creates a User (role PATIENT) + Patient row atomically. `crn` is required and unique. Roles: ADMIN, CALL_CENTER.\n\nErrors: 400 VALIDATION_ERROR; 403 FORBIDDEN; 409 CONFLICT (`Email already registered` or `CRN already in use`)."
+      }
+    },
+    {
+      "name": "List Patients (name / email / CRN search)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/patients?q=sara&page=1&pageSize=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "patients"],
+          "query": [
+            { "key": "q", "value": "sara", "description": "matches fullName, email, or crn" },
+            { "key": "page", "value": "1" },
+            { "key": "pageSize", "value": "20" }
+          ]
+        },
+        "description": "Roles: ADMIN, DOCTOR, CALL_CENTER, VOLUNTEER. `q` also matches CRN. Each row carries `latestAssessments` (DOCTOR/ADMIN only). Volunteers receive basic identity/contact fields only."
+      }
+    },
+    {
+      "name": "List Patients (clinical filters)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/patients?diseaseStatus=ACTIVE_TREATMENT&tumorBiology=LUMINAL_A&surgery=BREAST_CONSERVATIVE&radiotherapy=true&page=1&pageSize=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "patients"],
+          "query": [
+            { "key": "diseaseStatus", "value": "ACTIVE_TREATMENT", "description": "NEWLY_DIAGNOSED|ACTIVE_TREATMENT|FOLLOW_UP|RECURRENCE|METASTATIC" },
+            { "key": "tumorBiology", "value": "LUMINAL_A", "description": "LUMINAL_A|LUMINAL_B|HER2_ENRICHED|TNBC" },
+            { "key": "surgery", "value": "BREAST_CONSERVATIVE", "description": "NONE|BREAST_CONSERVATIVE|MASTECTOMY" },
+            { "key": "chemotherapy", "value": "ADJUVANT", "description": "NO|NEOADJUVANT|ADJUVANT|METASTATIC", "disabled": true },
+            { "key": "radiotherapy", "value": "true", "description": "true|false" },
+            { "key": "hormonalTherapy", "value": "true", "disabled": true },
+            { "key": "targetedTherapy", "value": "true", "disabled": true },
+            { "key": "immunotherapy", "value": "true", "disabled": true },
+            { "key": "page", "value": "1" },
+            { "key": "pageSize", "value": "20" }
+          ]
+        },
+        "description": "Filter the patient list by typed clinical fields. NOTE: these filters are silently IGNORED for VOLUNTEER callers (to avoid leaking clinical data they cannot see)."
+      }
+    },
+    {
+      "name": "Get Patient by id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/patients/{{patientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "patients", "{{patientId}}"]
+        },
+        "description": "Roles: ADMIN, DOCTOR, CALL_CENTER, VOLUNTEER, PATIENT (own record only). Response is shaped by role — volunteers get basic identity/contact info only."
+      }
+    },
+    {
+      "name": "Patient options (lookup)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/patients/options?q=sara&page=1&pageSize=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "patients", "options"],
+          "query": [
+            { "key": "q", "value": "sara" },
+            { "key": "page", "value": "1" },
+            { "key": "pageSize", "value": "20" }
+          ]
+        },
+        "description": "Minimal active-patient lookup ({id, fullName}). Roles: ADMIN, DOCTOR."
+      }
+    },
+    {
+      "name": "Patch Patient - full (ADMIN/CALL_CENTER)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/patients/{{patientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "patients", "{{patientId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"address\": \"New Cairo, 5th Settlement\",\n  \"crn\": \"PT-2504\",\n  \"diseaseStatus\": \"FOLLOW_UP\",\n  \"surgery\": \"MASTECTOMY\",\n  \"medicalHistory\": {\n    \"drugs\": [\"Letrozole 2.5mg daily\"],\n    \"notes\": null\n  }\n}"
+        },
+        "description": "ADMIN/CALL_CENTER may edit any field. Scalar `null` clears a field; JSONB sub-key `null` removes that sub-key (shallow merge). Errors: 400; 403; 404; 409 (`CRN already in use`)."
+      }
+    },
+    {
+      "name": "Patch Patient - clinical only (DOCTOR)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{doctorToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/patients/{{patientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "patients", "{{patientId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"diseaseStatus\": \"RECURRENCE\",\n  \"surgery\": \"MASTECTOMY\",\n  \"bmi\": 25.1,\n  \"medicalHistory\": {\n    \"drugs\": [\"Letrozole 2.5mg daily\"]\n  }\n}"
+        },
+        "description": "Uses {{doctorToken}}. A DOCTOR may edit only clinical fields + medicalHistory. Including any other field (e.g. crn, phone, address, socialStatus, financials) => 403 FORBIDDEN and nothing is applied."
+      }
+    },
+    {
+      "name": "Patch Patient - DOCTOR blocked (non-clinical => 403)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{doctorToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/patients/{{patientId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "patients", "{{patientId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"address\": \"789 Alexandria Rd\"\n}"
+        },
+        "description": "Expected 403 FORBIDDEN — `address` is not a clinical field, so a DOCTOR cannot edit it."
+      }
+    },
+    {
+      "name": "Patient timeline",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/patients/{{patientId}}/timeline?page=1&pageSize=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "patients", "{{patientId}}", "timeline"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "pageSize", "value": "20" }
+          ]
+        },
+        "description": "Merged assessments (Postgres) + interventions (Mongo), newest first. Roles: ADMIN, DOCTOR. `page * pageSize` <= 1000."
+      }
+    }
+  ]
+}

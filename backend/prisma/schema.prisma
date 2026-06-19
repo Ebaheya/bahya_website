@@ -15,19 +15,160 @@ enum Role {
   PATIENT
 }
 
+enum DevicePlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MenopausalStatus {
+  PRE_MENOPAUSAL
+  PERI_MENOPAUSAL
+  POST_MENOPAUSAL
+}
+
+enum CancerStage {
+  STAGE_0
+  STAGE_I
+  STAGE_II
+  STAGE_III
+  STAGE_IV
+}
+
+enum DiseaseStatus {
+  NEWLY_DIAGNOSED
+  ACTIVE_TREATMENT
+  FOLLOW_UP
+  RECURRENCE
+  METASTATIC
+}
+
+enum TumorBiology {
+  LUMINAL_A
+  LUMINAL_B
+  HER2_ENRICHED
+  TNBC
+}
+
+enum SurgeryType {
+  NONE
+  BREAST_CONSERVATIVE
+  MASTECTOMY
+}
+
+enum ChemotherapyType {
+  NO
+  NEOADJUVANT
+  ADJUVANT
+  METASTATIC
+}
+
+enum FormScoringType {
+  SUM
+  MANUAL
+}
+
+enum FormInterpretationMode {
+  RANGE
+  MANUAL
+  NONE
+}
+
+enum FormVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum FormQuestionType {
+  SINGLE_SELECT
+  MULTI_SELECT
+  SCALE
+}
+
+enum FormAssignmentTarget {
+  SINGLE_PATIENT
+  ALL_PATIENTS
+  SELECTED_PATIENTS
+  VOLUNTEER_FOR_PATIENT
+}
+
+enum FormAssignmentStatus {
+  SCHEDULED
+  PUBLISHED
+  SUBMITTED
+  REVIEWED
+  CANCELLED
+}
+
+enum AssessmentStatus {
+  NORMAL
+  MILD
+  MODERATE
+  SEVERE
+  CRITICAL
+}
+
+enum ServiceKind {
+  EDUCATIONAL
+  TRIP
+  SUPPORT
+  OTHER
+}
+
+enum ServiceStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum ServiceRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  passwordHash  String
-  fullName      String
-  role          Role
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
+  id                        String               @id @default(uuid())
+  email                     String               @unique
+  passwordHash              String
+  fullName                  String
+  role                      Role
+  isActive                  Boolean              @default(true)
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  refreshTokens             RefreshToken[]
+  patient                   Patient?
+  passwordResetTokens       PasswordResetToken[]
+  createdFormTemplates      FormTemplate[]       @relation("FormTemplateCreatedBy")
+  assignedForms             FormAssignment[]     @relation("FormAssignmentAssignedBy")
+  formAssignments           FormAssignment[]     @relation("FormAssignmentAssignedTo")
+  formSubmissions           FormSubmission[]     @relation("FormSubmissionSubmittedBy")
+  assessments               Assessment[]         @relation("AssessmentDoctor")
+  authoredServiceCategories ServiceCategory[]    @relation("ServiceCategoryCreatedBy")
+  authoredServices          Service[]            @relation("ServiceCreatedBy")
+  decidedServiceRequests    ServiceRequest[]     @relation("ServiceRequestDecidedBy")
+  deviceTokens              DeviceToken[]
 
   @@index([role])
+}
+
+model DeviceToken {
+  id         String         @id @default(uuid())
+  userId     String
+  token      String         @unique
+  platform   DevicePlatform
+  createdAt  DateTime       @default(now())
+  lastSeenAt DateTime       @default(now())
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model RefreshToken {
@@ -45,19 +186,268 @@ model RefreshToken {
   @@index([userId])
 }
 
-model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?
-  actionType String
-  entity     String?
-  entityId   String?
-  oldValues  Json?
-  newValues  Json?
-  ip         String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
-  user       User?    @relation(fields: [userId], references: [id])
+model Patient {
+  id                    String            @id @default(uuid())
+  userId                String            @unique
+  crn                   String?           @unique
+  phone                 String
+  dateOfBirth           DateTime?
+  gender                Gender?
+  address               String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  medicalHistory        Json?
+  socialStatus          Json?
+  financials            Json?
+  bmi                   Float?
+  menopausalStatus      MenopausalStatus?
+  dateOfDiagnosis       DateTime?
+  stageAtDiagnosis      CancerStage?
+  diseaseStatus         DiseaseStatus?
+  tumorBiology          TumorBiology?
+  surgery               SurgeryType?
+  chemotherapy          ChemotherapyType?
+  radiotherapy          Boolean?
+  hormonalTherapy       Boolean?
+  targetedTherapy       Boolean?
+  immunotherapy         Boolean?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  user                  User              @relation(fields: [userId], references: [id])
+  formAssignments       FormAssignment[]
+  formSubmissions       FormSubmission[]
+  assessments           Assessment[]
+  serviceRequests       ServiceRequest[]
 
-  @@index([userId, createdAt])
-  @@index([actionType, createdAt])
+  @@index([phone])
+  @@index([diseaseStatus])
+  @@index([tumorBiology])
+  @@index([surgery])
+  @@index([chemotherapy])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model FormTemplate {
+  id                 String                 @id @default(uuid())
+  key                String                 @unique
+  name               String
+  description        String?
+  category           String?
+  scoringType        FormScoringType        @default(SUM)
+  interpretationMode FormInterpretationMode @default(RANGE)
+  isDefault          Boolean                @default(false)
+  isActive           Boolean                @default(true)
+  currentVersionId   String?                @unique
+  createdById        String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  createdBy          User?                  @relation("FormTemplateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  versions           FormVersion[]          @relation("FormTemplateVersions")
+  currentVersion     FormVersion?           @relation("FormTemplateCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  assignments        FormAssignment[]
+
+  @@index([category])
+  @@index([isActive])
+  @@index([isDefault])
+}
+
+model FormVersion {
+  id                 String            @id @default(uuid())
+  templateId         String
+  version            Int
+  status             FormVersionStatus @default(DRAFT)
+  publishedAt        DateTime?
+  createdAt          DateTime          @default(now())
+  template           FormTemplate      @relation("FormTemplateVersions", fields: [templateId], references: [id], onDelete: Cascade)
+  currentForTemplate FormTemplate?     @relation("FormTemplateCurrentVersion")
+  questions          FormQuestion[]
+  scoreRanges        FormScoreRange[]
+  assignments        FormAssignment[]
+  submissions        FormSubmission[]
+
+  @@unique([templateId, version])
+  @@index([status])
+}
+
+model FormQuestion {
+  id        String             @id @default(uuid())
+  versionId String
+  order     Int
+  text      String
+  type      FormQuestionType
+  subscale  String?
+  required  Boolean            @default(true)
+  scaleMin  Int?
+  scaleMax  Int?
+  scaleStep Int?
+  version   FormVersion        @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  choices   FormAnswerChoice[]
+
+  @@index([versionId])
+}
+
+model FormAnswerChoice {
+  id         String       @id @default(uuid())
+  questionId String
+  order      Int
+  label      String
+  score      Int
+  question   FormQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model FormScoreRange {
+  id        String      @id @default(uuid())
+  versionId String
+  subscale  String?
+  label     String
+  minScore  Int
+  maxScore  Int
+  note      String?
+  version   FormVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@index([versionId])
+  @@index([versionId, subscale])
+}
+
+model FormAssignment {
+  id               String               @id @default(uuid())
+  templateId       String
+  formVersionId    String
+  patientId        String
+  assignedToUserId String?
+  assignedById     String
+  target           FormAssignmentTarget
+  status           FormAssignmentStatus @default(PUBLISHED)
+  publishAt        DateTime?
+  dueAt            DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  template         FormTemplate         @relation(fields: [templateId], references: [id])
+  formVersion      FormVersion          @relation(fields: [formVersionId], references: [id])
+  patient          Patient              @relation(fields: [patientId], references: [id])
+  assignedTo       User?                @relation("FormAssignmentAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  assignedBy       User                 @relation("FormAssignmentAssignedBy", fields: [assignedById], references: [id])
+  submission       FormSubmission?
+  // NOTE: a partial UNIQUE index on (templateId, patientId) WHERE status IN
+  // ('SCHEDULED','PUBLISHED') enforces the one-outstanding-copy-per-form rule at
+  // the DB level. Prisma cannot express a filtered index, so it lives in the
+  // 20260601000000_form_assignment_expiry_and_open_copy migration only.
+
+  @@index([patientId, status])
+  @@index([assignedToUserId, status])
+  @@index([status, publishAt])
+  @@index([templateId])
+  @@index([formVersionId])
+}
+
+model FormSubmission {
+  id                String         @id @default(uuid())
+  assignmentId      String         @unique
+  formVersionId     String
+  patientId         String
+  submittedByUserId String
+  answers           Json
+  totalScore        Int?
+  subscaleScores    Json?
+  interpretation    Json?
+  submittedAt       DateTime       @default(now())
+  assignment        FormAssignment @relation(fields: [assignmentId], references: [id])
+  formVersion       FormVersion    @relation(fields: [formVersionId], references: [id])
+  patient           Patient        @relation(fields: [patientId], references: [id])
+  submittedBy       User           @relation("FormSubmissionSubmittedBy", fields: [submittedByUserId], references: [id])
+  assessment        Assessment?
+
+  @@index([patientId, submittedAt])
+  @@index([formVersionId])
+}
+
+model Assessment {
+  id           String           @id @default(uuid())
+  patientId    String
+  doctorId     String
+  submissionId String?          @unique
+  templateKey  String
+  score        Int?
+  status       AssessmentStatus
+  doctorNote   String?
+  reviewedAt   DateTime         @default(now())
+  createdAt    DateTime         @default(now())
+  patient      Patient          @relation(fields: [patientId], references: [id])
+  doctor       User             @relation("AssessmentDoctor", fields: [doctorId], references: [id])
+  submission   FormSubmission?  @relation(fields: [submissionId], references: [id])
+
+  @@index([patientId, createdAt])
+  @@index([doctorId])
+}
+
+model ServiceCategory {
+  id          String      @id @default(uuid())
+  name        String
+  kind        ServiceKind @default(OTHER)
+  iconKey     String
+  color       String
+  isDefault   Boolean     @default(false)
+  isActive    Boolean     @default(true)
+  createdById String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  createdBy   User?       @relation("ServiceCategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  services    Service[]
+
+  @@index([kind, isActive])
+  @@index([name])
+}
+
+model Service {
+  id             String           @id @default(uuid())
+  categoryId     String
+  name           String
+  locationBranch String
+  startDate      DateTime
+  startTime      String
+  endDate        DateTime?
+  departureTime  String?
+  meetingPlace   String?
+  capacity       Int
+  seatsTaken     Int              @default(0)
+  status         ServiceStatus    @default(ACTIVE)
+  createdById    String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  category       ServiceCategory  @relation(fields: [categoryId], references: [id])
+  createdBy      User             @relation("ServiceCreatedBy", fields: [createdById], references: [id])
+  requests       ServiceRequest[]
+
+  @@index([status, categoryId])
+  @@index([startDate])
+}
+
+model ServiceRequest {
+  id           String               @id @default(uuid())
+  serviceId    String
+  patientId    String
+  status       ServiceRequestStatus @default(PENDING)
+  decisionNote String?
+  decidedById  String?
+  requestedAt  DateTime             @default(now())
+  decidedAt    DateTime?
+  service      Service              @relation(fields: [serviceId], references: [id])
+  patient      Patient              @relation(fields: [patientId], references: [id])
+  decidedBy    User?                @relation("ServiceRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([serviceId, status])
+  @@index([patientId, status])
 }
