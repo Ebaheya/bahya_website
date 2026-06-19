@@ -46,18 +46,24 @@ String _localizedTitle(String? type, RemoteMessage message) {
 
   final isArabic = _isSystemArabic();
 
+  // Types mirror the backend NotificationType enum. Keep the wording in sync with
+  // android/app/src/main/res/values{,-ar}/strings.xml so the foreground banner
+  // (built here) matches the terminated banner (built by the OS from loc keys).
   switch (type) {
+    case 'FORM_ASSIGNED':
+      return isArabic ? 'استبيان جديد' : 'New questionnaire';
+    case 'HIGH_RISK':
+      return isArabic ? 'تنبيه حالة خطرة' : 'High-risk alert';
+    case 'BOOKING_REQUIRED':
+      return isArabic ? 'مطلوب حجز موعد' : 'Booking required';
+    case 'DOCTOR_REVIEW':
+      return isArabic ? 'مطلوب مراجعة الطبيب' : 'Doctor review needed';
+    case 'FOLLOW_UP_REQUIRED':
+      return isArabic ? 'مطلوب متابعة' : 'Follow-up required';
     case 'SERVICE_REQUEST_SUBMITTED':
       return isArabic ? 'طلب خدمة جديد' : 'New service request';
-    case 'SERVICE_REQUEST_APPROVED':
-      return isArabic ? 'تم قبول طلب الخدمة' : 'Service request approved';
-    case 'SERVICE_REQUEST_REJECTED':
-      return isArabic ? 'تم رفض طلب الخدمة' : 'Service request rejected';
     case 'SERVICE_REQUEST_DECIDED':
       return isArabic ? 'تحديث طلب الخدمة' : 'Service request update';
-    case 'FORM_PUBLISHED':
-    case 'FORM_ASSIGNMENT_PUBLISHED':
-      return isArabic ? 'استبيان جديد' : 'New questionnaire';
     default:
       return isArabic ? 'إشعار جديد' : 'New notification';
   }
@@ -72,27 +78,34 @@ String _localizedBody(String? type, RemoteMessage message) {
   final isArabic = _isSystemArabic();
 
   switch (type) {
+    case 'FORM_ASSIGNED':
+      return isArabic
+          ? 'تم إرسال استبيان جديد لك'
+          : 'A new questionnaire has been assigned to you';
+    case 'HIGH_RISK':
+      return isArabic
+          ? 'هناك حالة تحتاج إلى اهتمام فوري'
+          : 'A patient needs immediate attention';
+    case 'BOOKING_REQUIRED':
+      return isArabic
+          ? 'هناك حالة بحاجة إلى حجز موعد'
+          : 'A patient needs a booking';
+    case 'DOCTOR_REVIEW':
+      return isArabic
+          ? 'هناك حالة بانتظار مراجعتك'
+          : 'A case is waiting for your review';
+    case 'FOLLOW_UP_REQUIRED':
+      return isArabic
+          ? 'هناك حالة بحاجة إلى متابعة'
+          : 'A patient needs a follow-up';
     case 'SERVICE_REQUEST_SUBMITTED':
       return isArabic
           ? 'تم إرسال طلب خدمة جديد من بطلة'
           : 'A patient sent a new service request';
-    case 'SERVICE_REQUEST_APPROVED':
-      return isArabic
-          ? 'تم قبول طلبك للانضمام إلى الخدمة'
-          : 'Your service request has been approved';
-    case 'SERVICE_REQUEST_REJECTED':
-      return isArabic
-          ? 'تم رفض طلبك للانضمام إلى الخدمة'
-          : 'Your service request has been rejected';
     case 'SERVICE_REQUEST_DECIDED':
       return isArabic
           ? 'تم تحديث طلب الخدمة الخاص بك'
           : 'Your service request has been updated';
-    case 'FORM_PUBLISHED':
-    case 'FORM_ASSIGNMENT_PUBLISHED':
-      return isArabic
-          ? 'تم إرسال استبيان جديد لك'
-          : 'A new questionnaire has been assigned to you';
     default:
       return isArabic
           ? 'افتح التطبيق لمتابعة التفاصيل'
@@ -406,15 +419,18 @@ class PushNotificationService {
 
   String _routeForType(String? type) {
     switch (type) {
+      // ADMIN/DOCTOR review the incoming request.
       case 'SERVICE_REQUEST_SUBMITTED':
         return '/patientRequestsDetails';
-      case 'SERVICE_REQUEST_APPROVED':
-      case 'SERVICE_REQUEST_REJECTED':
+      // PATIENT sees the decision on their own request.
       case 'SERVICE_REQUEST_DECIDED':
         return '/requestedService';
-      case 'FORM_PUBLISHED':
-      case 'FORM_ASSIGNMENT_PUBLISHED':
+      // PATIENT has a new form to fill.
+      case 'FORM_ASSIGNED':
         return '/formGate';
+      // Staff broadcasts (HIGH_RISK, BOOKING_REQUIRED, DOCTOR_REVIEW,
+      // FOLLOW_UP_REQUIRED) carry no patientId in the push, so land on the
+      // role's home dashboard rather than a wrong deep link.
       default:
         return authNotifier.homeRoute;
     }
