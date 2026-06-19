@@ -134,6 +134,12 @@ enum ServiceRequestStatus {
   CANCELLED
 }
 
+enum ReportStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED
+}
+
 model User {
   id                        String               @id @default(uuid())
   email                     String               @unique
@@ -155,6 +161,8 @@ model User {
   authoredServices          Service[]            @relation("ServiceCreatedBy")
   decidedServiceRequests    ServiceRequest[]     @relation("ServiceRequestDecidedBy")
   deviceTokens              DeviceToken[]
+  filedReports              Report[]             @relation("FiledReports")
+  handledReports            Report[]             @relation("HandledReports")
 
   @@index([role])
 }
@@ -450,4 +458,25 @@ model ServiceRequest {
 
   @@index([serviceId, status])
   @@index([patientId, status])
+}
+
+model Report {
+  id          String       @id @default(uuid())
+  reporterId  String
+  title       String
+  body        String
+  status      ReportStatus @default(PENDING)
+  handledById String?
+  handledAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  reporter    User         @relation("FiledReports", fields: [reporterId], references: [id])
+  handledBy   User?        @relation("HandledReports", fields: [handledById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  // Default triage list (no status filter) orders globally by createdAt desc;
+  // the composite index above can't serve that since status is its leading
+  // column, so back the unfiltered newest-first scan with its own index.
+  @@index([createdAt])
+  @@index([reporterId])
 }

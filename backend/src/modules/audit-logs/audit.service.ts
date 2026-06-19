@@ -1,12 +1,15 @@
 import type { Request } from 'express';
+import type { FilterQuery } from 'mongoose';
 import { logger } from '../../config/logger';
 import { AppError } from '../../utils/httpError';
+import { buildPaginatedResponse, parsePagination } from '../../utils/pagination';
 import {
   AUDIT_ACTIONS,
   isStrictAuditAction,
   type AuditAction,
 } from './audit.actions';
-import { AuditLogModel } from './audit.model';
+import { AuditLogModel, type AuditLogDoc } from './audit.model';
+import type { ListAuditLogsQuery } from './audit.schema';
 
 export interface AuditInput {
   actorId?: string | null;
@@ -114,6 +117,85 @@ export async function writeAudit(input: AuditInput): Promise<void> {
       'audit write failed'
     );
   }
+}
+
+export interface RecentAuditLog {
+  _id: unknown;
+  actorId: string | null;
+  action: string;
+  entityType: string | null;
+  createdAt: Date;
+}
+
+export async function listRecentAuditLogs(limit: number): Promise<RecentAuditLog[]> {
+  return AuditLogModel.find({})
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean<RecentAuditLog[]>();
+}
+
+type LeanAuditLog = AuditLogDoc & { _id: unknown };
+
+function toListItem(doc: LeanAuditLog) {
+  return {
+    id: String(doc._id),
+    actorId: doc.actorId,
+    action: doc.action,
+    entityType: doc.entityType,
+    entityId: doc.entityId,
+    ipAddress: doc.ipAddress,
+    createdAt: doc.createdAt,
+  };
+}
+
+function toDetail(doc: LeanAuditLog) {
+  return {
+    id: String(doc._id),
+    actorId: doc.actorId,
+    action: doc.action,
+    entityType: doc.entityType,
+    entityId: doc.entityId,
+    oldValues: doc.oldValues,
+    newValues: doc.newValues,
+    ipAddress: doc.ipAddress,
+    userAgent: doc.userAgent,
+    createdAt: doc.createdAt,
+  };
+}
+
+function buildAuditFilter(query: ListAuditLogsQuery): FilterQuery<AuditLogDoc> {
+  const filter: FilterQuery<AuditLogDoc> = {};
+  if (query.action) filter.action = query.action;
+  if (query.actorId) filter.actorId = query.actorId;
+  if (query.from || query.to) {
+    filter.createdAt = {
+      ...(query.from ? { $gte: query.from } : {}),
+      ...(query.to ? { $lte: query.to } : {}),
+    };
+  }
+  return filter;
+}
+
+export async function listAuditLogs(query: ListAuditLogsQuery) {
+  const pagination = parsePagination(query);
+  const filter = buildAuditFilter(query);
+
+  const [docs, total] = await Promise.all([
+    AuditLogModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(pagination.skip)
+      .limit(pagination.pageSize)
+      .lean<LeanAuditLog[]>(),
+    AuditLogModel.countDocuments(filter),
+  ]);
+
+  return buildPaginatedResponse(docs.map(toListItem), pagination, total);
+}
+
+export async function getAuditLogById(id: string) {
+  const doc = await AuditLogModel.findById(id).lean<LeanAuditLog | null>();
+  if (!doc) throw AppError.notFound('Audit log not found');
+  return toDetail(doc);
 }
 
 // ---------------------------------------------------------------------------

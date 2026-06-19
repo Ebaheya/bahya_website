@@ -3,10 +3,13 @@ import mongoose from 'mongoose';
 import { prisma } from '../config/prisma';
 import { authRouter } from '../modules/auth/auth.routes';
 import { assessmentRouter } from '../modules/assessments/assessment.routes';
+import { auditRouter } from '../modules/audit-logs/audit.routes';
 import { assignmentRouter } from '../modules/forms/assignment.routes';
 import { formRouter } from '../modules/forms/form.routes';
 import { patientRouter } from '../modules/patients/patient.routes';
 import { notificationRouter } from '../modules/notifications/notification.routes';
+import { dashboardRouter } from '../modules/dashboard/dashboard.routes';
+import { reportRouter } from '../modules/reports/report.routes';
 import { categoryRouter } from '../modules/services/category.routes';
 import { requestRouter } from '../modules/services/request.routes';
 import { serviceRouter } from '../modules/services/service.routes';
@@ -55,6 +58,7 @@ apiRouter.get('/health', async (_req, res) => {
 });
 
 apiRouter.use('/auth', authRouter);
+apiRouter.use('/audit-logs', auditRouter);
 apiRouter.use('/forms', formRouter);
 apiRouter.use('/form-assignments', assignmentRouter);
 apiRouter.use('/assessments', assessmentRouter);
@@ -65,3 +69,5 @@ apiRouter.use('/service-categories', categoryRouter);
 apiRouter.use('/services', serviceRouter);
 apiRouter.use('/service-requests', requestRouter);
 apiRouter.use('/notifications', notificationRouter);
+apiRouter.use('/dashboard', dashboardRouter);
+apiRouter.use('/reports', reportRouter);

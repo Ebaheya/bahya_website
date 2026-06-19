@@ -75,6 +75,10 @@ const NotificationSchema = new Schema<NotificationDoc>(
 NotificationSchema.index({ recipientRole: 1, status: 1, createdAt: -1 });
 NotificationSchema.index({ recipientUserId: 1, status: 1, createdAt: -1 });
 NotificationSchema.index({ patientId: 1, createdAt: -1 });
+// Dashboard summary counts open notifications by status alone; the compound
+// indexes above are prefixed by recipient/patient, so back the status-only
+// count with a status-leading index.
+NotificationSchema.index({ status: 1 });
 
 export const NotificationModel =
   models.Notification ?? model<NotificationDoc>('Notification', NotificationSchema);

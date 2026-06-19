@@ -1,0 +1,428 @@
+{
+  "info": {
+    "name": "Mental Health Clinic API - Admin Web Panel (Phase 7)",
+    "description": "Feature 008 admin web panel. Covers user reports (البلاغات) filing + admin triage, the dashboard summary/activity feed, and audit-log read APIs.\n\nEnvironment variables expected: baseUrl, accessToken (ADMIN), patientToken (any non-admin authenticated user, used for filing + RBAC negatives). Collection variables captured while running: reportId, auditId.\n\nAll routes are mounted under {{baseUrl}}/api/v1.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "reportId", "value": "" },
+    { "key": "auditId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "File Report (any role)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('report filed', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('reportId', body.id);",
+                  "  pm.environment.set('reportId', body.id);",
+                  "  pm.test('defaults to PENDING', function () {",
+                  "    pm.expect(body.status).to.equal('PENDING');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Content Report\",\n  \"body\": \"The patient reported that some content contains inappropriate language and needs to be reviewed by the admin team.\"\n}"
+            },
+            "description": "Any authenticated role may file an issue (title + body). Filed with {{patientToken}} to prove non-admins can report. Rate-limited per user."
+          }
+        },
+        {
+          "name": "File Report - empty fields (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('empty title/body rejected', function () {",
+                  "  pm.expect(pm.response.code).to.equal(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"\",\n  \"body\": \"\"\n}" }
+          }
+        },
+        {
+          "name": "List Reports (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reports list succeeds', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "if (!pm.collectionVariables.get('reportId') && body.data && body.data[0]) {",
+                  "  pm.collectionVariables.set('reportId', body.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports?status=PENDING&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports"],
+              "query": [
+                { "key": "status", "value": "PENDING" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" },
+                { "key": "q", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Admin list with optional status filter and q search over reporter name/email/title. Each item carries the reporter identity resolved fresh from PostgreSQL."
+          }
+        },
+        {
+          "name": "Reports Summary (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('summary succeeds', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('has status counts', function () {",
+                  "  pm.expect(body).to.have.property('pending');",
+                  "  pm.expect(body).to.have.property('investigating');",
+                  "  pm.expect(body).to.have.property('resolved');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "summary"]
+            }
+          }
+        },
+        {
+          "name": "Report Detail (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('detail succeeds', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('reporter identity present', function () {",
+                  "  pm.expect(body.reporter).to.have.property('fullName');",
+                  "  pm.expect(body.reporter).to.have.property('email');",
+                  "  pm.expect(body.reporter).to.have.property('role');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/{{reportId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "{{reportId}}"]
+            }
+          }
+        },
+        {
+          "name": "Change Status (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status changed', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('handledBy recorded', function () {",
+                  "  pm.expect(body.status).to.equal('INVESTIGATING');",
+                  "  pm.expect(body.handledBy).to.not.equal(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/{{reportId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "{{reportId}}", "status"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"INVESTIGATING\"\n}" },
+            "description": "Move forward only PENDING -> INVESTIGATING -> RESOLVED. Records handledBy/handledAt and emits REPORT_STATUS_CHANGED audit. Setting the current status is a no-op (200). Errors: 409 REPORT_INVALID_STATUS_TRANSITION on a backward/reopen attempt; 409 REPORT_STATUS_CONFLICT when another admin changes the report first (compare-and-set; reload and retry); 404 REPORT_NOT_FOUND; 400 VALIDATION_ERROR."
+          }
+        },
+        {
+          "name": "Non-admin cannot list reports (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('non-admin forbidden', function () {",
+                  "  pm.expect(pm.response.code).to.equal(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Summary (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('summary succeeds', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('has user + reports counts', function () {",
+                  "  pm.expect(body.users).to.have.property('total');",
+                  "  pm.expect(body.users).to.have.property('active');",
+                  "  pm.expect(body.users).to.have.property('byRole');",
+                  "  pm.expect(body.reports).to.have.property('open');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard", "summary"]
+            }
+          }
+        },
+        {
+          "name": "Activity feed (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('activity succeeds', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/activity?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard", "activity"],
+              "query": [{ "key": "limit", "value": "10" }]
+            },
+            "description": "Recent audit entries, newest first, with actor names resolved from PostgreSQL (null when system/unknown)."
+          }
+        },
+        {
+          "name": "Non-admin cannot read dashboard (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('non-admin forbidden', function () {",
+                  "  pm.expect(pm.response.code).to.equal(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "dashboard", "summary"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit Logs",
+      "item": [
+        {
+          "name": "List Audit Logs (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('audit list succeeds', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data[0]) {",
+                  "  pm.collectionVariables.set('auditId', body.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/audit-logs?action=REPORT_STATUS_CHANGED&page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "audit-logs"],
+              "query": [
+                { "key": "action", "value": "REPORT_STATUS_CHANGED" },
+                { "key": "actorId", "value": "", "disabled": true },
+                { "key": "from", "value": "", "disabled": true },
+                { "key": "to", "value": "", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "Admin-only read of the append-only audit log. Filter by action, actorId, and from/to ISO dates. Newest first."
+          }
+        },
+        {
+          "name": "Audit Log Detail (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('audit detail succeeds or 404 when none captured', function () {",
+                  "  pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/audit-logs/{{auditId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "audit-logs", "{{auditId}}"]
+            }
+          }
+        },
+        {
+          "name": "Non-admin cannot read audit logs (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('non-admin forbidden', function () {",
+                  "  pm.expect(pm.response.code).to.equal(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/audit-logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "audit-logs"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

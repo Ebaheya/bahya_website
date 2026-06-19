@@ -20,6 +20,7 @@ developers and engineers exercising the API in Postman.
 - [Dynamic assessment forms](#dynamic-assessment-forms)
 - [Patient services & activities](#patient-services--activities)
 - [Notifications](#notifications)
+- [Admin web panel](#admin-web-panel)
 - [Tests](#tests)
 - [Postman](#postman)
 - [Authentication](#authentication)
@@ -36,6 +37,9 @@ developers and engineers exercising the API in Postman.
   - [Services](#services)
   - [Service Requests](#service-requests)
   - [Notifications](#notifications-1)
+  - [Reports](#reports)
+  - [Dashboard](#dashboard)
+  - [Audit Logs](#audit-logs)
 
 ## Stack
 
@@ -435,6 +439,44 @@ Device tokens are registered through authenticated endpoints and stored in
 PostgreSQL as `DeviceToken` rows. Re-registering the same token rebinds it to
 the latest caller and refreshes `lastSeenAt`; unregistering is scoped to the
 caller.
+
+## Admin web panel
+
+The admin web panel (لوحة الإدارة) surfaces three staff-facing capabilities,
+all mounted under `/api/v1`:
+
+- `reports/` — user reports / البلاغات (`/reports`)
+- `dashboard/` — operational overview (`/dashboard`)
+- `audit-logs/` — append-only audit log read APIs (`/audit-logs`)
+
+**Reports (البلاغات).** Any authenticated user files an issue (title + body).
+Admins list/filter/search reports, open a detail showing the reporter's
+*current* identity (name/email/role resolved fresh from PostgreSQL — never
+snapshotted, so it stays correct even after the reporter is renamed or
+deactivated), and move each report through `PENDING → INVESTIGATING →
+RESOLVED`, recording who changed it and when. Filing and status changes are
+audited (`REPORT_CREATED`, `REPORT_STATUS_CHANGED`). `Report` is a PostgreSQL
+entity; filing is rate-limited per user.
+
+**Dashboard.** An admin-only summary (total users, active users,
+users-by-role distribution, open-reports count, assessments-by-status, open
+notifications) plus a recent-activity feed sourced from the audit log with
+actor names resolved from PostgreSQL.
+
+**Audit logs.** Admin-only read/filter of the append-only MongoDB audit log
+(by action, actor, and date range). The read path performs no writes.
+
+### Roles and access
+
+| Capability | Admin | Doctor | Volunteer | Call Center | Patient |
+|---|:---:|:---:|:---:|:---:|:---:|
+| File a report (`POST /reports`) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| List / detail / summary / change status of reports | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Dashboard summary / activity | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Audit-log read | ✅ | ❌ | ❌ | ❌ | ❌ |
+
+Every route is `authenticate` (JWT + PostgreSQL role re-validation); all but
+report filing are then `authorize('ADMIN')`.
 
 ## Tests
 
@@ -2411,6 +2453,197 @@ tokens reported by FCM are pruned automatically.
 
 **Common errors:** `400 VALIDATION_ERROR`, `403 FORBIDDEN` or `NOT_RECIPIENT`,
 `404 NOT_FOUND`, `409 CLAIM_CONFLICT`, `409 ILLEGAL_TRANSITION`.
+
+---
+
+### Reports
+
+User-submitted issues (البلاغات). Filing is open to any authenticated role;
+all triage operations require `ADMIN`. The reporter's `fullName`/`email`/`role`
+are resolved from PostgreSQL at read time, not stored on the report.
+
+#### `POST /reports`
+
+Files a report. Emits a `REPORT_CREATED` audit entry. Rate-limited per user.
+
+**Auth:** Bearer token. **Roles:** any.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `title` | string | yes | 1–200 chars |
+| `body` | string | yes | 1–5000 chars |
+
+```json
+{ "title": "Content Report", "body": "Some content needs review by the admin team." }
+```
+
+**Response 201**
+
+```json
+{ "id": "uuid", "title": "Content Report", "status": "PENDING", "createdAt": "2026-06-18T10:00:00.000Z" }
+```
+
+**Errors:** `400 VALIDATION_ERROR` (empty/oversized title or body); `429` when the per-user file limit is exceeded.
+
+#### `GET /reports`
+
+Paginated, newest-first list for triage.
+
+**Auth:** Bearer token. **Roles:** ADMIN.
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `status` | enum | — | `PENDING`, `INVESTIGATING`, `RESOLVED` |
+| `q` | string | — | Case-insensitive match on reporter name/email or title |
+| `page` | int | `1` | 1-indexed |
+| `pageSize` | int | `20` | Max `100` |
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Content Report",
+      "status": "PENDING",
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "reporter": { "id": "uuid", "fullName": "Sarah Johnson", "email": "sarah.johnson@email.com", "role": "DOCTOR" }
+    }
+  ],
+  "page": 1, "pageSize": 20, "total": 9
+}
+```
+
+The reporter join is not filtered by `isActive`, so reports from deactivated users remain visible.
+
+#### `GET /reports/summary`
+
+**Auth:** Bearer token. **Roles:** ADMIN.
+
+```json
+{ "pending": 2, "investigating": 3, "resolved": 4 }
+```
+
+#### `GET /reports/:id`
+
+**Auth:** Bearer token. **Roles:** ADMIN.
+
+```json
+{
+  "id": "uuid",
+  "title": "Content Report",
+  "body": "The patient reported that some content contains inappropriate language…",
+  "status": "PENDING",
+  "reporter": { "id": "uuid", "fullName": "Sarah Johnson", "email": "sarah.johnson@email.com", "role": "DOCTOR" },
+  "handledBy": null,
+  "handledAt": null,
+  "createdAt": "2026-04-26T00:00:00.000Z"
+}
+```
+
+**Errors:** `404 NOT_FOUND`.
+
+#### `PATCH /reports/:id/status`
+
+Changes status, sets `handledBy`/`handledAt`, and emits `REPORT_STATUS_CHANGED`.
+
+Status moves **forward only**: `PENDING → INVESTIGATING → RESOLVED`. Setting the
+current status is a no-op (returns `200`). A backward or skip-back change (e.g.
+reopening a `RESOLVED` report) is rejected. Updates use a compare-and-set guard,
+so if another admin changes the row first the losing request gets a conflict
+rather than silently overwriting — clients should reload and retry.
+
+**Auth:** Bearer token. **Roles:** ADMIN.
+
+```json
+{ "status": "INVESTIGATING" }
+```
+
+**Response 200** — the updated report (detail shape).
+
+**Errors:**
+- `400 VALIDATION_ERROR` — invalid/unknown status value.
+- `404 NOT_FOUND` — `REPORT_NOT_FOUND`; no report with that id.
+- `409 REPORT_INVALID_STATUS_TRANSITION` — illegal transition (backward / reopen).
+- `409 REPORT_STATUS_CONFLICT` — another admin changed the report concurrently;
+  reload and retry.
+
+---
+
+### Dashboard
+
+Admin-only operational overview. **Not yet wired to any write path** — purely
+computed from current data.
+
+#### `GET /dashboard/summary`
+
+**Auth:** Bearer token. **Roles:** ADMIN.
+
+```json
+{
+  "users": { "total": 2847, "active": 1234, "byRole": { "ADMIN": 8, "DOCTOR": 120, "VOLUNTEER": 35, "CALL_CENTER": 12, "PATIENT": 2672 } },
+  "reports": { "open": 5 },
+  "assessments": { "byStatus": { "NORMAL": 40, "MILD": 22, "MODERATE": 18, "SEVERE": 7, "CRITICAL": 3 } },
+  "notifications": { "open": 11 }
+}
+```
+
+`reports.open` counts reports whose status is not `RESOLVED`.
+
+#### `GET /dashboard/activity`
+
+Recent audit entries, newest first, with actor names resolved from PostgreSQL
+(`actor` is null for system/unknown actors).
+
+**Auth:** Bearer token. **Roles:** ADMIN.
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `limit` | int | `10` | Max `50` |
+
+```json
+{
+  "data": [
+    { "id": "objectid", "action": "PATIENT_UPDATED", "entityType": "PATIENT", "actor": { "id": "uuid", "fullName": "Dr. Sarah Johnson" }, "createdAt": "2026-06-18T09:58:00.000Z" }
+  ]
+}
+```
+
+---
+
+### Audit Logs
+
+Admin-only read access to the append-only MongoDB audit log. No write/update/delete.
+
+#### `GET /audit-logs`
+
+**Auth:** Bearer token. **Roles:** ADMIN.
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `action` | enum | — | Any audited action (e.g. `REPORT_STATUS_CHANGED`) |
+| `actorId` | uuid | — | Filter by acting user |
+| `from` | ISO date | — | Start of range (inclusive) |
+| `to` | ISO date | — | End of range (inclusive) |
+| `page` | int | `1` | 1-indexed |
+| `pageSize` | int | `20` | Max `100` |
+
+```json
+{
+  "data": [
+    { "id": "objectid", "actorId": "uuid", "action": "ASSESSMENT_CREATED", "entityType": "ASSESSMENT", "entityId": "uuid", "ipAddress": "…", "createdAt": "2026-06-18T09:00:00.000Z" }
+  ],
+  "page": 1, "pageSize": 20, "total": 1432
+}
+```
+
+**Errors:** `400 VALIDATION_ERROR` (bad date / unknown filter / non-24-hex id on detail).
+
+#### `GET /audit-logs/:id`
+
+**Auth:** Bearer token. **Roles:** ADMIN. Returns the full entry including
+`oldValues`/`newValues`/`userAgent`.
+
+**Errors:** `404 NOT_FOUND`.
 
 ---
 

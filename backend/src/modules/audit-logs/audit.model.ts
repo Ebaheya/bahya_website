@@ -32,6 +32,10 @@ const AuditLogSchema = new Schema<AuditLogDoc>(
 
 AuditLogSchema.index({ actorId: 1, createdAt: -1 });
 AuditLogSchema.index({ action: 1, createdAt: -1 });
+// Unfiltered newest-first scans (dashboard activity feed) can't use the
+// compound indexes above because those are prefixed by actorId/action, so
+// back the bare `.sort({ createdAt: -1 })` with its own index.
+AuditLogSchema.index({ createdAt: -1 });
 AuditLogSchema.index(
   { legacyPgId: 1 },
   {
