@@ -95,7 +95,7 @@ describe('dashboard service', () => {
       where: { status: { not: 'RESOLVED' } },
     });
     expect(notificationModelMock.countDocuments).toHaveBeenCalledWith({
-      status: { $ne: 'DONE' },
+      status: { $in: ['UNREAD', 'READ'] },
     });
   });
 

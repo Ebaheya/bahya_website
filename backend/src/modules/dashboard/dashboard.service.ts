@@ -42,7 +42,9 @@ export async function getSummary() {
       _count: { _all: true },
     }),
     prisma.report.count({ where: { status: { not: 'RESOLVED' } } }),
-    NotificationModel.countDocuments({ status: { $ne: 'DONE' } }),
+    // Positive open-status predicate so MongoDB can use the status-leading
+    // index (a `$ne: 'DONE'` filter is non-selective and forces a COLLSCAN).
+    NotificationModel.countDocuments({ status: { $in: ['UNREAD', 'READ'] } }),
   ]);
 
   const byRole = zeroRoleCounts();
