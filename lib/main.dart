@@ -1,28 +1,22 @@
 import 'package:bahya_app/route.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
+import 'package:bahya_app/services/push_notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await PushNotificationService.instance.initialize();
 
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  authNotifier.addListener(() {
+    PushNotificationService.instance.registerDeviceTokenIfLoggedIn();
+  });
 
-  final messaging = FirebaseMessaging.instance;
-
-  await messaging.requestPermission();
-
-  final token = await messaging.getToken();
-  print("FCM Token: $token");
   await localeNotifier.load();
   await authNotifier.checkLogin();
+  await PushNotificationService.instance.registerDeviceTokenIfLoggedIn();
 
   runApp(const MyApp());
 }

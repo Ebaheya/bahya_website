@@ -2,14 +2,12 @@ import 'package:bahya_app/data/remote/web/web_service.dart';
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/custom_app_bar.dart';
-import 'package:bahya_app/helper/custom_loading.dart';
 import 'package:bahya_app/helper/heart_pull_refresh.dart';
 import 'package:bahya_app/helper/service_formatters.dart';
 
 import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/logic/cubit/service_admin_cubit.dart';
 import 'package:bahya_app/logic/state/service_admin_state.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -30,16 +28,6 @@ class AdminHome extends StatelessWidget {
 
     return BlocBuilder<ServiceAdminCubit, ServiceAdminState>(
       builder: (context, state) {
-        final isPageLoading =
-            state.isLoading && state.requests.isEmpty && state.summary.isEmpty;
-
-        if (isPageLoading) {
-          return Scaffold(
-            backgroundColor: backgroundColor,
-            body: Center(child: customLoading()),
-          );
-        }
-
         return Scaffold(
           backgroundColor: backgroundColor,
           body: HeartPullRefreshScrollView(
@@ -69,10 +57,9 @@ class AdminHome extends StatelessWidget {
 
                           if (!context.mounted) return;
 
-                          Navigator.of(context).pushNamedAndRemoveUntil(
-                            '/login',
-                            (route) => false,
-                          );
+                          Navigator.of(
+                            context,
+                          ).pushNamedAndRemoveUntil('/login', (route) => false);
                         },
                         widgets: [
                           Padding(
@@ -100,31 +87,14 @@ class AdminHome extends StatelessWidget {
                                 ),
                                 AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 400),
-                                  child: state.isLoading && state.summary.isEmpty
-                                      ? SizedBox(
-                                          key: const ValueKey(
-                                            'summary-loading',
-                                          ),
-                                          height: responsiveHeight(
-                                            context,
-                                            0.15,
-                                            min: 122,
-                                            max: 145,
-                                          ),
-                                          child: const Center(
-                                            child: CupertinoActivityIndicator(
-                                              radius: 14,
-                                            ),
-                                          ),
-                                        )
-                                      : _AdminSummaryCards(
-                                          key: ValueKey(
-                                            'summary-${state.summary.hashCode}',
-                                          ),
-                                          w: w,
-                                          h: h,
-                                          summary: state.summary,
-                                        ),
+                                  child: _AdminSummaryCards(
+                                    key: ValueKey(
+                                      'summary-${state.summary.hashCode}',
+                                    ),
+                                    w: w,
+                                    h: h,
+                                    summary: state.summary,
+                                  ),
                                 ),
                               ],
                             ),
@@ -324,89 +294,85 @@ class AdminHome extends StatelessWidget {
                               duration: const Duration(milliseconds: 400),
                               switchInCurve: Curves.easeInOutCubic,
                               switchOutCurve: Curves.easeInOutCubic,
-                              child: state.isLoading
-                                  ? Padding(
-                                      key: const ValueKey('loading-requests'),
-                                      padding: EdgeInsets.only(
-                                        top: responsiveHeight(
-                                          context,
-                                          0.06,
-                                          min: 40,
-                                          max: 60,
-                                        ),
+                              child: state.requests.isEmpty
+                                  ? _EmptyRequestsWidget(isArabic: isArabic)
+                                  : Column(
+                                      key: ValueKey(
+                                        'list-${state.requests.map((e) => e.id).join('-')}',
                                       ),
-                                      child: customLoading(),
-                                    )
-                                  : state.requests.isEmpty
-                                      ? _EmptyRequestsWidget(isArabic: isArabic)
-                                      : Column(
-                                          key: ValueKey(
-                                            'list-${state.requests.map((e) => e.id).join('-')}',
-                                          ),
-                                          children: [
-                                            for (
-                                              int index = 0;
-                                              index < state.requests.length;
-                                              index++
-                                            )
-                                              _AnimatedRequestCard(
-                                                index: index,
-                                                child: requestedServiceCard(
-                                                  w: w,
-                                                  h: h,
-                                                  nameOfPatient: state
-                                                          .requests[index]
-                                                          .patientName
-                                                          .isEmpty
-                                                      ? (isArabic
-                                                          ? 'غير محدد'
-                                                          : 'Not set')
-                                                      : state.requests[index]
-                                                          .patientName,
-                                                  medicalNumber: state
-                                                          .requests[index]
-                                                          .medicalNumber
-                                                          .isEmpty
-                                                      ? (isArabic
-                                                          ? 'غير محدد'
-                                                          : 'Not set')
-                                                      : state.requests[index]
-                                                          .medicalNumber,
-                                                  service: state.requests[index]
-                                                          .service?.title ??
-                                                      (isArabic
-                                                          ? 'غير محدد'
-                                                          : 'Not set'),
-                                                  requestDate:
-                                                      formatServiceDate(
-                                                    context,
-                                                    state.requests[index]
-                                                        .requestDate,
-                                                  ),
-                                                  onAccept: state.isSaving
-                                                      ? null
-                                                      : () => context
-                                                          .read<
-                                                              ServiceAdminCubit>()
-                                                          .approveRequest(
-                                                            state
-                                                                .requests[index]
-                                                                .id,
-                                                          ),
-                                                  onDeny: state.isSaving
-                                                      ? null
-                                                      : () => context
-                                                          .read<
-                                                              ServiceAdminCubit>()
-                                                          .rejectRequest(
-                                                            state
-                                                                .requests[index]
-                                                                .id,
-                                                          ),
-                                                ),
+                                      children: [
+                                        for (
+                                          int index = 0;
+                                          index < state.requests.length;
+                                          index++
+                                        )
+                                          _AnimatedRequestCard(
+                                            index: index,
+                                            child: requestedServiceCard(
+                                              w: w,
+                                              h: h,
+                                              nameOfPatient:
+                                                  state
+                                                      .requests[index]
+                                                      .patientName
+                                                      .isEmpty
+                                                  ? (isArabic
+                                                        ? 'غير محدد'
+                                                        : 'Not set')
+                                                  : state
+                                                        .requests[index]
+                                                        .patientName,
+                                              medicalNumber:
+                                                  state
+                                                      .requests[index]
+                                                      .medicalNumber
+                                                      .isEmpty
+                                                  ? (isArabic
+                                                        ? 'غير محدد'
+                                                        : 'Not set')
+                                                  : state
+                                                        .requests[index]
+                                                        .medicalNumber,
+                                              service:
+                                                  state
+                                                      .requests[index]
+                                                      .service
+                                                      ?.title ??
+                                                  (isArabic
+                                                      ? 'غير محدد'
+                                                      : 'Not set'),
+                                              requestDate: formatServiceDate(
+                                                context,
+                                                state
+                                                    .requests[index]
+                                                    .requestDate,
                                               ),
-                                          ],
-                                        ),
+                                              onAccept: state.isSaving
+                                                  ? null
+                                                  : () => context
+                                                        .read<
+                                                          ServiceAdminCubit
+                                                        >()
+                                                        .approveRequest(
+                                                          state
+                                                              .requests[index]
+                                                              .id,
+                                                        ),
+                                              onDeny: state.isSaving
+                                                  ? null
+                                                  : () => context
+                                                        .read<
+                                                          ServiceAdminCubit
+                                                        >()
+                                                        .rejectRequest(
+                                                          state
+                                                              .requests[index]
+                                                              .id,
+                                                        ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                             ),
                             SizedBox(
                               height: responsiveHeight(

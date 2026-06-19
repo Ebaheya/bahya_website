@@ -326,6 +326,7 @@ class WebService {
       );
 
       authNotifier.login(role: role);
+
       return role;
     } on ApiException {
       rethrow;
@@ -356,6 +357,20 @@ class WebService {
     }
 
     return null;
+  }
+
+  Future<void> registerDeviceToken({
+    required String token,
+    required String platform,
+  }) async {
+    await post(
+      '/notifications/devices',
+      data: {'token': token, 'platform': platform},
+    );
+  }
+
+  Future<void> unregisterDeviceToken({required String token}) async {
+    await delete('/notifications/devices', data: {'token': token});
   }
 
   Future<void> logout() async {

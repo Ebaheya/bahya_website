@@ -1,0 +1,7 @@
+<resources>
+    <string name="NOTIFICATION_SERVICE_REQUEST_SUBMITTED_TITLE">New service request</string>
+    <string name="NOTIFICATION_SERVICE_REQUEST_SUBMITTED_BODY">A patient sent a new service request</string>
+
+    <string name="NOTIFICATION_SERVICE_REQUEST_DECIDED_TITLE">Service request update</string>
+    <string name="NOTIFICATION_SERVICE_REQUEST_DECIDED_BODY">Your service request has been updated</string>
+</resources>

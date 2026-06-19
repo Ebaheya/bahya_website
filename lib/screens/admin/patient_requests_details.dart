@@ -53,9 +53,9 @@ debugPrint('PatientRequestsDetails : ${widget.patientName} - ${widget.medicalNum
       backgroundColor: backgroundColor,
       appBar: customAppBar(
         context: context,
-        title: isArabic ? 'تفاصيل طلبات المريضة' : 'Patient Requests Details',
+        title: isArabic ? 'تفاصيل طلبات البطلة' : 'Patient Requests Details',
         subTitle: isArabic
-            ? 'متابعة طلبات الخدمات الخاصة بالمريضة'
+            ? 'متابعة طلبات الخدمات الخاصة بالبطلة'
             : 'Track patient service requests',
         isHome: false,
       ),
@@ -92,7 +92,7 @@ debugPrint('PatientRequestsDetails : ${widget.patientName} - ${widget.medicalNum
               return Center(
                 child: customText(
                   text: isArabic
-                      ? 'لا توجد طلبات لهذه المريضة'
+                      ? 'لا توجد طلبات لهذه البطلة'
                       : 'No requests found for this patient',
                   size: responsiveSize(context, 0.04, min: 14, max: 18),
                   color: Colors.grey,

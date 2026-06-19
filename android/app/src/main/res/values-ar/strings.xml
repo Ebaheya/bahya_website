@@ -1,0 +1,7 @@
+<resources>
+    <string name="NOTIFICATION_SERVICE_REQUEST_SUBMITTED_TITLE">طلب خدمة جديد</string>
+    <string name="NOTIFICATION_SERVICE_REQUEST_SUBMITTED_BODY">تم إرسال طلب خدمة جديد من بطلة</string>
+
+    <string name="NOTIFICATION_SERVICE_REQUEST_DECIDED_TITLE">تحديث طلب الخدمة</string>
+    <string name="NOTIFICATION_SERVICE_REQUEST_DECIDED_BODY">تم تحديث طلب الخدمة الخاص بك</string>
+</resources>
