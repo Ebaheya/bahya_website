@@ -71,6 +71,14 @@ const envSchema = z.object({
     .pipe(z.boolean()),
   FIREBASE_SERVICE_ACCOUNT: z.string().default(''),
   GOOGLE_APPLICATION_CREDENTIALS: z.string().default(''),
+
+  BAHYA_AI_BASE_URL: z.string().url(),
+  BAHYA_AI_API_KEY: z.string().min(1, 'BAHYA_AI_API_KEY is required'),
+  BAHYA_AI_TIMEOUT_MS: z
+    .string()
+    .default('8000')
+    .transform((v) => parseInt(v, 10))
+    .pipe(z.number().int().positive()),
 });
 
 const parsed = envSchema.safeParse(process.env);
