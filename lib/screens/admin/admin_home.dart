@@ -3,13 +3,15 @@ import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/custom_app_bar.dart';
 import 'package:bahya_app/helper/heart_pull_refresh.dart';
-import 'package:bahya_app/helper/service_formatters.dart';
+
 
 import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/logic/cubit/service_admin_cubit.dart';
 import 'package:bahya_app/logic/state/service_admin_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+
 
 class AdminHome extends StatelessWidget {
   AdminHome({super.key});
@@ -18,6 +20,24 @@ class AdminHome extends StatelessWidget {
 
   Future<void> _refreshDashboard(BuildContext context) async {
     await context.read<ServiceAdminCubit>().loadDashboard();
+  }
+
+  String _formatRequestDate(BuildContext context, String value) {
+    final isArabic = context.l10n.isArabic;
+    final raw = value.trim();
+
+    if (raw.isEmpty) return isArabic ? 'غير محدد' : 'Not set';
+
+    try {
+      final date = DateTime.parse(raw).toLocal();
+      final day = date.day.toString().padLeft(2, '0');
+      final month = date.month.toString().padLeft(2, '0');
+      final year = date.year.toString();
+
+      return '$day/$month/$year';
+    } catch (_) {
+      return raw;
+    }
   }
 
   @override
@@ -101,6 +121,7 @@ class AdminHome extends StatelessWidget {
                           ),
                         ],
                       ),
+
                       Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: responsiveSize(
@@ -133,6 +154,7 @@ class AdminHome extends StatelessWidget {
                               onPressed: () =>
                                   Navigator.pushNamed(context, '/addService'),
                             ),
+
                             SizedBox(
                               height: responsiveHeight(
                                 context,
@@ -141,6 +163,7 @@ class AdminHome extends StatelessWidget {
                                 max: 14,
                               ),
                             ),
+
                             _AdminActionCard(
                               title: isArabic
                                   ? 'إنشاء كاتيجوري جديدة'
@@ -158,6 +181,7 @@ class AdminHome extends StatelessWidget {
                                 '/create_category',
                               ),
                             ),
+
                             SizedBox(
                               height: responsiveHeight(
                                 context,
@@ -166,6 +190,7 @@ class AdminHome extends StatelessWidget {
                                 max: 14,
                               ),
                             ),
+
                             _AdminActionCard(
                               title: isArabic
                                   ? 'تاريخ الطلبات'
@@ -183,6 +208,7 @@ class AdminHome extends StatelessWidget {
                                 '/patientsSearch',
                               ),
                             ),
+
                             SizedBox(
                               height: responsiveHeight(
                                 context,
@@ -191,6 +217,7 @@ class AdminHome extends StatelessWidget {
                                 max: 24,
                               ),
                             ),
+
                             Row(
                               children: [
                                 customText(
@@ -282,6 +309,7 @@ class AdminHome extends StatelessWidget {
                                 ),
                               ],
                             ),
+
                             SizedBox(
                               height: responsiveHeight(
                                 context,
@@ -290,6 +318,7 @@ class AdminHome extends StatelessWidget {
                                 max: 16,
                               ),
                             ),
+
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 400),
                               switchInCurve: Curves.easeInOutCubic,
@@ -341,7 +370,7 @@ class AdminHome extends StatelessWidget {
                                                   (isArabic
                                                       ? 'غير محدد'
                                                       : 'Not set'),
-                                              requestDate: formatServiceDate(
+                                              requestDate: _formatRequestDate(
                                                 context,
                                                 state
                                                     .requests[index]
@@ -374,6 +403,7 @@ class AdminHome extends StatelessWidget {
                                       ],
                                     ),
                             ),
+
                             SizedBox(
                               height: responsiveHeight(
                                 context,

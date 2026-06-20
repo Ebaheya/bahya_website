@@ -2,9 +2,12 @@ import 'package:bahya_app/data/remote/repo/repo.dart';
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/custom_app_bar.dart';
+import 'package:bahya_app/helper/custom_loading.dart';
+import 'package:bahya_app/helper/heart_pull_refresh.dart';
 import 'package:bahya_app/helper/widgets/patient/service_list_body.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/logic/cubit/patient_services_cubit.dart';
+import 'package:bahya_app/logic/state/patient_services_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -54,6 +57,13 @@ class ServicesScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _refreshServices(BuildContext context, String categoryId) async {
+    if (categoryId.isEmpty) return;
+    await context.read<PatientServicesCubit>().loadServices(
+      categoryId: categoryId,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments;
@@ -63,6 +73,7 @@ class ServicesScreen extends StatelessWidget {
     final title = arguments['title']?.toString() ?? 'الخدمات';
     final subTitle =
         arguments['subTitle']?.toString() ?? 'اختاري ما يناسبك وانضمي الآن';
+
     return BlocProvider(
       create: (_) {
         final cubit = PatientServicesCubit(AppRepository());
@@ -71,25 +82,69 @@ class ServicesScreen extends StatelessWidget {
         }
         return cubit;
       },
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        backgroundColor: backgroundColor,
-        appBar: customAppBar(
-          context: context,
-          title: context.tr(title),
-          subTitle: context.tr(subTitle),
-          icon: _iconFromKey(iconKey),
-          isHome: false,
-        ),
-        body: categoryId.isEmpty
-            ? Center(
-                child: customText(
-                  text: 'لا توجد خدمات متاحة حالياً',
-                  size: responsiveSize(context, 0.04, min: 16, max: 20),
-                  color: Colors.grey,
+      child: Builder(
+        builder: (context) {
+          return Scaffold(
+            backgroundColor: backgroundColor,
+            body: HeartPullRefreshScrollView(
+              onRefresh: () => _refreshServices(context, categoryId),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Directionality(
+                    textDirection: context.appTextDirection,
+                    child: Column(
+                      children: [
+                        customAppBar(
+                          context: context,
+                          title: context.tr(title),
+                          subTitle: context.tr(subTitle),
+                          icon: _iconFromKey(iconKey),
+                          isHome: false,
+                        ),
+                        BlocBuilder<PatientServicesCubit, PatientServicesState>(
+                          builder: (context, state) {
+                            if (state.isLoading) {
+                              return SizedBox(
+                                height: getScreenHeight(context) * 0.62,
+                                width: double.infinity,
+                                child: Center(child: customLoading()),
+                              );
+                            }
+
+                            if (categoryId.isEmpty) {
+                              return SizedBox(
+                                height: getScreenHeight(context) * 0.55,
+                                child: Center(
+                                  child: customText(
+                                    text: context.tr(
+                                      'لا توجد خدمات متاحة حالياً',
+                                    ),
+                                    size: responsiveSize(
+                                      context,
+                                      0.04,
+                                      min: 16,
+                                      max: 20,
+                                    ),
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return ServiceListBody(
+                              categoryId: categoryId,
+                              showCategoryChips: false,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              )
-            : ServiceListBody(categoryId: categoryId, showCategoryChips: false),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

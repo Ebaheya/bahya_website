@@ -35,6 +35,37 @@ class _PatientsSearchState extends State<PatientsSearch> {
     await context.read<ServiceAdminCubit>().loadPatientRequestsDetails();
   }
 
+  Widget _buildHeader(BuildContext context, double h, bool isArabic) {
+    return customAppBar(
+      context: context,
+      preferredSize: Size.fromHeight(h * 0.2),
+      title: isArabic ? 'بحث عن مريض' : 'Search Patients',
+      subTitle: isArabic
+          ? 'ابحث عن المحاربات في رحلتهن'
+          : 'Find warriors in their journey',
+      isHome: false,
+      icon: Icons.arrow_back_ios_new_outlined,
+      onIconPressed: () => Navigator.pop(context),
+      widgets: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: CustomSearchBarWithFilter(
+            hintText: isArabic
+                ? 'ابحثي باسم المريضة أو رقم الملف...'
+                : 'Search by patient name or file number...',
+            onChanged: (value) {
+              setState(() {
+                searchText = value.trim().toLowerCase();
+              });
+            },
+            onFilterTap: () {},
+            onSearchTap: () {},
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final h = getScreenHeight(context);
@@ -42,161 +73,142 @@ class _PatientsSearchState extends State<PatientsSearch> {
     final isArabic = context.l10n.isArabic;
 
     return Scaffold(
-      extendBody: true,
-      extendBodyBehindAppBar: true,
       backgroundColor: backgroundColor,
-      appBar: customAppBar(
-        context: context,
-        preferredSize: Size.fromHeight(h * 0.2),
-        title: isArabic ? 'بحث عن مريض' : 'Search Patients',
-        subTitle: isArabic
-            ? 'ابحث عن المحاربات في رحلتهن'
-            : 'Find warriors in their journey',
-        isHome: false,
-        icon: Icons.arrow_back_ios_new_outlined,
-        onIconPressed: () => Navigator.pop(context),
-        widgets: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: CustomSearchBarWithFilter(
-              hintText: isArabic
-                  ? 'ابحثي باسم المريضة أو رقم الملف...'
-                  : 'Search by patient name or file number...',
-              onChanged: (value) {
-                setState(() {
-                  searchText = value.trim().toLowerCase();
-                });
-              },
-              onFilterTap: () {},
-              onSearchTap: () {},
-            ),
-          ),
-        ],
-      ),
-      body: Directionality(
-        textDirection: context.appTextDirection,
-        child: BlocBuilder<ServiceAdminCubit, ServiceAdminState>(
-          builder: (context, state) {
-            if (state.isLoading && state.requests.isEmpty) {
-              return Center(child: customLoading());
-            }
+      body: BlocBuilder<ServiceAdminCubit, ServiceAdminState>(
+        builder: (context, state) {
+          final patients = _uniquePatientsFromRequests(state.requests);
+          final filteredPatients = _filterPatients(patients);
 
-            final patients = _uniquePatientsFromRequests(state.requests);
-            final filteredPatients = _filterPatients(patients);
-
-            return HeartPullRefreshScrollView(
-              onRefresh: () => _refreshPatients(context),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: w * 0.025),
-                    child: Column(
-                      children: [
-                        SizedBox(height: h * 0.25),
-                        if (state.error != null && state.error!.isNotEmpty)
-                          Padding(
-                            padding: EdgeInsets.only(
-                              top: responsiveHeight(
-                                context,
-                                0.08,
-                                min: 50,
-                                max: 80,
-                              ),
-                            ),
-                            child: customText(
-                              text: state.error!,
-                              size: w * 0.04,
-                              color: Colors.red,
-                              bold: true,
-                            ),
-                          )
-                        else if (filteredPatients.isEmpty)
-                          Padding(
-                            padding: EdgeInsets.only(
-                              top: responsiveHeight(
-                                context,
-                                0.08,
-                                min: 50,
-                                max: 80,
-                              ),
-                            ),
-                            child: customText(
-                              text: isArabic
-                                  ? 'لا توجد مريضات لديهن طلبات'
-                                  : 'No patients with requests found',
-                              size: w * 0.04,
-                              color: Colors.grey,
-                              bold: true,
-                            ),
-                          )
-                        else ...[
-                          Align(
-                            alignment: isArabic
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: customText(
-                              text: isArabic
-                                  ? 'عدد المريضات: ${filteredPatients.length}'
-                                  : 'Patients: ${filteredPatients.length}',
-                              size: w * 0.035,
-                              color: const Color(0xff14213D),
-                              bold: true,
-                            ),
-                          ),
-                          SizedBox(height: h * 0.015),
-                          ...filteredPatients.map((patient) {
-                            final patientKey = _patientKey(patient);
-                            final patientRequests = state.requests.where((request) {
-                              return _patientKey(request) == patientKey;
-                            }).toList();
-
-                            return Padding(
-                              padding: EdgeInsets.only(bottom: h * 0.014),
-                              child: patientCard(
-                                context: context,
-                                w: w,
-                                h: h,
-                                patientName: patient.patientName,
-                                medicalNumber: patient.medicalNumber,
-                                requestCount: patientRequests.length,
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/patientRequestsDetails',
-                                    arguments: {
-                                      'patientName': patient.patientName,
-                                      'medicalNumber': patient.medicalNumber,
-                                      'requestIds': patientRequests
-                                          .map((e) => e.id)
-                                          .toList(),
-                                    },
-                                  );
-                                },
-                              ),
-                            );
-                          }),
-                        ],
+          return HeartPullRefreshScrollView(
+            onRefresh: () => _refreshPatients(context),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Directionality(
+                  textDirection: context.appTextDirection,
+                  child: Column(
+                    children: [
+                      _buildHeader(context, h, isArabic),
+                      if (state.isLoading)
                         SizedBox(
-                          height: responsiveHeight(
-                            context,
-                            0.025,
-                            min: 18,
-                            max: 28,
+                          width: w,
+                          height: h * 0.55,
+                          child: Center(child: customLoading()),
+                        )
+                      else
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: w * 0.025),
+                          child: Column(
+                            children: [
+                              if (state.error != null && state.error!.isNotEmpty)
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    top: responsiveHeight(
+                                      context,
+                                      0.08,
+                                      min: 50,
+                                      max: 80,
+                                    ),
+                                  ),
+                                  child: customText(
+                                    text: state.error!,
+                                    size: w * 0.04,
+                                    color: Colors.red,
+                                    bold: true,
+                                  ),
+                                )
+                              else if (filteredPatients.isEmpty)
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    top: responsiveHeight(
+                                      context,
+                                      0.08,
+                                      min: 50,
+                                      max: 80,
+                                    ),
+                                  ),
+                                  child: customText(
+                                    text: isArabic
+                                        ? 'لا توجد مريضات لديهن طلبات'
+                                        : 'No patients with requests found',
+                                    size: w * 0.04,
+                                    color: Colors.grey,
+                                    bold: true,
+                                  ),
+                                )
+                              else ...[
+                                Align(
+                                  alignment: isArabic
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
+                                  child: customText(
+                                    text: isArabic
+                                        ? 'عدد المريضات: ${filteredPatients.length}'
+                                        : 'Patients: ${filteredPatients.length}',
+                                    size: w * 0.035,
+                                    color: const Color(0xff14213D),
+                                    bold: true,
+                                  ),
+                                ),
+                                SizedBox(height: h * 0.015),
+                                ...filteredPatients.map((patient) {
+                                  final patientKey = _patientKey(patient);
+                                  final patientRequests = state.requests.where((
+                                    request,
+                                  ) {
+                                    return _patientKey(request) == patientKey;
+                                  }).toList();
+
+                                  return Padding(
+                                    padding: EdgeInsets.only(bottom: h * 0.014),
+                                    child: patientCard(
+                                      context: context,
+                                      w: w,
+                                      h: h,
+                                      patientName: patient.patientName,
+                                      medicalNumber: patient.medicalNumber,
+                                      requestCount: patientRequests.length,
+                                      onTap: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/patientRequestsDetails',
+                                          arguments: {
+                                            'patientName': patient.patientName,
+                                            'medicalNumber': patient.medicalNumber,
+                                            'requestIds': patientRequests
+                                                .map((e) => e.id)
+                                                .toList(),
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  );
+                                }),
+                              ],
+                              SizedBox(
+                                height: responsiveHeight(
+                                  context,
+                                  0.025,
+                                  min: 18,
+                                  max: 28,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
-              ],
-            );
-          },
-        ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  List<ServiceRequestModel> _filterPatients(List<ServiceRequestModel> patients) {
+  List<ServiceRequestModel> _filterPatients(
+    List<ServiceRequestModel> patients,
+  ) {
     if (searchText.isEmpty) return patients;
 
     return patients.where((patient) {

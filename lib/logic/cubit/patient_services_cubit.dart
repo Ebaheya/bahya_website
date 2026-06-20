@@ -30,9 +30,7 @@ class PatientServicesCubit extends Cubit<PatientServicesState> {
               service.category!.iconKey.trim().isNotEmpty &&
               service.category!.color.trim().isNotEmpty;
 
-          if (hasFullCategory) {
-            return request;
-          }
+          if (hasFullCategory) return request;
 
           try {
             final fullService = await repo.getServiceDetails(service.id);
@@ -113,12 +111,48 @@ class PatientServicesCubit extends Cubit<PatientServicesState> {
                 nestedCategoryId == selectedCategoryId);
       }).toList();
 
+      ServiceRequestModel? requestForService(PatientServiceModel service) {
+        for (final request in myRequests) {
+          if (request.service?.id.trim() == service.id.trim()) {
+            return request;
+          }
+        }
+        return null;
+      }
+
+      int requestRankForService(PatientServiceModel service) {
+        final request = requestForService(service);
+        final status = request?.status.trim().toUpperCase() ?? '';
+
+        switch (status) {
+          case '':
+          case 'REJECTED':
+          case 'CANCELLED':
+            return 0; 
+          case 'PENDING':
+            return 1; 
+          case 'APPROVED':
+            return 2;
+          default:
+            return 3;
+        }
+      }
+
+      final sortedServices = [...filteredServices]
+        ..sort((a, b) {
+          final aRank = requestRankForService(a);
+          final bRank = requestRankForService(b);
+
+          if (aRank != bRank) return aRank.compareTo(bRank);
+          return a.title.compareTo(b.title);
+        });
+
       emit(
         state.copyWith(
           isLoading: false,
           hasLoaded: true,
           categories: categories,
-          services: filteredServices,
+          services: sortedServices,
           requests: myRequests,
         ),
       );
@@ -162,7 +196,7 @@ class PatientServicesCubit extends Cubit<PatientServicesState> {
       await repo.requestService(serviceId);
       if (isClosed) return;
 
-      await loadMyRequests();
+      await loadServices(categoryId: categoryId);
     } catch (e) {
       if (isClosed) return;
 
@@ -177,7 +211,10 @@ class PatientServicesCubit extends Cubit<PatientServicesState> {
     }
   }
 
-  Future<void> cancelRequest(String requestId) async {
+  Future<void> cancelRequest(
+    String requestId, {
+    required String categoryId,
+  }) async {
     if (isClosed) return;
 
     emit(state.copyWith(isSubmitting: true, clearError: true));
@@ -186,7 +223,7 @@ class PatientServicesCubit extends Cubit<PatientServicesState> {
       await repo.cancelServiceRequest(requestId);
       if (isClosed) return;
 
-      await loadMyRequests();
+      await loadServices(categoryId: categoryId);
     } catch (e) {
       if (isClosed) return;
 

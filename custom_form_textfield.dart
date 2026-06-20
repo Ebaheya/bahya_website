@@ -37,9 +37,6 @@ class CustomFormTextField extends StatefulWidget {
   final bool centerHint;
   final double borderRadius;
   final Color? textColor;
-  final int? maxNumber;
-  final int? minNumber;
-
   const CustomFormTextField({
     super.key,
     this.labelText,
@@ -62,8 +59,6 @@ class CustomFormTextField extends StatefulWidget {
     this.bordered = true,
     this.borderRadius = 30,
     this.textColor,
-    this.maxNumber,
-    this.minNumber,
   });
 
   @override
@@ -120,20 +115,14 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           break;
 
         case CustomTextFieldType.name:
-          if (!RegExp(r'^[a-zA-Z\u0600-\u06FF\s]+$').hasMatch(text)) {
+          if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(text)) {
             error = 'أدخل اسمًا صالحًا';
           }
           break;
 
         case CustomTextFieldType.number:
-          final number = int.tryParse(text);
-          if (number == null) {
+          if (!RegExp(r'^\d+$').hasMatch(text)) {
             error = 'أدخل أرقامًا فقط';
-          } else if (widget.maxNumber != null && number > widget.maxNumber!) {
-            error = 'القيمة لا يمكن أن تتجاوز ${widget.maxNumber}';
-          }
-          else if (widget.minNumber != null && number < widget.minNumber!) {
-            error = 'القيمة لا يمكن أن تكون أقل من ${widget.minNumber}';
           }
           break;
 
@@ -204,10 +193,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     }
 
     if (widget.keyboardType == CustomTextFieldType.number) {
-      return [
-        FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(3),
-      ];
+      return [FilteringTextInputFormatter.digitsOnly];
     }
 
     if (widget.keyboardType == CustomTextFieldType.score) {

@@ -4,6 +4,7 @@ import 'package:bahya_app/helper/chatbot_card.dart';
 import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/custom_app_bar.dart';
 import 'package:bahya_app/helper/custom_loading.dart';
+import 'package:bahya_app/helper/heart_pull_refresh.dart';
 import 'package:bahya_app/helper/widgets/patient/articles.dart';
 import 'package:bahya_app/helper/widgets/patient/patient_home_widgets.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
@@ -49,113 +50,117 @@ class _PatientsHomeState extends State<PatientsHome> {
     });
   }
 
+  Future<void> _refreshHome(BuildContext context) async {
+    await context.read<ServiceAdminCubit>().loadDashboard();
+  }
+
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
     final h = getScreenHeight(context);
 
     return Scaffold(
-      extendBody: true,
-      extendBodyBehindAppBar: true,
-      appBar: customAppBar(
-        title: context.tr('أهلًا بعودتك، البطلة'),
-        subTitle: context.tr('اليوم هو بداية جديدة مليئة بالأمل'),
-        context: context,
-      ),
       backgroundColor: backgroundColor,
       body: BlocBuilder<ServiceAdminCubit, ServiceAdminState>(
         builder: (context, state) {
-          if (state.isLoading) {
-            return SizedBox(
-              height: h,
-              width: w,
-              child: Center(child: customLoading()),
-            );
-          }
-
-          return Directionality(
-            textDirection: context.appTextDirection,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: responsiveHeight(
-                        context,
-                        0.15,
-                        min: 112,
-                        max: 138,
+          return HeartPullRefreshScrollView(
+            onRefresh: () => _refreshHome(context),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Directionality(
+                  textDirection: context.appTextDirection,
+                  child: Column(
+                    children: [
+                      customAppBar(
+                        title: context.tr('أهلًا بعودتك، البطلة'),
+                        subTitle: context.tr('اليوم هو بداية جديدة مليئة بالأمل'),
+                        context: context,
                       ),
-                    ),
-                    ChatBotCard(
-                      w: w,
-                      h: h,
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ChatBotScreen(),
+                      if (state.isLoading)
+                        SizedBox(
+                          height: h * 0.58,
+                          width: w,
+                          child: Center(child: customLoading()),
+                        )
+                      else
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            children: [
+                              ChatBotCard(
+                                w: w,
+                                h: h,
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const ChatBotScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              SizedBox(height: h * 0.03),
+                              sectionTitle(
+                                context: context,
+                                w: w,
+                                title: context.tr('الخدمات المجتمعية'),
+                              ),
+                              SizedBox(
+                                height: responsiveHeight(
+                                  context,
+                                  0.024,
+                                  min: 18,
+                                  max: 22,
+                                ),
+                              ),
+                              _DynamicCategoriesSection(
+                                w: w,
+                                h: h,
+                                categories: state.categories,
+                                services: state.services,
+                                visibleCount: visibleCategoriesCount,
+                                onToggleMore: _showMoreCategories,
+                                serviceBelongsToCategory:
+                                    _serviceBelongsToCategory,
+                              ),
+                              SizedBox(
+                                height: responsiveHeight(
+                                  context,
+                                  0.034,
+                                  min: 24,
+                                  max: 30,
+                                ),
+                              ),
+                              sectionTitle(
+                                context: context,
+                                w: w,
+                                title: context.tr('مقالات مفيدة'),
+                              ),
+                              SizedBox(
+                                height: responsiveHeight(
+                                  context,
+                                  0.016,
+                                  min: 12,
+                                  max: 16,
+                                ),
+                              ),
+                              articles(w: w, context: context),
+                              SizedBox(
+                                height: responsiveHeight(
+                                  context,
+                                  0.2,
+                                  min: 150,
+                                  max: 180,
+                                ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
-                    sectionTitle(
-                      context: context,
-                      w: w,
-                      title: context.tr('الخدمات المجتمعية'),
-                    ),
-                    SizedBox(
-                      height: responsiveHeight(
-                        context,
-                        0.024,
-                        min: 18,
-                        max: 22,
-                      ),
-                    ),
-                    _DynamicCategoriesSection(
-                      w: w,
-                      h: h,
-                      categories: state.categories,
-                      services: state.services,
-                      visibleCount: visibleCategoriesCount,
-                      onToggleMore: _showMoreCategories,
-                      serviceBelongsToCategory: _serviceBelongsToCategory,
-                    ),
-                    SizedBox(
-                      height: responsiveHeight(
-                        context,
-                        0.034,
-                        min: 24,
-                        max: 30,
-                      ),
-                    ),
-                    sectionTitle(
-                      context: context,
-                      w: w,
-                      title: context.tr('مقالات مفيدة'),
-                    ),
-                    SizedBox(
-                      height: responsiveHeight(
-                        context,
-                        0.016,
-                        min: 12,
-                        max: 16,
-                      ),
-                    ),
-                    articles(w: w, context: context),
-                    SizedBox(
-                      height: responsiveHeight(
-                        context,
-                        0.2,
-                        min: 150,
-                        max: 180,
-                      ),
-                    ),
-                  ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           );
         },
       ),

@@ -1,8 +1,11 @@
+import 'package:bahya_app/data/models/service_models.dart';
 import 'package:bahya_app/data/remote/repo/repo.dart';
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/custom_app_bar.dart';
 import 'package:bahya_app/helper/custom_loading.dart';
+import 'package:bahya_app/helper/heart_pull_refresh.dart';
+import 'package:bahya_app/helper/widgets/animated_service_card.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/logic/cubit/patient_services_cubit.dart';
 import 'package:bahya_app/logic/state/patient_services_state.dart';
@@ -11,6 +14,35 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class RequestedService extends StatelessWidget {
   const RequestedService({super.key});
+
+  List<ServiceRequestModel> _latestRequestPerService(
+    List<ServiceRequestModel> requests,
+  ) {
+    final map = <String, ServiceRequestModel>{};
+
+    for (final request in requests) {
+      final serviceId = request.service?.id.trim() ?? '';
+      if (serviceId.isEmpty) continue;
+
+      final oldRequest = map[serviceId];
+
+      if (oldRequest == null ||
+          _parseRequestDate(request).isAfter(_parseRequestDate(oldRequest))) {
+        map[serviceId] = request;
+      }
+    }
+
+    return map.values.toList()
+      ..sort((a, b) => _parseRequestDate(b).compareTo(_parseRequestDate(a)));
+  }
+
+  DateTime _parseRequestDate(ServiceRequestModel request) {
+    try {
+      return DateTime.parse(request.requestDate).toLocal();
+    } catch (_) {
+      return DateTime.fromMillisecondsSinceEpoch(0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,49 +53,59 @@ class RequestedService extends StatelessWidget {
     return BlocProvider(
       create: (_) => PatientServicesCubit(AppRepository())..loadMyRequests(),
       child: Scaffold(
-        extendBodyBehindAppBar: true,
         backgroundColor: backgroundColor,
-        appBar: customAppBar(
-          context: context,
-          title: isArabic ? 'طلباتي' : 'My Requests',
-          subTitle: isArabic
-              ? 'هنا يمكنك متابعة طلباتك الحالية'
-              : 'Track your current requests here',
-          isHome: false,
-        ),
         body: BlocBuilder<PatientServicesCubit, PatientServicesState>(
           builder: (context, state) {
-            if (state.isLoading) return customLoading();
 
-            final total = state.requests.length;
-            final pending = state.requests
-                .where((r) => r.status.toUpperCase() == 'PENDING')
+            final requests = _latestRequestPerService(state.requests);
+
+            final total = requests.length;
+            final pending = requests
+                .where((r) => r.status.trim().toUpperCase() == 'PENDING')
                 .length;
-            final approved = state.requests
-                .where((r) => r.status.toUpperCase() == 'APPROVED')
+            final approved = requests
+                .where((r) => r.status.trim().toUpperCase() == 'APPROVED')
                 .length;
-            final rejected = state.requests
-                .where((r) => r.status.toUpperCase() == 'REJECTED')
+            final rejected = requests
+                .where((r) => r.status.trim().toUpperCase() == 'REJECTED')
                 .length;
 
-            return SingleChildScrollView(
-              child: Directionality(
-                textDirection: context.appTextDirection,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: responsiveSize(context, 0.025, min: 8, max: 14),
-                  ),
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: responsiveHeight(
-                          context,
-                          0.15,
-                          min: 115,
-                          max: 145,
+            return HeartPullRefreshScrollView(
+              onRefresh: () async {
+                await context.read<PatientServicesCubit>().loadMyRequests();
+              },
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Directionality(
+                    textDirection: context.appTextDirection,
+                    child: Column(
+                      children: [
+                        customAppBar(
+                          context: context,
+                          title: isArabic ? 'طلباتي' : 'My Requests',
+                          subTitle: isArabic
+                              ? 'هنا يمكنك متابعة طلباتك الحالية'
+                              : 'Track your current requests here',
+                          isHome: false,
                         ),
-                      ),
-
+                        if (state.isLoading)
+                          SizedBox(
+                            width: w,
+                            height: h * 0.55,
+                            child: Center(child: customLoading()),
+                          )
+                        else
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: responsiveSize(
+                                context,
+                                0.025,
+                                min: 8,
+                                max: 14,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
                       requestedState(
                         w: w,
                         h: h,
@@ -72,7 +114,6 @@ class RequestedService extends StatelessWidget {
                         approved: approved,
                         rejected: rejected,
                       ),
-
                       SizedBox(
                         height: responsiveHeight(
                           context,
@@ -81,8 +122,7 @@ class RequestedService extends StatelessWidget {
                           max: 12,
                         ),
                       ),
-
-                      if (state.requests.isEmpty)
+                      if (requests.isEmpty)
                         Padding(
                           padding: EdgeInsets.only(
                             top: responsiveHeight(
@@ -105,13 +145,16 @@ class RequestedService extends StatelessWidget {
                             color: Colors.grey,
                           ),
                         ),
-
-                      for (final request in state.requests)
+                      for (final request in requests)
                         if (request.service != null)
                           Builder(
                             builder: (context) {
                               final service = request.service!;
                               final category = service.category;
+
+                              final status = request.status
+                                  .trim()
+                                  .toUpperCase();
 
                               final kind = category?.kind.toUpperCase() ?? '';
                               final categoryName =
@@ -145,14 +188,10 @@ class RequestedService extends StatelessWidget {
                                   isRequested: true,
                                   isTravel: isTrip,
                                   isSupport: kind == 'SUPPORT',
-                                  isAccepted:
-                                      request.status.toUpperCase() ==
-                                      'APPROVED',
-                                  isUnderReview:
-                                      request.status.toUpperCase() == 'PENDING',
-                                  isRejected:
-                                      request.status.toUpperCase() ==
-                                      'REJECTED',
+                                  isAccepted: status == 'APPROVED',
+                                  isUnderReview: status == 'PENDING',
+                                  isRejected: status == 'REJECTED',
+                                  isCancelled: status == 'CANCELLED',
                                   w: w,
                                   h: h,
                                   title: service.title,
@@ -173,11 +212,20 @@ class RequestedService extends StatelessWidget {
                                       .toDouble(),
                                   categoryColor: categoryColor,
                                   categoryIcon: _iconFromKey(iconKey),
+                                  onCancelPressed: status == 'PENDING'
+                                      ? () {
+                                          context
+                                              .read<PatientServicesCubit>()
+                                              .cancelRequest(
+                                                request.id,
+                                                categoryId: service.categoryId,
+                                              );
+                                        }
+                                      : null,
                                 ),
                               );
                             },
                           ),
-
                       SizedBox(
                         height: responsiveHeight(
                           context,
@@ -186,10 +234,14 @@ class RequestedService extends StatelessWidget {
                           max: 20,
                         ),
                       ),
-                    ],
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             );
           },
         ),
@@ -199,7 +251,6 @@ class RequestedService extends StatelessWidget {
 
   String _formatDate(BuildContext context, String value) {
     final isArabic = context.l10n.isArabic;
-
     if (value.trim().isEmpty) return isArabic ? 'غير محدد' : 'Not set';
 
     try {
@@ -207,7 +258,6 @@ class RequestedService extends StatelessWidget {
       final day = date.day.toString().padLeft(2, '0');
       final month = date.month.toString().padLeft(2, '0');
       final year = date.year.toString();
-
       return '$day/$month/$year';
     } catch (_) {
       return value;
@@ -216,12 +266,10 @@ class RequestedService extends StatelessWidget {
 
   String _formatTime(BuildContext context, String value) {
     final isArabic = context.l10n.isArabic;
-
     if (value.trim().isEmpty) return isArabic ? 'غير محدد' : 'Not set';
 
     try {
       final cleanValue = value.trim();
-
       int hour;
       int minute;
 

@@ -8,6 +8,7 @@ import 'package:bahya_app/helper/custom_loading.dart';
 import 'package:bahya_app/helper/custom_searchbar.dart';
 import 'package:bahya_app/helper/massage_dialog.dart';
 import 'package:bahya_app/helper/service_formatters.dart';
+import 'package:bahya_app/helper/heart_pull_refresh.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/logic/cubit/service_admin_cubit.dart';
 import 'package:bahya_app/logic/state/service_admin_state.dart';
@@ -35,16 +36,7 @@ class _AllServicesScreenState extends State<AllServicesScreen>
     final h = getScreenHeight(context);
 
     return Scaffold(
-      extendBody: true,
-      extendBodyBehindAppBar: true,
       backgroundColor: backgroundColor,
-      appBar: customAppBar(
-        context: context,
-        preferredSize: Size.fromHeight(h * 0.12),
-        title: context.tr('كل الخدمات'),
-        subTitle: context.tr('عرض جميع الخدمات المتاحة'),
-        isHome: false,
-      ),
       body: BlocBuilder<ServiceAdminCubit, ServiceAdminState>(
         builder: (context, state) {
           final isPageReady =
@@ -52,193 +44,272 @@ class _AllServicesScreenState extends State<AllServicesScreen>
               state.categories.isNotEmpty &&
               state.services.isNotEmpty;
 
-          if (!isPageReady) {
-            return SizedBox(
-              width: w,
-              height: h,
-              child: Center(child: customLoading()),
-            );
-          }
-
-          final filteredServices = _filteredServices(state.services);
+          final filteredServices = isPageReady
+              ? _filteredServices(state.services)
+              : <PatientServiceModel>[];
           final visibleServices = filteredServices
               .take(visibleServicesCount)
               .toList();
 
-          return Directionality(
-            textDirection: context.appTextDirection,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: responsiveSize(context, 0.02, min: 8, max: 18),
-              ),
-              child: Column(
-                children: [
-                  SizedBox(height: h * 0.15),
-
-                  CustomSearchBarWithFilter(
-                    hintText: context.tr('ابحث عن خدمة، موقع، نوع الخدمة...'),
-                    onChanged: (value) {
-                      setState(() {
-                        query = value.trim();
-                        visibleServicesCount = 5;
-                      });
-                    },
-                    onSearchTap: () {
-                      FocusScope.of(context).unfocus();
-                    },
-                    onFilterTap: () {
-                      FocusScope.of(context).unfocus();
-                    },
-                  ),
-
-                  SizedBox(
-                    height: responsiveHeight(context, 0.018, min: 12, max: 16),
-                  ),
-
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeOutCubic,
-                    child: _CategoryFilters(
-                      w: w,
-                      categories: state.categories,
-                      selectedCategoryId: selectedCategoryId,
-                      visibleCategoriesCount: visibleCategoriesCount,
-                      onSelected: (id) {
-                        setState(() {
-                          selectedCategoryId = id;
-                          visibleServicesCount = 5;
-                        });
-                      },
-                      onShowMoreCategories: () {
-                        setState(() {
-                          if (visibleCategoriesCount >=
-                              state.categories.length) {
-                            visibleCategoriesCount = 8;
-                          } else {
-                            visibleCategoriesCount += 8;
-                          }
-                        });
-                      },
-                    ),
-                  ),
-
-                  Expanded(
-                    child: filteredServices.isEmpty
-                        ? Center(
-                            child: customText(
-                              text: context.tr('لا توجد خدمات متاحة حالياً'),
-                              size: w * 0.04,
-                              color: Colors.grey,
+          return HeartPullRefreshScrollView(
+            onRefresh: () async {
+              await context.read<ServiceAdminCubit>().loadDashboard();
+            },
+            slivers: [
+              SliverToBoxAdapter(
+                child: Directionality(
+                  textDirection: context.appTextDirection,
+                  child: Column(
+                    children: [
+                      customAppBar(
+                        context: context,
+                        preferredSize: Size.fromHeight(h * 0.12),
+                        title: context.tr('كل الخدمات'),
+                        subTitle: context.tr('عرض جميع الخدمات المتاحة'),
+                        isHome: false,
+                      ),
+                      if (!isPageReady)
+                        SizedBox(
+                          width: w,
+                          height: h * 0.65,
+                          child: Center(child: customLoading()),
+                        )
+                      else
+                        SizedBox(
+                          height: h - (h * 0.12),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: responsiveSize(
+                                context,
+                                0.02,
+                                min: 8,
+                                max: 18,
+                              ),
                             ),
-                          )
-                        : Column(
-                            children: [
-                              Expanded(
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 300),
-                                  switchInCurve: Curves.easeOutCubic,
-                                  switchOutCurve: Curves.easeInCubic,
-                                  child: LayoutBuilder(
-                                    key: ValueKey(
-                                      '${selectedCategoryId ?? 'all'}-$query-$visibleServicesCount-${visibleServices.length}',
-                                    ),
-                                    builder: (context, constraints) {
-                                      final crossAxisCount =
-                                          constraints.maxWidth > 700 ? 3 : 2;
-
-                                      return GridView.builder(
-                                        padding: EdgeInsets.only(
-                                          top: responsiveHeight(
-                                            context,
-                                            0.025,
-                                            min: 14,
-                                            max: 24,
-                                          ),
-                                          bottom: responsiveHeight(
-                                            context,
-                                            0.02,
-                                            min: 14,
-                                            max: 28,
-                                          ),
-                                        ),
-                                        itemCount: visibleServices.length,
-                                        gridDelegate:
-                                            SliverGridDelegateWithFixedCrossAxisCount(
-                                              crossAxisCount: crossAxisCount,
-                                              crossAxisSpacing: responsiveSize(
-                                                context,
-                                                0.035,
-                                                min: 12,
-                                                max: 18,
-                                              ),
-                                              mainAxisSpacing: responsiveHeight(
-                                                context,
-                                                0.018,
-                                                min: 12,
-                                                max: 18,
-                                              ),
-                                              childAspectRatio:
-                                                  constraints.maxWidth > 700
-                                                  ? 1.18
-                                                  : 0.92,
-                                            ),
-                                        itemBuilder: (context, index) {
-                                          final service =
-                                              visibleServices[index];
-                                          final category = _categoryForService(
-                                            service,
-                                            state.categories,
-                                          );
-
-                                          return TweenAnimationBuilder<double>(
-                                            key: ValueKey(service.id),
-                                            tween: Tween(begin: 0, end: 1),
-                                            duration: Duration(
-                                              milliseconds: 220 + (index * 35),
-                                            ),
-                                            curve: Curves.easeOutCubic,
-                                            builder: (context, value, child) {
-                                              return Opacity(
-                                                opacity: value,
-                                                child: Transform.translate(
-                                                  offset: Offset(
-                                                    0,
-                                                    18 * (1 - value),
-                                                  ),
-                                                  child: child,
-                                                ),
-                                              );
-                                            },
-                                            child: _ServiceGridCard(
-                                              w: w,
-                                              h: h,
-                                              service: service,
-                                              category: category,
-                                            ),
-                                          );
-                                        },
-                                      );
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  height: responsiveHeight(
+                                    context,
+                                    0.02,
+                                    min: 12,
+                                    max: 18,
+                                  ),
+                                ),
+                                CustomSearchBarWithFilter(
+                                  hintText: context.tr(
+                                    'ابحث عن خدمة، موقع، نوع الخدمة...',
+                                  ),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      query = value.trim();
+                                      visibleServicesCount = 5;
+                                    });
+                                  },
+                                  onSearchTap: () {
+                                    FocusScope.of(context).unfocus();
+                                  },
+                                  onFilterTap: () {
+                                    FocusScope.of(context).unfocus();
+                                  },
+                                ),
+                                SizedBox(
+                                  height: responsiveHeight(
+                                    context,
+                                    0.018,
+                                    min: 12,
+                                    max: 16,
+                                  ),
+                                ),
+                                AnimatedSize(
+                                  duration: const Duration(milliseconds: 280),
+                                  curve: Curves.easeOutCubic,
+                                  child: _CategoryFilters(
+                                    w: w,
+                                    categories: state.categories,
+                                    selectedCategoryId: selectedCategoryId,
+                                    visibleCategoriesCount:
+                                        visibleCategoriesCount,
+                                    onSelected: (id) {
+                                      setState(() {
+                                        selectedCategoryId = id;
+                                        visibleServicesCount = 5;
+                                      });
+                                    },
+                                    onShowMoreCategories: () {
+                                      setState(() {
+                                        if (visibleCategoriesCount >=
+                                            state.categories.length) {
+                                          visibleCategoriesCount = 8;
+                                        } else {
+                                          visibleCategoriesCount += 8;
+                                        }
+                                      });
                                     },
                                   ),
                                 ),
-                              ),
+                                Expanded(
+                                  child: filteredServices.isEmpty
+                                      ? Center(
+                                          child: customText(
+                                            text: context.tr(
+                                              'لا توجد خدمات متاحة حالياً',
+                                            ),
+                                            size: w * 0.04,
+                                            color: Colors.grey,
+                                          ),
+                                        )
+                                      : Column(
+                                          children: [
+                                            Expanded(
+                                              child: AnimatedSwitcher(
+                                                duration: const Duration(
+                                                  milliseconds: 300,
+                                                ),
+                                                switchInCurve:
+                                                    Curves.easeOutCubic,
+                                                switchOutCurve:
+                                                    Curves.easeInCubic,
+                                                child: LayoutBuilder(
+                                                  key: ValueKey(
+                                                    '${selectedCategoryId ?? 'all'}-$query-$visibleServicesCount-${visibleServices.length}',
+                                                  ),
+                                                  builder: (
+                                                    context,
+                                                    constraints,
+                                                  ) {
+                                                    final crossAxisCount =
+                                                        constraints.maxWidth >
+                                                            700
+                                                        ? 3
+                                                        : 2;
 
-                              if (visibleServicesCount <
-                                  filteredServices.length)
-                                _ShowMoreServicesButton(
-                                  w: w,
-                                  onTap: () {
-                                    setState(() {
-                                      visibleServicesCount += 5;
-                                    });
-                                  },
+                                                    return GridView.builder(
+                                                      padding: EdgeInsets.only(
+                                                        top: responsiveHeight(
+                                                          context,
+                                                          0.025,
+                                                          min: 14,
+                                                          max: 24,
+                                                        ),
+                                                        bottom:
+                                                            responsiveHeight(
+                                                          context,
+                                                          0.02,
+                                                          min: 14,
+                                                          max: 28,
+                                                        ),
+                                                      ),
+                                                      itemCount:
+                                                          visibleServices.length,
+                                                      gridDelegate:
+                                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                                        crossAxisCount:
+                                                            crossAxisCount,
+                                                        crossAxisSpacing:
+                                                            responsiveSize(
+                                                          context,
+                                                          0.035,
+                                                          min: 12,
+                                                          max: 18,
+                                                        ),
+                                                        mainAxisSpacing:
+                                                            responsiveHeight(
+                                                          context,
+                                                          0.018,
+                                                          min: 12,
+                                                          max: 18,
+                                                        ),
+                                                        childAspectRatio:
+                                                            constraints
+                                                                        .maxWidth >
+                                                                    700
+                                                                ? 1.18
+                                                                : 0.92,
+                                                      ),
+                                                      itemBuilder:
+                                                          (context, index) {
+                                                        final service =
+                                                            visibleServices[
+                                                                index];
+                                                        final category =
+                                                            _categoryForService(
+                                                          service,
+                                                          state.categories,
+                                                        );
+
+                                                        return TweenAnimationBuilder<
+                                                            double>(
+                                                          key: ValueKey(
+                                                            service.id,
+                                                          ),
+                                                          tween: Tween(
+                                                            begin: 0,
+                                                            end: 1,
+                                                          ),
+                                                          duration: Duration(
+                                                            milliseconds:
+                                                                220 +
+                                                                    (index *
+                                                                        35),
+                                                          ),
+                                                          curve: Curves
+                                                              .easeOutCubic,
+                                                          builder: (
+                                                            context,
+                                                            value,
+                                                            child,
+                                                          ) {
+                                                            return Opacity(
+                                                              opacity: value,
+                                                              child: Transform
+                                                                  .translate(
+                                                                offset: Offset(
+                                                                  0,
+                                                                  18 *
+                                                                      (1 -
+                                                                          value),
+                                                                ),
+                                                                child: child,
+                                                              ),
+                                                            );
+                                                          },
+                                                          child:
+                                                              _ServiceGridCard(
+                                                            w: w,
+                                                            h: h,
+                                                            service: service,
+                                                            category: category,
+                                                          ),
+                                                        );
+                                                      },
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                            if (visibleServicesCount <
+                                                filteredServices.length)
+                                              _ShowMoreServicesButton(
+                                                w: w,
+                                                onTap: () {
+                                                  setState(() {
+                                                    visibleServicesCount += 5;
+                                                  });
+                                                },
+                                              ),
+                                          ],
+                                        ),
                                 ),
-                            ],
+                              ],
+                            ),
                           ),
+                        ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         },
       ),

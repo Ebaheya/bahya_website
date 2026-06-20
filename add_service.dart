@@ -15,7 +15,6 @@ import 'package:bahya_app/screens/admin/all_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bahya_app/helper/custom_loading.dart';
-import 'package:bahya_app/helper/heart_pull_refresh.dart';
 
 class AddService extends StatefulWidget {
   const AddService({super.key});
@@ -34,8 +33,6 @@ class _AddServiceState extends State<AddService> {
   final departureTimeController = TextEditingController();
   final meetingPlaceController = TextEditingController();
 
-  int _formResetKey = 0;
-
   @override
   void dispose() {
     nameController.dispose();
@@ -51,23 +48,6 @@ class _AddServiceState extends State<AddService> {
 
   bool _isTripCategory(ServiceCategoryModel? category) {
     return category?.kind.toUpperCase() == 'TRIP';
-  }
-
-  void _clearFormFields() {
-    FocusManager.instance.primaryFocus?.unfocus();
-
-    nameController.clear();
-    locationController.clear();
-    startDateController.clear();
-    startTimeController.clear();
-    capacityController.clear();
-    endDateController.clear();
-    departureTimeController.clear();
-    meetingPlaceController.clear();
-
-    setState(() {
-      _formResetKey++;
-    });
   }
 
   Future<void> _submit(ServiceCategoryModel? selectedCategory) async {
@@ -95,16 +75,6 @@ class _AddServiceState extends State<AddService> {
         context: context,
         title: context.tr('خطأ'),
         message: context.tr('عدد المقاعد يجب أن يكون أكبر من صفر.'),
-        isError: true,
-      );
-      return;
-    }
-
-    if (capacity > 100) {
-      customDialog(
-        context: context,
-        title: context.tr('خطأ'),
-        message: context.tr('عدد المقاعد لا يمكن أن يتجاوز 100 مقعد.'),
         isError: true,
       );
       return;
@@ -140,18 +110,13 @@ class _AddServiceState extends State<AddService> {
     if (!mounted) return;
 
     final state = context.read<ServiceAdminCubit>().state;
-    final hasError = state.error != null;
-
-    if (!hasError) {
-      _clearFormFields();
-    }
 
     customDialog(
       context: context,
-      title: hasError ? context.tr('خطأ') : context.tr('تم الحفظ'),
+      title: state.error == null ? context.tr('تم الحفظ') : context.tr('خطأ'),
       message: state.error ?? context.tr('تم حفظ الخدمة بنجاح.'),
-      isSuccess: !hasError,
-      isError: hasError,
+      isSuccess: state.error == null,
+      isError: state.error != null,
     );
   }
 
@@ -178,131 +143,85 @@ class _AddServiceState extends State<AddService> {
     return '${hour.toString().padLeft(2, '0')}:$minute';
   }
 
-  List<ServiceCategoryModel> _uniqueCategoriesById(
-    List<ServiceCategoryModel> categories,
-  ) {
-    final seenIds = <dynamic>{};
-    final uniqueCategories = <ServiceCategoryModel>[];
-
-    for (final category in categories) {
-      if (seenIds.add(category.id)) {
-        uniqueCategories.add(category);
-      }
-    }
-
-    return uniqueCategories;
-  }
-
-  ServiceCategoryModel? _safeSelectedCategory(
-    List<ServiceCategoryModel> categories,
-    ServiceCategoryModel? selectedCategory,
-  ) {
-    if (categories.isEmpty) return null;
-
-    if (selectedCategory == null) return categories.first;
-
-    for (final category in categories) {
-      if (category.id == selectedCategory.id) {
-        return category;
-      }
-    }
-
-    return categories.first;
-  }
-
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
     final h = getScreenHeight(context);
 
     return Scaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: true,
       backgroundColor: backgroundColor,
+      appBar: customAppBar(
+        context: context,
+        title: context.tr('اضافة خدمه جديده'),
+        subTitle: context.tr('مساعدة المحاربات في رحلتهن'),
+        isHome: false,
+        icon: Icons.playlist_add_outlined,
+      ),
       body: BlocBuilder<ServiceAdminCubit, ServiceAdminState>(
         builder: (context, state) {
           final bool isPageReady =
               !state.isLoading && state.categories.isNotEmpty;
 
-          final categories = _uniqueCategoriesById(state.categories);
+          if (!isPageReady) {
+            return SizedBox(
+              height: h,
+              width: w,
+              child: Center(child: customLoading()),
+            );
+          }
 
-          final selectedCategory = _safeSelectedCategory(
-            categories,
-            state.selectedCategory,
-          );
+          final selectedCategory =
+              state.selectedCategory ??
+              (state.categories.isNotEmpty ? state.categories.first : null);
 
-          return HeartPullRefreshScrollView(
-            onRefresh: () async {
-              await context.read<ServiceAdminCubit>().loadDashboard();
-            },
-            slivers: [
-              SliverToBoxAdapter(
-                child: Directionality(
-                  textDirection: context.appTextDirection,
-                  child: Column(
-                    children: [
-                      customAppBar(
-                        context: context,
-                        title: context.tr('اضافة خدمه جديده'),
-                        subTitle: context.tr('مساعدة المحاربات في رحلتهن'),
-                        isHome: false,
-                        icon: Icons.playlist_add_outlined,
-                      ),
-                      if (!isPageReady)
-                        SizedBox(
-                          height: h * 0.55,
-                          width: w,
-                          child: Center(child: customLoading()),
-                        )
-                      else
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            children: [
-                              SizedBox(height: h * 0.02),
-                              _ServiceFormCard(
-                                key: ValueKey(_formResetKey),
-                                w: w,
-                                h: h,
-                                categories: categories,
-                                selectedCategory: selectedCategory,
-                                onCategoryChanged: (category) {
-                                  context
-                                      .read<ServiceAdminCubit>()
-                                      .selectCategory(category);
+          return SingleChildScrollView(
+            child: Directionality(
+              textDirection: context.appTextDirection,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    SizedBox(height: h * 0.15),
+                    _ServiceFormCard(
+                      w: w,
+                      h: h,
+                      categories: state.categories,
+                      selectedCategory: selectedCategory,
+                      onCategoryChanged: (category) {
+                        context.read<ServiceAdminCubit>().selectCategory(
+                          category,
+                        );
 
-                                  if (category?.kind.toUpperCase() != 'TRIP') {
-                                    endDateController.clear();
-                                    departureTimeController.clear();
-                                    meetingPlaceController.clear();
-                                  }
-                                },
-                                nameController: nameController,
-                                locationController: locationController,
-                                startDateController: startDateController,
-                                startTimeController: startTimeController,
-                                capacityController: capacityController,
-                                endDateController: endDateController,
-                                departureTimeController:
-                                    departureTimeController,
-                                meetingPlaceController: meetingPlaceController,
-                                isSaving: state.isSaving,
-                                onSubmit: () => _submit(selectedCategory),
-                              ),
-                              SizedBox(height: h * 0.02),
-                              _RegisteredServices(
-                                w: w,
-                                h: h,
-                                services: state.services,
-                                categories: categories,
-                              ),
-                              SizedBox(height: h * 0.02),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
+                        if (category?.kind.toUpperCase() != 'TRIP') {
+                          endDateController.clear();
+                          departureTimeController.clear();
+                          meetingPlaceController.clear();
+                        }
+                      },
+                      nameController: nameController,
+                      locationController: locationController,
+                      startDateController: startDateController,
+                      startTimeController: startTimeController,
+                      capacityController: capacityController,
+                      endDateController: endDateController,
+                      departureTimeController: departureTimeController,
+                      meetingPlaceController: meetingPlaceController,
+                      isSaving: state.isSaving,
+                      onSubmit: () => _submit(selectedCategory),
+                    ),
+                    SizedBox(height: h * 0.02),
+                    _RegisteredServices(
+                      w: w,
+                      h: h,
+                      services: state.services,
+                      categories: state.categories,
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           );
         },
       ),
@@ -312,7 +231,6 @@ class _AddServiceState extends State<AddService> {
 
 class _ServiceFormCard extends StatelessWidget {
   const _ServiceFormCard({
-    super.key,
     required this.w,
     required this.h,
     required this.categories,
@@ -348,22 +266,6 @@ class _ServiceFormCard extends StatelessWidget {
 
   bool get isTrip => selectedCategory?.kind.toUpperCase() == 'TRIP';
 
-  DateTime _startDatePlusOneDay(String value) {
-    try {
-      final parts = value.trim().split('/');
-
-      if (parts.length == 3) {
-        final month = int.parse(parts[0]);
-        final day = int.parse(parts[1]);
-        final year = int.parse(parts[2]);
-
-        return DateTime(year, month, day).add(const Duration(days: 1));
-      }
-    } catch (_) {}
-
-    return DateTime.now().add(const Duration(days: 1));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -383,7 +285,7 @@ class _ServiceFormCard extends StatelessWidget {
       child: Column(
         children: [
           DropdownButtonFormField<ServiceCategoryModel>(
-            initialValue: selectedCategory,
+            value: selectedCategory,
             isExpanded: true,
             decoration: InputDecoration(
               hintText: context.tr('اختر نوع الخدمه'),
@@ -493,10 +395,7 @@ class _ServiceFormCard extends StatelessWidget {
                   hintText: context.tr('تاريخ الخدمه'),
                   controller: startDateController,
                   borderRadius: 14,
-                  firstAllowedDate: DateTime.now().add(const Duration(days: 1)),
-                  onDateSelected: (_) {
-                    endDateController.clear();
-                  },
+                  firstAllowedDate: DateTime.now().add(Duration(days: 1)),
                 ),
               ),
               SizedBox(width: w * 0.035),
@@ -532,8 +431,6 @@ class _ServiceFormCard extends StatelessWidget {
             hintText: context.tr('عدد المقاعد المتوفره : مثال: 10 مقاعد'),
             autovalidateMode: AutovalidateMode.onUserInteraction,
             keyboardType: CustomTextFieldType.number,
-            minNumber: 1,
-            maxNumber: 100,
             borderRadius: 14,
             prefixIcon: const Icon(
               Icons.groups_rounded,
@@ -588,9 +485,6 @@ class _ServiceFormCard extends StatelessWidget {
                         hintText: context.tr('تاريخ النهايه'),
                         controller: endDateController,
                         borderRadius: 14,
-                        firstAllowedDate: _startDatePlusOneDay(
-                          startDateController.text,
-                        ),
                       ),
 
                       SizedBox(height: h * 0.018),

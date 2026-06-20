@@ -4,6 +4,7 @@ import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/custom_loading.dart';
 import 'package:bahya_app/helper/massage_dialog.dart';
 import 'package:bahya_app/helper/service_formatters.dart';
+import 'package:bahya_app/helper/widgets/animated_service_card.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/logic/cubit/patient_services_cubit.dart';
 import 'package:bahya_app/logic/state/patient_services_state.dart';
@@ -33,7 +34,6 @@ class _ServiceListBodyState extends State<ServiceListBody> {
     if (!mounted) return;
 
     final state = cubit.state;
-
     if (state.error != null) {
       customDialog(
         context: context,
@@ -52,14 +52,38 @@ class _ServiceListBodyState extends State<ServiceListBody> {
     );
   }
 
+  Future<void> _cancelRequest(String requestId) async {
+    final cubit = context.read<PatientServicesCubit>();
+
+    await cubit.cancelRequest(requestId, categoryId: widget.categoryId);
+
+    if (!mounted) return;
+
+    final state = cubit.state;
+    if (state.error != null) {
+      customDialog(
+        context: context,
+        title: context.tr('خطأ'),
+        message: context.tr(state.error!),
+        isError: true,
+      );
+      return;
+    }
+
+    customDialog(
+      context: context,
+      title: context.tr('تم إلغاء الطلب'),
+      message: context.tr('تم إلغاء طلبك بنجاح.'),
+      isSuccess: true,
+    );
+  }
+
   ServiceRequestModel? _requestForService(
     PatientServiceModel service,
     List<ServiceRequestModel> requests,
   ) {
     for (final request in requests) {
-      if (request.service?.id == service.id) {
-        return request;
-      }
+      if (request.service?.id == service.id) return request;
     }
     return null;
   }
@@ -109,8 +133,7 @@ class _ServiceListBodyState extends State<ServiceListBody> {
             textDirection: context.appTextDirection,
             child: Column(
               children: [
-                SizedBox(height: h * 0.15),
-
+                // SizedBox(height: h * 0.15),
                 if (widget.showCategoryChips)
                   _CategoryChips(
                     categories: state.categories.where((c) {
@@ -136,7 +159,6 @@ class _ServiceListBodyState extends State<ServiceListBody> {
                     );
 
                     final request = _requestForService(service, state.requests);
-
                     final requestStatus =
                         request?.status.trim().toUpperCase() ?? '';
 
@@ -159,21 +181,23 @@ class _ServiceListBodyState extends State<ServiceListBody> {
                       location: service.location,
                       meetingPlace: service.meetingPlace,
                       availableSeats: service.remainingSeats.toDouble(),
-
                       isRequested: hasActiveRequest,
                       isUnderReview: isPending,
                       isAccepted: isApproved,
-
+                      isRejected: isRejected,
                       categoryColor: category == null
                           ? null
                           : colorFromHex(category.color),
                       categoryIcon: category == null
                           ? null
                           : iconFromKey(category.iconKey),
-
                       onJoinPressed: state.isSubmitting || hasActiveRequest
                           ? null
                           : () => _requestService(service.id),
+                      onCancelPressed:
+                          state.isSubmitting || !isPending || request == null
+                          ? null
+                          : () => _cancelRequest(request.id),
                     );
                   }),
 

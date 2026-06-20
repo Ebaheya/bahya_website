@@ -13,8 +13,9 @@ import 'package:bahya_app/screens/admin/all_service.dart';
 import 'package:bahya_app/screens/admin/patient_requests_details.dart';
 import 'package:bahya_app/screens/admin/patients_search.dart';
 import 'package:bahya_app/screens/login.dart';
+import 'package:bahya_app/screens/no_internet_screen.dart';
 import 'package:bahya_app/screens/patients/artical_screen.dart';
-import 'package:bahya_app/screens/form_gate_screen.dart';
+import 'package:bahya_app/screens/patients/form_gate_screen.dart';
 import 'package:bahya_app/screens/patients/chatbot_screen.dart';
 import 'package:bahya_app/screens/patients/patients_home.dart';
 import 'package:bahya_app/screens/patients/services_screen.dart';
@@ -231,7 +232,8 @@ class AppRoute {
             child: const CreateCategoryScreen(),
           ),
         );
-
+      case '/noInternet':
+        return MaterialPageRoute(builder: (_) => const NoInternetScreen());
       case '/chatbotScreen':
         return MaterialPageRoute(builder: (_) => const ChatBotScreen());
 

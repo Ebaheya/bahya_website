@@ -1,3 +1,4 @@
+import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/constant.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -29,19 +30,20 @@ class HeartPullRefreshScrollView extends StatelessWidget {
           refreshTriggerPullDistance: refreshTriggerPullDistance,
           refreshIndicatorExtent: refreshIndicatorExtent,
           onRefresh: onRefresh,
-          builder: (
-            context,
-            refreshState,
-            pulledExtent,
-            refreshTriggerPullDistance,
-            refreshIndicatorExtent,
-          ) {
-            return HeartBeatingRefreshIndicator(
-              refreshState: refreshState,
-              pulledExtent: pulledExtent,
-              refreshTriggerPullDistance: refreshTriggerPullDistance,
-            );
-          },
+          builder:
+              (
+                context,
+                refreshState,
+                pulledExtent,
+                refreshTriggerPullDistance,
+                refreshIndicatorExtent,
+              ) {
+                return HeartBeatingRefreshIndicator(
+                  refreshState: refreshState,
+                  pulledExtent: pulledExtent,
+                  refreshTriggerPullDistance: refreshTriggerPullDistance,
+                );
+              },
         ),
         ...slivers,
       ],
@@ -83,27 +85,31 @@ class _HeartBeatingRefreshIndicatorState
 
     heartAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.25).chain(
-          CurveTween(curve: Curves.easeOut),
-        ),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.25,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 30,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.25, end: 1.0).chain(
-          CurveTween(curve: Curves.easeIn),
-        ),
+        tween: Tween<double>(
+          begin: 1.25,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 20,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.18).chain(
-          CurveTween(curve: Curves.easeOut),
-        ),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.18,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 25,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.18, end: 1.0).chain(
-          CurveTween(curve: Curves.easeIn),
-        ),
+        tween: Tween<double>(
+          begin: 1.18,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 25,
       ),
     ]).animate(heartController);
@@ -133,9 +139,13 @@ class _HeartBeatingRefreshIndicatorState
   Widget build(BuildContext context) {
     final dragPercentage =
         (widget.pulledExtent / widget.refreshTriggerPullDistance).clamp(
-      0.0,
-      1.0,
-    );
+          0.0,
+          1.0,
+        );
+
+    final scale = widget.refreshState == RefreshIndicatorMode.refresh
+        ? heartAnimation.value
+        : 0.65 + (dragPercentage * 0.45);
 
     return Container(
       height: widget.pulledExtent,
@@ -150,10 +160,6 @@ class _HeartBeatingRefreshIndicatorState
       child: AnimatedBuilder(
         animation: heartAnimation,
         builder: (context, child) {
-          final scale = widget.refreshState == RefreshIndicatorMode.refresh
-              ? heartAnimation.value
-              : dragPercentage;
-
           return Opacity(
             opacity: dragPercentage,
             child: Transform.scale(

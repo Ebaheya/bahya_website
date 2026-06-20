@@ -1,5 +1,10 @@
 import 'dart:async';
+
+import 'package:bahya_app/data/remote/repo/repo.dart';
+import 'package:bahya_app/helper/constant.dart';
+import 'package:bahya_app/logic/cubit/patient_forms_cubit.dart';
 import 'package:bahya_app/route.dart';
+import 'package:bahya_app/services/internet_connection_service.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -26,17 +31,17 @@ class _SplashScreenState extends State<SplashScreen>
 
     _lineController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 700),
     );
 
     _splitController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 1000),
     );
 
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1200),
     );
 
     _lineHeightAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -50,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen>
     _logoOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _splitController,
-        curve: const Interval(0.15, 0.7, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
 
@@ -58,40 +63,113 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _startAnimation();
-    _decideNextScreen();
+    _startAnimationAndLogic();
   }
 
-  void _startAnimation() {
+  void _startAnimationAndLogic() {
     _lineController.forward().then((_) {
       if (!mounted) return;
       _splitController.forward().then((_) {
         if (!mounted) return;
         _pulseController.repeat(reverse: true);
+        _decideNextScreen();
       });
     });
   }
 
-Future<void> _decideNextScreen() async {
-    await authNotifier.checkLogin();
-
-    await Future.delayed(const Duration(seconds: 4));
+  Future<void> _decideNextScreen() async {
+    final hasInternet = await InternetConnectionService.instance.hasInternet();
 
     if (!mounted) return;
 
-    String nextRoute = '/login';
-
-    if (authNotifier.isLoggedIn) {
-      if (authNotifier.isAdmin) {
-        nextRoute = '/adminHome';
-      } else if (authNotifier.isPatient) {
-        nextRoute = '/formGate';
-      } else {
-        nextRoute = '/unauthorized';
-      }
+    if (!hasInternet) {
+      _reverseAnimation().then((_) {
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/noInternet',
+          (route) => false,
+        );
+      });
+      return;
     }
 
-    Navigator.pushNamedAndRemoveUntil(context, nextRoute, (route) => false);
+    await authNotifier.checkLogin();
+
+    if (!mounted) return;
+
+    if (!authNotifier.isLoggedIn) {
+      _reverseAnimation().then((_) => _goTo('/login'));
+      return;
+    }
+
+    if (authNotifier.isAdmin) {
+      _reverseAnimation().then((_) => _goTo('/adminHome'));
+      return;
+    }
+
+    if (authNotifier.isPatient) {
+      await _handlePatientGate();
+      return;
+    }
+
+    _reverseAnimation().then((_) => _goTo('/unauthorized'));
+  }
+
+  Future<void> _reverseAnimation() async {
+    _pulseController.stop();
+    await _splitController.reverse();
+    await _lineController.reverse();
+  }
+
+  Future<void> _handlePatientGate() async {
+    try {
+      final cubit = PatientFormsCubit(AppRepository());
+      await cubit.loadMyAssignments();
+
+      if (!mounted) {
+        await cubit.close();
+        return;
+      }
+
+      final state = cubit.state;
+
+      if (state.error != null) {
+        await cubit.close();
+        await _reverseAnimation();
+        _goTo('/patientsHome');
+        return;
+      }
+
+      if (state.assignments.isNotEmpty) {
+        final assignmentId = state.assignments.first.id;
+        await cubit.close();
+
+        await _reverseAnimation();
+        if (!mounted) return;
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/questionnaire_screen',
+          (route) => false,
+          arguments: assignmentId,
+        );
+        return;
+      }
+
+      await cubit.close();
+      await _reverseAnimation();
+      _goTo('/patientsHome');
+    } catch (_) {
+      await _reverseAnimation();
+      if (!mounted) return;
+      _goTo('/patientsHome');
+    }
+  }
+
+  void _goTo(String routeName) {
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false);
   }
 
   @override
@@ -150,10 +228,10 @@ Future<void> _decideNextScreen() async {
                         screenSize.height * 0.28 * _lineHeightAnimation.value,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Color(0xFFE91E63), Color(0xFF9C27B0)],
+                        colors: gradientColors,
                       ),
                     ),
                   ),

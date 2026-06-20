@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:bahya_app/data/local/data_secure.dart';
 import 'package:bahya_app/route.dart';
+import 'package:bahya_app/services/internet_connection_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -22,13 +23,31 @@ class ApiException implements Exception {
 
 class WebService {
   late final Dio dio;
+static bool _isOpeningNoInternet = false;
 
+  void _openNoInternetScreen() {
+    if (_isOpeningNoInternet) return;
+
+    final currentRoute = ModalRoute.of(
+      navigatorKey.currentContext!,
+    )?.settings.name;
+    if (currentRoute == '/noInternet') return;
+
+    _isOpeningNoInternet = true;
+
+    navigatorKey.currentState
+        ?.pushNamedAndRemoveUntil('/noInternet', (route) => false)
+        .then((_) {
+          _isOpeningNoInternet = false;
+        });
+  }
   WebService() {
     dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 20),
-        receiveTimeout: const Duration(seconds: 20),
+        connectTimeout: const Duration(seconds: 6),
+        receiveTimeout: const Duration(seconds: 8),
+          sendTimeout: const Duration(seconds: 6),
         headers: {'Content-Type': 'application/json'},
       ),
     );
@@ -36,9 +55,33 @@ class WebService {
     setupInterceptors(dio);
   }
 
-  String _handleDioError(DioException e) {
+String _handleDioError(DioException e) {
     final data = e.response?.data;
     final statusCode = e.response?.statusCode;
+
+    if (e.error == 'NO_INTERNET') {
+      throw ApiException(
+        message: 'لا يوجد اتصال بالإنترنت',
+        statusCode: statusCode,
+      );
+    }
+
+    if (e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.unknown) {
+      throw ApiException(
+        message: 'تعذر الوصول للسيرفر، حاول مرة أخرى.',
+        statusCode: statusCode,
+      );
+    }
+
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      throw ApiException(
+        message: 'انتهت مهلة الاتصال، حاول مرة أخرى.',
+        statusCode: statusCode,
+      );
+    }
 
     if (data is Map<String, dynamic>) {
       final error = data['error'];
@@ -63,71 +106,6 @@ class WebService {
       }
     }
 
-    if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.sendTimeout) {
-      throw ApiException(
-        message: 'انتهت مهلة الاتصال، حاول مرة أخرى.',
-        statusCode: statusCode,
-      );
-    }
-
-    if (e.type == DioExceptionType.connectionError) {
-      throw ApiException(
-        message: 'تعذر الاتصال بالسيرفر، تأكد من الإنترنت أو تشغيل الباك إند.',
-        statusCode: statusCode,
-      );
-    }
-
-    if (statusCode == 400) {
-      throw ApiException(
-        message: 'البيانات المرسلة غير صحيحة.',
-        statusCode: statusCode,
-      );
-    }
-
-    if (statusCode == 401) {
-      throw ApiException(
-        message: 'غير مصرح لك، برجاء تسجيل الدخول مرة أخرى.',
-        statusCode: statusCode,
-      );
-    }
-
-    if (statusCode == 403) {
-      throw ApiException(
-        message: 'ليس لديك صلاحية لتنفيذ هذا الإجراء.',
-        statusCode: statusCode,
-      );
-    }
-
-    if (statusCode == 404) {
-      throw ApiException(
-        message: 'البيانات المطلوبة غير موجودة.',
-        statusCode: statusCode,
-      );
-    }
-
-    if (statusCode == 409) {
-      throw ApiException(
-        message: 'يوجد تعارض في البيانات.',
-        statusCode: statusCode,
-      );
-    }
-
-    if (statusCode == 429) {
-      throw ApiException(
-        message: 'عدد محاولات كبير، حاول لاحقًا.',
-        statusCode: statusCode,
-      );
-    }
-
-    if (statusCode == 500 || statusCode == 503) {
-      throw ApiException(
-        message: 'حدث خطأ في السيرفر، حاول لاحقًا.',
-        statusCode: statusCode,
-      );
-    }
-
     throw ApiException(
       message: 'حدث خطأ غير متوقع، حاول مرة أخرى.',
       statusCode: statusCode,
@@ -140,6 +118,22 @@ class WebService {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          final hasInternet = await InternetConnectionService.instance
+              .hasInternet();
+
+          if (!hasInternet) {
+            _openNoInternetScreen();
+
+            return handler.reject(
+              DioException(
+                requestOptions: options,
+                type: DioExceptionType.connectionError,
+                error: 'NO_INTERNET',
+                message: 'لا يوجد اتصال بالإنترنت',
+              ),
+            );
+          }
+
           final storage = SecureStorageService();
 
           final publicEndpoints = [
@@ -166,6 +160,11 @@ class WebService {
           handler.next(options);
         },
         onError: (DioException e, ErrorInterceptorHandler handler) async {
+          if (e.error == 'NO_INTERNET') {
+            _openNoInternetScreen();
+            return handler.next(e);
+          }
+
           final storage = SecureStorageService();
           final request = e.requestOptions;
 
@@ -197,8 +196,9 @@ class WebService {
             final refreshDio = Dio(
               BaseOptions(
                 baseUrl: baseUrl,
-                connectTimeout: const Duration(seconds: 20),
-                receiveTimeout: const Duration(seconds: 20),
+                connectTimeout: const Duration(seconds: 6),
+                receiveTimeout: const Duration(seconds: 8),
+                sendTimeout: const Duration(seconds: 6),
                 headers: {'Content-Type': 'application/json'},
               ),
             );
@@ -226,13 +226,7 @@ class WebService {
 
             final response = await dio.fetch(request);
             return handler.resolve(response);
-          } catch (refreshError) {
-            debugPrint('Refresh Token Error: $refreshError');
-            if (refreshError is DioException &&
-                (refreshError.response?.statusCode == 401 ||
-                    refreshError.response?.statusCode == 403)) {
-              await logoutAndRedirect();
-            }
+          } catch (_) {
             return handler.next(e);
           }
         },

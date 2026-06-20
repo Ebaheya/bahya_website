@@ -74,6 +74,7 @@ class PatientServiceModel {
     final category = categoryJson is Map<String, dynamic>
         ? ServiceCategoryModel.fromJson(categoryJson)
         : null;
+
     final capacity = int.tryParse(json['capacity']?.toString() ?? '') ?? 0;
     final seatsTaken = int.tryParse(json['seatsTaken']?.toString() ?? '') ?? 0;
 
@@ -164,9 +165,15 @@ class ServiceRequestModel {
     }
 
     return ServiceRequestModel(
-      id: json['id']?.toString() ?? '',
+      id: (json['id'] ?? json['_id'])?.toString() ?? '',
       status: json['status']?.toString() ?? 'PENDING',
-      requestDate: (json['requestDate'] ?? json['createdAt'] ?? '').toString(),
+      requestDate:
+          (json['requestDate'] ??
+                  json['requestedAt'] ??
+                  json['createdAt'] ??
+                  json['updatedAt'] ??
+                  '')
+              .toString(),
       patientName: name.isNotEmpty
           ? name
           : (json['patientName'] ?? '').toString(),
@@ -179,6 +186,7 @@ class ServiceRequestModel {
           : null,
     );
   }
+
   ServiceRequestModel copyWith({
     String? id,
     String? status,
@@ -198,5 +206,4 @@ class ServiceRequestModel {
       service: service ?? this.service,
     );
   }
-  
 }

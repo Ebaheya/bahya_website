@@ -4,6 +4,8 @@ import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/custom_app_bar.dart';
 import 'package:bahya_app/helper/custom_loading.dart';
+import 'package:bahya_app/helper/heart_pull_refresh.dart';
+import 'package:bahya_app/helper/widgets/animated_service_card.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/logic/cubit/service_admin_cubit.dart';
 import 'package:bahya_app/logic/state/service_admin_state.dart';
@@ -34,8 +36,14 @@ class _PatientRequestsDetailsState extends State<PatientRequestsDetails> {
   @override
   Widget build(BuildContext context) {
     final isArabic = context.l10n.isArabic;
-debugPrint('PatientRequestsDetails : ${widget.patientName} - ${widget.medicalNumber}');
-   final args = ModalRoute.of(context)?.settings.arguments;
+    final w = getScreenWidth(context);
+    final h = getScreenHeight(context);
+
+    debugPrint(
+      'PatientRequestsDetails : ${widget.patientName} - ${widget.medicalNumber}',
+    );
+
+    final args = ModalRoute.of(context)?.settings.arguments;
     final arguments = args is Map ? args : const {};
 
     final selectedPatientName =
@@ -47,49 +55,45 @@ debugPrint('PatientRequestsDetails : ${widget.patientName} - ${widget.medicalNum
         arguments['medicalNumber']?.toString().trim() ??
         widget.medicalNumber?.trim() ??
         '';
+
     return Scaffold(
-      extendBody: true,
-      extendBodyBehindAppBar: true,
       backgroundColor: backgroundColor,
-      appBar: customAppBar(
-        context: context,
-        title: isArabic ? 'تفاصيل طلبات البطلة' : 'Patient Requests Details',
-        subTitle: isArabic
-            ? 'متابعة طلبات الخدمات الخاصة بالبطلة'
-            : 'Track patient service requests',
-        isHome: false,
-      ),
-      body: Directionality(
-        textDirection: context.appTextDirection,
-        child: BlocBuilder<ServiceAdminCubit, ServiceAdminState>(
-          builder: (context, state) {
-            if (state.isLoading) {
-              return  Center(child: customLoading());
+      body: BlocBuilder<ServiceAdminCubit, ServiceAdminState>(
+        builder: (context, state) {
+          final rawRequestIds = arguments['requestIds'];
+          final selectedRequestIds = rawRequestIds is List
+              ? rawRequestIds.map((e) => e.toString()).toSet()
+              : <String>{};
+
+          final requests = state.requests.where((request) {
+            if (selectedRequestIds.isNotEmpty) {
+              return selectedRequestIds.contains(request.id);
             }
 
-           final rawRequestIds = arguments['requestIds'];
-            final selectedRequestIds = rawRequestIds is List
-                ? rawRequestIds.map((e) => e.toString()).toSet()
-                : <String>{};
+            final sameMedicalNumber =
+                selectedMedicalNumber.isNotEmpty &&
+                request.medicalNumber.trim() == selectedMedicalNumber;
 
-            final requests = state.requests.where((request) {
-              if (selectedRequestIds.isNotEmpty) {
-                return selectedRequestIds.contains(request.id);
-              }
+            final sameName =
+                selectedPatientName.isNotEmpty &&
+                request.patientName.trim() == selectedPatientName;
 
-              final sameMedicalNumber =
-                  selectedMedicalNumber.isNotEmpty &&
-                  request.medicalNumber.trim() == selectedMedicalNumber;
+            return sameMedicalNumber || sameName;
+          }).toList();
 
-              final sameName =
-                  selectedPatientName.isNotEmpty &&
-                  request.patientName.trim() == selectedPatientName;
+          Widget content;
 
-              return sameMedicalNumber || sameName;
-            }).toList();
-
-            if (requests.isEmpty) {
-              return Center(
+          if (state.isLoading) {
+            content = SizedBox(
+              height: h * 0.55,
+              width: w,
+              child: Center(child: customLoading()),
+            );
+          } else if (requests.isEmpty) {
+            content = SizedBox(
+              height: h * 0.55,
+              width: w,
+              child: Center(
                 child: customText(
                   text: isArabic
                       ? 'لا توجد طلبات لهذه البطلة'
@@ -98,11 +102,10 @@ debugPrint('PatientRequestsDetails : ${widget.patientName} - ${widget.medicalNum
                   color: Colors.grey,
                   bold: true,
                 ),
-              );
-            }
-
+              ),
+            );
+          } else {
             final patient = requests.first;
-
             final total = requests.length;
             final pending = requests
                 .where((r) => r.status.toUpperCase() == 'PENDING')
@@ -114,132 +117,145 @@ debugPrint('PatientRequestsDetails : ${widget.patientName} - ${widget.medicalNum
                 .where((r) => r.status.toUpperCase() == 'REJECTED')
                 .length;
 
-            return SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: responsiveSize(context, 0.025, min: 8, max: 14),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      height: responsiveHeight(
-                        context,
-                        0.15,
-                        min: 115,
-                        max: 145,
-                      ),
-                    ),
-                    patientDetailsCard(
-                      context: context,
-                      patientName: patient.patientName,
-                      medicalNumber: patient.medicalNumber,
-                      totalRequests: total,
-                    ),
-                    SizedBox(
-                      height: responsiveHeight(context, 0.012, min: 8, max: 12),
-                    ),
-                    requestedState(
-                      context: context,
-                      total: total,
-                      pending: pending,
-                      approved: approved,
-                      rejected: rejected,
-                    ),
-                    SizedBox(
-                      height: responsiveHeight(context, 0.012, min: 8, max: 12),
-                    ),
-                    customText(
-                      text: isArabic
-                          ? 'الخدمات المطلوبة'
-                          : 'Requested Services',
-                      size: responsiveSize(context, 0.043, min: 15, max: 19),
-                      bold: true,
-                      color: const Color(0xff14213D),
-                      isCenter: false,
-                    ),
-                    SizedBox(
-                      height: responsiveHeight(context, 0.006, min: 4, max: 8),
-                    ),
-                    ...requests.map((request) {
-                      final service = request.service;
+            content = Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: responsiveSize(context, 0.025, min: 8, max: 14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: responsiveHeight(context, 0.02, min: 14, max: 20),
+                  ),
+                  patientDetailsCard(
+                    context: context,
+                    patientName: patient.patientName,
+                    medicalNumber: patient.medicalNumber,
+                    totalRequests: total,
+                  ),
+                  SizedBox(
+                    height: responsiveHeight(context, 0.012, min: 8, max: 12),
+                  ),
+                  requestedState(
+                    context: context,
+                    total: total,
+                    pending: pending,
+                    approved: approved,
+                    rejected: rejected,
+                  ),
+                  SizedBox(
+                    height: responsiveHeight(context, 0.012, min: 8, max: 12),
+                  ),
+                  customText(
+                    text: isArabic ? 'الخدمات المطلوبة' : 'Requested Services',
+                    size: responsiveSize(context, 0.043, min: 15, max: 19),
+                    bold: true,
+                    color: const Color(0xff14213D),
+                    isCenter: false,
+                  ),
+                  SizedBox(
+                    height: responsiveHeight(context, 0.006, min: 4, max: 8),
+                  ),
+                  ...requests.map((request) {
+                    final service = request.service;
 
-                      if (service == null) {
-                        return const SizedBox.shrink();
-                      }
+                    if (service == null) {
+                      return const SizedBox.shrink();
+                    }
 
-                      final category = service.category;
-                      final kind = category?.kind.toUpperCase() ?? '';
-                      final categoryName = category?.name.toLowerCase() ?? '';
+                    final category = service.category;
+                    final kind = category?.kind.toUpperCase() ?? '';
+                    final categoryName = category?.name.toLowerCase() ?? '';
 
-                      final isTrip =
-                          kind == 'TRIP' ||
-                          kind == 'TOUR' ||
-                          kind == 'TRAVEL' ||
-                          categoryName.contains('رحلة') ||
-                          categoryName.contains('tour') ||
-                          categoryName.contains('trip');
+                    final isTrip =
+                        kind == 'TRIP' ||
+                        kind == 'TOUR' ||
+                        kind == 'TRAVEL' ||
+                        categoryName.contains('رحلة') ||
+                        categoryName.contains('tour') ||
+                        categoryName.contains('trip');
 
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          bottom: responsiveHeight(
-                            context,
-                            0.006,
-                            min: 4,
-                            max: 8,
-                          ),
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: responsiveHeight(
+                          context,
+                          0.006,
+                          min: 4,
+                          max: 8,
                         ),
-                        child: serviceInfo(
-                          forAdmin: true,
-                          isTravel: isTrip,
-                          isSupport: kind == 'SUPPORT',
-                          isUnderReview:
-                              request.status.toUpperCase() == 'PENDING',
-                          isAccepted:
-                              request.status.toUpperCase() == 'APPROVED',
-                          isRejected:
-                              request.status.toUpperCase() == 'REJECTED',
-                          w: getScreenWidth(context),
-                          h: getScreenHeight(context),
-                          title: service.title,
-                          date: formatServiceDateValue(context, service.date),
-                          time: formatServiceTimeValue(context, service.time),
-                          location: service.location,
-                          meetingPlace: service.meetingPlace,
-                          departureTime: service.departureTime == null
-                              ? null
-                              : formatServiceTimeValue(
-                                  context,
-                                  service.departureTime!,
-                                ),
-                          endDate: service.endDate == null
-                              ? null
-                              : formatServiceDateValue(
-                                  context,
-                                  service.endDate!,
-                                ),
-                          availableSeats: service.remainingSeats.toDouble(),
-                          categoryColor: _colorFromHex(
-                            category?.color ?? '#E7549B',
-                          ),
-                          categoryIcon: _iconFromKey(category?.iconKey ?? ''),
-                        ),
-                      );
-                    }),
-                    SizedBox(
-                      height: responsiveHeight(
-                        context,
-                        0.012,
-                        min: 10,
-                        max: 16,
                       ),
-                    ),
-                  ],
-                ),
+                      child: serviceInfo(
+                        forAdmin: true,
+                        isTravel: isTrip,
+                        isSupport: kind == 'SUPPORT',
+                        isUnderReview:
+                            request.status.toUpperCase() == 'PENDING',
+                        isAccepted:
+                            request.status.toUpperCase() == 'APPROVED',
+                        isRejected:
+                            request.status.toUpperCase() == 'REJECTED',
+                        w: w,
+                        h: h,
+                        title: service.title,
+                        date: formatServiceDateValue(context, service.date),
+                        time: formatServiceTimeValue(context, service.time),
+                        location: service.location,
+                        meetingPlace: service.meetingPlace,
+                        departureTime: service.departureTime == null
+                            ? null
+                            : formatServiceTimeValue(
+                                context,
+                                service.departureTime!,
+                              ),
+                        endDate: service.endDate == null
+                            ? null
+                            : formatServiceDateValue(context, service.endDate!),
+                        availableSeats: service.remainingSeats.toDouble(),
+                        categoryColor: _colorFromHex(
+                          category?.color ?? '#E7549B',
+                        ),
+                        categoryIcon: _iconFromKey(category?.iconKey ?? ''),
+                      ),
+                    );
+                  }),
+                  SizedBox(
+                    height: responsiveHeight(context, 0.012, min: 10, max: 16),
+                  ),
+                ],
               ),
             );
-          },
-        ),
+          }
+
+          return HeartPullRefreshScrollView(
+            onRefresh: () async {
+              await context
+                  .read<ServiceAdminCubit>()
+                  .loadPatientRequestsDetails();
+            },
+            slivers: [
+              SliverToBoxAdapter(
+                child: Directionality(
+                  textDirection: context.appTextDirection,
+                  child: Column(
+                    children: [
+                      customAppBar(
+                        context: context,
+                        title: isArabic
+                            ? 'تفاصيل طلبات البطلة'
+                            : 'Patient Requests Details',
+                        subTitle: isArabic
+                            ? 'متابعة طلبات الخدمات الخاصة بالبطلة'
+                            : 'Track patient service requests',
+                        isHome: false,
+                      ),
+                      content,
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

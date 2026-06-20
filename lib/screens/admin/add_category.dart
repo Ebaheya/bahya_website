@@ -7,6 +7,7 @@ import 'package:bahya_app/helper/widgets/admin/add_category_widgets.dart';
 import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/custom_app_bar.dart';
 import 'package:bahya_app/helper/massage_dialog.dart';
+import 'package:bahya_app/helper/heart_pull_refresh.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/logic/cubit/service_admin_cubit.dart';
 import 'package:bahya_app/logic/state/service_admin_state.dart';
@@ -95,25 +96,30 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
     final w = getScreenWidth(context);
 
     return Scaffold(
-      extendBody: true,
-      extendBodyBehindAppBar: true,
       backgroundColor: backgroundColor,
-      appBar: customAppBar(
-        context: context,
-        title: 'إضافة كاتيجوري جديد',
-        subTitle: 'اختار الاسم والنوع والأيقونة',
-        isHome: false,
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: w * 0.04,
-          vertical: h * 0.015,
-        ),
-        child: Directionality(
-          textDirection: context.appTextDirection,
-          child: Column(
-            children: [
-              const SizedBox(height: 130),
+      body: HeartPullRefreshScrollView(
+        onRefresh: () async {
+          await context.read<ServiceAdminCubit>().loadDashboard();
+        },
+        slivers: [
+          SliverToBoxAdapter(
+            child: Directionality(
+              textDirection: context.appTextDirection,
+              child: Column(
+                children: [
+                  customAppBar(
+                    context: context,
+                    title: 'إضافة كاتيجوري جديد',
+                    subTitle: 'اختار الاسم والنوع والأيقونة',
+                    isHome: false,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: w * 0.04,
+                      vertical: h * 0.015,
+                    ),
+                    child: Column(
+                      children: [
 
               Container(
                 width: double.infinity,
@@ -309,10 +315,15 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
                 },
               ),
 
-              SizedBox(height: h * 0.03),
-            ],
+                        SizedBox(height: h * 0.03),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
