@@ -1,6 +1,8 @@
+import type { Role } from '@prisma/client';
 import { Types } from 'mongoose';
 import { logger } from '../../config/logger';
 import { writeAudit } from '../../middleware/audit';
+import { AppError } from '../../utils/httpError';
 import {
   emitCallCenterAlert,
   emitHighRiskAlert,
@@ -19,10 +21,30 @@ import { buildPatientProfile } from './chat.profile';
 const SESSION_INACTIVITY_MS = 24 * 60 * 60 * 1000;
 
 type ChatSessionRecord = ChatSessionDoc & { _id: Types.ObjectId };
+type ChatSessionListRecord = Pick<
+  ChatSessionDoc,
+  'status' | 'maxRiskLevel' | 'lastEmotion' | 'startedAt' | 'endedAt'
+> & { _id: Types.ObjectId };
 type ChatMessageRecord = Pick<
   ChatMessageDoc,
   'sender' | 'message' | 'emotion' | 'riskLevel' | 'createdAt'
 >;
+type ChatReadableMessageRecord = {
+  _id: Types.ObjectId;
+  sender: ChatMessageDoc['sender'] | string;
+  message: string;
+  lang?: ChatMessageDoc['lang'] | string | null;
+  emotion?: string | null;
+  emotionConfidence?: number | null;
+  intent?: ChatMessageDoc['intent'] | string | null;
+  riskLevel?: ChatRiskLevel | string | null;
+  crisisProbability?: number | null;
+  crisis?: boolean | null;
+  crisisSignalType?: ChatMessageDoc['crisisSignalType'] | string | null;
+  flaggedPhrases?: string[];
+  phq9Score?: number | null;
+  createdAt: Date;
+};
 
 export interface HandlePatientMessageInput {
   patientId: string;
@@ -43,6 +65,57 @@ export interface EscalationInput {
   inf: AiInferResponse;
 }
 
+export interface ChatReadActor {
+  id: string;
+  role: Role;
+}
+
+export interface PaginationInput {
+  page: number;
+  pageSize: number;
+}
+
+export interface SessionsListInput extends PaginationInput {
+  patientId?: string;
+}
+
+export interface ChatSessionSummary {
+  id: string;
+  status: ChatSessionDoc['status'];
+  maxRiskLevel: ChatRiskLevel | null;
+  lastEmotion: string | null;
+  startedAt: Date;
+  endedAt: Date | null;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface ChatTurnRead {
+  id: string;
+  sender: string;
+  message: string;
+  createdAt: Date;
+  lang?: string | null;
+  emotion?: string | null;
+  emotionConfidence?: number | null;
+  intent?: string | null;
+  riskLevel?: string | null;
+  crisisProbability?: number | null;
+  crisis?: boolean | null;
+  crisisSignalType?: string | null;
+  flaggedPhrases?: string[];
+  phq9Score?: number | null;
+}
+
+export interface SessionMessagesResult extends PaginatedResult<ChatTurnRead> {
+  sessionId: string;
+}
+
 const riskRank: Record<ChatRiskLevel, number> = {
   LOW: 0,
   MEDIUM: 1,
@@ -56,6 +129,32 @@ function now(): Date {
 
 function toObjectId(id: string | Types.ObjectId): Types.ObjectId {
   return typeof id === 'string' ? new Types.ObjectId(id) : id;
+}
+
+function isClinicalReader(role: Role): boolean {
+  return role === 'DOCTOR' || role === 'ADMIN';
+}
+
+function resolveReadablePatientId(actor: ChatReadActor, patientId?: string): string {
+  if (actor.role === 'PATIENT') {
+    if (patientId && patientId !== actor.id) {
+      throw AppError.forbidden('Patients can only read their own chat sessions');
+    }
+    return actor.id;
+  }
+
+  if (isClinicalReader(actor.role)) {
+    if (!patientId) {
+      throw AppError.badRequest('patientId is required');
+    }
+    return patientId;
+  }
+
+  throw AppError.forbidden();
+}
+
+function paginationOffset(input: PaginationInput): number {
+  return (input.page - 1) * input.pageSize;
 }
 
 function isStale(lastActivityAt: Date, at: Date): boolean {
@@ -145,6 +244,101 @@ export async function getRecentTurns(
     riskLevel: turn.riskLevel,
     createdAt: turn.createdAt.toISOString(),
   }));
+}
+
+export async function listSessions(
+  actor: ChatReadActor,
+  input: SessionsListInput
+): Promise<PaginatedResult<ChatSessionSummary>> {
+  const patientId = resolveReadablePatientId(actor, input.patientId);
+  const filter = { patientId };
+  const rows = (await ChatSessionModel.find(filter)
+    .sort({ startedAt: -1 })
+    .skip(paginationOffset(input))
+    .limit(input.pageSize)
+    .lean()) as unknown as ChatSessionListRecord[];
+  const total = await ChatSessionModel.countDocuments(filter);
+
+  return {
+    data: rows.map((session) => ({
+      id: session._id.toString(),
+      status: session.status,
+      maxRiskLevel: session.maxRiskLevel,
+      lastEmotion: session.lastEmotion,
+      startedAt: session.startedAt,
+      endedAt: session.endedAt,
+    })),
+    page: input.page,
+    pageSize: input.pageSize,
+    total,
+  };
+}
+
+export function projectTurnForRole(
+  turn: ChatReadableMessageRecord,
+  role: Role
+): ChatTurnRead {
+  const projected: ChatTurnRead = {
+    id: turn._id.toString(),
+    sender: turn.sender,
+    message: turn.message,
+    createdAt: turn.createdAt,
+  };
+
+  if (!isClinicalReader(role)) {
+    return projected;
+  }
+
+  return {
+    ...projected,
+    lang: turn.lang,
+    emotion: turn.emotion,
+    emotionConfidence: turn.emotionConfidence,
+    intent: turn.intent,
+    riskLevel: turn.riskLevel,
+    crisisProbability: turn.crisisProbability,
+    crisis: turn.crisis,
+    crisisSignalType: turn.crisisSignalType,
+    flaggedPhrases: turn.flaggedPhrases,
+    phq9Score: turn.phq9Score,
+  };
+}
+
+export async function getSessionMessages(
+  actor: ChatReadActor,
+  sessionId: string,
+  input: PaginationInput
+): Promise<SessionMessagesResult> {
+  if (actor.role !== 'PATIENT' && !isClinicalReader(actor.role)) {
+    throw AppError.forbidden();
+  }
+
+  const objectId = toObjectId(sessionId);
+  const session = (await ChatSessionModel.findOne({ _id: objectId }).lean()) as
+    | (Pick<ChatSessionDoc, 'patientId'> & { _id: Types.ObjectId })
+    | null;
+
+  if (!session) throw chatErrors.sessionNotFound();
+
+  if (actor.role === 'PATIENT' && session.patientId !== actor.id) {
+    throw AppError.forbidden();
+  }
+
+  const filter = { sessionId: objectId };
+  const rows = (await ChatMessageModel.find(filter)
+    .sort({ createdAt: 1 })
+    .skip(paginationOffset(input))
+    .limit(input.pageSize)
+    .lean()) as unknown as ChatReadableMessageRecord[];
+  const total = await ChatMessageModel.countDocuments(filter);
+
+  return {
+    sessionId: objectId.toString(),
+    data: rows.map((turn) => projectTurnForRole(turn, actor.role)),
+    page: input.page,
+    pageSize: input.pageSize,
+    total,
+  };
 }
 
 function botTurnFromInference(
@@ -268,7 +462,7 @@ export async function handlePatientMessage(
         patientId: input.patientId,
         sessionId: sessionIdString,
         riskLevel: inf.riskLevel,
-        err,
+        err: err instanceof Error ? { name: err.name, message: err.message } : String(err),
       },
       'chat escalation failed'
     );

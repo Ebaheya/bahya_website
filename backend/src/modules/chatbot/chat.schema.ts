@@ -16,6 +16,12 @@ export const messageBodySchema = z
   })
   .strict();
 
+export const sessionIdParamSchema = z
+  .object({
+    id: objectId,
+  })
+  .strict();
+
 export const sessionsListQuerySchema = paginationSchema.extend({
   patientId: z.string().uuid().optional(),
 });
@@ -23,5 +29,6 @@ export const sessionsListQuerySchema = paginationSchema.extend({
 export const messagesQuerySchema = paginationSchema;
 
 export type MessageBody = z.infer<typeof messageBodySchema>;
+export type SessionIdParam = z.infer<typeof sessionIdParamSchema>;
 export type SessionsListQuery = z.infer<typeof sessionsListQuerySchema>;
 export type MessagesQuery = z.infer<typeof messagesQuerySchema>;

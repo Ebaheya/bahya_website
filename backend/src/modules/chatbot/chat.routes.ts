@@ -10,4 +10,10 @@ const messageLimiter = userRateLimiter(30);
 
 chatRouter.use(authenticate);
 
+chatRouter.get('/sessions', authorize('PATIENT', 'DOCTOR', 'ADMIN'), controller.listSessions);
+chatRouter.get(
+  '/sessions/:id/messages',
+  authorize('PATIENT', 'DOCTOR', 'ADMIN'),
+  controller.getSessionMessages
+);
 chatRouter.post('/message', authorize('PATIENT'), messageLimiter, controller.sendMessage);
