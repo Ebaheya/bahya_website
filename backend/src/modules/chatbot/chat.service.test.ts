@@ -8,6 +8,14 @@ const mockMessageFind = jest.fn();
 const mockMessageCreate = jest.fn();
 const mockBuildPatientProfile = jest.fn();
 const mockInfer = jest.fn();
+const mockEmitHighRiskAlert = jest.fn();
+const mockWriteAudit = jest.fn();
+
+jest.mock('../../config/logger', () => ({
+  logger: {
+    error: jest.fn(),
+  },
+}));
 
 jest.mock('./chat.model', () => ({
   ChatSessionModel: {
@@ -27,6 +35,14 @@ jest.mock('./chat.profile', () => ({
 
 jest.mock('./ai.client', () => ({
   infer: mockInfer,
+}));
+
+jest.mock('../notifications/notification.service', () => ({
+  emitHighRiskAlert: mockEmitHighRiskAlert,
+}));
+
+jest.mock('../../middleware/audit', () => ({
+  writeAudit: mockWriteAudit,
 }));
 
 import { getOrCreateSession, getRecentTurns, handlePatientMessage } from './chat.service';
@@ -55,6 +71,8 @@ describe('chat service US1', () => {
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T12:00:00.000Z'));
     jest.clearAllMocks();
+    mockEmitHighRiskAlert.mockResolvedValue(undefined);
+    mockWriteAudit.mockResolvedValue(undefined);
   });
 
   afterEach(() => {

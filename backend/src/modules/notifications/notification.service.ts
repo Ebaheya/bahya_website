@@ -26,8 +26,10 @@ export interface FormAssignedNotificationInput {
 export interface HighRiskAlertInput {
   patientId: string;
   submissionId?: string;
-  severity: Extract<NotificationSeverity, 'HIGH' | 'CRITICAL'>;
+  severity: Extract<NotificationSeverity, 'MEDIUM' | 'HIGH' | 'CRITICAL'>;
   templateKey?: string;
+  reason?: string;
+  flaggedPhrases?: string[];
 }
 
 export interface ServiceRequestSubmittedInput {
@@ -112,9 +114,10 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
       title: 'High-risk assessment submitted',
       message: input.templateKey
         ? `A high-risk ${input.templateKey} submission needs review.`
-        : 'A high-risk form submission needs review.',
+        : 'A high-risk chatbot conversation needs review.',
       severity: input.severity,
-      reason: input.submissionId ?? null,
+      reason: input.reason ?? input.submissionId ?? null,
+      flaggedPhrases: input.flaggedPhrases ?? null,
       doctorNote: null,
       status: 'UNREAD',
       claimedAt: null,
@@ -123,7 +126,9 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
       pushedAt: null,
       createdAt: new Date(),
     });
-    await pushBestEffort(doc, 'HIGH_RISK');
+    if (input.severity === 'HIGH' || input.severity === 'CRITICAL') {
+      await pushBestEffort(doc, 'HIGH_RISK');
+    }
   } catch (err) {
     logger.warn(
       {

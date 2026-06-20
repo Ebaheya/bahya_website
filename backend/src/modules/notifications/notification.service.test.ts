@@ -5,6 +5,7 @@ import { NotificationModel } from './notification.model';
 import { pushForNotification } from './push.service';
 import {
   claimNotification,
+  emitHighRiskAlert,
   emitServiceRequestDecided,
   emitServiceRequestSubmitted,
   listMyNotifications,
@@ -146,6 +147,44 @@ describe('service notification emitters', () => {
       }),
       'notification push failed'
     );
+  });
+
+  it('creates a MEDIUM high-risk doctor alert without push and stores flagged phrases', async () => {
+    const created = { _id: 'n-high-risk-1', type: 'HIGH_RISK', severity: 'MEDIUM' };
+    notificationModelMock.create.mockResolvedValue(created);
+
+    await emitHighRiskAlert({
+      patientId: 'patient-id-1',
+      severity: 'MEDIUM',
+      reason: 'AI risk level MEDIUM',
+      flaggedPhrases: ['cannot sleep'],
+    });
+
+    expect(notificationModelMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientRole: 'DOCTOR',
+        recipientUserId: null,
+        patientId: 'patient-id-1',
+        type: 'HIGH_RISK',
+        severity: 'MEDIUM',
+        reason: 'AI risk level MEDIUM',
+        flaggedPhrases: ['cannot sleep'],
+      })
+    );
+    expect(pushForNotificationMock).not.toHaveBeenCalled();
+  });
+
+  it('pushes HIGH and CRITICAL high-risk doctor alerts', async () => {
+    const created = { _id: 'n-high-risk-2', type: 'HIGH_RISK', severity: 'HIGH' };
+    notificationModelMock.create.mockResolvedValue(created);
+
+    await emitHighRiskAlert({
+      patientId: 'patient-id-1',
+      severity: 'HIGH',
+      flaggedPhrases: [],
+    });
+
+    expect(pushForNotificationMock).toHaveBeenCalledWith(created);
   });
 });
 

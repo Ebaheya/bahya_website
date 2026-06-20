@@ -1,4 +1,7 @@
 import { Types } from 'mongoose';
+import { logger } from '../../config/logger';
+import { writeAudit } from '../../middleware/audit';
+import { emitHighRiskAlert } from '../notifications/notification.service';
 import { chatErrors } from './chat.errors';
 import {
   ChatMessageModel,
@@ -29,6 +32,12 @@ export interface PatientChatReply {
   patientMessageId: string;
   botMessageId: string;
   reply: string;
+}
+
+export interface EscalationInput {
+  patientId: string;
+  sessionId: string;
+  inf: AiInferResponse;
 }
 
 const riskRank: Record<ChatRiskLevel, number> = {
@@ -160,6 +169,32 @@ function botTurnFromInference(
   };
 }
 
+export async function escalateIfNeeded(input: EscalationInput): Promise<void> {
+  if (input.inf.riskLevel === 'LOW') return;
+
+  const flaggedPhrases = input.inf.flaggedPhrases ?? [];
+
+  await emitHighRiskAlert({
+    patientId: input.patientId,
+    severity: input.inf.riskLevel,
+    reason: `AI risk level ${input.inf.riskLevel}`,
+    flaggedPhrases,
+  });
+
+  await writeAudit({
+    actorId: null,
+    action: 'HIGH_RISK_ALERT_CREATED',
+    entityType: 'CHAT_SESSION',
+    entityId: input.sessionId,
+    newValues: {
+      riskLevel: input.inf.riskLevel,
+      crisisProbability: input.inf.crisisProbability ?? null,
+      crisis: input.inf.crisis,
+      flaggedPhrases,
+    },
+  });
+}
+
 export async function handlePatientMessage(
   input: HandlePatientMessageInput
 ): Promise<PatientChatReply> {
@@ -205,8 +240,26 @@ export async function handlePatientMessage(
     }
   );
 
+  const sessionIdString = sessionObjectId.toString();
+  void escalateIfNeeded({
+    patientId: input.patientId,
+    sessionId: sessionIdString,
+    inf,
+  }).catch((err) => {
+    logger.error(
+      {
+        metric: 'chat_escalation_failure',
+        patientId: input.patientId,
+        sessionId: sessionIdString,
+        riskLevel: inf.riskLevel,
+        err,
+      },
+      'chat escalation failed'
+    );
+  });
+
   return {
-    sessionId: sessionObjectId.toString(),
+    sessionId: sessionIdString,
     patientMessageId: patientTurn._id.toString(),
     botMessageId: botTurn._id.toString(),
     reply: inf.reply,
