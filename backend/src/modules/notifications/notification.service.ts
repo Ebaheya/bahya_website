@@ -32,6 +32,13 @@ export interface HighRiskAlertInput {
   flaggedPhrases?: string[];
 }
 
+export interface CallCenterAlertInput {
+  patientId: string;
+  severity: Extract<NotificationSeverity, 'MEDIUM' | 'HIGH' | 'CRITICAL'>;
+  reason?: string;
+  flaggedPhrases?: string[];
+}
+
 export interface ServiceRequestSubmittedInput {
   patientId: string;
 }
@@ -135,6 +142,42 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
         metric: 'notification_emit_failure',
         type: 'HIGH_RISK',
         patientId: input.patientId,
+        severity: input.severity,
+        err: loggableError(err),
+      },
+      'notification emit failed'
+    );
+  }
+}
+
+export async function emitCallCenterAlert(input: CallCenterAlertInput): Promise<void> {
+  try {
+    const doc = await NotificationModel.create({
+      recipientRole: 'CALL_CENTER',
+      recipientUserId: null,
+      patientId: input.patientId,
+      type: 'HIGH_RISK',
+      title: 'Urgent chatbot crisis signal',
+      message: 'A patient chatbot conversation needs urgent call-center follow-up.',
+      severity: input.severity,
+      reason: input.reason ?? null,
+      flaggedPhrases: input.flaggedPhrases ?? null,
+      doctorNote: null,
+      status: 'UNREAD',
+      claimedAt: null,
+      readAt: null,
+      doneAt: null,
+      pushedAt: null,
+      createdAt: new Date(),
+    });
+    await pushBestEffort(doc, 'HIGH_RISK');
+  } catch (err) {
+    logger.warn(
+      {
+        metric: 'notification_emit_failure',
+        type: 'HIGH_RISK',
+        patientId: input.patientId,
+        recipientRole: 'CALL_CENTER',
         severity: input.severity,
         err: loggableError(err),
       },

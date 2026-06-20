@@ -8,6 +8,7 @@ const mockMessageCreate = jest.fn();
 const mockBuildPatientProfile = jest.fn();
 const mockInfer = jest.fn();
 const mockEmitHighRiskAlert = jest.fn();
+const mockEmitCallCenterAlert = jest.fn();
 const mockWriteAudit = jest.fn();
 const mockLoggerError = jest.fn();
 
@@ -39,6 +40,7 @@ jest.mock('./ai.client', () => ({
 
 jest.mock('../notifications/notification.service', () => ({
   emitHighRiskAlert: mockEmitHighRiskAlert,
+  emitCallCenterAlert: mockEmitCallCenterAlert,
 }));
 
 jest.mock('../../middleware/audit', () => ({
@@ -91,6 +93,7 @@ describe('chat escalation US2', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T12:00:00.000Z'));
     jest.clearAllMocks();
     mockEmitHighRiskAlert.mockResolvedValue(undefined);
+    mockEmitCallCenterAlert.mockResolvedValue(undefined);
     mockWriteAudit.mockResolvedValue(undefined);
   });
 
@@ -180,5 +183,73 @@ describe('chat escalation US2', () => {
       }),
       'chat escalation failed'
     );
+  });
+
+  it('also notifies the call center for CRITICAL risk', async () => {
+    await escalateIfNeeded({
+      patientId,
+      sessionId: sessionId.toString(),
+      inf: {
+        ...mediumInference,
+        riskLevel: 'CRITICAL',
+        crisisProbability: 0.91,
+        flaggedPhrases: ['TEST_CRISIS'],
+      },
+    });
+
+    expect(mockEmitHighRiskAlert).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId, severity: 'CRITICAL' })
+    );
+    expect(mockEmitCallCenterAlert).toHaveBeenCalledWith({
+      patientId,
+      severity: 'CRITICAL',
+      reason: 'AI urgent crisis signal',
+      flaggedPhrases: ['TEST_CRISIS'],
+    });
+  });
+
+  it('also notifies the call center for direct crisis signals below CRITICAL', async () => {
+    await escalateIfNeeded({
+      patientId,
+      sessionId: sessionId.toString(),
+      inf: {
+        ...mediumInference,
+        riskLevel: 'HIGH',
+        crisis: true,
+        crisisSignalType: 'direct',
+        flaggedPhrases: ['I will hurt myself'],
+      },
+    });
+
+    expect(mockEmitHighRiskAlert).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId, severity: 'HIGH' })
+    );
+    expect(mockEmitCallCenterAlert).toHaveBeenCalledWith({
+      patientId,
+      severity: 'HIGH',
+      reason: 'AI urgent crisis signal',
+      flaggedPhrases: ['I will hurt myself'],
+    });
+  });
+
+  it('keeps HIGH non-urgent and indirect crisis signals doctor-only', async () => {
+    await escalateIfNeeded({
+      patientId,
+      sessionId: sessionId.toString(),
+      inf: { ...mediumInference, riskLevel: 'HIGH', crisis: false },
+    });
+    await escalateIfNeeded({
+      patientId,
+      sessionId: sessionId.toString(),
+      inf: {
+        ...mediumInference,
+        riskLevel: 'HIGH',
+        crisis: true,
+        crisisSignalType: 'indirect',
+      },
+    });
+
+    expect(mockEmitHighRiskAlert).toHaveBeenCalledTimes(2);
+    expect(mockEmitCallCenterAlert).not.toHaveBeenCalled();
   });
 });

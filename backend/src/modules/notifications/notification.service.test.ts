@@ -5,6 +5,7 @@ import { NotificationModel } from './notification.model';
 import { pushForNotification } from './push.service';
 import {
   claimNotification,
+  emitCallCenterAlert,
   emitHighRiskAlert,
   emitServiceRequestDecided,
   emitServiceRequestSubmitted,
@@ -184,6 +185,37 @@ describe('service notification emitters', () => {
       flaggedPhrases: [],
     });
 
+    expect(pushForNotificationMock).toHaveBeenCalledWith(created);
+  });
+
+  it('creates a CALL_CENTER high-risk alert with severity and flagged phrases', async () => {
+    const created = {
+      _id: 'n-call-center-1',
+      type: 'HIGH_RISK',
+      severity: 'CRITICAL',
+      recipientRole: 'CALL_CENTER',
+    };
+    notificationModelMock.create.mockResolvedValue(created);
+
+    await emitCallCenterAlert({
+      patientId: 'patient-id-1',
+      severity: 'CRITICAL',
+      reason: 'AI urgent crisis signal',
+      flaggedPhrases: ['TEST_CRISIS'],
+    });
+
+    expect(notificationModelMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientRole: 'CALL_CENTER',
+        recipientUserId: null,
+        patientId: 'patient-id-1',
+        type: 'HIGH_RISK',
+        severity: 'CRITICAL',
+        reason: 'AI urgent crisis signal',
+        flaggedPhrases: ['TEST_CRISIS'],
+        status: 'UNREAD',
+      })
+    );
     expect(pushForNotificationMock).toHaveBeenCalledWith(created);
   });
 });

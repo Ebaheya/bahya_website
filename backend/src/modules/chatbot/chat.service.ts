@@ -1,7 +1,10 @@
 import { Types } from 'mongoose';
 import { logger } from '../../config/logger';
 import { writeAudit } from '../../middleware/audit';
-import { emitHighRiskAlert } from '../notifications/notification.service';
+import {
+  emitCallCenterAlert,
+  emitHighRiskAlert,
+} from '../notifications/notification.service';
 import { chatErrors } from './chat.errors';
 import {
   ChatMessageModel,
@@ -169,6 +172,10 @@ function botTurnFromInference(
   };
 }
 
+function isUrgentSignal(inf: AiInferResponse): boolean {
+  return inf.riskLevel === 'CRITICAL' || (inf.crisis && inf.crisisSignalType === 'direct');
+}
+
 export async function escalateIfNeeded(input: EscalationInput): Promise<void> {
   if (input.inf.riskLevel === 'LOW') return;
 
@@ -180,6 +187,15 @@ export async function escalateIfNeeded(input: EscalationInput): Promise<void> {
     reason: `AI risk level ${input.inf.riskLevel}`,
     flaggedPhrases,
   });
+
+  if (isUrgentSignal(input.inf)) {
+    await emitCallCenterAlert({
+      patientId: input.patientId,
+      severity: input.inf.riskLevel,
+      reason: 'AI urgent crisis signal',
+      flaggedPhrases,
+    });
+  }
 
   await writeAudit({
     actorId: null,
