@@ -31,7 +31,7 @@ const aiResponseSchema = z
     crisisProbability: z.number().min(0).max(1).nullable().optional(),
     crisis: z.boolean(),
     crisisSignalType: z.enum(CRISIS_SIGNAL_TYPES).nullable().optional(),
-    flaggedPhrases: z.array(z.string()).default([]),
+    flaggedPhrases: z.array(z.string()),
     phq9Score: z.number().nullable().optional(),
     extra: z.record(z.unknown()).optional(),
   })

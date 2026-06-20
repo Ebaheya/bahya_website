@@ -86,4 +86,24 @@ describe('infer', () => {
     });
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    ['missing required reply', { ...validResponse, reply: undefined }],
+    ['bad risk enum', { ...validResponse, riskLevel: 'SEVERE' }],
+    ['version mismatch', { ...validResponse, version: 2 }],
+    ['missing flagged phrases', { ...validResponse, flaggedPhrases: undefined }],
+  ])('normalizes malformed AI responses: %s', async (_label, body) => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => body,
+    } as Response);
+    const { infer } = await importClient();
+
+    await expect(infer(validPayload)).rejects.toMatchObject({
+      statusCode: 502,
+      code: 'AI_INFERENCE_FAILED',
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
 });
