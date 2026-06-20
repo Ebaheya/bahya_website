@@ -11,6 +11,19 @@ interface PatientTreatmentFields {
   immunotherapy: boolean | null;
 }
 
+// Maps an authenticated User id to their Patient id. `req.user.id` is a User id,
+// but chat sessions/messages and the profile lookup are keyed by Patient id
+// (Patient.userId is the @unique link). Resolving here keeps the chatbot from
+// silently mis-keying storage and escalation alerts.
+export async function resolvePatientIdForUser(userId: string): Promise<string> {
+  const patient = await prisma.patient.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!patient) throw AppError.notFound('Patient profile not found');
+  return patient.id;
+}
+
 function calculateAge(dateOfBirth: Date | null): number | null {
   if (!dateOfBirth) return null;
 

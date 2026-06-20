@@ -14,28 +14,30 @@ import {
 
 const AI_CONTRACT_VERSION = 1;
 
-const aiResponseSchema = z
-  .object({
-    version: z.literal(AI_CONTRACT_VERSION),
-    reply: z.string().min(1),
-    lang: z.enum(CHAT_LANGUAGES),
-    emotion: z
-      .object({
-        label: z.string().min(1),
-        confidence: z.number().min(0).max(1),
-      })
-      .nullable()
-      .optional(),
-    intent: z.enum(CHAT_INTENTS),
-    riskLevel: z.enum(CHAT_RISK_LEVELS),
-    crisisProbability: z.number().min(0).max(1).nullable().optional(),
-    crisis: z.boolean(),
-    crisisSignalType: z.enum(CRISIS_SIGNAL_TYPES).nullable().optional(),
-    flaggedPhrases: z.array(z.string()),
-    phq9Score: z.number().nullable().optional(),
-    extra: z.record(z.unknown()).optional(),
-  })
-  .passthrough();
+// Every field we persist from the AI is bounded: the AI service is a trust
+// boundary, so a buggy/compromised response must not bloat Mongo docs, balloon
+// the reply fed back into history, or store nonsensical clinical values. Unknown
+// top-level keys are stripped (default) rather than stored.
+const aiResponseSchema = z.object({
+  version: z.literal(AI_CONTRACT_VERSION),
+  reply: z.string().min(1).max(8000),
+  lang: z.enum(CHAT_LANGUAGES),
+  emotion: z
+    .object({
+      label: z.string().min(1).max(100),
+      confidence: z.number().min(0).max(1),
+    })
+    .nullable()
+    .optional(),
+  intent: z.enum(CHAT_INTENTS),
+  riskLevel: z.enum(CHAT_RISK_LEVELS),
+  crisisProbability: z.number().min(0).max(1).nullable().optional(),
+  crisis: z.boolean(),
+  crisisSignalType: z.enum(CRISIS_SIGNAL_TYPES).nullable().optional(),
+  flaggedPhrases: z.array(z.string().max(500)).max(50),
+  phq9Score: z.number().int().min(0).max(27).nullable().optional(),
+  extra: z.record(z.unknown()).optional(),
+});
 
 export interface AiPatientProfile {
   patientId: string;

@@ -100,6 +100,26 @@ if (env.NODE_ENV === 'production' && env.CORS_ORIGINS === '*') {
   process.exit(1);
 }
 
+// The AI gateway sends PHI (patient message, history, oncology profile) plus a
+// bearer key to BAHYA_AI_BASE_URL. In production that link MUST be encrypted;
+// only loopback is allowed over plain http (local dev / sidecar).
+if (env.NODE_ENV === 'production' && !/^https:\/\//i.test(env.BAHYA_AI_BASE_URL)) {
+  const host = (() => {
+    try {
+      return new URL(env.BAHYA_AI_BASE_URL).hostname;
+    } catch {
+      return '';
+    }
+  })();
+  const isLoopback = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  if (!isLoopback) {
+    console.error(
+      'BAHYA_AI_BASE_URL must use https:// in production (PHI + bearer key are sent to it).'
+    );
+    process.exit(1);
+  }
+}
+
 export const corsOrigins =
   env.CORS_ORIGINS === '*'
     ? '*'

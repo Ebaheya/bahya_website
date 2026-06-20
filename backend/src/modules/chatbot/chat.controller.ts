@@ -7,6 +7,20 @@ import {
   sessionsListQuerySchema,
 } from './chat.schema';
 import * as chatService from './chat.service';
+import { resolvePatientIdForUser } from './chat.profile';
+import type { ChatReadActor } from './chat.service';
+
+// `req.user.id` is a User id; chat data is keyed by Patient id. For a PATIENT we
+// resolve their Patient id so storage, ownership, and escalation all use it.
+// Staff (DOCTOR/ADMIN) don't own sessions — they pass an explicit `patientId`.
+async function readActor(req: Request): Promise<ChatReadActor> {
+  if (!req.user) throw AppError.unauthorized();
+  if (req.user.role === 'PATIENT') {
+    const patientId = await resolvePatientIdForUser(req.user.id);
+    return { id: patientId, role: req.user.role };
+  }
+  return { id: req.user.id, role: req.user.role };
+}
 
 export async function sendMessage(
   req: Request,
@@ -16,8 +30,9 @@ export async function sendMessage(
   try {
     if (!req.user) throw AppError.unauthorized();
     const input = messageBodySchema.parse(req.body);
+    const patientId = await resolvePatientIdForUser(req.user.id);
     const reply = await chatService.handlePatientMessage({
-      patientId: req.user.id,
+      patientId,
       sessionId: input.sessionId,
       message: input.message,
     });
@@ -39,12 +54,9 @@ export async function listSessions(
   next: NextFunction
 ): Promise<void> {
   try {
-    if (!req.user) throw AppError.unauthorized();
     const query = sessionsListQuerySchema.parse(req.query);
-    const result = await chatService.listSessions(
-      { id: req.user.id, role: req.user.role },
-      query
-    );
+    const actor = await readActor(req);
+    const result = await chatService.listSessions(actor, query);
 
     res.status(200).json(result);
   } catch (err) {
@@ -58,14 +70,10 @@ export async function getSessionMessages(
   next: NextFunction
 ): Promise<void> {
   try {
-    if (!req.user) throw AppError.unauthorized();
     const params = sessionIdParamSchema.parse(req.params);
     const query = messagesQuerySchema.parse(req.query);
-    const result = await chatService.getSessionMessages(
-      { id: req.user.id, role: req.user.role },
-      params.id,
-      query
-    );
+    const actor = await readActor(req);
+    const result = await chatService.getSessionMessages(actor, params.id, query);
 
     res.status(200).json(result);
   } catch (err) {

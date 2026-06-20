@@ -111,7 +111,9 @@ export async function emitFormAssigned(input: FormAssignedNotificationInput): Pr
   }
 }
 
-export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void> {
+// Returns true when the notification was written, false when it failed (and was
+// logged). The caller can react to a dropped alert — critical for crisis paths.
+export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<boolean> {
   try {
     const doc = await NotificationModel.create({
       recipientRole: 'DOCTOR',
@@ -136,6 +138,7 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
     if (input.severity === 'HIGH' || input.severity === 'CRITICAL') {
       await pushBestEffort(doc, 'HIGH_RISK');
     }
+    return true;
   } catch (err) {
     logger.warn(
       {
@@ -147,10 +150,11 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
       },
       'notification emit failed'
     );
+    return false;
   }
 }
 
-export async function emitCallCenterAlert(input: CallCenterAlertInput): Promise<void> {
+export async function emitCallCenterAlert(input: CallCenterAlertInput): Promise<boolean> {
   try {
     const doc = await NotificationModel.create({
       recipientRole: 'CALL_CENTER',
@@ -171,6 +175,7 @@ export async function emitCallCenterAlert(input: CallCenterAlertInput): Promise<
       createdAt: new Date(),
     });
     await pushBestEffort(doc, 'HIGH_RISK');
+    return true;
   } catch (err) {
     logger.warn(
       {
@@ -183,6 +188,7 @@ export async function emitCallCenterAlert(input: CallCenterAlertInput): Promise<
       },
       'notification emit failed'
     );
+    return false;
   }
 }
 

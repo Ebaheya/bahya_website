@@ -69,6 +69,12 @@ const ChatSessionSchema = new Schema<ChatSessionDoc>(
 
 ChatSessionSchema.index({ patientId: 1, status: 1 });
 ChatSessionSchema.index({ patientId: 1, startedAt: -1 });
+// Enforce "at most one open session per patient" at the DB level so a concurrent
+// double-send can't create two ACTIVE sessions (the service handles the E11000).
+ChatSessionSchema.index(
+  { patientId: 1 },
+  { unique: true, partialFilterExpression: { status: 'ACTIVE' } }
+);
 
 const ChatMessageSchema = new Schema<ChatMessageDoc>(
   {

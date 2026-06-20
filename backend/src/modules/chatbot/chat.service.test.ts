@@ -71,7 +71,7 @@ describe('chat service US1', () => {
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T12:00:00.000Z'));
     jest.clearAllMocks();
-    mockEmitHighRiskAlert.mockResolvedValue(undefined);
+    mockEmitHighRiskAlert.mockResolvedValue(true);
     mockWriteAudit.mockResolvedValue(undefined);
   });
 
@@ -168,6 +168,44 @@ describe('chat service US1', () => {
       statusCode: 404,
       code: 'CHAT_SESSION_NOT_FOUND',
     });
+  });
+
+  it('rejects an explicitly supplied session that is already CLOSED instead of silently creating a new one', async () => {
+    mockSessionFindOne.mockReturnValueOnce(
+      queryReturning({
+        _id: sessionId,
+        patientId,
+        status: 'CLOSED',
+        lastActivityAt: new Date('2026-06-20T11:00:00.000Z'),
+      })
+    );
+
+    await expect(getOrCreateSession(patientId, sessionId.toString())).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'CHAT_SESSION_NOT_FOUND',
+    });
+    expect(mockSessionCreate).not.toHaveBeenCalled();
+  });
+
+  it('recovers from a concurrent-create race by returning the winning active session', async () => {
+    const winnerId = new Types.ObjectId('6650f1a2c3d4e5f6a7b8c9ff');
+    // No open session at first read; create loses the unique-index race; re-read wins.
+    mockSessionFindOne
+      .mockReturnValueOnce(queryReturning(null))
+      .mockReturnValueOnce(
+        queryReturning({
+          _id: winnerId,
+          patientId,
+          status: 'ACTIVE',
+          maxRiskLevel: null,
+          lastActivityAt: new Date('2026-06-20T12:00:00.000Z'),
+        })
+      );
+    mockSessionCreate.mockRejectedValueOnce(Object.assign(new Error('dup'), { code: 11000 }));
+
+    const session = await getOrCreateSession(patientId);
+
+    expect(session._id.toString()).toBe(winnerId.toString());
   });
 
   it('returns the last 10 turns in ascending order for AI history', async () => {

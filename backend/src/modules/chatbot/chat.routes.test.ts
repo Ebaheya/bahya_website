@@ -42,6 +42,11 @@ jest.mock('./chat.service', () => ({
   handlePatientMessage: mockHandlePatientMessage,
 }));
 
+const mockResolvePatientIdForUser = jest.fn();
+jest.mock('./chat.profile', () => ({
+  resolvePatientIdForUser: mockResolvePatientIdForUser,
+}));
+
 import { chatRouter } from './chat.routes';
 
 describe('chat routes US1', () => {
@@ -66,6 +71,8 @@ describe('chat routes US1', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     limiterHits.clear();
+    // The User id 'patient-user' resolves to the distinct Patient id 'patient-1'.
+    mockResolvePatientIdForUser.mockResolvedValue('patient-1');
     mockHandlePatientMessage.mockResolvedValue({
       sessionId: '6650f1a2c3d4e5f6a7b8c9d0',
       patientMessageId: '6650f1a2c3d4e5f6a7b8c9d1',
@@ -141,10 +148,31 @@ describe('chat routes US1', () => {
       reply: 'I am here with you.',
     });
     expect(response.status).toBe(200);
+    // Resolved Patient id is passed to the service — NOT the raw User id.
+    expect(mockResolvePatientIdForUser).toHaveBeenCalledWith('patient-user');
     expect(mockHandlePatientMessage).toHaveBeenCalledWith({
-      patientId: 'patient-user',
+      patientId: 'patient-1',
       sessionId: '6650f1a2c3d4e5f6a7b8c9d0',
       message: 'hello',
     });
+  });
+
+  it('resolves the User id to the Patient id before storing/escalating (FR/C1)', async () => {
+    mockResolvePatientIdForUser.mockResolvedValueOnce('patient-99');
+
+    await fetch(`${baseUrl}/chatbot/message`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-test-role': 'PATIENT',
+        'x-test-user-id': 'user-abc',
+      },
+      body: JSON.stringify({ message: 'hi' }),
+    });
+
+    expect(mockResolvePatientIdForUser).toHaveBeenCalledWith('user-abc');
+    expect(mockHandlePatientMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId: 'patient-99', message: 'hi' })
+    );
   });
 });

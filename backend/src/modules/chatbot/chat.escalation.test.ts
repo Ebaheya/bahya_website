@@ -92,8 +92,8 @@ describe('chat escalation US2', () => {
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T12:00:00.000Z'));
     jest.clearAllMocks();
-    mockEmitHighRiskAlert.mockResolvedValue(undefined);
-    mockEmitCallCenterAlert.mockResolvedValue(undefined);
+    mockEmitHighRiskAlert.mockResolvedValue(true);
+    mockEmitCallCenterAlert.mockResolvedValue(true);
     mockWriteAudit.mockResolvedValue(undefined);
   });
 

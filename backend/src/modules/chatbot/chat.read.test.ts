@@ -13,6 +13,7 @@ const mockSessionCreate = jest.fn();
 const mockMessageFind = jest.fn();
 const mockMessageCountDocuments = jest.fn();
 const mockMessageCreate = jest.fn();
+const mockResolvePatientIdForUser = jest.fn();
 
 jest.mock('../../config/logger', () => ({
   logger: {
@@ -37,6 +38,7 @@ jest.mock('./chat.model', () => ({
 
 jest.mock('./chat.profile', () => ({
   buildPatientProfile: jest.fn(),
+  resolvePatientIdForUser: mockResolvePatientIdForUser,
 }));
 
 jest.mock('./ai.client', () => ({
@@ -272,6 +274,8 @@ describe('chat read routes US4', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Controller resolves the patient User id to their Patient id for reads.
+    mockResolvePatientIdForUser.mockResolvedValue(ownerPatientId);
   });
 
   it('routes patient session list to their own actor context', async () => {
