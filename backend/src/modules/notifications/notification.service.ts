@@ -120,7 +120,9 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<bool
       recipientUserId: null,
       patientId: input.patientId,
       type: 'HIGH_RISK',
-      title: 'High-risk assessment submitted',
+      title: input.templateKey
+        ? 'High-risk assessment submitted'
+        : 'High-risk chatbot conversation',
       message: input.templateKey
         ? `A high-risk ${input.templateKey} submission needs review.`
         : 'A high-risk chatbot conversation needs review.',

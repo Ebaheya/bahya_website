@@ -167,12 +167,27 @@ describe('service notification emitters', () => {
         recipientUserId: null,
         patientId: 'patient-id-1',
         type: 'HIGH_RISK',
+        // No templateKey → chatbot alert: title must not read "assessment".
+        title: 'High-risk chatbot conversation',
         severity: 'MEDIUM',
         reason: 'AI risk level MEDIUM',
         flaggedPhrases: ['cannot sleep'],
       })
     );
     expect(pushForNotificationMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the assessment title when emitHighRiskAlert is given a templateKey', async () => {
+    notificationModelMock.create.mockResolvedValue({ _id: 'n-form-1', type: 'HIGH_RISK' });
+
+    await emitHighRiskAlert({ patientId: 'patient-id-1', severity: 'HIGH', templateKey: 'PHQ9' });
+
+    expect(notificationModelMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'High-risk assessment submitted',
+        message: 'A high-risk PHQ9 submission needs review.',
+      })
+    );
   });
 
   it('pushes HIGH and CRITICAL high-risk doctor alerts', async () => {
