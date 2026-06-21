@@ -24,7 +24,7 @@ const SESSION_INACTIVITY_MS = 24 * 60 * 60 * 1000;
 type ChatSessionRecord = ChatSessionDoc & { _id: Types.ObjectId };
 type ChatSessionListRecord = Pick<
   ChatSessionDoc,
-  'status' | 'maxRiskLevel' | 'lastEmotion' | 'startedAt' | 'endedAt'
+  'status' | 'maxRiskLevel' | 'lastEmotion' | 'startedAt' | 'endedAt' | 'lastActivityAt'
 > & { _id: Types.ObjectId };
 type ChatMessageRecord = Pick<
   ChatMessageDoc,
@@ -311,18 +311,31 @@ export async function listSessions(
     .lean()) as unknown as ChatSessionListRecord[];
   const total = await ChatSessionModel.countDocuments(filter);
   const clinical = isClinicalReader(actor.role);
+  const at = now();
 
   return {
-    data: rows.map((session) => ({
-      id: session._id.toString(),
-      status: session.status,
-      startedAt: session.startedAt,
-      endedAt: session.endedAt,
+    data: rows.map((session) => {
+      // Project a stale ACTIVE session as CLOSED at read time. The persisted
+      // close happens lazily on the next send (getOrCreateSession), so reads
+      // must honour the 24h inactivity contract without reporting it ACTIVE
+      // indefinitely. Read-only — no write side-effect in a GET.
+      const stale =
+        session.status === 'ACTIVE' &&
+        session.lastActivityAt != null &&
+        isStale(session.lastActivityAt, at);
+      const summary: ChatSessionSummary = {
+        id: session._id.toString(),
+        status: stale ? 'CLOSED' : session.status,
+        startedAt: session.startedAt,
+        endedAt: stale ? session.lastActivityAt : session.endedAt,
+      };
       // Patients never receive risk/emotion signals (FR-019).
-      ...(clinical
-        ? { maxRiskLevel: session.maxRiskLevel, lastEmotion: session.lastEmotion }
-        : {}),
-    })),
+      if (clinical) {
+        summary.maxRiskLevel = session.maxRiskLevel;
+        summary.lastEmotion = session.lastEmotion;
+      }
+      return summary;
+    }),
     page: input.page,
     pageSize: input.pageSize,
     total,

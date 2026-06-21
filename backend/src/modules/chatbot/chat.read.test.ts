@@ -124,6 +124,35 @@ describe('chat read service US4', () => {
     expect(chain.limit).toHaveBeenCalledWith(10);
   });
 
+  it('projects a stale (>24h inactive) ACTIVE session as CLOSED on read', async () => {
+    const stale = new Date('2020-01-01T00:00:00.000Z'); // far older than the 24h window
+    const docs = [
+      {
+        _id: sessionId,
+        patientId: ownerPatientId,
+        status: 'ACTIVE',
+        maxRiskLevel: 'LOW',
+        lastEmotion: 'calm',
+        startedAt: stale,
+        endedAt: null,
+        lastActivityAt: stale,
+      },
+    ];
+    mockSessionFind.mockReturnValue(queryChain(docs));
+    mockSessionCountDocuments.mockResolvedValue(1);
+
+    const result = await listSessions(
+      { id: 'doctor-1', role: 'DOCTOR' },
+      { patientId: ownerPatientId, page: 1, pageSize: 20 }
+    );
+
+    expect(result.data[0]).toMatchObject({
+      id: sessionId.toString(),
+      status: 'CLOSED',
+      endedAt: stale,
+    });
+  });
+
   it('requires patientId for Doctor/Admin session lists', async () => {
     await expect(
       listSessions({ id: 'doctor-1', role: 'DOCTOR' }, { page: 1, pageSize: 20 })
