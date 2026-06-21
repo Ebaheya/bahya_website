@@ -16,7 +16,7 @@ describe('chat mongoose models', () => {
   it('defines the message indexes required by history and patient timeline reads', () => {
     const indexes = ChatMessageModel.schema.indexes().map((index) => index[0]);
 
-    expect(indexes).toContainEqual({ sessionId: 1, createdAt: 1 });
+    expect(indexes).toContainEqual({ sessionId: 1, createdAt: 1, _id: 1 });
     expect(indexes).toContainEqual({ patientId: 1, createdAt: -1 });
   });
 

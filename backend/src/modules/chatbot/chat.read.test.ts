@@ -97,15 +97,16 @@ describe('chat read service US4', () => {
     mockSessionFind.mockReturnValue(chain);
     mockSessionCountDocuments.mockResolvedValue(1);
 
-    await expect(
-      listSessions({ id: ownerPatientId, role: 'PATIENT' }, { page: 2, pageSize: 10 })
-    ).resolves.toEqual({
+    const result = await listSessions(
+      { id: ownerPatientId, role: 'PATIENT' },
+      { page: 2, pageSize: 10 }
+    );
+
+    expect(result).toEqual({
       data: [
         {
           id: sessionId.toString(),
           status: 'ACTIVE',
-          maxRiskLevel: 'MEDIUM',
-          lastEmotion: 'sadness',
           startedAt,
           endedAt: null,
         },
@@ -114,6 +115,9 @@ describe('chat read service US4', () => {
       pageSize: 10,
       total: 1,
     });
+    // FR-019: patients must not receive risk/emotion signals on session summaries.
+    expect(result.data[0]).not.toHaveProperty('maxRiskLevel');
+    expect(result.data[0]).not.toHaveProperty('lastEmotion');
     expect(mockSessionFind).toHaveBeenCalledWith({ patientId: ownerPatientId });
     expect(chain.sort).toHaveBeenCalledWith({ startedAt: -1 });
     expect(chain.skip).toHaveBeenCalledWith(10);

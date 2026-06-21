@@ -97,7 +97,8 @@ const ChatMessageSchema = new Schema<ChatMessageDoc>(
   { collection: 'chat_messages', versionKey: false, strict: 'throw' }
 );
 
-ChatMessageSchema.index({ sessionId: 1, createdAt: 1 });
+// _id included so the (createdAt, _id) tie-break sort stays index-covered.
+ChatMessageSchema.index({ sessionId: 1, createdAt: 1, _id: 1 });
 ChatMessageSchema.index({ patientId: 1, createdAt: -1 });
 
 export const ChatSessionModel =

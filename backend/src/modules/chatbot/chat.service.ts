@@ -82,10 +82,11 @@ export interface SessionsListInput extends PaginationInput {
 export interface ChatSessionSummary {
   id: string;
   status: ChatSessionDoc['status'];
-  maxRiskLevel: ChatRiskLevel | null;
-  lastEmotion: string | null;
   startedAt: Date;
   endedAt: Date | null;
+  // Risk/emotion signals are returned to Doctor/Admin only (FR-019).
+  maxRiskLevel?: ChatRiskLevel | null;
+  lastEmotion?: string | null;
 }
 
 export interface PaginatedResult<T> {
@@ -270,7 +271,9 @@ export async function getRecentTurns(
 ): Promise<AiHistoryTurn[]> {
   const objectId = toObjectId(sessionId);
   const rows = (await ChatMessageModel.find({ sessionId: objectId })
-    .sort({ createdAt: -1 })
+    // _id tie-breaks turns written in the same millisecond (patient + bot),
+    // keeping history order deterministic.
+    .sort({ createdAt: -1, _id: -1 })
     .limit(limit)
     .exec()) as ChatMessageRecord[];
 
@@ -295,15 +298,18 @@ export async function listSessions(
     .limit(input.pageSize)
     .lean()) as unknown as ChatSessionListRecord[];
   const total = await ChatSessionModel.countDocuments(filter);
+  const clinical = isClinicalReader(actor.role);
 
   return {
     data: rows.map((session) => ({
       id: session._id.toString(),
       status: session.status,
-      maxRiskLevel: session.maxRiskLevel,
-      lastEmotion: session.lastEmotion,
       startedAt: session.startedAt,
       endedAt: session.endedAt,
+      // Patients never receive risk/emotion signals (FR-019).
+      ...(clinical
+        ? { maxRiskLevel: session.maxRiskLevel, lastEmotion: session.lastEmotion }
+        : {}),
     })),
     page: input.page,
     pageSize: input.pageSize,
@@ -363,7 +369,8 @@ export async function getSessionMessages(
 
   const filter = { sessionId: objectId };
   const rows = (await ChatMessageModel.find(filter)
-    .sort({ createdAt: 1 })
+    // _id tie-breaks same-millisecond turns so pagination/order is stable.
+    .sort({ createdAt: 1, _id: 1 })
     .skip(paginationOffset(input))
     .limit(input.pageSize)
     .lean()) as unknown as ChatReadableMessageRecord[];
