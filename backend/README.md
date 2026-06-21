@@ -518,10 +518,14 @@ Key behaviors:
 | Send a chat message (`POST /chatbot/message`) | ❌ | ❌ | ❌ | ❌ | ✅ (own) |
 | List sessions / read messages — **with full signals** | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Read own conversation — **signals stripped** | — | — | — | — | ✅ (own) |
-| Receive crisis alerts | ✅¹ | ✅ | ❌ | ✅ (urgent) | ❌ |
+| Receive crisis alerts | ❌ | ✅¹ | ❌ | ✅¹ (urgent) | ❌ |
 
-¹ via the existing notifications inbox. Crisis alerts are delivered through the
-`notifications` module, not a new chatbot endpoint.
+¹ Crisis escalation targets the **Doctor** (and the **Call Center** for urgent /
+direct-crisis cases) via the existing `notifications` inbox (`GET /notifications/my`),
+not a new chatbot endpoint. Staff see the crisis context (`reason`, `flaggedPhrases`)
+on those notifications; patients never do. **Admins** oversee conversations through
+the read endpoints (`GET /chatbot/sessions…`) and the dashboard — they are not a
+crisis-alert recipient.
 
 ## Tests
 

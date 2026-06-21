@@ -292,8 +292,8 @@ interface PatientContact {
   phone: string;
 }
 
-function toNotificationCore(doc: LeanNotification) {
-  return {
+function toNotificationCore(doc: LeanNotification, includeStaffFields = false) {
+  const core = {
     id: String(doc._id),
     type: doc.type,
     severity: doc.severity,
@@ -306,11 +306,20 @@ function toNotificationCore(doc: LeanNotification) {
     doneAt: doc.doneAt,
     createdAt: doc.createdAt,
   };
+  if (!includeStaffFields) return core;
+  // Crisis context (AI-flagged phrases + trigger reason) is required by staff for
+  // follow-up — e.g. a CALL_CENTER user acting on an urgent chatbot crisis — but
+  // MUST never be exposed to patients.
+  return { ...core, reason: doc.reason ?? null, flaggedPhrases: doc.flaggedPhrases ?? null };
 }
 
-function toListItem(doc: LeanNotification, patientById: Map<string, PatientContact>) {
+function toListItem(
+  doc: LeanNotification,
+  patientById: Map<string, PatientContact>,
+  includeStaffFields = false
+) {
   return {
-    ...toNotificationCore(doc),
+    ...toNotificationCore(doc, includeStaffFields),
     // Live patient contact (FR-004); degrades to null when the patient can no
     // longer be read, rather than failing the whole list.
     patient: patientById.get(doc.patientId) ?? null,
@@ -356,8 +365,11 @@ export async function listMyNotifications(
     patients.map((p) => [p.id, { id: p.id, fullName: p.user.fullName, phone: p.phone }])
   );
 
+  // Staff (Doctor/Admin/Call Center) get crisis context; patients never do.
+  const includeStaffFields = actor.role !== 'PATIENT';
+
   return {
-    data: docs.map((d) => toListItem(d, patientById)),
+    data: docs.map((d) => toListItem(d, patientById, includeStaffFields)),
     page: query.page,
     pageSize: query.pageSize,
     total,
@@ -385,7 +397,7 @@ export async function claimNotification(actor: NotificationListActor, id: string
     { new: true }
   ).lean<LeanNotification | null>();
 
-  if (claimed) return toNotificationCore(claimed);
+  if (claimed) return toNotificationCore(claimed, actor.role !== 'PATIENT');
 
   const existing = await NotificationModel.findById(id).lean<LeanNotification | null>();
   if (!existing) throw AppError.notFound('Notification not found');
@@ -422,7 +434,7 @@ export async function markRead(actor: NotificationListActor, id: string) {
     newValues: { status: 'READ' },
   });
 
-  return toNotificationCore(updated);
+  return toNotificationCore(updated, actor.role !== 'PATIENT');
 }
 
 export async function markDone(actor: NotificationListActor, id: string) {
@@ -443,7 +455,7 @@ export async function markDone(actor: NotificationListActor, id: string) {
     newValues: { status: 'DONE' },
   });
 
-  return toNotificationCore(updated);
+  return toNotificationCore(updated, actor.role !== 'PATIENT');
 }
 
 // ---------------------------------------------------------------------------

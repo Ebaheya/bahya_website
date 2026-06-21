@@ -416,6 +416,53 @@ describe('listMyNotifications', () => {
     });
   });
 
+  it('exposes crisis context (reason, flaggedPhrases) to staff but never to patients', async () => {
+    const crisisDoc = {
+      _id: 'n9',
+      type: 'HIGH_RISK',
+      severity: 'CRITICAL',
+      status: 'UNREAD',
+      title: 'Urgent chatbot crisis signal',
+      message: 'A patient chatbot conversation needs urgent call-center follow-up.',
+      doctorNote: null,
+      claimedAt: null,
+      readAt: null,
+      doneAt: null,
+      createdAt: new Date('2026-06-20T00:00:00Z'),
+      patientId: 'p9',
+      recipientRole: 'CALL_CENTER',
+      recipientUserId: null,
+      reason: 'AI urgent crisis signal',
+      flaggedPhrases: ['I will end it'],
+    };
+    notificationModelMock.find.mockReturnValue(findChain([crisisDoc]));
+    notificationModelMock.countDocuments.mockResolvedValue(1);
+    prismaMock.patient.findMany.mockResolvedValue([
+      { id: 'p9', phone: '+201', user: { fullName: 'P9' } },
+    ]);
+
+    const staff = await listMyNotifications(
+      { id: 'cc-1', role: 'CALL_CENTER' },
+      { page: 1, pageSize: 20 }
+    );
+    expect(staff.data[0]).toMatchObject({
+      reason: 'AI urgent crisis signal',
+      flaggedPhrases: ['I will end it'],
+    });
+
+    // A patient must never receive these fields, even on a notification that has them.
+    notificationModelMock.find.mockReturnValue(
+      findChain([{ ...crisisDoc, recipientRole: 'PATIENT', recipientUserId: 'pat-1' }])
+    );
+    prismaMock.patient.findMany.mockResolvedValue([]);
+    const patient = await listMyNotifications(
+      { id: 'pat-1', role: 'PATIENT' },
+      { page: 1, pageSize: 20 }
+    );
+    expect(patient.data[0]).not.toHaveProperty('reason');
+    expect(patient.data[0]).not.toHaveProperty('flaggedPhrases');
+  });
+
   it('applies status/severity filters and pagination offset', async () => {
     const chain = findChain([]);
     notificationModelMock.find.mockReturnValue(chain);
