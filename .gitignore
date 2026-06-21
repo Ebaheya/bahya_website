@@ -23,6 +23,3 @@ Thumbs.db
 .idea/
 .claude/
 CLAUDE.md
-
-# Stray Flutter build artifacts — generated, not source (real app lives in frontend/)
-frontend_app/
