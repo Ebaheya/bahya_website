@@ -1,0 +1,33 @@
+name: Deploy
+
+# Phase 4 (optional automation): redeploy the stack on the VPS over SSH.
+# Manual `workflow_dispatch` by default; uncomment the push trigger to deploy
+# automatically when main moves. Requires these repository secrets:
+#   VPS_HOST     — server IP or hostname
+#   VPS_USER     — SSH user (e.g. deploy)
+#   VPS_SSH_KEY  — private key authorized on the server
+#   VPS_APP_DIR  — absolute path to the checked-out repo on the server
+# No secret values live in this file — only references.
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+
+jobs:
+  deploy:
+    name: Pull & restart on VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd "${{ secrets.VPS_APP_DIR }}"
+            git pull --ff-only
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker image prune -f

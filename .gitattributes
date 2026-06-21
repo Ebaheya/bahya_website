@@ -1,0 +1,8 @@
+# Shell scripts and the Docker entrypoint MUST stay LF-only — they run inside
+# Linux containers. A CRLF checkout on Windows would break the entrypoint with
+# `exec: ./docker-entrypoint.sh: not found`.
+*.sh            text eol=lf
+docker-entrypoint.sh text eol=lf
+Dockerfile      text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf

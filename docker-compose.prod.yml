@@ -1,0 +1,113 @@
+# Production stack for the Bahya backend on a single DigitalOcean VPS.
+#
+#   api      — the Express/Prisma API (built from ./backend)
+#   postgres — PostgreSQL 16 (clinical/relational data)
+#   mongo    — MongoDB 7 (audit logs, notifications, chat)
+#   nginx    — TLS terminator + reverse proxy for api.refk.tech
+#   certbot  — Let's Encrypt certificate issuance/renewal
+#
+# Configuration comes from a root `.env` file (gitignored). Copy
+# deploy/env.production.example to .env and fill it in before deploying.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: bahya-api:latest
+    container_name: bahya-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    # Only exposed to other compose services and to nginx — never published to
+    # the host's public interface. TLS and the public port are nginx's job.
+    expose:
+      - "3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    networks:
+      - bahya
+
+  postgres:
+    image: postgres:16
+    container_name: bahya-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-mental_health_clinic}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-mental_health_clinic}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - bahya
+
+  mongo:
+    image: mongo:7
+    container_name: bahya-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:?MONGO_INITDB_ROOT_USERNAME is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:?MONGO_INITDB_ROOT_PASSWORD is required}
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "mongosh --quiet --host localhost --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\" | grep -q 1"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - bahya
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: bahya-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    # Reload every 6h so renewed certificates are picked up without a restart.
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    depends_on:
+      - api
+    networks:
+      - bahya
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: bahya-certbot
+    # Renew twice a day; the nginx side reloads certs on its own schedule.
+    # On first issuance, run deploy/init-letsencrypt.sh instead.
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'"
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    networks:
+      - bahya
+
+volumes:
+  postgres_data:
+  mongo_data:
+  certbot_conf:
+  certbot_www:
+
+networks:
+  bahya:
+    driver: bridge
