@@ -71,27 +71,30 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     return SafeArea(
       child: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              responsiveSize(context, 0.014, min: 14, max: 18),
-              responsiveHeight(context, 0.012, min: 10, max: 14),
-              responsiveSize(context, 0.014, min: 14, max: 18),
-              0,
-            ),
-            child: Row(
-              children: [
-                customText(
-                  text: 'Admin Panel',
-                  size: responsiveSize(context, 0.014, min: 18, max: 22),
-                  color: textColor,
-                  bold: true,
-                  isEnglish: true,
-                ),
-                const Spacer(),
-                const LanguageToggleButton(padding: EdgeInsets.zero),
-              ],
-            ),
-          ),
+          // Padding(
+          //   padding: EdgeInsets.fromLTRB(
+          //     responsiveSize(context, 0.014, min: 14, max: 18),
+          //     responsiveHeight(context, 0.012, min: 10, max: 14),
+          //     responsiveSize(context, 0.014, min: 14, max: 18),
+          //     0,
+          //   ),
+          //   child: Padding(
+          //     padding: const EdgeInsets.all(8.0),
+          //     child: Row(
+          //       children: [
+          //         customText(
+          //           text: 'Admin Panel',
+          //           size: responsiveSize(context, 0.014, min: 18, max: 22),
+          //           color: textColor,
+          //           bold: true,
+          //           isEnglish: true,
+          //         ),
+          //         const Spacer(),
+          //         const LanguageToggleButton(padding: EdgeInsets.zero),
+          //       ],
+          //     ),
+          //   ),
+          // ),
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 280),

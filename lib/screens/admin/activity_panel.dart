@@ -1,13 +1,15 @@
 import 'dart:ui';
 
+import 'package:bahya_website/helper/admin_widgets/recent%20activity/recent_activity_dialog.dart';
 import 'package:bahya_website/helper/admin_widgets/recent%20activity/recent_activity_widgets.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:bahya_website/helper/admin_widgets/recent%20activity/recent_activity_dialog.dart';
 import 'package:flutter/material.dart';
 
 class RecentActivity extends StatefulWidget {
-  const RecentActivity({super.key});
+  final List<dynamic> activity;
+
+  const RecentActivity({super.key, this.activity = const []});
 
   @override
   State<RecentActivity> createState() => _RecentActivityState();
@@ -17,53 +19,11 @@ class _RecentActivityState extends State<RecentActivity> {
   bool _hover = false;
   bool _pressed = false;
 
-  final List<ActivityModel> activities = [
-    ActivityModel(
-      dotColor: Colors.purple,
-      iconColor: Colors.purple,
-      icon: Icons.description_outlined,
-      title: "Dr. Sarah Johnson",
-      description: "Updated patient record",
-      time: "2 minutes ago",
-    ),
-    ActivityModel(
-      dotColor: Colors.pink,
-      iconColor: Colors.pink,
-      icon: Icons.cloud_upload_outlined,
-      title: "Dr. Mohammed",
-      description: "Failed to upload document",
-      time: "32 minutes ago",
-    ),
-    ActivityModel(
-      dotColor: Colors.grey,
-      iconColor: Colors.grey,
-      icon: Icons.settings_rounded,
-      title: "Dr. Ahmed Johnson",
-      description: "Modified system settings",
-      time: "42 minutes ago",
-    ),
-    ActivityModel(
-      dotColor: Colors.blue,
-      iconColor: Colors.blue,
-      icon: Icons.person_add_alt_1_rounded,
-      title: "Dr. Emily Davis",
-      description: "Added new patient",
-      time: "1 hour ago",
-    ),
-    ActivityModel(
-      dotColor: Colors.green,
-      iconColor: Colors.green,
-      icon: Icons.download_rounded,
-      title: "Dr. Michael Brown",
-      description: "Exported patient report",
-      time: "2 hours ago",
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final isMobile = getScreenWidth(context) < 650;
     final scale = _pressed ? 0.98 : (_hover ? 1.02 : 1.0);
+    final activities = _mapActivities(widget.activity);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
@@ -112,28 +72,37 @@ class _RecentActivityState extends State<RecentActivity> {
             ),
             child: Column(
               children: [
-                isMobile ? _mobileHeader(context) : _desktopHeader(context),
+                isMobile
+                    ? _mobileHeader(context, activities)
+                    : _desktopHeader(context, activities),
                 SizedBox(
                   height: responsiveHeight(context, 0.025, min: 18, max: 26),
                 ),
-                Column(
-                  children: List.generate(
-                    activities.length >= 3 ? 3 : activities.length,
-                    (index) {
-                      final item = activities[index];
+                if (activities.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Text("No recent activity available"),
+                  )
+                else
+                  Column(
+                    children: List.generate(
+                      activities.length >= 3 ? 3 : activities.length,
+                      (index) {
+                        final item = activities[index];
 
-                      return ActivityItem(
-                        dotColor: item.dotColor,
-                        iconColor: item.iconColor,
-                        icon: item.icon,
-                        title: item.title,
-                        description: item.description,
-                        time: item.time,
-                        showLine: index != 2,
-                      );
-                    },
+                        return ActivityItem(
+                          dotColor: item.dotColor,
+                          iconColor: item.iconColor,
+                          icon: item.icon,
+                          title: item.title,
+                          description: item.description,
+                          time: item.time,
+                          showLine:
+                              index != 2 && index != activities.length - 1,
+                        );
+                      },
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -142,7 +111,72 @@ class _RecentActivityState extends State<RecentActivity> {
     );
   }
 
-  Widget _desktopHeader(BuildContext context) {
+  List<ActivityModel> _mapActivities(List<dynamic> rawItems) {
+    return rawItems.map((item) {
+      final map = item is Map
+          ? Map<String, dynamic>.from(item)
+          : <String, dynamic>{};
+      final actor = map['actor'] is Map
+          ? Map<String, dynamic>.from(map['actor'])
+          : null;
+
+      final action = map['action']?.toString() ?? 'SYSTEM_ACTIVITY';
+      final entityType = map['entityType']?.toString() ?? 'SYSTEM';
+      final createdAt = map['createdAt']?.toString();
+
+      return ActivityModel(
+        dotColor: _activityColor(action),
+        iconColor: _activityColor(action),
+        icon: _activityIcon(action),
+        title: actor?['fullName']?.toString() ?? 'System',
+        description: _formatAction(action, entityType),
+        time: _formatTime(createdAt),
+      );
+    }).toList();
+  }
+
+  Color _activityColor(String action) {
+    if (action.contains('CREATED')) return Colors.green;
+    if (action.contains('UPDATED') || action.contains('CHANGED'))
+      return Colors.blue;
+    if (action.contains('FAILED')) return Colors.red;
+    if (action.contains('REPORT')) return Colors.pink;
+    if (action.contains('ASSESSMENT')) return Colors.purple;
+    return Colors.grey;
+  }
+
+  IconData _activityIcon(String action) {
+    if (action.contains('CREATED')) return Icons.add_circle_outline;
+    if (action.contains('UPDATED') || action.contains('CHANGED'))
+      return Icons.edit_outlined;
+    if (action.contains('FAILED')) return Icons.error_outline;
+    if (action.contains('REPORT')) return Icons.report_problem_outlined;
+    if (action.contains('ASSESSMENT')) return Icons.assignment_outlined;
+    if (action.contains('PATIENT')) return Icons.person_outline;
+    return Icons.history_rounded;
+  }
+
+  String _formatAction(String action, String entityType) {
+    final readableAction = action.toLowerCase().replaceAll('_', ' ');
+    final readableEntity = entityType.toLowerCase().replaceAll('_', ' ');
+    return "$readableAction on $readableEntity";
+  }
+
+  String _formatTime(String? value) {
+    if (value == null || value.isEmpty) return '';
+
+    final date = DateTime.tryParse(value);
+    if (date == null) return value;
+
+    final diff = DateTime.now().difference(date.toLocal());
+
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} minutes ago';
+    if (diff.inHours < 24) return '${diff.inHours} hours ago';
+    return '${diff.inDays} days ago';
+  }
+
+  Widget _desktopHeader(BuildContext context, List<ActivityModel> activities) {
     return Row(
       children: [
         _HeaderIcon(hover: _hover),
@@ -163,7 +197,7 @@ class _RecentActivityState extends State<RecentActivity> {
     );
   }
 
-  Widget _mobileHeader(BuildContext context) {
+  Widget _mobileHeader(BuildContext context, List<ActivityModel> activities) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -215,13 +249,6 @@ class _HeaderIcon extends StatelessWidget {
           borderRadius: BorderRadius.circular(
             responsiveSize(context, 0.01, min: 12, max: 16),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.pink.withOpacity(0.20),
-              blurRadius: responsiveSize(context, 0.012, min: 12, max: 16),
-              offset: const Offset(0, 8),
-            ),
-          ],
         ),
         child: Icon(
           Icons.history_rounded,

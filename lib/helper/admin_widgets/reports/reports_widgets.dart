@@ -154,7 +154,7 @@ class _ReportDetailsDialogState extends State<ReportDetailsDialog> {
                   height: responsiveHeight(context, 0.065, min: 48, max: 58),
                   child: FilterDropdown(
                     hint: selectedStatus,
-                    items: const ["Pending", "Investigating", "Completed"],
+                    items:  const ["Pending", "Investigating", "Resolved"],
                     onChanged: (v) {
                       setState(() => selectedStatus = v);
                     },

@@ -46,3 +46,4 @@ app.*.map.json
 /
 
 run_server.bat
+*.zip

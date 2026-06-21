@@ -13,42 +13,138 @@ class SettingsColors {
 
 class SettingsHeader extends StatelessWidget {
   final VoidCallback? onLogout;
+  final VoidCallback? onTranslate;
 
-  const SettingsHeader({super.key, this.onLogout});
+  const SettingsHeader({super.key, this.onLogout, this.onTranslate});
 
   @override
   Widget build(BuildContext context) {
     final isMobile = getScreenWidth(context) < 650;
 
-    return isMobile
-        ? Column(
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              const _HeaderIcon(),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const _HeaderIcon(),
-                  const Spacer(),
-                  _MobileLogoutButton(
+                  _MobileHeaderButton(
+                    title: "Logout",
+                    icon: Icons.logout_rounded,
+                    color: SettingsColors.danger,
                     onTap:
                         onLogout ??
-                        () {
-                          debugPrint("Logout");
+                        () async {
+                          await authNotifier.logout();
+
+                          if (!context.mounted) return;
+
+                          context.go('/login');
                         },
+                  ),
+                  SizedBox(
+                    height: responsiveHeight(context, 0.014, min: 10, max: 14),
+                  ),
+                 LanguageToggleButton(
+                    padding: EdgeInsets.zero,
                   ),
                 ],
               ),
-              SizedBox(
-                height: responsiveHeight(context, 0.018, min: 12, max: 18),
+            ],
+          ),
+          SizedBox(height: responsiveHeight(context, 0.02, min: 14, max: 20)),
+          const _HeaderText(),
+        ],
+      );
+    }
+
+    return const Row(
+      children: [
+        Expanded(child: _HeaderText()),
+        _HeaderIcon(),
+      ],
+    );
+  }
+}
+
+class _MobileHeaderButton extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _MobileHeaderButton({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_MobileHeaderButton> createState() => _MobileHeaderButtonState();
+}
+
+class _MobileHeaderButtonState extends State<_MobileHeaderButton> {
+  bool hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => hover = true),
+      onExit: (_) => setState(() => hover = false),
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.014, min: 14, max: 18),
+        ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.symmetric(
+            horizontal: responsiveSize(context, 0.014, min: 14, max: 18),
+            vertical: responsiveHeight(context, 0.012, min: 9, max: 12),
+          ),
+          decoration: BoxDecoration(
+            color: hover ? widget.color.withOpacity(0.08) : Colors.white,
+            borderRadius: BorderRadius.circular(
+              responsiveSize(context, 0.014, min: 14, max: 18),
+            ),
+            border: Border.all(color: widget.color.withOpacity(0.25)),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(hover ? 0.12 : 0.07),
+                blurRadius: hover ? 18 : 12,
+                offset: const Offset(0, 6),
               ),
-              const _HeaderText(),
             ],
-          )
-        : const Row(
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(child: _HeaderText()),
-              _HeaderIcon(),
+              Icon(
+                widget.icon,
+                color: widget.color,
+                size: responsiveSize(context, 0.014, min: 18, max: 22),
+              ),
+              SizedBox(width: responsiveSize(context, 0.008, min: 8, max: 10)),
+              customText(
+                text: widget.title,
+                size: responsiveSize(context, 0.0085, min: 12, max: 14),
+                color: widget.color,
+                bold: true,
+                isEnglish: true,
+              ),
             ],
-          );
+          ),
+        ),
+      ),
+    );
   }
 }
 

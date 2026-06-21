@@ -303,7 +303,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           readOnly: widget.readOnly,
           inputFormatters: _inputFormatters(),
           obscuringCharacter: '•',
-          autovalidateMode: widget.autovalidateMode,
+          autovalidateMode: AutovalidateMode.disabled,
           textDirection: effectiveDirection,
           maxLines: widget.maxLines,
           minLines: widget.minLines,

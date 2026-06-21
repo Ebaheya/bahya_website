@@ -83,14 +83,17 @@ class ReportStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     Color color;
 
-    switch (status) {
+  switch (status.toUpperCase()) {
+      case "PENDING":
       case "Pending":
         color = Colors.purple;
         break;
+      case "INVESTIGATING":
       case "Investigating":
         color = Colors.blue;
         break;
-      case "Completed":
+      case "RESOLVED":
+      case "Resolved":
         color = Colors.green;
         break;
       default:

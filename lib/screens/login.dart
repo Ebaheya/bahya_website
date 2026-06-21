@@ -319,10 +319,8 @@ class _LoginPageState extends State<LoginPage> {
                                               max: 26,
                                             ),
                                           ),
-                                          isLoggingIn
-                                              ? Center(child: customLoading())
-                                              : CustomGlowButton(
-                                                  title: 'Sign in',
+                                          CustomGlowButton(
+                                                  title: isLoggingIn ? ' Signing in...' : ' Sign in',
                                                   backgroundColor: const Color(
                                                     0xFFFF7BB0,
                                                   ),

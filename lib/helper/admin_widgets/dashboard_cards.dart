@@ -55,6 +55,7 @@ class _DashboardCardState extends State<DashboardCard> {
             padding: EdgeInsets.all(
               responsiveSize(context, 0.012, min: 14, max: 18),
             ),
+            
             decoration: BoxDecoration(
               color: _hover ? const Color(0xFFFFF8FC) : Colors.white,
               borderRadius: BorderRadius.circular(
@@ -102,91 +103,94 @@ class _DashboardCardState extends State<DashboardCard> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        AnimatedScale(
-                          scale: iconScale,
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOutCubic,
-                          child: Container(
-                            padding: EdgeInsets.all(
-                              responsiveSize(context, 0.007, min: 8, max: 11),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        children: [
+                          AnimatedScale(
+                            scale: iconScale,
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            child: Container(
+                              padding: EdgeInsets.all(
+                                responsiveSize(context, 0.007, min: 8, max: 11),
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(colors: gradientColors),
+                                borderRadius: BorderRadius.circular(
+                                  responsiveSize(
+                                    context,
+                                    0.008,
+                                    min: 10,
+                                    max: 14,
+                                  ),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: buttonColor.withOpacity(0.22),
+                                    blurRadius: responsiveSize(
+                                      context,
+                                      0.01,
+                                      min: 10,
+                                      max: 16,
+                                    ),
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                widget.icon,
+                                color: Colors.white,
+                                size: responsiveSize(
+                                  context,
+                                  0.017,
+                                  min: 22,
+                                  max: 32,
+                                ),
+                              ),
                             ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: gradientColors),
-                              borderRadius: BorderRadius.circular(
-                                responsiveSize(
+                          ),
+                      
+                          const Spacer(),
+                      
+                          if (widget.hasPercentage)
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 220),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: responsiveSize(
                                   context,
                                   0.008,
-                                  min: 10,
+                                  min: 9,
+                                  max: 12,
+                                ),
+                                vertical: responsiveHeight(
+                                  context,
+                                  0.006,
+                                  min: 4,
+                                  max: 6,
+                                ),
+                              ),
+                              decoration: BoxDecoration(
+                                color: (isPositive ? Colors.green : Colors.red)
+                                    .withOpacity(0.10),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: customText(
+                                text:
+                                    "${isPositive ? "+" : ""}${widget.percentage?.toStringAsFixed(1)}%",
+                                size: responsiveSize(
+                                  context,
+                                  0.008,
+                                  min: 11,
                                   max: 14,
                                 ),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: buttonColor.withOpacity(0.22),
-                                  blurRadius: responsiveSize(
-                                    context,
-                                    0.01,
-                                    min: 10,
-                                    max: 16,
-                                  ),
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              widget.icon,
-                              color: Colors.white,
-                              size: responsiveSize(
-                                context,
-                                0.017,
-                                min: 22,
-                                max: 32,
+                                color: isPositive ? Colors.green : Colors.red,
+                                bold: true,
+                                isEnglish: true,
                               ),
                             ),
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        if (widget.hasPercentage)
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 220),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: responsiveSize(
-                                context,
-                                0.008,
-                                min: 9,
-                                max: 12,
-                              ),
-                              vertical: responsiveHeight(
-                                context,
-                                0.006,
-                                min: 4,
-                                max: 6,
-                              ),
-                            ),
-                            decoration: BoxDecoration(
-                              color: (isPositive ? Colors.green : Colors.red)
-                                  .withOpacity(0.10),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: customText(
-                              text:
-                                  "${isPositive ? "+" : ""}${widget.percentage?.toStringAsFixed(1)}%",
-                              size: responsiveSize(
-                                context,
-                                0.008,
-                                min: 11,
-                                max: 14,
-                              ),
-                              color: isPositive ? Colors.green : Colors.red,
-                              bold: true,
-                              isEnglish: true,
-                            ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
 
                     SizedBox(

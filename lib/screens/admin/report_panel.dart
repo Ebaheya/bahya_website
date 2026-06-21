@@ -1,11 +1,28 @@
+import 'package:bahya_website/bloc/cubit/reports_cubit.dart';
+import 'package:bahya_website/bloc/states/reports_state.dart';
+import 'package:bahya_website/data/api/repo/repo.dart';
 import 'package:bahya_website/helper/admin_widgets/page_header.dart';
 import 'package:bahya_website/helper/admin_widgets/reports/reports_table.dart';
 import 'package:bahya_website/helper/admin_widgets/reports/reprot_card.dart';
+import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ReportsPage extends StatelessWidget {
   const ReportsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => ReportsCubit(AppRepository())..loadReports(),
+      child: const _ReportsView(),
+    );
+  }
+}
+
+class _ReportsView extends StatelessWidget {
+  const _ReportsView();
 
   @override
   Widget build(BuildContext context) {
@@ -18,8 +35,6 @@ class ReportsPage extends StatelessWidget {
         ? 1
         : isTablet
         ? 2
-        : width < 1250
-        ? 3
         : 3;
 
     final double cardHeight = isMobile
@@ -28,61 +43,71 @@ class ReportsPage extends StatelessWidget {
         ? responsiveHeight(context, 0.11, min: 95, max: 115)
         : responsiveHeight(context, 0.5, min: 82, max: 105);
 
-    final reportsCards = const [
-      ReportCard(
-        icon: Icons.watch_later_outlined,
-        title: "Pending",
-        value: 2.0,
-      ),
-      ReportCard(icon: Icons.error_outline, title: "Investigating", value: 3.0),
-      ReportCard(
-        icon: Icons.check_circle_outline,
-        title: "Resolved",
-        value: 4.0,
-      ),
-    ];
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(responsiveSize(context, 0.014, min: 14, max: 22)),
-      child: Column(
-        children: [
-          pageHeader(
-            context: context,
-            title: 'Reports Management',
-            subtitle: 'Review and resolve user reports',
-            icon: Icons.report_rounded,
+    return BlocBuilder<ReportsCubit, ReportsState>(
+      builder: (context, state) {
+        final reportsCards = [
+          ReportCard(
+            icon: Icons.watch_later_outlined,
+            title: "Pending",
+            value: state.pending.toDouble(),
           ),
-
-          SizedBox(height: responsiveHeight(context, 0.025, min: 16, max: 24)),
-
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: reportsCards.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: responsiveSize(
-                context,
-                0.012,
-                min: 12,
-                max: 18,
-              ),
-              mainAxisSpacing: responsiveHeight(
-                context,
-                0.018,
-                min: 12,
-                max: 18,
-              ),
-              mainAxisExtent: cardHeight,
-            ),
-            itemBuilder: (context, index) => reportsCards[index],
+          ReportCard(
+            icon: Icons.error_outline,
+            title: "Investigating",
+            value: state.investigating.toDouble(),
           ),
+          ReportCard(
+            icon: Icons.check_circle_outline,
+            title: "Resolved",
+            value: state.resolved.toDouble(),
+          ),
+        ];
 
-          SizedBox(height: responsiveHeight(context, 0.025, min: 16, max: 24)),
-
-          const ReportsTable(),
-        ],
-      ),
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(
+            responsiveSize(context, 0.014, min: 14, max: 22),
+          ),
+          child: Column(
+            children: [
+              pageHeader(
+                context: context,
+                title: 'Reports Management',
+                subtitle: 'Review and resolve user reports',
+                icon: Icons.report_rounded,
+              ),
+              SizedBox(
+                height: responsiveHeight(context, 0.025, min: 16, max: 24),
+              ),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: reportsCards.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: responsiveSize(
+                    context,
+                    0.012,
+                    min: 12,
+                    max: 18,
+                  ),
+                  mainAxisSpacing: responsiveHeight(
+                    context,
+                    0.018,
+                    min: 12,
+                    max: 18,
+                  ),
+                  mainAxisExtent: cardHeight,
+                ),
+                itemBuilder: (context, index) => reportsCards[index],
+              ),
+              SizedBox(
+                height: responsiveHeight(context, 0.025, min: 16, max: 24),
+              ),
+              const ReportsTable(),
+            ],
+          ),
+        );
+      },
     );
   }
 }

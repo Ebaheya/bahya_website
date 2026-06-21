@@ -4,7 +4,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 class UserRolesDistribution extends StatefulWidget {
-  const UserRolesDistribution({super.key});
+  final Map<String, dynamic> roles;
+
+  const UserRolesDistribution({super.key, this.roles = const {}});
 
   @override
   State<UserRolesDistribution> createState() => _UserRolesDistributionState();
@@ -18,6 +20,7 @@ class _UserRolesDistributionState extends State<UserRolesDistribution> {
   Widget build(BuildContext context) {
     final isMobile = getScreenWidth(context) < 650;
     final scale = _pressed ? 0.98 : (_hover ? 1.02 : 1.0);
+    final data = _buildRolesData(widget.roles);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
@@ -35,7 +38,6 @@ class _UserRolesDistributionState extends State<UserRolesDistribution> {
           curve: Curves.easeOut,
           child: AnimatedContainer(
             width: double.infinity,
-           
             height: responsiveHeight(
               context,
               isMobile ? 0.40 : 0.53,
@@ -80,52 +82,69 @@ class _UserRolesDistributionState extends State<UserRolesDistribution> {
                   height: responsiveHeight(context, 0.018, min: 12, max: 22),
                 ),
                 Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isSmall = constraints.maxWidth < 700;
+                  child: data.isEmpty
+                      ? const Center(child: Text("No role data available"))
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isSmall = constraints.maxWidth < 700;
 
-                      if (isSmall) {
-                        return Column(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: RolesChart(isHover: _hover),
-                            ),
-                            SizedBox(
-                              height: responsiveHeight(
-                                context,
-                                0.012,
-                                min: 8,
-                                max: 14,
-                              ),
-                            ),
-                            const Expanded(
-                              flex: 2,
-                              child: _RolesLegendList(isMobile: true),
-                            ),
-                          ],
-                        );
-                      }
+                            if (isSmall) {
+                              return Column(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: RolesChart(
+                                      isHover: _hover,
+                                      data: data,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: responsiveHeight(
+                                      context,
+                                      0.012,
+                                      min: 8,
+                                      max: 14,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: _RolesLegendList(
+                                      isMobile: true,
+                                      data: data,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
 
-                      return Row(
-                        children: [
-                          const Expanded(
-                            flex: 1,
-                            child: _RolesLegendList(isMobile: false),
-                          ),
-                          SizedBox(
-                            width: responsiveSize(
-                              context,
-                              0.02,
-                              min: 16,
-                              max: 30,
-                            ),
-                          ),
-                          Expanded(flex: 2, child: RolesChart(isHover: _hover)),
-                        ],
-                      );
-                    },
-                  ),
+                            return Row(
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: _RolesLegendList(
+                                    isMobile: false,
+                                    data: data,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: responsiveSize(
+                                    context,
+                                    0.02,
+                                    min: 16,
+                                    max: 30,
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: RolesChart(
+                                    isHover: _hover,
+                                    data: data,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -133,6 +152,53 @@ class _UserRolesDistributionState extends State<UserRolesDistribution> {
         ),
       ),
     );
+  }
+
+  List<Map<String, dynamic>> _buildRolesData(Map<String, dynamic> roles) {
+    final colors = <Color>[
+      Colors.purple,
+      Colors.blue,
+      Colors.green,
+      Colors.pink,
+      Colors.orange,
+    ];
+
+    final total = roles.values.fold<num>(0, (sum, value) {
+      if (value is num) return sum + value;
+      return sum + (num.tryParse(value.toString()) ?? 0);
+    });
+
+    if (total <= 0) return [];
+
+    int index = 0;
+
+    return roles.entries.map((entry) {
+      final count = entry.value is num
+          ? entry.value as num
+          : num.tryParse(entry.value.toString()) ?? 0;
+
+      final percent = (count / total) * 100;
+      final item = {
+        "title": _formatRole(entry.key),
+        "count": count,
+        "percent": percent,
+        "color": colors[index % colors.length],
+      };
+
+      index++;
+      return item;
+    }).toList();
+  }
+
+  String _formatRole(String role) {
+    return role
+        .toLowerCase()
+        .split('_')
+        .map(
+          (word) =>
+              word.isEmpty ? word : word[0].toUpperCase() + word.substring(1),
+        )
+        .join(' ');
   }
 }
 
@@ -156,13 +222,6 @@ class _RolesHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(
                 responsiveSize(context, 0.012, min: 12, max: 18),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.pink.withOpacity(0.20),
-                  blurRadius: responsiveSize(context, 0.012, min: 12, max: 16),
-                  offset: const Offset(0, 8),
-                ),
-              ],
             ),
             child: Icon(
               Icons.pie_chart_rounded,
@@ -190,8 +249,9 @@ class _RolesHeader extends StatelessWidget {
 
 class _RolesLegendList extends StatelessWidget {
   final bool isMobile;
+  final List<Map<String, dynamic>> data;
 
-  const _RolesLegendList({required this.isMobile});
+  const _RolesLegendList({required this.isMobile, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -207,39 +267,29 @@ class _RolesLegendList extends StatelessWidget {
           ? MainAxisAlignment.start
           : MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const ModernLegendItem(
-          color: Colors.purple,
-          title: "Doctors",
-          percent: "62%",
-        ),
-        SizedBox(height: spacing),
-        const ModernLegendItem(
-          color: Colors.blue,
-          title: "Nurses",
-          percent: "18%",
-        ),
-        SizedBox(height: spacing),
-        const ModernLegendItem(
-          color: Colors.green,
-          title: "Staff",
-          percent: "12%",
-        ),
-        SizedBox(height: spacing),
-        const ModernLegendItem(
-          color: Colors.pink,
-          title: "Admins",
-          percent: "8%",
-        ),
-      ],
+      children: List.generate(data.length, (index) {
+        final item = data[index];
+
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: index == data.length - 1 ? 0 : spacing,
+          ),
+          child: ModernLegendItem(
+            color: item["color"],
+            title: item["title"],
+            percent: "${(item["percent"] as double).toStringAsFixed(0)}%",
+          ),
+        );
+      }),
     );
   }
 }
 
 class RolesChart extends StatefulWidget {
   final bool isHover;
+  final List<Map<String, dynamic>> data;
 
-  const RolesChart({super.key, required this.isHover});
+  const RolesChart({super.key, required this.isHover, required this.data});
 
   @override
   State<RolesChart> createState() => _RolesChartState();
@@ -247,13 +297,6 @@ class RolesChart extends StatefulWidget {
 
 class _RolesChartState extends State<RolesChart> {
   int touchedIndex = -1;
-
-  final List<Map<String, dynamic>> data = [
-    {"title": "Doctors", "percent": 62.0, "color": Colors.purple},
-    {"title": "Nurses", "percent": 18.0, "color": Colors.blue},
-    {"title": "Staff", "percent": 12.0, "color": Colors.green},
-    {"title": "Admins", "percent": 8.0, "color": Colors.pink},
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -290,15 +333,16 @@ class _RolesChartState extends State<RolesChart> {
                           });
                         },
                       ),
-                      sections: List.generate(data.length, (index) {
-                        final item = data[index];
+                      sections: List.generate(widget.data.length, (index) {
+                        final item = widget.data[index];
                         final isTouched = index == touchedIndex;
+                        final percent = item["percent"] as double;
 
                         return PieChartSectionData(
-                          value: item["percent"],
+                          value: percent,
                           color: item["color"],
                           radius: isTouched ? 88 : 78,
-                          title: "${item["percent"].toInt()}%",
+                          title: "${percent.toStringAsFixed(0)}%",
                           titleStyle: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -310,46 +354,6 @@ class _RolesChartState extends State<RolesChart> {
                               max: 15,
                             ),
                           ),
-                          badgeWidget: isTouched
-                              ? Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: responsiveSize(
-                                      context,
-                                      0.008,
-                                      min: 8,
-                                      max: 10,
-                                    ),
-                                    vertical: responsiveHeight(
-                                      context,
-                                      0.006,
-                                      min: 5,
-                                      max: 6,
-                                    ),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.08),
-                                        blurRadius: 10,
-                                      ),
-                                    ],
-                                  ),
-                                  child: customText(
-                                    text: item["title"],
-                                    size: responsiveSize(
-                                      context,
-                                      0.009,
-                                      min: 11,
-                                      max: 14,
-                                    ),
-                                    color: textColor,
-                                    bold: true,
-                                    isEnglish: true,
-                                  ),
-                                )
-                              : null,
                         );
                       }),
                     ),
@@ -383,13 +387,7 @@ class ModernLegendItem extends StatelessWidget {
         Container(
           width: responsiveSize(context, 0.012, min: 12, max: 18),
           height: responsiveSize(context, 0.012, min: 12, max: 18),
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: color.withOpacity(0.25), blurRadius: 6),
-            ],
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         SizedBox(width: responsiveSize(context, 0.01, min: 10, max: 14)),
         Expanded(
@@ -403,7 +401,6 @@ class ModernLegendItem extends StatelessWidget {
             maxLines: 1,
           ),
         ),
-        SizedBox(width: responsiveSize(context, 0.008, min: 8, max: 12)),
         customText(
           text: percent,
           size: responsiveSize(context, 0.009, min: 11, max: 14),

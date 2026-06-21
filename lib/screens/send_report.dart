@@ -1,7 +1,9 @@
 import 'dart:ui';
 
+import 'package:bahya_website/data/api/repo/repo.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
+import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +13,7 @@ void showReportProblemDialog(BuildContext context) {
     context: context,
     barrierColor: Colors.black.withOpacity(0.28),
     builder: (context) {
-      return ReportProblemDialog();
+      return const ReportProblemDialog();
     },
   );
 }
@@ -25,9 +27,10 @@ class ReportProblemDialog extends StatefulWidget {
 
 class _ReportProblemDialogState extends State<ReportProblemDialog> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-
   final TextEditingController titleController = TextEditingController();
   final TextEditingController bodyController = TextEditingController();
+
+  bool isSubmitting = false;
 
   @override
   void dispose() {
@@ -36,27 +39,39 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
     super.dispose();
   }
 
-  void submitProblem() {
+  Future<void> submitProblem() async {
     if (!formKey.currentState!.validate()) return;
 
     final title = titleController.text.trim();
     final body = bodyController.text.trim();
 
-    debugPrint('Problem title: $title');
-    debugPrint('Problem body: $body');
+    setState(() => isSubmitting = true);
 
-    Navigator.pop(context);
+    try {
+      await AppRepository().fileReport(title: title, body: body);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: customText(
-          text: 'تم إرسال المشكلة بنجاح',
-          size: 14,
-          color: Colors.white,
-        ),
-        backgroundColor: Color(0xFFE83E8C),
-      ),
-    );
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      customDialog(
+        context: context,
+        title: 'تم الإرسال',
+        message: 'تم إرسال المشكلة بنجاح',
+        isSuccess: true,
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => isSubmitting = false);
+
+      customDialog(
+        context: context,
+        title: 'حدث خطأ',
+        message: e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
   }
 
   @override
@@ -116,7 +131,6 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                     ),
                   ),
                 ),
-
                 SingleChildScrollView(
                   padding: EdgeInsets.all(
                     responsiveSize(context, 0.022, min: 20, max: 34),
@@ -170,7 +184,6 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                                 ),
                               ),
                             ),
-
                             SizedBox(
                               width: responsiveSize(
                                 context,
@@ -179,7 +192,6 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                                 max: 24,
                               ),
                             ),
-
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,9 +259,10 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                                 ],
                               ),
                             ),
-
                             InkWell(
-                              onTap: () => Navigator.pop(context),
+                              onTap: isSubmitting
+                                  ? null
+                                  : () => Navigator.pop(context),
                               borderRadius: BorderRadius.circular(50),
                               child: Container(
                                 width: responsiveSize(
@@ -285,7 +298,6 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                             ),
                           ],
                         ),
-
                         SizedBox(
                           height: responsiveHeight(
                             context,
@@ -294,7 +306,6 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                             max: 34,
                           ),
                         ),
-
                         _ProblemFieldLabel(
                           title: localizedText(context, 'عنوان المشكلة'),
                           icon: Icons.title_rounded,
@@ -317,7 +328,6 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                           keyboardType: CustomTextFieldType.text,
                           textDirection: TextDirection.rtl,
                         ),
-
                         SizedBox(
                           height: responsiveHeight(
                             context,
@@ -326,7 +336,6 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                             max: 26,
                           ),
                         ),
-
                         _ProblemFieldLabel(
                           title: localizedText(context, 'تفاصيل المشكلة'),
                           icon: Icons.notes_rounded,
@@ -350,7 +359,6 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                           textDirection: TextDirection.rtl,
                           maxLines: 6,
                         ),
-
                         SizedBox(
                           height: responsiveHeight(
                             context,
@@ -359,7 +367,6 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                             max: 34,
                           ),
                         ),
-
                         Row(
                           children: [
                             Expanded(
@@ -367,7 +374,10 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                                 title: 'إلغاء',
                                 icon: Icons.close_rounded,
                                 isPrimary: false,
-                                onTap: () => Navigator.pop(context),
+                                isLoading: false,
+                                onTap: isSubmitting
+                                    ? () {}
+                                    : () => Navigator.pop(context),
                               ),
                             ),
                             SizedBox(
@@ -380,10 +390,13 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                             ),
                             Expanded(
                               child: _ProblemDialogButton(
-                                title: 'إرسال',
+                                title: isSubmitting
+                                    ? 'جاري الإرسال...'
+                                    : 'إرسال',
                                 icon: Icons.send_rounded,
                                 isPrimary: true,
-                                onTap: submitProblem,
+                                isLoading: isSubmitting,
+                                onTap: isSubmitting ? () {} : submitProblem,
                               ),
                             ),
                           ],
@@ -433,19 +446,21 @@ class _ProblemDialogButton extends StatelessWidget {
   final String title;
   final IconData icon;
   final bool isPrimary;
+  final bool isLoading;
   final VoidCallback onTap;
 
   const _ProblemDialogButton({
     required this.title,
     required this.icon,
     required this.isPrimary,
+    required this.isLoading,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       borderRadius: BorderRadius.circular(
         responsiveSize(context, 0.008, min: 12, max: 16),
       ),
@@ -470,22 +485,35 @@ class _ProblemDialogButton extends StatelessWidget {
                 ]
               : null,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: responsiveSize(context, 0.01, min: 16, max: 18),
-              color: isPrimary ? Colors.white : const Color(0xFFE83E8C),
-            ),
-            SizedBox(width: responsiveSize(context, 0.006, min: 6, max: 10)),
-            customText(
-              text: title,
-              size: responsiveSize(context, 0.008, min: 12, max: 15),
-              color: isPrimary ? Colors.white : const Color(0xFFE83E8C),
-              bold: true,
-            ),
-          ],
+        child: Center(
+          child: isLoading
+              ? SizedBox(
+                  width: responsiveSize(context, 0.014, min: 18, max: 22),
+                  height: responsiveSize(context, 0.014, min: 18, max: 22),
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: Colors.white,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      size: responsiveSize(context, 0.01, min: 16, max: 18),
+                      color: isPrimary ? Colors.white : const Color(0xFFE83E8C),
+                    ),
+                    SizedBox(
+                      width: responsiveSize(context, 0.006, min: 6, max: 10),
+                    ),
+                    customText(
+                      text: title,
+                      size: responsiveSize(context, 0.008, min: 12, max: 15),
+                      color: isPrimary ? Colors.white : const Color(0xFFE83E8C),
+                      bold: true,
+                    ),
+                  ],
+                ),
         ),
       ),
     );

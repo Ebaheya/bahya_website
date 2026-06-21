@@ -466,4 +466,74 @@ class AppRepository {
     debugPrint(response.toString());
     return Map<String, dynamic>.from(response);
   }
+
+Future<Map<String, dynamic>> getDashboardSummary() {
+    return WebService().getDashboardSummary();
+  }
+
+  Future<Map<String, dynamic>> getDashboardActivity({int limit = 10}) {
+    return WebService().getDashboardActivity(limit: limit);
+  }
+
+  Future<Map<String, dynamic>> getReportsSummary() {
+    return WebService().getReportsSummary();
+  }
+
+  Future<Map<String, dynamic>> getReports({
+    String? status,
+    String? search,
+    int page = 1,
+    int pageSize = 20,
+  }) {
+    return WebService().getReports(
+      status: status,
+      search: search,
+      page: page,
+      pageSize: pageSize,
+    );
+  }
+
+  Future<Map<String, dynamic>> getReportDetail(String reportId) {
+    return WebService().getReportDetail(reportId);
+  }
+
+  Future<Map<String, dynamic>> changeReportStatus({
+    required String reportId,
+    required String status,
+  }) {
+    return WebService().changeReportStatus(reportId: reportId, status: status);
+  }
+
+  Future<Map<String, dynamic>> fileReport({
+    required String title,
+    required String body,
+  }) {
+    return WebService().fileReport(title: title, body: body);
+  }
+
+  Future<Map<String, dynamic>> getAuditLogs({
+    String? action,
+    String? actorId,
+    String? from,
+    String? to,
+    int page = 1,
+    int pageSize = 20,
+  }) {
+    return WebService().getAuditLogs(
+      action: action,
+      actorId: actorId,
+      from: from,
+      to: to,
+      page: page,
+      pageSize: pageSize,
+    );
+  }
+
+  Future<Map<String, dynamic>> getAuditLogDetail(String auditId) {
+    return WebService().getAuditLogDetail(auditId);
+  }
+  
+Future<Map<String, dynamic>> getUserById(String id) {
+    return WebService().getUserById(id);
+  }
 }
