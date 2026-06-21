@@ -26,6 +26,7 @@ export interface NotificationDoc {
   message: string;
   severity: NotificationSeverity;
   reason: string | null;
+  flaggedPhrases?: string[] | null;
   doctorNote: string | null;
   status: NotificationStatus;
   claimedAt: Date | null;
@@ -61,6 +62,7 @@ const NotificationSchema = new Schema<NotificationDoc>(
     message: { type: String, required: true },
     severity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], required: true },
     reason: { type: String, default: null },
+    flaggedPhrases: { type: [String], default: null },
     doctorNote: { type: String, default: null },
     status: { type: String, enum: ['UNREAD', 'READ', 'DONE'], default: 'UNREAD', required: true },
     claimedAt: { type: Date, default: null },

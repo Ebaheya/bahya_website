@@ -26,8 +26,17 @@ export interface FormAssignedNotificationInput {
 export interface HighRiskAlertInput {
   patientId: string;
   submissionId?: string;
-  severity: Extract<NotificationSeverity, 'HIGH' | 'CRITICAL'>;
+  severity: Extract<NotificationSeverity, 'MEDIUM' | 'HIGH' | 'CRITICAL'>;
   templateKey?: string;
+  reason?: string;
+  flaggedPhrases?: string[];
+}
+
+export interface CallCenterAlertInput {
+  patientId: string;
+  severity: Extract<NotificationSeverity, 'MEDIUM' | 'HIGH' | 'CRITICAL'>;
+  reason?: string;
+  flaggedPhrases?: string[];
 }
 
 export interface ServiceRequestSubmittedInput {
@@ -102,19 +111,24 @@ export async function emitFormAssigned(input: FormAssignedNotificationInput): Pr
   }
 }
 
-export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void> {
+// Returns true when the notification was written, false when it failed (and was
+// logged). The caller can react to a dropped alert — critical for crisis paths.
+export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<boolean> {
   try {
     const doc = await NotificationModel.create({
       recipientRole: 'DOCTOR',
       recipientUserId: null,
       patientId: input.patientId,
       type: 'HIGH_RISK',
-      title: 'High-risk assessment submitted',
+      title: input.templateKey
+        ? 'High-risk assessment submitted'
+        : 'High-risk chatbot conversation',
       message: input.templateKey
         ? `A high-risk ${input.templateKey} submission needs review.`
-        : 'A high-risk form submission needs review.',
+        : 'A high-risk chatbot conversation needs review.',
       severity: input.severity,
-      reason: input.submissionId ?? null,
+      reason: input.reason ?? input.submissionId ?? null,
+      flaggedPhrases: input.flaggedPhrases ?? null,
       doctorNote: null,
       status: 'UNREAD',
       claimedAt: null,
@@ -123,7 +137,10 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
       pushedAt: null,
       createdAt: new Date(),
     });
-    await pushBestEffort(doc, 'HIGH_RISK');
+    if (input.severity === 'HIGH' || input.severity === 'CRITICAL') {
+      await pushBestEffort(doc, 'HIGH_RISK');
+    }
+    return true;
   } catch (err) {
     logger.warn(
       {
@@ -135,6 +152,45 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<void
       },
       'notification emit failed'
     );
+    return false;
+  }
+}
+
+export async function emitCallCenterAlert(input: CallCenterAlertInput): Promise<boolean> {
+  try {
+    const doc = await NotificationModel.create({
+      recipientRole: 'CALL_CENTER',
+      recipientUserId: null,
+      patientId: input.patientId,
+      type: 'HIGH_RISK',
+      title: 'Urgent chatbot crisis signal',
+      message: 'A patient chatbot conversation needs urgent call-center follow-up.',
+      severity: input.severity,
+      reason: input.reason ?? null,
+      flaggedPhrases: input.flaggedPhrases ?? null,
+      doctorNote: null,
+      status: 'UNREAD',
+      claimedAt: null,
+      readAt: null,
+      doneAt: null,
+      pushedAt: null,
+      createdAt: new Date(),
+    });
+    await pushBestEffort(doc, 'HIGH_RISK');
+    return true;
+  } catch (err) {
+    logger.warn(
+      {
+        metric: 'notification_emit_failure',
+        type: 'HIGH_RISK',
+        patientId: input.patientId,
+        recipientRole: 'CALL_CENTER',
+        severity: input.severity,
+        err: loggableError(err),
+      },
+      'notification emit failed'
+    );
+    return false;
   }
 }
 
@@ -238,8 +294,8 @@ interface PatientContact {
   phone: string;
 }
 
-function toNotificationCore(doc: LeanNotification) {
-  return {
+function toNotificationCore(doc: LeanNotification, includeStaffFields = false) {
+  const core = {
     id: String(doc._id),
     type: doc.type,
     severity: doc.severity,
@@ -252,11 +308,20 @@ function toNotificationCore(doc: LeanNotification) {
     doneAt: doc.doneAt,
     createdAt: doc.createdAt,
   };
+  if (!includeStaffFields) return core;
+  // Crisis context (AI-flagged phrases + trigger reason) is required by staff for
+  // follow-up — e.g. a CALL_CENTER user acting on an urgent chatbot crisis — but
+  // MUST never be exposed to patients.
+  return { ...core, reason: doc.reason ?? null, flaggedPhrases: doc.flaggedPhrases ?? null };
 }
 
-function toListItem(doc: LeanNotification, patientById: Map<string, PatientContact>) {
+function toListItem(
+  doc: LeanNotification,
+  patientById: Map<string, PatientContact>,
+  includeStaffFields = false
+) {
   return {
-    ...toNotificationCore(doc),
+    ...toNotificationCore(doc, includeStaffFields),
     // Live patient contact (FR-004); degrades to null when the patient can no
     // longer be read, rather than failing the whole list.
     patient: patientById.get(doc.patientId) ?? null,
@@ -302,8 +367,11 @@ export async function listMyNotifications(
     patients.map((p) => [p.id, { id: p.id, fullName: p.user.fullName, phone: p.phone }])
   );
 
+  // Staff (Doctor/Admin/Call Center) get crisis context; patients never do.
+  const includeStaffFields = actor.role !== 'PATIENT';
+
   return {
-    data: docs.map((d) => toListItem(d, patientById)),
+    data: docs.map((d) => toListItem(d, patientById, includeStaffFields)),
     page: query.page,
     pageSize: query.pageSize,
     total,
@@ -331,7 +399,7 @@ export async function claimNotification(actor: NotificationListActor, id: string
     { new: true }
   ).lean<LeanNotification | null>();
 
-  if (claimed) return toNotificationCore(claimed);
+  if (claimed) return toNotificationCore(claimed, actor.role !== 'PATIENT');
 
   const existing = await NotificationModel.findById(id).lean<LeanNotification | null>();
   if (!existing) throw AppError.notFound('Notification not found');
@@ -368,7 +436,7 @@ export async function markRead(actor: NotificationListActor, id: string) {
     newValues: { status: 'READ' },
   });
 
-  return toNotificationCore(updated);
+  return toNotificationCore(updated, actor.role !== 'PATIENT');
 }
 
 export async function markDone(actor: NotificationListActor, id: string) {
@@ -389,7 +457,7 @@ export async function markDone(actor: NotificationListActor, id: string) {
     newValues: { status: 'DONE' },
   });
 
-  return toNotificationCore(updated);
+  return toNotificationCore(updated, actor.role !== 'PATIENT');
 }
 
 // ---------------------------------------------------------------------------
