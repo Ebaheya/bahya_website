@@ -71,6 +71,14 @@ const envSchema = z.object({
     .pipe(z.boolean()),
   FIREBASE_SERVICE_ACCOUNT: z.string().default(''),
   GOOGLE_APPLICATION_CREDENTIALS: z.string().default(''),
+
+  BAHYA_AI_BASE_URL: z.string().url(),
+  BAHYA_AI_API_KEY: z.string().min(1, 'BAHYA_AI_API_KEY is required'),
+  BAHYA_AI_TIMEOUT_MS: z
+    .string()
+    .default('8000')
+    .transform((v) => parseInt(v, 10))
+    .pipe(z.number().int().positive()),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -90,6 +98,28 @@ if (env.NODE_ENV === 'production' && env.CORS_ORIGINS === '*') {
       'Wildcard (*) is not permitted.'
   );
   process.exit(1);
+}
+
+// The AI gateway sends PHI (patient message, history, oncology profile) plus a
+// bearer key to BAHYA_AI_BASE_URL. In production that link MUST be encrypted;
+// only loopback is allowed over plain http (local dev / sidecar).
+if (env.NODE_ENV === 'production' && !/^https:\/\//i.test(env.BAHYA_AI_BASE_URL)) {
+  const host = (() => {
+    try {
+      // URL.hostname keeps brackets for IPv6 (e.g. "[::1]"); strip them so the
+      // loopback check matches "::1".
+      return new URL(env.BAHYA_AI_BASE_URL).hostname.replace(/^\[|\]$/g, '');
+    } catch {
+      return '';
+    }
+  })();
+  const isLoopback = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  if (!isLoopback) {
+    console.error(
+      'BAHYA_AI_BASE_URL must use https:// in production (PHI + bearer key are sent to it).'
+    );
+    process.exit(1);
+  }
 }
 
 export const corsOrigins =

@@ -24,5 +24,5 @@ Thumbs.db
 .claude/
 CLAUDE.md
 
-# Flutter frontend build scaffold — generated, not source. Not tracked.
+# Stray Flutter build artifacts — generated, not source (real app lives in frontend/)
 frontend_app/

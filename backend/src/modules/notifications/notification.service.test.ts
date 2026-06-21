@@ -5,6 +5,8 @@ import { NotificationModel } from './notification.model';
 import { pushForNotification } from './push.service';
 import {
   claimNotification,
+  emitCallCenterAlert,
+  emitHighRiskAlert,
   emitServiceRequestDecided,
   emitServiceRequestSubmitted,
   listMyNotifications,
@@ -146,6 +148,90 @@ describe('service notification emitters', () => {
       }),
       'notification push failed'
     );
+  });
+
+  it('creates a MEDIUM high-risk doctor alert without push and stores flagged phrases', async () => {
+    const created = { _id: 'n-high-risk-1', type: 'HIGH_RISK', severity: 'MEDIUM' };
+    notificationModelMock.create.mockResolvedValue(created);
+
+    await emitHighRiskAlert({
+      patientId: 'patient-id-1',
+      severity: 'MEDIUM',
+      reason: 'AI risk level MEDIUM',
+      flaggedPhrases: ['cannot sleep'],
+    });
+
+    expect(notificationModelMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientRole: 'DOCTOR',
+        recipientUserId: null,
+        patientId: 'patient-id-1',
+        type: 'HIGH_RISK',
+        // No templateKey → chatbot alert: title must not read "assessment".
+        title: 'High-risk chatbot conversation',
+        severity: 'MEDIUM',
+        reason: 'AI risk level MEDIUM',
+        flaggedPhrases: ['cannot sleep'],
+      })
+    );
+    expect(pushForNotificationMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the assessment title when emitHighRiskAlert is given a templateKey', async () => {
+    notificationModelMock.create.mockResolvedValue({ _id: 'n-form-1', type: 'HIGH_RISK' });
+
+    await emitHighRiskAlert({ patientId: 'patient-id-1', severity: 'HIGH', templateKey: 'PHQ9' });
+
+    expect(notificationModelMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'High-risk assessment submitted',
+        message: 'A high-risk PHQ9 submission needs review.',
+      })
+    );
+  });
+
+  it('pushes HIGH and CRITICAL high-risk doctor alerts', async () => {
+    const created = { _id: 'n-high-risk-2', type: 'HIGH_RISK', severity: 'HIGH' };
+    notificationModelMock.create.mockResolvedValue(created);
+
+    await emitHighRiskAlert({
+      patientId: 'patient-id-1',
+      severity: 'HIGH',
+      flaggedPhrases: [],
+    });
+
+    expect(pushForNotificationMock).toHaveBeenCalledWith(created);
+  });
+
+  it('creates a CALL_CENTER high-risk alert with severity and flagged phrases', async () => {
+    const created = {
+      _id: 'n-call-center-1',
+      type: 'HIGH_RISK',
+      severity: 'CRITICAL',
+      recipientRole: 'CALL_CENTER',
+    };
+    notificationModelMock.create.mockResolvedValue(created);
+
+    await emitCallCenterAlert({
+      patientId: 'patient-id-1',
+      severity: 'CRITICAL',
+      reason: 'AI urgent crisis signal',
+      flaggedPhrases: ['TEST_CRISIS'],
+    });
+
+    expect(notificationModelMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientRole: 'CALL_CENTER',
+        recipientUserId: null,
+        patientId: 'patient-id-1',
+        type: 'HIGH_RISK',
+        severity: 'CRITICAL',
+        reason: 'AI urgent crisis signal',
+        flaggedPhrases: ['TEST_CRISIS'],
+        status: 'UNREAD',
+      })
+    );
+    expect(pushForNotificationMock).toHaveBeenCalledWith(created);
   });
 });
 
@@ -343,6 +429,53 @@ describe('listMyNotifications', () => {
       pageSize: 20,
       total: 1,
     });
+  });
+
+  it('exposes crisis context (reason, flaggedPhrases) to staff but never to patients', async () => {
+    const crisisDoc = {
+      _id: 'n9',
+      type: 'HIGH_RISK',
+      severity: 'CRITICAL',
+      status: 'UNREAD',
+      title: 'Urgent chatbot crisis signal',
+      message: 'A patient chatbot conversation needs urgent call-center follow-up.',
+      doctorNote: null,
+      claimedAt: null,
+      readAt: null,
+      doneAt: null,
+      createdAt: new Date('2026-06-20T00:00:00Z'),
+      patientId: 'p9',
+      recipientRole: 'CALL_CENTER',
+      recipientUserId: null,
+      reason: 'AI urgent crisis signal',
+      flaggedPhrases: ['I will end it'],
+    };
+    notificationModelMock.find.mockReturnValue(findChain([crisisDoc]));
+    notificationModelMock.countDocuments.mockResolvedValue(1);
+    prismaMock.patient.findMany.mockResolvedValue([
+      { id: 'p9', phone: '+201', user: { fullName: 'P9' } },
+    ]);
+
+    const staff = await listMyNotifications(
+      { id: 'cc-1', role: 'CALL_CENTER' },
+      { page: 1, pageSize: 20 }
+    );
+    expect(staff.data[0]).toMatchObject({
+      reason: 'AI urgent crisis signal',
+      flaggedPhrases: ['I will end it'],
+    });
+
+    // A patient must never receive these fields, even on a notification that has them.
+    notificationModelMock.find.mockReturnValue(
+      findChain([{ ...crisisDoc, recipientRole: 'PATIENT', recipientUserId: 'pat-1' }])
+    );
+    prismaMock.patient.findMany.mockResolvedValue([]);
+    const patient = await listMyNotifications(
+      { id: 'pat-1', role: 'PATIENT' },
+      { page: 1, pageSize: 20 }
+    );
+    expect(patient.data[0]).not.toHaveProperty('reason');
+    expect(patient.data[0]).not.toHaveProperty('flaggedPhrases');
   });
 
   it('applies status/severity filters and pagination offset', async () => {

@@ -21,6 +21,7 @@ developers and engineers exercising the API in Postman.
 - [Patient services & activities](#patient-services--activities)
 - [Notifications](#notifications)
 - [Admin web panel](#admin-web-panel)
+- [Chatbot / in-house AI](#chatbot--in-house-ai)
 - [Tests](#tests)
 - [Postman](#postman)
 - [Authentication](#authentication)
@@ -40,6 +41,7 @@ developers and engineers exercising the API in Postman.
   - [Reports](#reports)
   - [Dashboard](#dashboard)
   - [Audit Logs](#audit-logs)
+  - [Chatbot](#chatbot)
 
 ## Stack
 
@@ -111,6 +113,9 @@ refuses to start if required values are missing.
 | `FCM_ENABLED` | no | `false` | Enables best-effort Firebase Cloud Messaging push delivery |
 | `FIREBASE_SERVICE_ACCOUNT` | no | empty | Base64-encoded Firebase service-account JSON |
 | `GOOGLE_APPLICATION_CREDENTIALS` | no | empty | Optional path to a Firebase service-account JSON file |
+| `BAHYA_AI_BASE_URL` | yes | — | Base URL of the in-house AI inference service (the chatbot calls `POST {BASE_URL}/infer`) |
+| `BAHYA_AI_API_KEY` | yes | — | Bearer token for the AI service (server-side only; never returned or logged) |
+| `BAHYA_AI_TIMEOUT_MS` | no | `8000` | Hard timeout for an AI inference call; on timeout the chat turn fails with `502 AI_INFERENCE_FAILED` |
 
 ## Scripts
 
@@ -477,6 +482,49 @@ actor names resolved from PostgreSQL.
 
 Every route is `authenticate` (JWT + PostgreSQL role re-validation); all but
 report filing are then `authorize('ADMIN')`.
+
+## Chatbot / in-house AI
+
+The `chatbot/` module (`/chatbot`) is the gateway between the patient app and the
+team's **in-house AI inference service**. A patient sends a message; the backend
+persists it, assembles the patient's profile (from PostgreSQL `Patient`) plus the
+last 10 turns, calls `POST {BAHYA_AI_BASE_URL}/infer`, persists the bot reply with
+every signal the AI returns (language, emotion, intent, `riskLevel`,
+`crisisProbability`, `crisis`, flagged phrases), and returns the reply. Chat lives
+in MongoDB (`chat_sessions`, `chat_messages`); the AI models are external — this is
+the connecting gateway only.
+
+Key behaviors:
+
+- **Privacy (FR-019).** The patient receives **only** `reply` + ids — never
+  `riskLevel`/emotion/intent/crisis signals. On history reads those signals are
+  returned to **Doctor/Admin only**; a patient sees `sender` + `message` + `createdAt`.
+- **Silent, parallel escalation.** When the AI reports `riskLevel ≥ MEDIUM` the
+  backend alerts the care team **fire-and-forget** — it never delays or fails the
+  patient's reply, and the patient sees no "alerting someone" text. Tiers: `MEDIUM`
+  → Doctor (in-app), `HIGH` → + best-effort push, `CRITICAL`/direct-crisis → +
+  Call Center. Every alert emits `HIGH_RISK_ALERT_CREATED`.
+- **`riskLevel` is AI-authoritative** and stored on the bot turn (never inferred elsewhere).
+- **Reliability.** AI failure / timeout / malformed response → `502
+  AI_INFERENCE_FAILED`; the patient message is preserved and no bot turn is stored.
+- **Sessions** auto-close after 24h of inactivity; the next message starts a fresh one.
+- Messages are validated (non-empty, ≤ 4000 chars) and rate-limited (30/min per patient).
+
+### Roles and access
+
+| Capability | Admin | Doctor | Volunteer | Call Center | Patient |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Send a chat message (`POST /chatbot/message`) | ❌ | ❌ | ❌ | ❌ | ✅ (own) |
+| List sessions / read messages — **with full signals** | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Read own conversation — **signals stripped** | — | — | — | — | ✅ (own) |
+| Receive crisis alerts | ❌ | ✅¹ | ❌ | ✅¹ (urgent) | ❌ |
+
+¹ Crisis escalation targets the **Doctor** (and the **Call Center** for urgent /
+direct-crisis cases) via the existing `notifications` inbox (`GET /notifications/my`),
+not a new chatbot endpoint. Staff see the crisis context (`reason`, `flaggedPhrases`)
+on those notifications; patients never do. **Admins** oversee conversations through
+the read endpoints (`GET /chatbot/sessions…`) and the dashboard — they are not a
+crisis-alert recipient.
 
 ## Tests
 
@@ -2644,6 +2692,99 @@ Admin-only read access to the append-only MongoDB audit log. No write/update/del
 `oldValues`/`newValues`/`userAgent`.
 
 **Errors:** `404 NOT_FOUND`.
+
+---
+
+### Chatbot
+
+Patient-facing chat plus role-projected conversation reads. Mounted at `/chatbot`.
+The backend calls the in-house AI service per turn (`POST {BAHYA_AI_BASE_URL}/infer`).
+**Patients never receive risk/emotion/crisis signals** (FR-019).
+
+#### `POST /chatbot/message`
+
+**Auth:** Bearer token. **Roles:** PATIENT (own account only). Rate-limited 30/min per user.
+
+```json
+// request — sessionId optional (omit to resume the open session or start a new one)
+{ "sessionId": "6650f1a2c3d4e5f6a7b8c9d0", "message": "أشعر بالحزن ولا أستطيع النوم" }
+```
+
+```json
+// response 200 — reply + ids ONLY (no risk/emotion/crisis signals)
+{
+  "sessionId": "6650f1a2c3d4e5f6a7b8c9d0",
+  "patientMessageId": "6650f1b0...",
+  "botMessageId": "6650f1b3...",
+  "reply": "أنا آسفة لسماع هذا، يبدو أن ما تمرين به ثقيل جدًا. مذ متى تشعرين بهذا؟"
+}
+```
+
+Behind the scenes the bot turn also stores `riskLevel`, `emotion`, `intent`,
+`crisisProbability`, `crisis`, and `flaggedPhrases`, and — when `riskLevel ≥ MEDIUM`
+— a care-team alert is fired silently and in parallel (never delaying this response).
+
+**Errors:** `400 VALIDATION_ERROR` (empty / >4000-char message), `403 FORBIDDEN`
+(non-patient), `404 NOT_FOUND` (`sessionId` not found / not owned), `429
+RATE_LIMITED`, `502 AI_INFERENCE_FAILED` (AI failed/timed out/returned unusable data
+— the patient message is still stored, no bot turn is written).
+
+#### `GET /chatbot/sessions`
+
+**Auth:** Bearer token. **Roles:** PATIENT (own) · DOCTOR · ADMIN. Staff must pass `patientId`.
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `patientId` | uuid | — | Required for DOCTOR/ADMIN; ignored for a patient (always self) |
+| `page` | int | `1` | 1-indexed |
+| `pageSize` | int | `20` | Max `100` |
+
+```json
+{
+  "data": [
+    { "id": "6650...", "status": "ACTIVE", "maxRiskLevel": "MEDIUM",
+      "lastEmotion": "sadness", "startedAt": "2026-06-20T01:00:00Z", "endedAt": null }
+  ],
+  "page": 1, "pageSize": 20, "total": 1
+}
+```
+
+**Errors:** `400 VALIDATION_ERROR` (staff missing `patientId` / bad pagination),
+`403 FORBIDDEN` (patient requesting another patient).
+
+#### `GET /chatbot/sessions/:id/messages`
+
+**Auth:** Bearer token. **Roles:** owner PATIENT · DOCTOR · ADMIN. Turns ordered by `createdAt`.
+**Response is role-projected (FR-019):** Doctor/Admin get the full signals; the
+patient owner gets only `id`, `sender`, `message`, `createdAt`.
+
+```json
+// Doctor / Admin
+{
+  "sessionId": "6650...",
+  "data": [
+    { "id": "...", "sender": "PATIENT", "message": "…", "createdAt": "2026-06-20T01:00:00Z" },
+    { "id": "...", "sender": "BOT", "message": "…", "lang": "ar", "emotion": "sadness",
+      "intent": "emotional_support", "riskLevel": "MEDIUM", "crisis": false,
+      "flaggedPhrases": [], "createdAt": "2026-06-20T01:00:03Z" }
+  ],
+  "page": 1, "pageSize": 20, "total": 2
+}
+```
+
+```json
+// Patient owner — signals omitted
+{
+  "sessionId": "6650...",
+  "data": [
+    { "id": "...", "sender": "PATIENT", "message": "…", "createdAt": "2026-06-20T01:00:00Z" },
+    { "id": "...", "sender": "BOT", "message": "…", "createdAt": "2026-06-20T01:00:03Z" }
+  ],
+  "page": 1, "pageSize": 20, "total": 2
+}
+```
+
+**Errors:** `403 FORBIDDEN` (not owner and not staff), `404 NOT_FOUND` (unknown session).
 
 ---
 

@@ -30,7 +30,8 @@
     { "key": "notificationId", "value": "" },
     { "key": "deviceToken", "value": "fcm-demo-token" },
     { "key": "reportId", "value": "" },
-    { "key": "auditId", "value": "" }
+    { "key": "auditId", "value": "" },
+    { "key": "sessionId", "value": "" }
   ],
   "item": [
     {
@@ -615,6 +616,71 @@
             "header": [],
             "url": { "raw": "{{baseUrl}}/audit-logs/{{auditId}}", "host": ["{{baseUrl}}"], "path": ["audit-logs", "{{auditId}}"] },
             "description": "ADMIN only. Full entry incl. oldValues/newValues/userAgent. 404 if not found."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chatbot (AI)",
+      "description": "Patient chat + role-projected reads (/chatbot). Login as a PATIENT for Send message; login as DOCTOR/ADMIN to read full signals. Requires the in-house AI service reachable at BAHYA_AI_BASE_URL (or a mock at POST {BASE}/infer).",
+      "item": [
+        {
+          "name": "Send message (PATIENT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const b = pm.response.json();",
+                  "  if (b.sessionId) pm.collectionVariables.set('sessionId', b.sessionId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"sessionId\": null,\n  \"message\": \"مرحبا، أشعر بالقلق اليوم\"\n}" },
+            "url": { "raw": "{{baseUrl}}/chatbot/message", "host": ["{{baseUrl}}"], "path": ["chatbot", "message"] },
+            "description": "PATIENT only (own). Response is reply + ids ONLY — no risk/emotion/crisis signals (FR-019). Omit/null sessionId to resume the open session or start a new one. The test script saves {{sessionId}}. Errors: 400 (empty / >4000 chars), 403 (non-patient), 404 (sessionId not owned), 429 (rate limit 30/min), 502 AI_INFERENCE_FAILED (AI down — patient message kept, no bot turn)."
+          }
+        },
+        {
+          "name": "List sessions (PATIENT own; DOCTOR/ADMIN by patientId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chatbot/sessions?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["chatbot", "sessions"],
+              "query": [
+                { "key": "patientId", "value": "{{patientId}}", "disabled": true },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "PATIENT sees own sessions (patientId ignored). DOCTOR/ADMIN must enable the patientId query param (400 if missing)."
+          }
+        },
+        {
+          "name": "Get session messages (role-projected)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chatbot/sessions/{{sessionId}}/messages?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["chatbot", "sessions", "{{sessionId}}", "messages"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "description": "Owner PATIENT / DOCTOR / ADMIN. Doctor/Admin get full signals (riskLevel/emotion/intent/crisis); the patient owner gets sender+message+createdAt only (FR-019). 403 if patient not owner; 404 if unknown session."
           }
         }
       ]
