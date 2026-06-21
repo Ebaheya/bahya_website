@@ -439,6 +439,15 @@ function isUrgentSignal(inf: AiInferResponse): boolean {
   return inf.riskLevel === 'CRITICAL' || (inf.crisis && inf.crisisSignalType === 'direct');
 }
 
+// Normalized severity for escalation AND the session rollup: a direct crisis is
+// treated as CRITICAL even when the AI contradictorily labelled the turn LOW, so
+// the session summary / riskFlagFromHistory don't understate a turn that fired a
+// direct-crisis escalation. The raw bot turn keeps the AI's original riskLevel.
+function effectiveRiskLevel(inf: AiInferResponse): ChatRiskLevel {
+  if (inf.riskLevel === 'LOW' && isUrgentSignal(inf)) return 'CRITICAL';
+  return inf.riskLevel;
+}
+
 export async function escalateIfNeeded(input: EscalationInput): Promise<void> {
   const riskLevel = input.inf.riskLevel;
   const urgent = isUrgentSignal(input.inf);
@@ -447,9 +456,12 @@ export async function escalateIfNeeded(input: EscalationInput): Promise<void> {
   if (riskLevel === 'LOW' && !urgent) return;
 
   // For that contradictory LOW + direct-crisis case, treat the crisis as
-  // authoritative and escalate at the highest severity.
-  const severity: Extract<ChatRiskLevel, 'MEDIUM' | 'HIGH' | 'CRITICAL'> =
-    riskLevel === 'LOW' ? 'CRITICAL' : riskLevel;
+  // authoritative and escalate at the highest severity. Past the guard above,
+  // effectiveRiskLevel never returns LOW, so the cast is safe.
+  const severity = effectiveRiskLevel(input.inf) as Extract<
+    ChatRiskLevel,
+    'MEDIUM' | 'HIGH' | 'CRITICAL'
+  >;
 
   const flaggedPhrases = input.inf.flaggedPhrases ?? [];
   const failed: string[] = [];
@@ -551,8 +563,9 @@ export async function handlePatientMessage(
     { _id: sessionObjectId },
     { $set: { lastEmotion: inf.emotion?.label ?? null, lastActivityAt: botTurnAt } }
   );
-  // Raise (never lower) the session's max risk atomically — see raiseSessionMaxRisk.
-  await raiseSessionMaxRisk(sessionObjectId, inf.riskLevel);
+  // Raise (never lower) the session's max risk atomically, using the normalized
+  // severity so a direct-crisis turn isn't recorded as LOW — see raiseSessionMaxRisk.
+  await raiseSessionMaxRisk(sessionObjectId, effectiveRiskLevel(inf));
 
   const sessionIdString = sessionObjectId.toString();
   void escalateIfNeeded({

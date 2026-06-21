@@ -141,6 +141,47 @@ describe('chat escalation US2', () => {
     );
   });
 
+  it('rolls the session up to CRITICAL for a LOW + direct-crisis turn (not raw LOW)', async () => {
+    mockSessionFindOne.mockReturnValueOnce(
+      queryReturning({
+        _id: sessionId,
+        patientId,
+        status: 'ACTIVE',
+        maxRiskLevel: 'LOW',
+        lastActivityAt: new Date('2026-06-20T11:00:00.000Z'),
+      })
+    );
+    mockMessageCreate
+      .mockResolvedValueOnce({ _id: patientMessageId })
+      .mockResolvedValueOnce({ _id: botMessageId });
+    mockMessageFind.mockReturnValueOnce(findMessagesReturning([]));
+    mockBuildPatientProfile.mockResolvedValue({
+      patientId,
+      age: 36,
+      languagePref: 'ar',
+      cancerStage: null,
+      diseaseStatus: null,
+      treatments: [],
+      dietNotes: null,
+      riskFlagFromHistory: 'LOW',
+    });
+    mockInfer.mockResolvedValue({
+      ...mediumInference,
+      riskLevel: 'LOW',
+      crisis: true,
+      crisisSignalType: 'direct',
+      flaggedPhrases: ['I will end it'],
+    });
+
+    await handlePatientMessage({ patientId, message: 'hello' });
+
+    // Rollup uses the normalized CRITICAL severity, not the raw LOW the AI sent.
+    expect(mockSessionUpdateOne).toHaveBeenCalledWith(
+      { _id: sessionId, maxRiskLevel: { $in: [null, 'LOW', 'MEDIUM', 'HIGH'] } },
+      { $set: { maxRiskLevel: 'CRITICAL' } }
+    );
+  });
+
   it('raises a doctor alert and strict audit for MEDIUM risk with flagged phrases', async () => {
     await escalateIfNeeded({
       patientId,
