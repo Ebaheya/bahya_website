@@ -106,7 +106,9 @@ if (env.NODE_ENV === 'production' && env.CORS_ORIGINS === '*') {
 if (env.NODE_ENV === 'production' && !/^https:\/\//i.test(env.BAHYA_AI_BASE_URL)) {
   const host = (() => {
     try {
-      return new URL(env.BAHYA_AI_BASE_URL).hostname;
+      // URL.hostname keeps brackets for IPv6 (e.g. "[::1]"); strip them so the
+      // loopback check matches "::1".
+      return new URL(env.BAHYA_AI_BASE_URL).hostname.replace(/^\[|\]$/g, '');
     } catch {
       return '';
     }
