@@ -59,10 +59,10 @@ class DiagnosisMiniCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(
                 responsiveSize(context, 0.014, min: 16, max: 22),
               ),
-              border: Border.all(color: surveyPurple.withOpacity(.18)),
+              border: Border.all(color: surveyPurple.withValues(alpha: .18)),
               boxShadow: [
                 BoxShadow(
-                  color: surveyPurple.withOpacity(.07),
+                  color: surveyPurple.withValues(alpha: .07),
                   blurRadius: responsiveSize(context, 0.018, min: 14, max: 24),
                   offset: Offset(
                     0,
@@ -198,7 +198,9 @@ class _DiagnosisNumberField extends StatelessWidget {
               borderRadius: BorderRadius.circular(
                 responsiveSize(context, 0.01, min: 12, max: 16),
               ),
-              borderSide: BorderSide(color: surveyPurple.withOpacity(.42)),
+              borderSide: BorderSide(
+                color: surveyPurple.withValues(alpha: .42),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(
@@ -265,7 +267,9 @@ class _DiagnosisTextField extends StatelessWidget {
               borderRadius: BorderRadius.circular(
                 responsiveSize(context, 0.01, min: 12, max: 16),
               ),
-              borderSide: BorderSide(color: surveyPurple.withOpacity(.35)),
+              borderSide: BorderSide(
+                color: surveyPurple.withValues(alpha: .35),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(
@@ -307,15 +311,15 @@ class _DeleteDiagnosisButton extends StatelessWidget {
       height: responsiveSize(context, 0.034, min: 40, max: 48),
       decoration: BoxDecoration(
         color: canDelete
-            ? surveyPink.withOpacity(.08)
-            : Colors.grey.withOpacity(.06),
+            ? surveyPink.withValues(alpha: .08)
+            : Colors.grey.withValues(alpha: .06),
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.01, min: 12, max: 15),
         ),
         border: Border.all(
           color: canDelete
-              ? surveyPink.withOpacity(.25)
-              : Colors.grey.withOpacity(.15),
+              ? surveyPink.withValues(alpha: .25)
+              : Colors.grey.withValues(alpha: .15),
         ),
       ),
       child: IconButton(

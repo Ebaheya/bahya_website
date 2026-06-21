@@ -31,7 +31,6 @@ Widget pageHeader({
   );
 }
 
-
 class _AnimatedPageHeaderContent extends StatefulWidget {
   final String title;
   final String? subtitle;
@@ -50,7 +49,6 @@ class _AnimatedPageHeaderContent extends StatefulWidget {
       _AnimatedPageHeaderContentState();
 }
 
-
 class _AnimatedPageHeaderContentState extends State<_AnimatedPageHeaderContent>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
@@ -59,7 +57,7 @@ class _AnimatedPageHeaderContentState extends State<_AnimatedPageHeaderContent>
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
@@ -85,8 +83,16 @@ class _AnimatedPageHeaderContentState extends State<_AnimatedPageHeaderContent>
       animation: _animation,
       builder: (context, child) {
         final alignmentValue = _animation.value;
-        final beginAlignment = Alignment.lerp(Alignment.centerLeft, Alignment.centerRight, alignmentValue)!;
-        final endAlignment = Alignment.lerp(Alignment.centerRight, Alignment.centerLeft, alignmentValue)!;
+        final beginAlignment = Alignment.lerp(
+          Alignment.centerLeft,
+          Alignment.centerRight,
+          alignmentValue,
+        )!;
+        final endAlignment = Alignment.lerp(
+          Alignment.centerRight,
+          Alignment.centerLeft,
+          alignmentValue,
+        )!;
 
         return Container(
           width: double.infinity,
@@ -107,10 +113,12 @@ class _AnimatedPageHeaderContentState extends State<_AnimatedPageHeaderContent>
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.pink.withOpacity(0.18 + (alignmentValue * 0.10)),
+                color: Colors.pink.withValues(
+                  alpha: 0.18 + (alignmentValue * 0.10),
+                ),
                 blurRadius: responsiveSize(
                   context,
-                  0.018 + (alignmentValue * 0.004), 
+                  0.018 + (alignmentValue * 0.004),
                   min: 18,
                   max: 32,
                 ),
@@ -118,7 +126,7 @@ class _AnimatedPageHeaderContentState extends State<_AnimatedPageHeaderContent>
                   0,
                   responsiveHeight(
                     context,
-                    0.012 + (alignmentValue * 0.004), 
+                    0.012 + (alignmentValue * 0.004),
                     min: 7,
                     max: 14,
                   ),
@@ -126,7 +134,7 @@ class _AnimatedPageHeaderContentState extends State<_AnimatedPageHeaderContent>
               ),
             ],
           ),
-          child: child, 
+          child: child,
         );
       },
       child: LayoutBuilder(
@@ -141,7 +149,7 @@ class _AnimatedPageHeaderContentState extends State<_AnimatedPageHeaderContent>
                       title: widget.title,
                       subtitle: widget.subtitle,
                       icon: widget.icon,
-                      hover: true, 
+                      hover: true,
                     ),
                     if (widget.widgets != null &&
                         widget.widgets!.isNotEmpty) ...[
@@ -178,7 +186,7 @@ class _AnimatedPageHeaderContentState extends State<_AnimatedPageHeaderContent>
                         title: widget.title,
                         subtitle: widget.subtitle,
                         icon: widget.icon,
-                        hover: true, 
+                        hover: true,
                       ),
                     ),
                     if (widget.widgets != null && widget.widgets!.isNotEmpty)
@@ -216,7 +224,7 @@ class _PageHeaderMain extends StatelessWidget {
               width: responsiveSize(context, 0.04, min: 48, max: 62),
               height: responsiveSize(context, 0.04, min: 48, max: 62),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(
                   responsiveSize(context, 0.01, min: 12, max: 16),
                 ),
@@ -250,7 +258,7 @@ class _PageHeaderMain extends StatelessWidget {
                 ),
                 customText(
                   text: subtitle!,
-                  color: Colors.white.withOpacity(0.75),
+                  color: Colors.white.withValues(alpha: 0.75),
                   size: responsiveSize(context, 0.01, min: 12, max: 16),
                   isEnglish: true,
                   isCenter: false,

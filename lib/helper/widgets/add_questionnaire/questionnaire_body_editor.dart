@@ -161,7 +161,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(.08),
+                  color: Colors.black.withValues(alpha: .08),
                   blurRadius: 22,
                   offset: const Offset(0, 10),
                 ),
@@ -288,13 +288,13 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.purple.withOpacity(.18)),
+        border: Border.all(color: Colors.purple.withValues(alpha: .18)),
       ),
       child: Column(
         crossAxisAlignment: appCrossAxisAlignment(isEnglish),
         children: [
           sectionLabel(
-            label: 'Scale / Rating',
+            label: context.l10n.scaleRating,
             icon: Icons.linear_scale_rounded,
             w: w,
           ),
@@ -303,7 +303,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
             CustomFormTextField(
               autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: CustomTextFieldType.score,
-              labelText: 'minValue',
+              labelText: context.l10n.minimumValue,
               hintText: '0',
               controller: minValueController,
               centerHint: true,
@@ -312,7 +312,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
             CustomFormTextField(
               autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: CustomTextFieldType.score,
-              labelText: 'maxValue',
+              labelText: context.l10n.maximumValue,
               hintText: '10',
               controller: maxValueController,
               centerHint: true,
@@ -321,8 +321,8 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
             CustomFormTextField(
               autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: CustomTextFieldType.text,
-              labelText: 'minLabel',
-              hintText: 'لا يوجد',
+              labelText: context.l10n.minimumLabel,
+              hintText: context.l10n.none,
               controller: minLabelController,
               isRequired: false,
               textDirection: appTextDirection(isEnglish),
@@ -331,8 +331,8 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
             CustomFormTextField(
               autovalidateMode: AutovalidateMode.onUserInteraction,
               keyboardType: CustomTextFieldType.text,
-              labelText: 'maxLabel',
-              hintText: 'شديد جدًا',
+              labelText: context.l10n.maximumLabel,
+              hintText: context.l10n.verySevere,
               controller: maxLabelController,
               isRequired: false,
               textDirection: appTextDirection(isEnglish),
@@ -344,7 +344,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                   child: CustomFormTextField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     keyboardType: CustomTextFieldType.score,
-                    labelText: 'minValue',
+                    labelText: context.l10n.minimumValue,
                     hintText: '0',
                     controller: minValueController,
                     centerHint: true,
@@ -355,7 +355,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                   child: CustomFormTextField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     keyboardType: CustomTextFieldType.score,
-                    labelText: 'maxValue',
+                    labelText: context.l10n.maximumValue,
                     hintText: '10',
                     controller: maxValueController,
                     centerHint: true,
@@ -370,8 +370,8 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                   child: CustomFormTextField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     keyboardType: CustomTextFieldType.text,
-                    labelText: 'minLabel',
-                    hintText: 'لا يوجد',
+                    labelText: context.l10n.minimumLabel,
+                    hintText: context.l10n.none,
                     controller: minLabelController,
                     isRequired: false,
                     textDirection: appTextDirection(isEnglish),
@@ -382,8 +382,8 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                   child: CustomFormTextField(
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     keyboardType: CustomTextFieldType.text,
-                    labelText: 'maxLabel',
-                    hintText: 'شديد جدًا',
+                    labelText: context.l10n.maximumLabel,
+                    hintText: context.l10n.verySevere,
                     controller: maxLabelController,
                     isRequired: false,
                     textDirection: appTextDirection(isEnglish),

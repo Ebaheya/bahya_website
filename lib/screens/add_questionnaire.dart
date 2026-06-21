@@ -64,11 +64,11 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                       width: w * 0.92,
                       padding: EdgeInsets.all(w * 0.025),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(.88),
+                        color: Colors.white.withValues(alpha: .88),
                         borderRadius: BorderRadius.circular(22),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(.05),
+                            color: Colors.black.withValues(alpha: .05),
                             blurRadius: 28,
                             offset: const Offset(0, 12),
                           ),
@@ -181,21 +181,21 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
     );
   }
 
- Widget _availableFormsWidget(double h, double w) {
+  Widget _availableFormsWidget(double h, double w) {
     final isMobile = w < 700;
 
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(responsiveSize(context, 0.018, min: 14, max: 20)),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(.95),
+        color: Colors.white.withValues(alpha: .95),
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.02, min: 18, max: 24),
         ),
         border: Border.all(color: Colors.pink.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.04),
+            color: Colors.black.withValues(alpha: .04),
             blurRadius: responsiveSize(context, 0.02, min: 16, max: 22),
             offset: Offset(0, responsiveHeight(context, 0.01, min: 6, max: 10)),
           ),
@@ -272,7 +272,7 @@ class _AddQuestionnaireState extends State<AddQuestionnaire> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.pink.withOpacity(.06),
+                            color: Colors.pink.withValues(alpha: .06),
                             blurRadius: responsiveSize(
                               context,
                               0.018,

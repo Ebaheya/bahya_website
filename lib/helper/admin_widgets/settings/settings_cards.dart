@@ -1,11 +1,10 @@
 import 'package:bahya_website/bloc/cubit/settings_cubit.dart';
-import 'package:bahya_website/bloc/states/settings_state.dart';
 import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/helper/admin_widgets/settings/change_password.dart';
 import 'package:bahya_website/helper/admin_widgets/settings/settings_widgets.dart';
 import 'package:bahya_website/helper/base.dart';
-import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 part 'settings_card_components.dart';
@@ -28,9 +27,7 @@ class SettingsDesktopGrid extends StatelessWidget {
           : w < 1050
           ? 2.15
           : 1.72,
-      children: const [
-        AccountSettingsCard(),
-      ],
+      children: const [AccountSettingsCard()],
     );
   }
 }
@@ -130,37 +127,37 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
 
         return SettingsCard(
           icon: Icons.person_outline_rounded,
-          title: "Account Settings",
-          subtitle: "Manage your account information and preferences",
+          title: context.l10n.accountSettings,
+          subtitle: context.l10n.manageYourAccountInformationAndPreferences,
           rows: [
             SettingsRowData(
               Icons.person_outline_rounded,
-              "Profile Name",
+              context.l10n.profileName,
               fullName,
-              true,
+              false,
               false,
               false,
             ),
             SettingsRowData(
               Icons.email_outlined,
-              "Email",
+              context.l10n.email,
               email,
-              true,
+              false,
               false,
               false,
             ),
             SettingsRowData(
               Icons.shield_outlined,
-              "Role",
+              context.l10n.role,
               _roleName(role),
-              true,
+              false,
               false,
               false,
             ),
             SettingsRowData(
               Icons.lock_outline_rounded,
-              "Password",
-              "Change your account password",
+              context.l10n.password,
+              context.l10n.changeYourAccountPassword,
               true,
               false,
               false,
@@ -173,7 +170,6 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
   }
 }
 
-
 class AuditLogsCard extends StatelessWidget {
   const AuditLogsCard({super.key});
 
@@ -184,39 +180,44 @@ class AuditLogsCard extends StatelessWidget {
         ? 1
         : (state.total / state.pageSize).ceil();
 
-    return SettingsCard(
-      icon: Icons.history_rounded,
-      title: "Audit Logs",
-      subtitle: "Latest system activity logs",
-      rows: const [],
-      customBody: Column(
-        children: [
-          if (state.logs.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Text("No audit logs found"),
-            )
-          else
-            ...state.logs.map(
-              (log) =>
-                  AuditLogItem(log: log, userNamesById: state.userNamesById),
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: SettingsCard(
+        icon: Icons.history_rounded,
+        title: "Audit Logs",
+        subtitle: "Latest system activity logs",
+        rows: const [],
+        customBody: Column(
+          children: [
+            if (state.logs.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text("No audit logs found"),
+              )
+            else
+              ...state.logs.map(
+                (log) =>
+                    AuditLogItem(log: log, userNamesById: state.userNamesById),
+              ),
+            SizedBox(
+              height: responsiveHeight(context, 0.016, min: 12, max: 18),
             ),
-          SizedBox(height: responsiveHeight(context, 0.016, min: 12, max: 18)),
-          _AuditPagination(
-            currentPage: state.page,
-            totalPages: totalPages,
-            onPrevious: state.page <= 1
-                ? null
-                : () => context.read<SettingsCubit>().loadData(
-                    page: state.page - 1,
-                  ),
-            onNext: state.page >= totalPages
-                ? null
-                : () => context.read<SettingsCubit>().loadData(
-                    page: state.page + 1,
-                  ),
-          ),
-        ],
+            _AuditPagination(
+              currentPage: state.page,
+              totalPages: totalPages,
+              onPrevious: state.page <= 1
+                  ? null
+                  : () => context.read<SettingsCubit>().loadData(
+                      page: state.page - 1,
+                    ),
+              onNext: state.page >= totalPages
+                  ? null
+                  : () => context.read<SettingsCubit>().loadData(
+                      page: state.page + 1,
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -332,7 +333,7 @@ class _PageButton extends StatelessWidget {
 
 class AuditLogItem extends StatelessWidget {
   final Map<String, dynamic> log;
- final Map<String, String> userNamesById;
+  final Map<String, String> userNamesById;
 
   const AuditLogItem({
     super.key,
@@ -369,7 +370,7 @@ class AuditLogItem extends StatelessWidget {
     return "$hour12:$minute $period";
   }
 
- String _actorName() {
+  String _actorName() {
     final actorId = log["actorId"]?.toString();
 
     if (actorId == null || actorId.trim().isEmpty) {

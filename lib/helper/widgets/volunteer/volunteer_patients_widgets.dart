@@ -108,7 +108,7 @@ class VolunteerSurveyWidget extends StatelessWidget {
                     border: Border.all(color: const Color(0xFFFFD6EA)),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFE40070).withOpacity(0.07),
+                        color: const Color(0xFFE40070).withValues(alpha: 0.07),
                         blurRadius: 22,
                         offset: const Offset(0, 10),
                       ),
@@ -223,7 +223,7 @@ class _AnimatedSaveAnswersButtonState extends State<AnimatedSaveAnswersButton>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.pink.withOpacity(0.22 + v * 0.16),
+                    color: Colors.pink.withValues(alpha: 0.22 + v * 0.16),
                     blurRadius: 18 + v * 12,
                     offset: Offset(0, 8 + v * 5),
                   ),
@@ -239,7 +239,7 @@ class _AnimatedSaveAnswersButtonState extends State<AnimatedSaveAnswersButton>
                       height: 90,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.10),
+                        color: Colors.white.withValues(alpha: 0.10),
                       ),
                     ),
                   ),
@@ -251,7 +251,7 @@ class _AnimatedSaveAnswersButtonState extends State<AnimatedSaveAnswersButton>
                       height: 80,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.08),
+                        color: Colors.white.withValues(alpha: 0.08),
                       ),
                     ),
                   ),
@@ -309,7 +309,7 @@ class _AnimatedSaveAnswersButtonState extends State<AnimatedSaveAnswersButton>
                                   max: 36,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.18),
+                                  color: Colors.white.withValues(alpha: 0.18),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(

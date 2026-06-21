@@ -69,7 +69,7 @@ class _StatCardState extends State<StatCard>
 
     final shadow = [
       BoxShadow(
-        color: Colors.black.withOpacity(_hover ? 0.12 : 0.06),
+        color: Colors.black.withValues(alpha: _hover ? 0.12 : 0.06),
         blurRadius: _hover ? 28 : 18,
         offset: Offset(0, _hover ? 14 : 10),
       ),
@@ -119,7 +119,7 @@ class _StatCardState extends State<StatCard>
                         curve: Curves.easeOut,
                         child: CircleAvatar(
                           radius: 26,
-                          backgroundColor: widget.color.withOpacity(.15),
+                          backgroundColor: widget.color.withValues(alpha: .15),
                           child: Icon(
                             widget.icon,
                             color: widget.color,
@@ -180,7 +180,7 @@ class _StatCardState extends State<StatCard>
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
+                              color: Colors.black.withValues(alpha: 0.06),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -211,10 +211,8 @@ class StatsHorizontalGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-     final h = getScreenHeight(context);
-     final w = getScreenWidth(context);
+    final h = getScreenHeight(context);
     return SizedBox(
-     
       height: h * 0.35,
       // width: w * 0.02,
       child: ScrollConfiguration(

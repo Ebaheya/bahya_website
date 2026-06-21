@@ -111,7 +111,7 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(.08),
+                  color: Colors.black.withValues(alpha: .08),
                   blurRadius: 22,
                   offset: const Offset(0, 10),
                 ),

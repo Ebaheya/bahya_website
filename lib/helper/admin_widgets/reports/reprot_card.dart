@@ -60,7 +60,7 @@ class _ReportCardState extends State<ReportCard> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(_hover ? 0.12 : 0.06),
+                  color: Colors.black.withValues(alpha: _hover ? 0.12 : 0.06),
                   blurRadius: responsiveSize(
                     context,
                     _hover ? 0.02 : 0.012,
@@ -139,7 +139,7 @@ class _IconBox extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: buttonColor.withOpacity(0.18),
+              color: buttonColor.withValues(alpha: 0.18),
               blurRadius: responsiveSize(context, 0.01, min: 10, max: 14),
               offset: const Offset(0, 6),
             ),

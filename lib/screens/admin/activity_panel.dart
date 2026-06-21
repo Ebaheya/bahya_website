@@ -51,7 +51,7 @@ class _RecentActivityState extends State<RecentActivity> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(_hover ? 0.12 : 0.06),
+                  color: Colors.black.withValues(alpha: _hover ? 0.12 : 0.06),
                   blurRadius: responsiveSize(
                     context,
                     _hover ? 0.02 : 0.012,
@@ -137,8 +137,9 @@ class _RecentActivityState extends State<RecentActivity> {
 
   Color _activityColor(String action) {
     if (action.contains('CREATED')) return Colors.green;
-    if (action.contains('UPDATED') || action.contains('CHANGED'))
+    if (action.contains('UPDATED') || action.contains('CHANGED')) {
       return Colors.blue;
+    }
     if (action.contains('FAILED')) return Colors.red;
     if (action.contains('REPORT')) return Colors.pink;
     if (action.contains('ASSESSMENT')) return Colors.purple;
@@ -147,8 +148,9 @@ class _RecentActivityState extends State<RecentActivity> {
 
   IconData _activityIcon(String action) {
     if (action.contains('CREATED')) return Icons.add_circle_outline;
-    if (action.contains('UPDATED') || action.contains('CHANGED'))
+    if (action.contains('UPDATED') || action.contains('CHANGED')) {
       return Icons.edit_outlined;
+    }
     if (action.contains('FAILED')) return Icons.error_outline;
     if (action.contains('REPORT')) return Icons.report_problem_outlined;
     if (action.contains('ASSESSMENT')) return Icons.assignment_outlined;
@@ -278,7 +280,7 @@ class _ViewAllButton extends StatelessWidget {
           vertical: responsiveHeight(context, 0.01, min: 8, max: 10),
         ),
         decoration: BoxDecoration(
-          color: Colors.pink.withOpacity(0.08),
+          color: Colors.pink.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(
             responsiveSize(context, 0.008, min: 10, max: 12),
           ),
@@ -314,7 +316,7 @@ void showRecentActivityDialog(
     context: context,
     barrierDismissible: true,
     barrierLabel: "Recent Activity",
-    barrierColor: Colors.black.withOpacity(0.45),
+    barrierColor: Colors.black.withValues(alpha: 0.45),
     transitionDuration: const Duration(milliseconds: 350),
     pageBuilder: (context, animation, secondaryAnimation) {
       return RecentActivityDialog(activities: activities);

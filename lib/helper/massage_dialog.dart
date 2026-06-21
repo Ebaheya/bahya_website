@@ -78,7 +78,9 @@ void customDialog({
                           width: 34,
                           height: 34,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF7BB0).withValues(alpha: .09),
+                            color: const Color(
+                              0xFFFF7BB0,
+                            ).withValues(alpha: .09),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: const Color(

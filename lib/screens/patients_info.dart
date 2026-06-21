@@ -4,7 +4,7 @@ import 'package:bahya_website/data/api/models/patient_model.dart';
 import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/helper/admin_widgets/custom_date_picker.dart';
 import 'package:bahya_website/helper/base.dart';
-import 'package:bahya_website/helper/custom_dropDown.dart';
+import 'package:bahya_website/helper/custom_dropdown.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
@@ -269,7 +269,7 @@ class _PatientInfoState extends State<PatientInfo> {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Edit patient clinical data',
-      barrierColor: Colors.black.withOpacity(0.35),
+      barrierColor: Colors.black.withValues(alpha: 0.35),
       transitionDuration: const Duration(milliseconds: 280),
       pageBuilder: (dialogContext, animation, secondaryAnimation) {
         return _EditPatientClinicalDialog(

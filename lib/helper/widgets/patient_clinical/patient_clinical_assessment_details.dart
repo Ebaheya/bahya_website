@@ -127,7 +127,7 @@ class _DoctorNoteCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: hasNote
                         ? const Color(0xFFFFE5F1)
-                        : Colors.grey.withOpacity(0.10),
+                        : Colors.grey.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(

@@ -228,7 +228,7 @@ class _EditClinicalButtonState extends State<_EditClinicalButton> {
             boxShadow: hover
                 ? [
                     BoxShadow(
-                      color: const Color(0xFFE83E8C).withOpacity(0.18),
+                      color: const Color(0xFFE83E8C).withValues(alpha: 0.18),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),

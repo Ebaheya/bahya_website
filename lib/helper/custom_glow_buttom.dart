@@ -57,7 +57,7 @@ class CustomGlowButton extends StatelessWidget {
         borderRadius: radius,
         boxShadow: [
           BoxShadow(
-            color: glowColor ?? const Color(0xFFFF7BB0).withOpacity(0.35),
+            color: glowColor ?? const Color(0xFFFF7BB0).withValues(alpha: 0.35),
             blurRadius: responsiveSize(context, 0.008, min: 8, max: 14),
             offset: Offset(0, responsiveHeight(context, 0.006, min: 3, max: 5)),
           ),

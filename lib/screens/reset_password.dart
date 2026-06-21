@@ -125,7 +125,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.pink.withOpacity(0.12),
+                        color: Colors.pink.withValues(alpha: 0.12),
                         blurRadius: responsiveSize(
                           context,
                           0.025,
@@ -169,28 +169,44 @@ class _ResetPasswordState extends State<ResetPassword> {
                                   ),
                                 ),
                                 Expanded(
-                                  child: _ResetHeaderText(h: h, isMobile: false),
+                                  child: _ResetHeaderText(
+                                    h: h,
+                                    isMobile: false,
+                                  ),
                                 ),
                               ],
                             ),
-        
+
                       SizedBox(
-                        height: responsiveHeight(context, 0.04, min: 24, max: 34),
+                        height: responsiveHeight(
+                          context,
+                          0.04,
+                          min: 24,
+                          max: 34,
+                        ),
                       ),
-        
+
                       buildTextField(
                         keyboardType: CustomTextFieldType.password,
                         controller: newPasswordController,
                         hintText: localizedText(context, '••••••••'),
                         obscureText: true,
-                        labelText: localizedText(context, 'كلمة المرور الجديدة'),
+                        labelText: localizedText(
+                          context,
+                          'كلمة المرور الجديدة',
+                        ),
                         suffixIcon: Icon(Icons.lock_outlined, color: iconColor),
                       ),
-        
+
                       SizedBox(
-                        height: responsiveHeight(context, 0.03, min: 18, max: 24),
+                        height: responsiveHeight(
+                          context,
+                          0.03,
+                          min: 18,
+                          max: 24,
+                        ),
                       ),
-        
+
                       buildTextField(
                         controller: confirmPasswordController,
                         keyboardType: CustomTextFieldType.password,
@@ -199,11 +215,16 @@ class _ResetPasswordState extends State<ResetPassword> {
                         labelText: localizedText(context, 'تأكيد كلمة المرور'),
                         suffixIcon: Icon(Icons.lock_outline, color: iconColor),
                       ),
-        
+
                       SizedBox(
-                        height: responsiveHeight(context, 0.04, min: 24, max: 34),
+                        height: responsiveHeight(
+                          context,
+                          0.04,
+                          min: 24,
+                          max: 34,
+                        ),
                       ),
-        
+
                       SizedBox(
                         width: double.infinity,
                         child: CustomGlowButton(
@@ -214,7 +235,7 @@ class _ResetPasswordState extends State<ResetPassword> {
                           textColor: Colors.white,
                           glowColor: Colors.pinkAccent,
                           onPressed: () {
-                             isLoading ? null : _resetPassword();
+                            isLoading ? null : _resetPassword();
                           },
                         ),
                       ),

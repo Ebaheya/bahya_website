@@ -135,7 +135,7 @@ class _MobilePatientClinicalCard extends StatelessWidget {
               border: Border.all(color: const Color(0xFFFFD3E8)),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFE83E8C).withOpacity(0.10),
+                  color: const Color(0xFFE83E8C).withValues(alpha: 0.10),
                   blurRadius: 24,
                   offset: const Offset(0, 12),
                 ),
@@ -163,7 +163,7 @@ class _MobilePatientClinicalCard extends StatelessWidget {
                                 BoxShadow(
                                   color: const Color(
                                     0xFFE83E8C,
-                                  ).withOpacity(0.18),
+                                  ).withValues(alpha: 0.18),
                                   blurRadius: 16,
                                   offset: const Offset(0, 8),
                                 ),
@@ -220,7 +220,9 @@ class _MobilePatientClinicalCard extends StatelessWidget {
                           ),
                           Icon(
                             Icons.arrow_forward_ios_rounded,
-                            color: const Color(0xFFE83E8C).withOpacity(0.75),
+                            color: const Color(
+                              0xFFE83E8C,
+                            ).withValues(alpha: 0.75),
                             size: 18,
                           ),
                         ],

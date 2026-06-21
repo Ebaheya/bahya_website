@@ -98,13 +98,13 @@ class _FilterDropdownState extends State<FilterDropdown> {
                 ),
             border: Border.all(
               color: isHover
-                  ? buttonColor.withOpacity(0.45)
-                  : Colors.grey.withOpacity(0.16),
+                  ? buttonColor.withValues(alpha: 0.45)
+                  : Colors.grey.withValues(alpha: 0.16),
               width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isHover ? 0.07 : 0.035),
+                color: Colors.black.withValues(alpha: isHover ? 0.07 : 0.035),
                 blurRadius: responsiveSize(
                   context,
                   isHover ? 0.014 : 0.01,
@@ -216,7 +216,7 @@ class _DropdownArrow extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.008, min: 8, max: 10),
         ),
@@ -295,7 +295,7 @@ class _DropdownMenuItemContent extends StatelessWidget {
         horizontal: responsiveSize(context, 0.011, min: 12, max: 14),
       ),
       decoration: BoxDecoration(
-        color: isSelected ? color.withOpacity(0.06) : Colors.transparent,
+        color: isSelected ? color.withValues(alpha: 0.06) : Colors.transparent,
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.012, min: 12, max: 14),
         ),
@@ -307,7 +307,7 @@ class _DropdownMenuItemContent extends StatelessWidget {
               width: responsiveSize(context, 0.03, min: 32, max: 36),
               height: responsiveSize(context, 0.03, min: 32, max: 36),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.10),
+                color: color.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(
                   responsiveSize(context, 0.01, min: 10, max: 12),
                 ),

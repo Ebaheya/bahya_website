@@ -9,7 +9,7 @@ import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/forget_password_dialog.dart';
 import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:bahya_website/route.dart';
-import 'package:bahya_website/service/Login_service.dart';
+import 'package:bahya_website/service/login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -286,8 +286,8 @@ class _LoginPageState extends State<LoginPage> {
                                             controller: emailController,
                                             keyboardType:
                                                 CustomTextFieldType.email,
-                                            hintText: 'Email',
-                                            labelText: 'Email',
+                                            hintText: context.l10n.email,
+                                            labelText: context.l10n.email,
                                             textDirection: isEnglish
                                                 ? TextDirection.ltr
                                                 : TextDirection.rtl,
@@ -305,8 +305,9 @@ class _LoginPageState extends State<LoginPage> {
                                             keyboardType:
                                                 CustomTextFieldType.password,
                                             obscureText: true,
-                                            hintText: 'Enter password',
-                                            labelText: 'Password',
+                                            hintText:
+                                                context.l10n.enterPassword,
+                                            labelText: context.l10n.password,
                                             textDirection: isEnglish
                                                 ? TextDirection.ltr
                                                 : TextDirection.rtl,
@@ -320,22 +321,22 @@ class _LoginPageState extends State<LoginPage> {
                                             ),
                                           ),
                                           CustomGlowButton(
-                                                  title: isLoggingIn ? ' Signing in...' : ' Sign in',
-                                                  backgroundColor: const Color(
-                                                    0xFFFF7BB0,
-                                                  ),
-                                                  textColor: Colors.white,
-                                                  glowColor: const Color(
-                                                    0xFFFF7BB0,
-                                                  ),
-                                                  textSize: responsiveHeight(
-                                                    context,
-                                                    0.02,
-                                                    min: 15,
-                                                    max: 20,
-                                                  ),
-                                                  onPressed: _submitLogin,
-                                                ),
+                                            title: isLoggingIn
+                                                ? ' Signing in...'
+                                                : ' Sign in',
+                                            backgroundColor: const Color(
+                                              0xFFFF7BB0,
+                                            ),
+                                            textColor: Colors.white,
+                                            glowColor: const Color(0xFFFF7BB0),
+                                            textSize: responsiveHeight(
+                                              context,
+                                              0.02,
+                                              min: 15,
+                                              max: 20,
+                                            ),
+                                            onPressed: _submitLogin,
+                                          ),
                                           SizedBox(
                                             height: responsiveHeight(
                                               context,

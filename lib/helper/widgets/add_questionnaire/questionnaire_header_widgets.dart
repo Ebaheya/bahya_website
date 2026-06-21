@@ -5,8 +5,6 @@ class QuestionnairePageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w = getScreenWidth(context);
-
     return ValueListenableBuilder<Locale>(
       valueListenable: AppLanguageController.localeNotifier,
       builder: (context, locale, _) {
@@ -73,7 +71,7 @@ class SurveyTitleCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(.08),
+                  color: Colors.black.withValues(alpha: .08),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),

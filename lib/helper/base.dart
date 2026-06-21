@@ -23,10 +23,7 @@ Widget customText({
     builder: (context, locale, _) {
       final languageCode = locale.languageCode;
 
-      String translatedText = AppLocalizations.translateByLocaleCode(
-        languageCode,
-        text,
-      );
+      String translatedText = localizedTextByLocaleCode(languageCode, text);
 
       if (namedArgs != null) {
         namedArgs.forEach((key, value) {
@@ -96,13 +93,10 @@ Widget buildTextField({
     valueListenable: AppLanguageController.localeNotifier,
     builder: (context, locale, _) {
       final languageCode = locale.languageCode;
-      final localizedHint = AppLocalizations.translateByLocaleCode(
-        languageCode,
-        hintText,
-      );
+      final localizedHint = localizedTextByLocaleCode(languageCode, hintText);
       final localizedLabel = labelText == null
           ? null
-          : AppLocalizations.translateByLocaleCode(languageCode, labelText);
+          : localizedTextByLocaleCode(languageCode, labelText);
 
       return Padding(
         padding: const EdgeInsets.all(8.0),
@@ -262,7 +256,7 @@ class _LanguageToggleButtonState extends State<LanguageToggleButton> {
     final navigator = Navigator.of(context, rootNavigator: true);
     final languageCode =
         AppLanguageController.localeNotifier.value.languageCode;
-    final loadingLabel = AppLocalizations.translateByLocaleCode(
+    final loadingLabel = localizedTextByLocaleCode(
       languageCode,
       'Changing language',
     );
@@ -315,7 +309,7 @@ class _LanguageToggleButtonState extends State<LanguageToggleButton> {
       valueListenable: AppLanguageController.localeNotifier,
       builder: (context, locale, _) {
         final isEnglish = locale.languageCode == 'en';
-        final tooltip = AppLocalizations.translateByLocaleCode(
+        final tooltip = localizedTextByLocaleCode(
           locale.languageCode,
           isEnglish ? 'Switch to Arabic' : 'Switch to English',
         );

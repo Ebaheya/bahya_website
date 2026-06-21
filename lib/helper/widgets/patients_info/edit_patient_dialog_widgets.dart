@@ -120,7 +120,7 @@ class _EditDialogSection extends StatelessWidget {
         border: Border.all(color: const Color(0xFFFFD6EA)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFE83E8C).withOpacity(0.05),
+            color: const Color(0xFFE83E8C).withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -284,17 +284,17 @@ class _EditPatientDialogButton extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           decoration: BoxDecoration(
-            color: onTap == null ? color.withOpacity(0.45) : color,
+            color: onTap == null ? color.withValues(alpha: 0.45) : color,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: onTap == null
-                  ? borderColor.withOpacity(0.45)
+                  ? borderColor.withValues(alpha: 0.45)
                   : borderColor,
             ),
             boxShadow: isPrimary && onTap != null
                 ? [
                     BoxShadow(
-                      color: const Color(0xFFE83E8C).withOpacity(0.20),
+                      color: const Color(0xFFE83E8C).withValues(alpha: 0.20),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),

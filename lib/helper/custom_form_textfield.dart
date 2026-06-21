@@ -75,7 +75,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
   }
 
   String _localized(String text) {
-    return AppLocalizations.translateByLocaleCode(
+    return localizedTextByLocaleCode(
       Localizations.localeOf(context).languageCode,
       text,
     );
@@ -330,13 +330,13 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
             ),
             hintText: widget.hintText == null
                 ? null
-                : AppLocalizations.translateByLocaleCode(
+                : localizedTextByLocaleCode(
                     Localizations.localeOf(context).languageCode,
                     widget.hintText!,
                   ),
             labelText: widget.labelText == null
                 ? null
-                : AppLocalizations.translateByLocaleCode(
+                : localizedTextByLocaleCode(
                     Localizations.localeOf(context).languageCode,
                     widget.labelText!,
                   ),

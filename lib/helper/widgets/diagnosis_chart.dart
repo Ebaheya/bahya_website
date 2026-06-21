@@ -18,11 +18,11 @@ class DiagnosisComparisonChart extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
 
   const DiagnosisComparisonChart({
-    Key? key,
+    super.key,
     required this.data,
     this.height = 320,
     this.padding,
-  }) : super(key: key);
+  });
 
   static const _colorCount = Color(0xFFB36BFF);
   static const _colorPercent = Color(0xFFFF5C9A);
@@ -102,8 +102,9 @@ class DiagnosisComparisonChart extends StatelessWidget {
                         showTitles: true,
                         getTitlesWidget: (double value, TitleMeta meta) {
                           final i = value.toInt();
-                          if (i < 0 || i >= data.length)
+                          if (i < 0 || i >= data.length) {
                             return const SizedBox.shrink();
+                          }
                           return customText(
                             text: data[i].label,
                             size: getScreenHeight(context) * 0.013,

@@ -40,7 +40,7 @@ class _FeatureCardState extends State<FeatureCard> {
     final bgColor = _hover ? Colors.purple[50] : Colors.white;
     final shadow = [
       BoxShadow(
-        color: Colors.black.withOpacity(_hover ? 0.12 : 0.06),
+        color: Colors.black.withValues(alpha: _hover ? 0.12 : 0.06),
         blurRadius: _hover ? 28 : 18,
         offset: Offset(0, _hover ? 14 : 10),
       ),

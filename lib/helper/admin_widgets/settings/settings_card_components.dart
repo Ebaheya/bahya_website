@@ -48,7 +48,7 @@ class _SettingsCardState extends State<SettingsCard> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(hover ? .075 : .045),
+                color: Colors.black.withValues(alpha: hover ? .075 : .045),
                 blurRadius: hover ? 24 : 18,
                 offset: Offset(0, hover ? 12 : 8),
               ),
@@ -189,7 +189,7 @@ class _SettingsRowItemState extends State<SettingsRowItem> {
             Switch(
               value: switchValue,
               onChanged: (value) => setState(() => switchValue = value),
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               activeTrackColor: SettingsColors.purple,
             )
           else if (widget.data.hasEdit)
@@ -199,5 +199,3 @@ class _SettingsRowItemState extends State<SettingsRowItem> {
     );
   }
 }
-
-

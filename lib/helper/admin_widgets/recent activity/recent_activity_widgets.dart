@@ -37,7 +37,7 @@ class DialogHeaderIcon extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.pink.withOpacity(0.25),
+            color: Colors.pink.withValues(alpha: 0.25),
             blurRadius: responsiveSize(context, 0.012, min: 12, max: 16),
             offset: const Offset(0, 8),
           ),
@@ -67,10 +67,10 @@ Widget activityFilterChip({
       borderRadius: BorderRadius.circular(
         responsiveSize(context, 0.01, min: 12, max: 14),
       ),
-      border: Border.all(color: Colors.grey.withOpacity(0.14)),
+      border: Border.all(color: Colors.grey.withValues(alpha: 0.14)),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.025),
+          color: Colors.black.withValues(alpha: 0.025),
           blurRadius: responsiveSize(context, 0.008, min: 8, max: 10),
         ),
       ],
@@ -123,8 +123,8 @@ Widget activityPageButton({
           ),
           border: Border.all(
             color: selected
-                ? buttonColor.withOpacity(0.35)
-                : Colors.grey.withOpacity(0.14),
+                ? buttonColor.withValues(alpha: 0.35)
+                : Colors.grey.withValues(alpha: 0.14),
           ),
         ),
         child: Center(
@@ -187,7 +187,7 @@ class DialogActivityItem extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.035),
+                    color: Colors.black.withValues(alpha: 0.035),
                     blurRadius: responsiveSize(
                       context,
                       0.012,
@@ -419,7 +419,7 @@ class TimelineDot extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.35),
+                color: color.withValues(alpha: 0.35),
                 blurRadius: responsiveSize(context, 0.006, min: 6, max: 8),
               ),
             ],
@@ -432,7 +432,7 @@ class TimelineDot extends StatelessWidget {
               margin: EdgeInsets.symmetric(
                 vertical: responsiveHeight(context, 0.006, min: 5, max: 7),
               ),
-              color: Colors.grey.withOpacity(0.18),
+              color: Colors.grey.withValues(alpha: 0.18),
             ),
           ),
       ],
@@ -458,7 +458,7 @@ class ActivityIcon extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: iconColor.withOpacity(0.10),
+        color: iconColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.012, min: 12, max: 16),
         ),

@@ -11,7 +11,7 @@ part 'selected_users_chips.dart';
 
 String _translate(BuildContext context, String text) {
   final languageCode = AppLanguageController.localeNotifier.value.languageCode;
-  return AppLocalizations.translateByLocaleCode(languageCode, text);
+  return localizedTextByLocaleCode(languageCode, text);
 }
 
 Widget scheduleLabel({required BuildContext context, required String title}) {
@@ -209,7 +209,7 @@ Widget scheduleCodeInputSection({
                     icon: Icons.add_rounded,
                     textColor: Colors.white,
                     backgroundColor: Colors.pinkAccent,
-                    glowColor: Colors.pinkAccent.withOpacity(0.6),
+                    glowColor: Colors.pinkAccent.withValues(alpha: 0.6),
                     width: double.infinity,
                     height: responsiveHeight(context, 0.055, min: 44, max: 52),
                     textSize: responsiveSize(context, 0.009, min: 13, max: 16),
@@ -239,7 +239,7 @@ Widget scheduleCodeInputSection({
                     icon: Icons.add_rounded,
                     textColor: Colors.white,
                     backgroundColor: Colors.pinkAccent,
-                    glowColor: Colors.pinkAccent.withOpacity(0.6),
+                    glowColor: Colors.pinkAccent.withValues(alpha: 0.6),
                     width: responsiveSize(context, 0.09, min: 110, max: 180),
                     height: responsiveHeight(context, 0.055, min: 44, max: 52),
                     textSize: responsiveSize(context, 0.009, min: 13, max: 16),

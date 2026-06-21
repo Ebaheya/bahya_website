@@ -51,11 +51,11 @@ class _ProfileFormState extends State<ProfileForm> {
 
         borderRadius: BorderRadius.circular(28),
 
-        border: Border.all(color: Colors.pink.withOpacity(0.08)),
+        border: Border.all(color: Colors.pink.withValues(alpha: 0.08)),
 
         boxShadow: [
           BoxShadow(
-            color: Colors.pink.withOpacity(0.04),
+            color: Colors.pink.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -74,7 +74,7 @@ class _ProfileFormState extends State<ProfileForm> {
                   width: 55,
                   height: 55,
                   decoration: BoxDecoration(
-                    color: Colors.pink.withOpacity(0.08),
+                    color: Colors.pink.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, color: Colors.pink, size: 28),

@@ -29,7 +29,7 @@ class _QuestionCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFF3D7EA)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7A004C).withOpacity(0.045),
+            color: const Color(0xFF7A004C).withValues(alpha: 0.045),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),

@@ -1,12 +1,12 @@
 import 'package:bahya_website/l10n/app_localizations.dart';
+import 'package:bahya_website/platform/url_strategy.dart';
 import 'package:bahya_website/route.dart';
-import 'package:bahya_website/service/Login_service.dart';
+import 'package:bahya_website/service/login_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  setUrlStrategy(PathUrlStrategy());
+  configureUrlStrategy();
   initDio();
   await AppLanguageController.loadSavedLocale();
 
@@ -25,10 +25,7 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           locale: locale,
           supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: const [
-            ...flutterLocalizationDelegates,
-            AppLocalizations.delegate,
-          ],
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
           routerConfig: AppRouter.router,
         );
       },

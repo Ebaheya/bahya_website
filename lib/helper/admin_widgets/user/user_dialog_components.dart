@@ -18,14 +18,14 @@ class _ActionDialogCard extends StatelessWidget {
     return _BaseDialogCard(
       width: 450,
       icon: Icons.manage_accounts_rounded,
-      title: "User Actions",
+      title: localizedText(context, "User Actions"),
       subtitle: user.email,
       child: Column(
         children: [
           _ActionTile(
             icon: Icons.edit_rounded,
-            title: "Edit User",
-            subtitle: "Edit full name only",
+            title: localizedText(context, "Edit User"),
+            subtitle: localizedText(context, "Edit full name only"),
             color: const Color(0xFFE40070),
             onTap: onEdit,
           ),
@@ -34,24 +34,26 @@ class _ActionDialogCard extends StatelessWidget {
             icon: user.isActive
                 ? Icons.person_off_rounded
                 : Icons.person_add_alt_1_rounded,
-            title: user.isActive ? "Deactivate User" : "Activate User",
+            title: user.isActive
+                ? localizedText(context, "Deactivate User")
+                : localizedText(context, "Activate User"),
             subtitle: user.isActive
-                ? "Disable account access"
-                : "Enable account access",
+                ? localizedText(context, "Disable account access")
+                : localizedText(context, "Enable account access"),
             color: user.isActive ? Colors.red : Colors.green,
             onTap: onStatus,
           ),
           const SizedBox(height: 12),
           _ActionTile(
             icon: Icons.lock_reset_rounded,
-            title: "Send Reset Link",
-            subtitle: "Send password reset email",
+            title: localizedText(context, "Send Reset Link"),
+            subtitle: localizedText(context, "Send password reset email"),
             color: Colors.deepPurple,
             onTap: onReset,
           ),
           const SizedBox(height: 18),
           _DialogSecondaryButton(
-            text: "Close",
+            text: localizedText(context, "Close"),
             onTap: () => Navigator.pop(context),
           ),
         ],
@@ -173,7 +175,7 @@ class _BaseDialogCard extends StatelessWidget {
           border: Border.all(color: const Color(0xFFFFD6EA)),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7A004C).withOpacity(0.14),
+              color: const Color(0xFF7A004C).withValues(alpha: 0.14),
               blurRadius: 34,
               offset: const Offset(0, 16),
             ),
@@ -225,7 +227,7 @@ class _DialogTopIcon extends StatelessWidget {
       height: 62,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withOpacity(0.9), const Color(0xFFFF5FA2)],
+          colors: [color.withValues(alpha: 0.9), const Color(0xFFFF5FA2)],
         ),
         borderRadius: BorderRadius.circular(20),
       ),
@@ -257,7 +259,7 @@ class _DialogPrimaryButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
-            color: onTap == null ? color.withOpacity(0.45) : color,
+            color: onTap == null ? color.withValues(alpha: 0.45) : color,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Center(
@@ -297,7 +299,7 @@ class _DialogSecondaryButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: onTap == null
-                  ? Colors.grey.withOpacity(0.18)
+                  ? Colors.grey.withValues(alpha: 0.18)
                   : const Color(0xFFFF9BD0),
             ),
           ),
@@ -349,7 +351,7 @@ class _ActionTile extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.10),
+                color: color.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(icon, color: color, size: 24),

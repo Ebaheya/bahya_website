@@ -136,7 +136,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
           state.copyWith(
             isPublishing: false,
             error:
-                "لا يمكن إعادة نشر نفس النموذج الآن. انتظر ${hours} ساعة و ${minutes} دقيقة.",
+                "لا يمكن إعادة نشر نفس النموذج الآن. انتظر $hours ساعة و $minutes دقيقة.",
           ),
         );
 
@@ -307,9 +307,11 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
       return ["غير محدد"];
     }
   }
-void emitPublishing(bool value) {
+
+  void emitPublishing(bool value) {
     emit(state.copyWith(isPublishing: value));
   }
+
   List<String> _buildVolunteerNames(dynamic assignment) {
     final name = assignment.volunteer?.fullName;
 

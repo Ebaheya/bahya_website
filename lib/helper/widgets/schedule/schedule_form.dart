@@ -5,7 +5,7 @@ import 'package:bahya_website/data/api/models/options_model.dart';
 import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_date_picker.dart';
-import 'package:bahya_website/helper/custom_dropDown.dart';
+import 'package:bahya_website/helper/custom_dropdown.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
 import 'package:bahya_website/helper/custom_time_picker.dart';
 import 'package:bahya_website/helper/strings.dart';
@@ -13,6 +13,8 @@ import 'package:bahya_website/helper/widgets/schedule/schedule_form_widget.dart'
 import 'package:bahya_website/logic/schedule_form_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+part 'schedule_form_actions.dart';
 
 class ScheduleFormWidget extends StatefulWidget {
   const ScheduleFormWidget({super.key, required this.forms});
@@ -24,6 +26,8 @@ class ScheduleFormWidget extends StatefulWidget {
 }
 
 class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
+  void _updateState(VoidCallback callback) => setState(callback);
+
   final WebService web = WebService();
 
   FormModel? selectedForm;
@@ -54,40 +58,6 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
     super.dispose();
   }
 
-  String? _buildPublishAt() {
-    if (selectedDate == null || selectedTime == null) return null;
-
-    final localDateTime = DateTime(
-      selectedDate!.year,
-      selectedDate!.month,
-      selectedDate!.day,
-      selectedTime!.hour,
-      selectedTime!.minute,
-    );
-
-    return localDateTime.toUtc().toIso8601String();
-  }
-
-  String _optionName(OptionUserModel user) {
-    try {
-      final dynamic value = user;
-      final name = value.name ?? value.fullName ?? value.label;
-      if (name != null && name.toString().trim().isNotEmpty) {
-        return name.toString();
-      }
-    } catch (_) {}
-
-    return user.id;
-  }
-
-  bool _isDuplicateAssignmentError(Object error) {
-    final text = error.toString();
-
-    return text.contains('FORM_DUPLICATE_OPEN_ASSIGNMENT') ||
-        text.contains('outstanding copy') ||
-        text.contains('already has an outstanding');
-  }
-
   @override
   Widget build(BuildContext context) {
     final isMobile = getScreenWidth(context) < 650;
@@ -103,13 +73,13 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
               vertical: responsiveHeight(context, 0.04, min: 18, max: 42),
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(.96),
+              color: Colors.white.withValues(alpha: .96),
               borderRadius: BorderRadius.circular(
                 responsiveSize(context, 0.024, min: 20, max: 28),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(.06),
+                  color: Colors.black.withValues(alpha: .06),
                   blurRadius: responsiveSize(context, 0.024, min: 18, max: 30),
                   offset: const Offset(0, 15),
                 ),
@@ -383,244 +353,5 @@ class _ScheduleFormWidgetState extends State<ScheduleFormWidget> {
         ),
       ],
     );
-  }
-
-  Widget _selectionBox({
-    required String title,
-    required IconData icon,
-    required Widget child,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(responsiveSize(context, 0.018, min: 14, max: 22)),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF7FC),
-        borderRadius: BorderRadius.circular(
-          responsiveSize(context, 0.018, min: 18, max: 24),
-        ),
-        border: Border.all(color: const Color(0xFFF5D7EA)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFE40070).withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              Container(
-                width: responsiveSize(context, 0.04, min: 40, max: 50),
-                height: responsiveSize(context, 0.04, min: 40, max: 50),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFEAF5),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFFE40070),
-                  size: responsiveSize(context, 0.022, min: 20, max: 26),
-                ),
-              ),
-              SizedBox(width: responsiveSize(context, 0.012, min: 8, max: 12)),
-              Expanded(
-                child: customText(
-                  text: title,
-                  size: responsiveSize(context, 0.012, min: 16, max: 21),
-                  color: const Color(0xFF7A004C),
-                  bold: true,
-                  isCenter: false,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: responsiveHeight(context, 0.02, min: 14, max: 20)),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _infoBox(String text) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: responsiveSize(context, 0.018, min: 12, max: 18),
-        vertical: responsiveHeight(context, 0.014, min: 10, max: 14),
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFEAF5),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFFFB8D8)),
-      ),
-      child: Row(
-        textDirection: TextDirection.rtl,
-        children: [
-          const Icon(Icons.info_outline_rounded, color: Color(0xFFE40070)),
-          SizedBox(width: responsiveSize(context, 0.012, min: 8, max: 12)),
-          Expanded(
-            child: customText(
-              text: text,
-              size: responsiveSize(context, 0.01, min: 13, max: 16),
-              color: const Color(0xFF7A004C),
-              bold: true,
-              isCenter: false,
-              maxLines: 4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<bool> _ensureFormReadyForPublish(FormModel form) async {
-    final status = form.currentVersion?.status.trim().toUpperCase();
-
-    if (status == "PUBLISHED") return true;
-
-    try {
-      await web.publishFormVersion(formId: form.id);
-      return true;
-    } catch (e) {
-      final text = e.toString();
-
-      if (text.contains("FORM_VERSION_NOT_DRAFT")) {
-        return true;
-      }
-
-      debugPrint("publish-version before volunteer publish failed: $e");
-      return false;
-    }
-  }
-
-  Future<void> publishForm() async {
-    if (selectedForm == null) {
-      logic.showError("اختر نموذجًا للنشر.");
-      return;
-    }
-
-    if (selectedForm!.isActive != true) {
-      logic.showError("هذا النموذج غير مفعّل. فعّله أولاً قبل إعادة النشر.");
-      return;
-    }
-
-    if (targetType == null) {
-      logic.showError("اختر الفئة المستهدفة.");
-      return;
-    }
-
-    if (targetType == "المرضى") {
-      await logic.publishForm(
-        selectedForm: selectedForm,
-        selectedDate: selectedDate,
-        selectedTime: selectedTime,
-        targetType: targetType,
-        patientPublishType: patientPublishType,
-        selectedSinglePatient: selectedSinglePatient,
-        selectedPatients: selectedPatients,
-        selectedVolunteers: selectedVolunteers,
-        onSuccess: () {
-          logic.showPublishSuccess();
-          context.read<PublishScheduleCubit>().loadForms();
-        },
-      );
-
-      return;
-    }
-
-    if (targetType == "المتطوعين") {
-      if (selectedVolunteers.isEmpty) {
-        logic.showError("يجب اختيار متطوع واحد على الأقل.");
-        return;
-      }
-
-      if (selectedPatients.isEmpty) {
-        logic.showError("يجب اختيار مريض واحد على الأقل.");
-        return;
-      }
-
-      final ready = await _ensureFormReadyForPublish(selectedForm!);
-
-      if (!mounted) return;
-
-      if (!ready) {
-        logic.showError(
-          "النموذج غير جاهز للنشر. تأكد أنه يحتوي أسئلة و ranges صحيحة.",
-        );
-        return;
-      }
-
-      await logic.publishForm(
-        selectedForm: selectedForm,
-        selectedDate: selectedDate,
-        selectedTime: selectedTime,
-        targetType: targetType,
-        patientPublishType: patientPublishType,
-        selectedSinglePatient: selectedSinglePatient,
-        selectedPatients: selectedPatients,
-        selectedVolunteers: selectedVolunteers,
-        onSuccess: () {
-          logic.showPublishSuccess();
-          context.read<PublishScheduleCubit>().loadForms();
-        },
-      );
-
-      return;
-    }
-
-    logic.showError("نوع النشر غير صحيح.");
-  }
-
-  void _resetAfterPublish() {
-    setState(() {
-      selectedForm = null;
-      selectedDate = null;
-      selectedTime = null;
-      targetType = null;
-      patientPublishType = null;
-      selectedSinglePatient = null;
-      selectedPatients.clear();
-      selectedVolunteers.clear();
-      patientSearchController.clear();
-      volunteerSearchController.clear();
-    });
-
-    context.read<PublishScheduleCubit>().loadForms();
-  }
-
-  void afterSuccess() {
-    if (!mounted) return;
-
-    logic.showPublishSuccess();
-    _resetAfterPublish();
-  }
-
-  Future pickCustomTime() async {
-    final t = await customTimePicker(
-      context: context,
-      initialTime: selectedTime,
-    );
-
-    if (!mounted) return;
-
-    if (t != null) {
-      setState(() => selectedTime = t);
-    }
-  }
-
-  Future pickCustomDate() async {
-    final d = await customDatePicker(
-      context: context,
-      initialDate: selectedDate,
-    );
-
-    if (!mounted) return;
-
-    if (d != null) {
-      setState(() => selectedDate = d);
-    }
   }
 }

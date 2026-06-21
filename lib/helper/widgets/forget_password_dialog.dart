@@ -15,7 +15,7 @@ void forgetPasswordDialog(BuildContext context) {
   showDialog(
     context: context,
     barrierDismissible: true,
-    barrierColor: Colors.black.withOpacity(0.38),
+    barrierColor: Colors.black.withValues(alpha: 0.38),
     builder: (dialogContext) {
       ContactMethod method = ContactMethod.email;
 
@@ -56,7 +56,7 @@ void forgetPasswordDialog(BuildContext context) {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF7A004C).withOpacity(0.18),
+                      color: const Color(0xFF7A004C).withValues(alpha: 0.18),
                       blurRadius: 35,
                       offset: const Offset(0, 18),
                     ),
@@ -118,7 +118,9 @@ void forgetPasswordDialog(BuildContext context) {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFE40070).withOpacity(0.25),
+                              color: const Color(
+                                0xFFE40070,
+                              ).withValues(alpha: 0.25),
                               blurRadius: 18,
                               offset: const Offset(0, 8),
                             ),
@@ -424,7 +426,7 @@ Widget _contactOption({
         boxShadow: selected
             ? [
                 BoxShadow(
-                  color: const Color(0xFFE40070).withOpacity(0.08),
+                  color: const Color(0xFFE40070).withValues(alpha: 0.08),
                   blurRadius: 14,
                   offset: const Offset(0, 6),
                 ),

@@ -54,7 +54,9 @@ class _HoverWaveAvatarState extends State<HoverWaveAvatar>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: widget.iconColor.withOpacity(1 - controller.value),
+                    color: widget.iconColor.withValues(
+                      alpha: 1 - controller.value,
+                    ),
                     width: 3,
                   ),
                 ),
@@ -65,7 +67,7 @@ class _HoverWaveAvatarState extends State<HoverWaveAvatar>
               scale: 1 + (controller.value * 0.04),
               child: CircleAvatar(
                 radius: widget.radius,
-                backgroundColor: Colors.white.withOpacity(0.25),
+                backgroundColor: Colors.white.withValues(alpha: 0.25),
                 child: CircleAvatar(
                   radius: widget.radius * 0.78,
                   backgroundColor: Colors.white,

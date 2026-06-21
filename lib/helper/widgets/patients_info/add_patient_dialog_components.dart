@@ -516,9 +516,7 @@ class _DialogButton extends StatelessWidget {
             color: isPrimary ? const Color(0xFFE83E8C) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isPrimary
-                  ? const Color(0xFFE83E8C)
-                  : Colors.grey.shade300,
+              color: isPrimary ? const Color(0xFFE83E8C) : Colors.grey.shade300,
             ),
           ),
           child: Row(

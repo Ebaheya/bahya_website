@@ -77,14 +77,14 @@ class _ReportsTableState extends State<ReportsTable> {
     );
   }
 
- Future<void> openReportDetails(Map<String, dynamic> report) async {
+  Future<void> openReportDetails(Map<String, dynamic> report) async {
     try {
       final reportId = report["id"].toString();
 
       showDialog(
         context: context,
         barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.25),
+        barrierColor: Colors.black.withValues(alpha: 0.25),
         builder: (_) => Center(child: customLoading()),
       );
 
@@ -98,7 +98,7 @@ class _ReportsTableState extends State<ReportsTable> {
 
       showDialog(
         context: context,
-        barrierColor: Colors.black.withOpacity(0.25),
+        barrierColor: Colors.black.withValues(alpha: 0.25),
         builder: (_) {
           return BlocProvider.value(
             value: context.read<ReportsCubit>(),
@@ -382,7 +382,7 @@ class _EmptyReportsAnimationState extends State<EmptyReportsAnimation>
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7A004C).withOpacity(0.05),
+                  color: const Color(0xFF7A004C).withValues(alpha: 0.05),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(

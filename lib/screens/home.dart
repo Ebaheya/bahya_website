@@ -91,96 +91,96 @@ class _HomePageState extends State<HomePage> {
                     color: const Color(0xFF831843),
                     bold: true,
                   ),
-            const SizedBox(height: 10),
-            customText(
-              text: "Choose the right service from the list below",
-              size: h * 0.015,
-              color: const Color(0xFFEB48A0),
-              bold: true,
-            ),
-            SizedBox(height: h * 0.03),
+                  const SizedBox(height: 10),
+                  customText(
+                    text: "Choose the right service from the list below",
+                    size: h * 0.015,
+                    color: const Color(0xFFEB48A0),
+                    bold: true,
+                  ),
+                  SizedBox(height: h * 0.03),
 
-            Center(
-              child: Container(
-                width: w * 0.95,
-                padding: EdgeInsets.all(h * 0.02),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.3),
-                      spreadRadius: 1,
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  children: [
-                    sectionCard(
-                      isShadow: false,
-                      context: context,
-                      child: Container(
-                        clipBehavior: Clip.antiAlias,
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: StatsHorizontalGrid(
-                          items: getStatCards(context),
-                        ),
+                  Center(
+                    child: Container(
+                      width: w * 0.95,
+                      padding: EdgeInsets.all(h * 0.02),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withValues(alpha: 0.3),
+                            spreadRadius: 1,
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      title: "General statistics dashboard",
-                    ),
-
-                    SizedBox(height: h * 0.01),
-
-                    sectionCard(
-                      context: context,
-                      title: "Diagnosis comparison chart",
+                      clipBehavior: Clip.antiAlias,
                       child: Column(
                         children: [
-                          DiagnosisComparisonChart(
-                            data: chartData,
-                            height: h * 0.5,
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              LegendDot(
-                                color: Color(0xFFB36BFF),
-                                label: 'Count',
+                          sectionCard(
+                            isShadow: false,
+                            context: context,
+                            child: Container(
+                              clipBehavior: Clip.antiAlias,
+                              padding: EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              SizedBox(width: 18),
-                              LegendDot(
-                                color: Color(0xFFFF5C9A),
-                                label: 'Percent',
+                              child: StatsHorizontalGrid(
+                                items: getStatCards(context),
                               ),
-                            ],
+                            ),
+                            title: "General statistics dashboard",
                           ),
-                          SizedBox(height: h * 0.02),
+
+                          SizedBox(height: h * 0.01),
+
+                          sectionCard(
+                            context: context,
+                            title: "Diagnosis comparison chart",
+                            child: Column(
+                              children: [
+                                DiagnosisComparisonChart(
+                                  data: chartData,
+                                  height: h * 0.5,
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    LegendDot(
+                                      color: Color(0xFFB36BFF),
+                                      label: 'Count',
+                                    ),
+                                    SizedBox(width: 18),
+                                    LegendDot(
+                                      color: Color(0xFFFF5C9A),
+                                      label: 'Percent',
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: h * 0.02),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
 
-            SizedBox(height: h * 0.1),
+                  SizedBox(height: h * 0.1),
 
-            sectionCard(
-              context: context,
-              title: "Services",
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: HomeFeaturesGrid(),
-              ),
-            ),
-            SizedBox(height: h * 0.02),
+                  sectionCard(
+                    context: context,
+                    title: "Services",
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: HomeFeaturesGrid(),
+                    ),
+                  ),
+                  SizedBox(height: h * 0.02),
                 ],
               ),
             ),

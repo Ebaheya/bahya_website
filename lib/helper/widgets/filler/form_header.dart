@@ -60,7 +60,7 @@ class _AnimatedPatientHeaderState extends State<AnimatedPatientHeader>
         border: Border.all(color: const Color(0xFFFCE4EC), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFE91E63).withOpacity(0.04),
+            color: const Color(0xFFE91E63).withValues(alpha: 0.04),
             blurRadius: _isMobile ? 16 : 24,
             offset: Offset(0, _isMobile ? 8 : 12),
           ),
@@ -150,7 +150,7 @@ class _AnimatedPatientHeaderState extends State<AnimatedPatientHeader>
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF85B3).withOpacity(0.15),
+            color: const Color(0xFFFF85B3).withValues(alpha: 0.15),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -342,7 +342,7 @@ class _AnimatedPatientHeaderState extends State<AnimatedPatientHeader>
         border: Border.all(color: const Color(0xFFF5F5F7), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.025),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -434,7 +434,7 @@ class WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFFFE1F0).withOpacity(0.5)
+      ..color = const Color(0xFFFFE1F0).withValues(alpha: 0.5)
       ..style = PaintingStyle.fill;
 
     final path = Path();
@@ -452,7 +452,7 @@ class WavePainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     final secondPaint = Paint()
-      ..color = const Color(0xFFFFEDF6).withOpacity(0.7)
+      ..color = const Color(0xFFFFEDF6).withValues(alpha: 0.7)
       ..style = PaintingStyle.fill;
 
     final secondPath = Path();

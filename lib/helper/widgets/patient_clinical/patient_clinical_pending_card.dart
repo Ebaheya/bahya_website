@@ -419,7 +419,7 @@ class _PendingSubmissionCardState extends State<_PendingSubmissionCard> {
       maxLines: 3,
       textDirection: _activeTextDirection,
       decoration: InputDecoration(
-        hintText: 'ملاحظات الدكتور...',
+        hintText: context.l10n.doctorNotes,
         hintStyle: const TextStyle(fontFamily: 'ArabicCustomFont'),
         filled: true,
         fillColor: const Color(0xFFFFFAFD),

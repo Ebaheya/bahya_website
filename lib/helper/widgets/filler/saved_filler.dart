@@ -86,7 +86,6 @@ class _SavedFormsWidgetState extends State<SavedFormsWidget> {
     return SizedBox(
       width: widget.isMobileLayout ? double.infinity : 340,
       child: Container(
-        
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(radius),
@@ -293,7 +292,7 @@ class _SavedFormsWidgetState extends State<SavedFormsWidget> {
           boxShadow: active
               ? [
                   BoxShadow(
-                    color: const Color(0xFFE40070).withOpacity(0.18),
+                    color: const Color(0xFFE40070).withValues(alpha: 0.18),
                     blurRadius: 12,
                     offset: const Offset(0, 5),
                   ),

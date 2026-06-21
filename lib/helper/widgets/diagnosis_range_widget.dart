@@ -4,7 +4,6 @@ import 'package:bahya_website/helper/widgets/add_questionnaire/questionnaire_bod
 import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
-import 'package:flutter/services.dart';
 
 class DiagnosisRangeWidget extends StatefulWidget {
   final double h;
@@ -91,7 +90,7 @@ class _DiagnosisRangeWidgetState extends State<DiagnosisRangeWidget> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.10),
+            color: Colors.black.withValues(alpha: 0.10),
             spreadRadius: 1,
             blurRadius: 18,
             offset: const Offset(0, 6),
@@ -124,7 +123,7 @@ class _DiagnosisRangeWidgetState extends State<DiagnosisRangeWidget> {
                 onRemoveDone: () => _finishRemoveDiagnosis(item),
                 child: Padding(
                   padding: EdgeInsets.only(bottom: h * 0.025),
-                  child: DiagnosisScoreRow(
+                  child: _DiagnosisScoreRow(
                     h: h,
                     w: w,
                     item: item,
@@ -160,14 +159,13 @@ class _DiagnosisItem {
   }
 }
 
-class DiagnosisScoreRow extends StatelessWidget {
+class _DiagnosisScoreRow extends StatelessWidget {
   final double h;
   final double w;
   final _DiagnosisItem item;
   final VoidCallback onDelete;
 
-  const DiagnosisScoreRow({
-    super.key,
+  const _DiagnosisScoreRow({
     required this.h,
     required this.w,
     required this.item,
@@ -230,7 +228,7 @@ class DiagnosisScoreRow extends StatelessWidget {
             SizedBox(
               width: w * 0.54,
               child: DropdownButtonFormField<String>(
-                value: item.diagnosis,
+                initialValue: item.diagnosis,
                 dropdownColor: Colors.white,
                 style: TextStyle(
                   fontSize: h * 0.016,

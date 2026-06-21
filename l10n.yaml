@@ -1,0 +1,6 @@
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations_generated.dart
+output-class: AppLocalizations
+output-dir: generated/bahya_l10n/lib
+nullable-getter: false

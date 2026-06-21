@@ -48,7 +48,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
 
     return Column(
       children: [
-          modernInputBox(
+        modernInputBox(
           context: context,
           icon: Icons.badge_outlined,
           child: CustomFormTextField(
@@ -220,14 +220,16 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
         horizontal: responsiveSize(context, 0.011, min: 12, max: 14),
       ),
       decoration: BoxDecoration(
-        color: isPurple ? Colors.deepPurple.withOpacity(0.035) : Colors.white,
+        color: isPurple
+            ? Colors.deepPurple.withValues(alpha: 0.035)
+            : Colors.white,
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.014, min: 15, max: 18),
         ),
-        border: Border.all(color: Colors.grey.withOpacity(0.14)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.14)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.035),
+            color: Colors.black.withValues(alpha: 0.035),
             blurRadius: responsiveSize(context, 0.012, min: 10, max: 14),
             offset: Offset(0, responsiveHeight(context, 0.008, min: 5, max: 7)),
           ),
@@ -239,7 +241,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
             width: responsiveSize(context, 0.034, min: 36, max: 42),
             height: responsiveSize(context, 0.034, min: 36, max: 42),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
+              color: color.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(
                 responsiveSize(context, 0.01, min: 11, max: 13),
               ),

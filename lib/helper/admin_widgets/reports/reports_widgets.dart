@@ -56,7 +56,7 @@ class _ReportDetailsDialogState extends State<ReportDetailsDialog> {
           border: Border.all(color: const Color(0xFFFFC6DD)),
           boxShadow: [
             BoxShadow(
-              color: buttonColor.withOpacity(0.18),
+              color: buttonColor.withValues(alpha: 0.18),
               blurRadius: responsiveSize(context, 0.02, min: 24, max: 36),
               offset: const Offset(0, 14),
             ),
@@ -154,7 +154,7 @@ class _ReportDetailsDialogState extends State<ReportDetailsDialog> {
                   height: responsiveHeight(context, 0.065, min: 48, max: 58),
                   child: FilterDropdown(
                     hint: selectedStatus,
-                    items:  const ["Pending", "Investigating", "Resolved"],
+                    items: const ["Pending", "Investigating", "Resolved"],
                     onChanged: (v) {
                       setState(() => selectedStatus = v);
                     },

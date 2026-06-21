@@ -50,9 +50,7 @@ class SettingsHeader extends StatelessWidget {
                   SizedBox(
                     height: responsiveHeight(context, 0.014, min: 10, max: 14),
                   ),
-                 LanguageToggleButton(
-                    padding: EdgeInsets.zero,
-                  ),
+                  LanguageToggleButton(padding: EdgeInsets.zero),
                 ],
               ),
             ],
@@ -111,14 +109,14 @@ class _MobileHeaderButtonState extends State<_MobileHeaderButton> {
             vertical: responsiveHeight(context, 0.012, min: 9, max: 12),
           ),
           decoration: BoxDecoration(
-            color: hover ? widget.color.withOpacity(0.08) : Colors.white,
+            color: hover ? widget.color.withValues(alpha: 0.08) : Colors.white,
             borderRadius: BorderRadius.circular(
               responsiveSize(context, 0.014, min: 14, max: 18),
             ),
-            border: Border.all(color: widget.color.withOpacity(0.25)),
+            border: Border.all(color: widget.color.withValues(alpha: 0.25)),
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(hover ? 0.12 : 0.07),
+                color: widget.color.withValues(alpha: hover ? 0.12 : 0.07),
                 blurRadius: hover ? 18 : 12,
                 offset: const Offset(0, 6),
               ),
@@ -212,7 +210,9 @@ class _HeaderIconState extends State<_HeaderIcon> {
             ),
             boxShadow: [
               BoxShadow(
-                color: SettingsColors.pink.withOpacity(hover ? 0.28 : 0.16),
+                color: SettingsColors.pink.withValues(
+                  alpha: hover ? 0.28 : 0.16,
+                ),
                 blurRadius: hover ? 22 : 14,
                 offset: const Offset(0, 8),
               ),
@@ -242,7 +242,7 @@ class _MobileLogoutButtonState extends State<_MobileLogoutButton> {
   bool hover = false;
 
   @override
- @override
+  @override
   Widget build(BuildContext context) {
     return MouseRegion(
       onEnter: (_) => setState(() => hover = true),
@@ -271,10 +271,14 @@ class _MobileLogoutButtonState extends State<_MobileLogoutButton> {
             borderRadius: BorderRadius.circular(
               responsiveSize(context, 0.014, min: 14, max: 18),
             ),
-            border: Border.all(color: SettingsColors.danger.withOpacity(0.25)),
+            border: Border.all(
+              color: SettingsColors.danger.withValues(alpha: 0.25),
+            ),
             boxShadow: [
               BoxShadow(
-                color: SettingsColors.danger.withOpacity(hover ? 0.12 : 0.07),
+                color: SettingsColors.danger.withValues(
+                  alpha: hover ? 0.12 : 0.07,
+                ),
                 blurRadius: hover ? 18 : 12,
                 offset: const Offset(0, 6),
               ),
@@ -359,11 +363,11 @@ class SoftSettingsIcon extends StatelessWidget {
       width: iconBoxSize,
       height: iconBoxSize,
       decoration: BoxDecoration(
-        color: color.withOpacity(.08),
+        color: color.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.01, min: 10, max: 12),
         ),
-        border: Border.all(color: color.withOpacity(.12)),
+        border: Border.all(color: color.withValues(alpha: .12)),
       ),
       child: Icon(icon, color: color, size: iconBoxSize * .52),
     );

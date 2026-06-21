@@ -89,7 +89,7 @@ class _VolunteerPatientsView extends StatelessWidget {
               if (state.isLoading && !state.hasLoaded) {
                 return Center(child: customLoading());
               }
-        
+
               return LayoutBuilder(
                 builder: (context, constraints) {
                   return Center(
@@ -122,7 +122,9 @@ class _VolunteerPatientsView extends StatelessWidget {
                                                     .read<
                                                       VolunteerAssignmentsCubit
                                                     >()
-                                                    .selectAssignment(assignment);
+                                                    .selectAssignment(
+                                                      assignment,
+                                                    );
                                               },
                                             ),
                                           ),
@@ -169,7 +171,9 @@ class _VolunteerPatientsView extends StatelessWidget {
                                                     .read<
                                                       VolunteerAssignmentsCubit
                                                     >()
-                                                    .selectAssignment(assignment);
+                                                    .selectAssignment(
+                                                      assignment,
+                                                    );
                                               },
                                             ),
                                           ),
@@ -273,7 +277,7 @@ class _VolunteerPatientsView extends StatelessWidget {
       border: Border.all(color: const Color(0xFFFFD6EA)),
       boxShadow: [
         BoxShadow(
-          color: const Color(0xFF7A004C).withOpacity(0.08),
+          color: const Color(0xFF7A004C).withValues(alpha: 0.08),
           blurRadius: 24,
           offset: const Offset(0, 10),
         ),
@@ -357,7 +361,7 @@ class _VolunteerHeaderState extends State<_VolunteerHeader>
       width: responsiveSize(context, 0.052, min: 56, max: 82),
       height: responsiveSize(context, 0.052, min: 56, max: 82),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.018, min: 18, max: 24),
         ),
@@ -387,7 +391,7 @@ class _VolunteerHeaderState extends State<_VolunteerHeader>
         customText(
           text: 'اختر patient واملأ assigned surveys',
           size: responsiveSize(context, 0.0095, min: 13, max: 16),
-          color: Colors.white.withOpacity(0.82),
+          color: Colors.white.withValues(alpha: 0.82),
           bold: true,
           isEnglish: false,
           isCenter: false,
@@ -446,7 +450,7 @@ class _VolunteerHeaderState extends State<_VolunteerHeader>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.pink.withOpacity(0.18 + (v * 0.12)),
+                  color: Colors.pink.withValues(alpha: 0.18 + (v * 0.12)),
                   blurRadius: responsiveSize(
                     context,
                     0.02 + (v * 0.006),
@@ -543,10 +547,10 @@ class _LogoutActionButtonState extends State<_LogoutActionButton> {
             borderRadius: BorderRadius.circular(
               responsiveSize(context, 0.014, min: 14, max: 18),
             ),
-            border: Border.all(color: Colors.red.withOpacity(0.25)),
+            border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
             boxShadow: [
               BoxShadow(
-                color: Colors.red.withOpacity(hover ? 0.12 : 0.07),
+                color: Colors.red.withValues(alpha: hover ? 0.12 : 0.07),
                 blurRadius: hover ? 18 : 12,
                 offset: const Offset(0, 6),
               ),

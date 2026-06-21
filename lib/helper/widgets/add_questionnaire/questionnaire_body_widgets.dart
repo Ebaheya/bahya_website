@@ -143,7 +143,9 @@ class QuestionTypeCard extends StatelessWidget {
               responsiveSize(context, 0.014, min: 14, max: 18),
             ),
             decoration: BoxDecoration(
-              color: isSelected ? surveyPurple.withOpacity(.07) : Colors.white,
+              color: isSelected
+                  ? surveyPurple.withValues(alpha: .07)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(
                 responsiveSize(context, 0.014, min: 14, max: 18),
               ),
@@ -154,8 +156,8 @@ class QuestionTypeCard extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: isSelected
-                      ? surveyPurple.withOpacity(.12)
-                      : Colors.black.withOpacity(.035),
+                      ? surveyPurple.withValues(alpha: .12)
+                      : Colors.black.withValues(alpha: .035),
                   blurRadius: isSelected ? 18 : 10,
                   offset: const Offset(0, 6),
                 ),
@@ -205,8 +207,8 @@ class QuestionTypeCard extends StatelessWidget {
       height: responsiveSize(context, 0.034, min: 40, max: 48),
       decoration: BoxDecoration(
         color: isSelected
-            ? surveyPurple.withOpacity(.12)
-            : surveyPink.withOpacity(.08),
+            ? surveyPurple.withValues(alpha: .12)
+            : surveyPink.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.01, min: 12, max: 15),
         ),
@@ -321,10 +323,10 @@ class AnswerOptionTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(
                 responsiveSize(context, 0.012, min: 14, max: 20),
               ),
-              border: Border.all(color: surveyPink.withOpacity(.18)),
+              border: Border.all(color: surveyPink.withValues(alpha: .18)),
               boxShadow: [
                 BoxShadow(
-                  color: surveyPink.withOpacity(.055),
+                  color: surveyPink.withValues(alpha: .055),
                   blurRadius: responsiveSize(context, 0.018, min: 14, max: 24),
                   offset: Offset(
                     0,
@@ -431,7 +433,7 @@ class _AnswerField extends StatelessWidget {
               borderRadius: BorderRadius.circular(
                 responsiveSize(context, 0.01, min: 12, max: 16),
               ),
-              borderSide: BorderSide(color: surveyPink.withOpacity(.55)),
+              borderSide: BorderSide(color: surveyPink.withValues(alpha: .55)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(
@@ -514,7 +516,9 @@ class _ScoreField extends StatelessWidget {
               borderRadius: BorderRadius.circular(
                 responsiveSize(context, 0.01, min: 12, max: 16),
               ),
-              borderSide: BorderSide(color: surveyPurple.withOpacity(.45)),
+              borderSide: BorderSide(
+                color: surveyPurple.withValues(alpha: .45),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(
@@ -553,15 +557,15 @@ class _DeleteAnswerButton extends StatelessWidget {
       height: responsiveSize(context, 0.034, min: 40, max: 48),
       decoration: BoxDecoration(
         color: canDelete
-            ? surveyPink.withOpacity(.08)
-            : Colors.grey.withOpacity(.06),
+            ? surveyPink.withValues(alpha: .08)
+            : Colors.grey.withValues(alpha: .06),
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.01, min: 12, max: 15),
         ),
         border: Border.all(
           color: canDelete
-              ? surveyPink.withOpacity(.25)
-              : Colors.grey.withOpacity(.15),
+              ? surveyPink.withValues(alpha: .25)
+              : Colors.grey.withValues(alpha: .15),
         ),
       ),
       child: IconButton(

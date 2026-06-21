@@ -335,7 +335,7 @@ class AddOutlineButton extends StatelessWidget {
             label: Text(localizedText(context, title)),
             style: OutlinedButton.styleFrom(
               foregroundColor: color,
-              side: BorderSide(color: color.withOpacity(.65)),
+              side: BorderSide(color: color.withValues(alpha: .65)),
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
@@ -397,7 +397,7 @@ Widget scoreCounter({
       borderRadius: BorderRadius.circular(10),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),

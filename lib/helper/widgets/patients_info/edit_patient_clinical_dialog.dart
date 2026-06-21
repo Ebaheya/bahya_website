@@ -215,7 +215,7 @@ class _EditPatientClinicalDialogState
           border: Border.all(color: const Color(0xFFFFD6EA)),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7A004C).withOpacity(0.18),
+              color: const Color(0xFF7A004C).withValues(alpha: 0.18),
               blurRadius: 38,
               offset: const Offset(0, 18),
             ),
@@ -242,7 +242,7 @@ class _EditPatientClinicalDialogState
                       _PatientReadonlySummary(patient: widget.patient),
                       const SizedBox(height: 18),
                       _EditDialogSection(
-                        title: 'Clinical Data',
+                        title: context.l10n.clinicalData,
                         icon: Icons.medical_services_outlined,
                         children: [
                           _EditFieldWrapper(
@@ -366,15 +366,15 @@ class _EditPatientClinicalDialogState
                       ),
                       const SizedBox(height: 18),
                       _EditDialogSection(
-                        title: 'Medical History',
+                        title: context.l10n.medicalHistory,
                         icon: Icons.history_edu_rounded,
                         children: [
                           _EditFieldWrapper(
-                            title: 'Family History',
+                            title: context.l10n.familyHistory,
                             fullWidth: true,
                             child: CustomFormTextField(
                               controller: familyHistoryController,
-                              hintText: 'Family History',
+                              hintText: context.l10n.familyHistory,
                               keyboardType: CustomTextFieldType.text,
                               textDirection: Directionality.of(context),
                               isRequired: false,
@@ -383,11 +383,12 @@ class _EditPatientClinicalDialogState
                             ),
                           ),
                           _EditFieldWrapper(
-                            title: 'Drugs',
+                            title: context.l10n.drugs,
                             fullWidth: true,
                             child: CustomFormTextField(
                               controller: drugsController,
-                              hintText: 'اكتب الأدوية وافصل بينهم بفاصلة',
+                              hintText:
+                                  context.l10n.writeMedicinesSeparatedByCommas,
                               keyboardType: CustomTextFieldType.text,
                               textDirection: Directionality.of(context),
                               isRequired: false,
@@ -396,11 +397,11 @@ class _EditPatientClinicalDialogState
                             ),
                           ),
                           _EditFieldWrapper(
-                            title: 'Notes',
+                            title: context.l10n.notes,
                             fullWidth: true,
                             child: CustomFormTextField(
                               controller: notesController,
-                              hintText: 'Notes',
+                              hintText: context.l10n.notes,
                               keyboardType: CustomTextFieldType.text,
                               textDirection: Directionality.of(context),
                               isRequired: false,
@@ -456,7 +457,7 @@ class _EditPatientDialogHeader extends StatelessWidget {
             width: responsiveSize(context, 0.052, min: 54, max: 68),
             height: responsiveSize(context, 0.052, min: 54, max: 68),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Icon(
@@ -484,7 +485,7 @@ class _EditPatientDialogHeader extends StatelessWidget {
                 customText(
                   text: patient.fullName.isEmpty ? 'Patient' : patient.fullName,
                   size: responsiveSize(context, 0.009, min: 13, max: 16),
-                  color: Colors.white.withOpacity(0.86),
+                  color: Colors.white.withValues(alpha: 0.86),
                   bold: true,
                   isCenter: false,
                   maxLines: 1,
@@ -499,7 +500,7 @@ class _EditPatientDialogHeader extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
+                color: Colors.white.withValues(alpha: 0.18),
                 shape: BoxShape.circle,
               ),
               child: Icon(

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 class ProgressLineChart extends StatelessWidget {
   final bool weekly;
-  const ProgressLineChart({required this.weekly});
+  const ProgressLineChart({super.key, required this.weekly});
 
   @override
   Widget build(BuildContext context) {
@@ -58,10 +58,14 @@ class ProgressLineChart extends StatelessWidget {
               verticalInterval: 1,
               horizontalInterval: 5,
               drawVerticalLine: true,
-              getDrawingHorizontalLine: (v) =>
-                  FlLine(color: Colors.grey.withOpacity(0.06), strokeWidth: 1),
-              getDrawingVerticalLine: (v) =>
-                  FlLine(color: Colors.grey.withOpacity(0.06), strokeWidth: 1),
+              getDrawingHorizontalLine: (v) => FlLine(
+                color: Colors.grey.withValues(alpha: 0.06),
+                strokeWidth: 1,
+              ),
+              getDrawingVerticalLine: (v) => FlLine(
+                color: Colors.grey.withValues(alpha: 0.06),
+                strokeWidth: 1,
+              ),
             ),
 
             lineTouchData: LineTouchData(
@@ -215,7 +219,7 @@ class ProgressLineChart extends StatelessWidget {
                 spots: spotsDepression,
                 belowBarData: BarAreaData(
                   show: true,
-                  color: const Color(0xFFA855F7).withOpacity(0.25),
+                  color: const Color(0xFFA855F7).withValues(alpha: 0.25),
                 ),
               ),
               LineChartBarData(
@@ -227,7 +231,7 @@ class ProgressLineChart extends StatelessWidget {
                 spots: spotsAnxiety,
                 belowBarData: BarAreaData(
                   show: true,
-                  color: const Color(0xFFFB7185).withOpacity(0.25),
+                  color: const Color(0xFFFB7185).withValues(alpha: 0.25),
                 ),
               ),
             ],

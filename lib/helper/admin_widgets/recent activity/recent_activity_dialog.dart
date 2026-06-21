@@ -65,7 +65,7 @@ class _RecentActivityDialogState extends State<RecentActivityDialog> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.18),
+                color: Colors.black.withValues(alpha: 0.18),
                 blurRadius: 32,
                 offset: const Offset(0, 18),
               ),

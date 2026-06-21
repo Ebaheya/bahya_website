@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
@@ -16,7 +15,7 @@ void showChangePasswordDialog(BuildContext context) {
 
   showDialog(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.35),
+    barrierColor: Colors.black.withValues(alpha: 0.35),
     builder: (dialogContext) {
       return StatefulBuilder(
         builder: (context, setDialogState) {
@@ -81,7 +80,7 @@ void showChangePasswordDialog(BuildContext context) {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFE040FB).withOpacity(0.08),
+                    color: const Color(0xFFE040FB).withValues(alpha: 0.08),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),
@@ -228,7 +227,7 @@ void showChangePasswordDialog(BuildContext context) {
                                       decoration: BoxDecoration(
                                         color: const Color(
                                           0xFFD81B60,
-                                        ).withOpacity(0.7),
+                                        ).withValues(alpha: 0.7),
                                         borderRadius: BorderRadius.circular(14),
                                       ),
                                       child: const Center(
@@ -251,7 +250,7 @@ void showChangePasswordDialog(BuildContext context) {
                                       isGradient: true,
                                       glowColor: const Color(
                                         0xFFD81B60,
-                                      ).withOpacity(0.3),
+                                      ).withValues(alpha: 0.3),
                                       borderRadius: 14,
                                       height: 48,
                                     ),
@@ -327,9 +326,9 @@ class _DialogHeaderIconAnimationState extends State<DialogHeaderIconAnimation>
               height: 76 + (_pulseAnimation.value * 18),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(
-                  0xFFE040FB,
-                ).withOpacity(0.15 * (1.0 - (_pulseAnimation.value * 0.4))),
+                color: const Color(0xFFE040FB).withValues(
+                  alpha: 0.15 * (1.0 - (_pulseAnimation.value * 0.4)),
+                ),
               ),
             ),
             Container(
@@ -344,7 +343,7 @@ class _DialogHeaderIconAnimationState extends State<DialogHeaderIconAnimation>
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFD81B60).withOpacity(0.25),
+                    color: const Color(0xFFD81B60).withValues(alpha: 0.25),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),

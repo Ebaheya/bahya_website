@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 void showReportProblemDialog(BuildContext context) {
   showDialog(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.28),
+    barrierColor: Colors.black.withValues(alpha: 0.28),
     builder: (context) {
       return const ReportProblemDialog();
     },
@@ -92,14 +92,14 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
         child: Container(
           width: w < 900 ? w * 0.9 : (w * 0.38).clamp(430.0, 620.0),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.97),
+            color: Colors.white.withValues(alpha: 0.97),
             borderRadius: BorderRadius.circular(
               responsiveSize(context, 0.018, min: 24, max: 30),
             ),
             border: Border.all(color: const Color(0xFFFFC6DD)),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFE83E8C).withOpacity(0.16),
+                color: const Color(0xFFE83E8C).withValues(alpha: 0.16),
                 blurRadius: responsiveSize(context, 0.02, min: 24, max: 35),
                 offset: Offset(
                   0,
@@ -124,7 +124,7 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: [
-                          const Color(0xFFE83E8C).withOpacity(0.16),
+                          const Color(0xFFE83E8C).withValues(alpha: 0.16),
                           Colors.transparent,
                         ],
                       ),
@@ -162,7 +162,7 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: buttonColor.withOpacity(0.28),
+                                    color: buttonColor.withValues(alpha: 0.28),
                                     blurRadius: responsiveSize(
                                       context,
                                       0.012,
@@ -478,7 +478,7 @@ class _ProblemDialogButton extends StatelessWidget {
           boxShadow: isPrimary
               ? [
                   BoxShadow(
-                    color: buttonColor.withOpacity(0.25),
+                    color: buttonColor.withValues(alpha: 0.25),
                     blurRadius: responsiveSize(context, 0.01, min: 10, max: 14),
                     offset: const Offset(0, 7),
                   ),

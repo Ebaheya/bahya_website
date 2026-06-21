@@ -55,7 +55,7 @@ class _DashboardCardState extends State<DashboardCard> {
             padding: EdgeInsets.all(
               responsiveSize(context, 0.012, min: 14, max: 18),
             ),
-            
+
             decoration: BoxDecoration(
               color: _hover ? const Color(0xFFFFF8FC) : Colors.white,
               borderRadius: BorderRadius.circular(
@@ -66,7 +66,7 @@ class _DashboardCardState extends State<DashboardCard> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(_hover ? 0.11 : 0.055),
+                  color: Colors.black.withValues(alpha: _hover ? 0.11 : 0.055),
                   blurRadius: _hover
                       ? responsiveSize(context, 0.018, min: 22, max: 30)
                       : responsiveSize(context, 0.012, min: 12, max: 18),
@@ -116,7 +116,9 @@ class _DashboardCardState extends State<DashboardCard> {
                                 responsiveSize(context, 0.007, min: 8, max: 11),
                               ),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(colors: gradientColors),
+                                gradient: LinearGradient(
+                                  colors: gradientColors,
+                                ),
                                 borderRadius: BorderRadius.circular(
                                   responsiveSize(
                                     context,
@@ -127,7 +129,7 @@ class _DashboardCardState extends State<DashboardCard> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: buttonColor.withOpacity(0.22),
+                                    color: buttonColor.withValues(alpha: 0.22),
                                     blurRadius: responsiveSize(
                                       context,
                                       0.01,
@@ -150,9 +152,9 @@ class _DashboardCardState extends State<DashboardCard> {
                               ),
                             ),
                           ),
-                      
+
                           const Spacer(),
-                      
+
                           if (widget.hasPercentage)
                             AnimatedContainer(
                               duration: const Duration(milliseconds: 220),
@@ -172,7 +174,7 @@ class _DashboardCardState extends State<DashboardCard> {
                               ),
                               decoration: BoxDecoration(
                                 color: (isPositive ? Colors.green : Colors.red)
-                                    .withOpacity(0.10),
+                                    .withValues(alpha: 0.10),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: customText(

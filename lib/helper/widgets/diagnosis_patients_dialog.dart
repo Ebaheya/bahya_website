@@ -30,7 +30,7 @@ Future<void> showDiagnosisPatientsDialog({
     context: context,
     barrierDismissible: true,
     barrierLabel: 'patients',
-    barrierColor: Colors.black.withOpacity(0.35),
+    barrierColor: Colors.black.withValues(alpha: 0.35),
     transitionDuration: const Duration(milliseconds: 260),
     pageBuilder: (_, __, ___) {
       return Center(

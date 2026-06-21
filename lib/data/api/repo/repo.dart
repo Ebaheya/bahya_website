@@ -467,7 +467,7 @@ class AppRepository {
     return Map<String, dynamic>.from(response);
   }
 
-Future<Map<String, dynamic>> getDashboardSummary() {
+  Future<Map<String, dynamic>> getDashboardSummary() {
     return WebService().getDashboardSummary();
   }
 
@@ -532,8 +532,8 @@ Future<Map<String, dynamic>> getDashboardSummary() {
   Future<Map<String, dynamic>> getAuditLogDetail(String auditId) {
     return WebService().getAuditLogDetail(auditId);
   }
-  
-Future<Map<String, dynamic>> getUserById(String id) {
+
+  Future<Map<String, dynamic>> getUserById(String id) {
     return WebService().getUserById(id);
   }
 }

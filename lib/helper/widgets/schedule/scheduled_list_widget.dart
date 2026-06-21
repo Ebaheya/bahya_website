@@ -107,13 +107,13 @@ class _ScheduledListWidgetState extends State<ScheduledListWidget> {
           vertical: responsiveHeight(context, 0.045, min: 22, max: 46),
         ),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(.97),
+          color: Colors.white.withValues(alpha: .97),
           borderRadius: BorderRadius.circular(
             responsiveSize(context, 0.024, min: 20, max: 26),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(.06),
+              color: Colors.black.withValues(alpha: .06),
               blurRadius: responsiveSize(context, 0.025, min: 18, max: 30),
               offset: const Offset(0, 15),
             ),

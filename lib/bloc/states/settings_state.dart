@@ -10,10 +10,10 @@ class SettingsState {
   final int page;
   final int pageSize;
   final int total;
-final Map<String, String> userNamesById;
+  final Map<String, String> userNamesById;
   const SettingsState({
     this.isLoading = false,
-this.userNamesById = const {},
+    this.userNamesById = const {},
     this.isChangingPassword = false,
     this.passwordChanged = false,
     this.errorMessage,
@@ -47,7 +47,7 @@ this.userNamesById = const {},
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
       total: total ?? this.total,
-    userNamesById: userNamesById ?? this.userNamesById,
+      userNamesById: userNamesById ?? this.userNamesById,
     );
   }
 }

@@ -52,14 +52,20 @@ class _PatientTableRowItemState extends State<PatientTableRowItem> {
         child: AnimatedContainer(
           duration: Duration(milliseconds: 200),
           curve: Curves.easeOut,
-          transform: Matrix4.identity()..scale(isHover ? 1.015 : 1.0),
+          transform: Matrix4.identity()
+            ..scaleByDouble(
+              isHover ? 1.015 : 1.0,
+              isHover ? 1.015 : 1.0,
+              isHover ? 1.015 : 1.0,
+              1.0,
+            ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: isHover ? Colors.pink.withOpacity(0.4) : Colors.white,
+            color: isHover ? Colors.pink.withValues(alpha: 0.4) : Colors.white,
             boxShadow: isHover
                 ? [
                     BoxShadow(
-                      color: Colors.green.withOpacity(0.10),
+                      color: Colors.green.withValues(alpha: 0.10),
                       blurRadius: 12,
                       offset: Offset(0, 4),
                     ),

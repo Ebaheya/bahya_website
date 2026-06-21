@@ -35,12 +35,12 @@ class _SearchSelectUserFieldState extends State<SearchSelectUserField> {
         final languageCode = locale.languageCode;
         final isEnglish = languageCode == 'en';
 
-        final translatedHint = AppLocalizations.translateByLocaleCode(
+        final translatedHint = localizedTextByLocaleCode(
           languageCode,
           widget.hint,
         );
 
-        final translatedNoResults = AppLocalizations.translateByLocaleCode(
+        final translatedNoResults = localizedTextByLocaleCode(
           languageCode,
           widget.noResultsText,
         );
@@ -211,7 +211,7 @@ class _OptionsList extends StatelessWidget {
               border: Border.all(color: const Color(0xFFF2C9E0)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(.05),
+                  color: Colors.black.withValues(alpha: .05),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),

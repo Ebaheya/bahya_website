@@ -4,7 +4,7 @@ import 'package:bahya_website/helper/widgets/animated_icon.dart';
 import 'package:bahya_website/route.dart';
 import 'package:bahya_website/screens/profile_widget.dart';
 import 'package:bahya_website/screens/send_report.dart';
-import 'package:bahya_website/service/Login_service.dart';
+import 'package:bahya_website/service/login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/strings.dart';
@@ -68,7 +68,7 @@ class HomeDrawer extends StatelessWidget {
                         top: -20,
                         child: CircleAvatar(
                           radius: 90,
-                          backgroundColor: Colors.white.withOpacity(0.08),
+                          backgroundColor: Colors.white.withValues(alpha: 0.08),
                         ),
                       ),
                       Positioned(
@@ -76,7 +76,7 @@ class HomeDrawer extends StatelessWidget {
                         top: 40,
                         child: Icon(
                           Icons.apps_rounded,
-                          color: Colors.white.withOpacity(0.12),
+                          color: Colors.white.withValues(alpha: 0.12),
                           size: 90,
                         ),
                       ),
@@ -179,7 +179,7 @@ class HomeDrawer extends StatelessWidget {
                           ),
                         ),
                         Divider(
-                          color: Colors.pink.withOpacity(0.18),
+                          color: Colors.pink.withValues(alpha: 0.18),
                           thickness: 1,
                         ),
                         _logoutItem(context),
@@ -227,10 +227,10 @@ class HomeDrawer extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: buttonColor.withOpacity(0.35)),
+            border: Border.all(color: buttonColor.withValues(alpha: 0.35)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 12,
                 offset: const Offset(0, 5),
               ),
@@ -318,7 +318,7 @@ class HomeDrawer extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.pink.withOpacity(0.08),
+              color: Colors.pink.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 5),
             ),

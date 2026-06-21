@@ -126,7 +126,7 @@ class _PendingReviewShell extends StatelessWidget {
         border: Border.all(color: const Color(0xFFF7D6E6)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFE83E8C).withOpacity(0.06),
+            color: const Color(0xFFE83E8C).withValues(alpha: 0.06),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),

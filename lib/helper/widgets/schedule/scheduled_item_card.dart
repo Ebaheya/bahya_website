@@ -68,7 +68,7 @@ class ScheduledItemCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFF3DCEB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.05),
+            color: Colors.black.withValues(alpha: .05),
             blurRadius: responsiveSize(context, 0.016, min: 12, max: 18),
             offset: const Offset(0, 6),
           ),
@@ -86,9 +86,9 @@ class ScheduledItemCard extends StatelessWidget {
         SizedBox(width: responsiveSize(context, 0.018, min: 14, max: 26)),
         _StatusBadge(showDelete: showDelete),
         SizedBox(width: responsiveSize(context, 0.026, min: 18, max: 36)),
-        Expanded(flex: 4, child: _MainInfo()),
+        Expanded(flex: 4, child: _mainInfo()),
         SizedBox(width: responsiveSize(context, 0.02, min: 14, max: 26)),
-        Expanded(flex: 4, child: _DateInfoBox()),
+        Expanded(flex: 4, child: _dateInfoBox()),
         if (showDelete) ...[
           SizedBox(width: responsiveSize(context, 0.02, min: 14, max: 24)),
           _CancelButton(onDelete: onDelete),
@@ -113,14 +113,14 @@ class ScheduledItemCard extends StatelessWidget {
           ],
         ),
         SizedBox(height: responsiveHeight(context, 0.018, min: 12, max: 18)),
-        _MainInfo(),
+        _mainInfo(),
         SizedBox(height: responsiveHeight(context, 0.018, min: 12, max: 18)),
-        _DateInfoBox(),
+        _dateInfoBox(),
       ],
     );
   }
 
-  Widget _MainInfo() {
+  Widget _mainInfo() {
     return Builder(
       builder: (context) {
         return Column(
@@ -171,7 +171,7 @@ class ScheduledItemCard extends StatelessWidget {
     );
   }
 
-  Widget _DateInfoBox() {
+  Widget _dateInfoBox() {
     return Builder(
       builder: (context) {
         return Container(

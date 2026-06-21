@@ -11,7 +11,7 @@ class VolunteerAssignmentsCubit extends Cubit<VolunteerAssignmentsState> {
 
   final Map<String, Map<String, dynamic>> answers = {};
 
- Future<void> loadAssignments() async {
+  Future<void> loadAssignments() async {
     if (isClosed) return;
 
     emit(state.copyWith(isLoading: true, hasLoaded: false, clearError: true));

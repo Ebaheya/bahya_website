@@ -55,7 +55,7 @@ class _UserRolesDistributionState extends State<UserRolesDistribution> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(_hover ? 0.12 : 0.06),
+                  color: Colors.black.withValues(alpha: _hover ? 0.12 : 0.06),
                   blurRadius: responsiveSize(
                     context,
                     _hover ? 0.024 : 0.014,
@@ -277,7 +277,7 @@ class _RolesLegendList extends StatelessWidget {
           child: ModernLegendItem(
             color: item["color"],
             title: item["title"],
-            percent: "${(item["percent"] as double).toStringAsFixed(0)}%",
+
           ),
         );
       }),
@@ -371,42 +371,32 @@ class _RolesChartState extends State<RolesChart> {
 class ModernLegendItem extends StatelessWidget {
   final Color color;
   final String title;
-  final String percent;
 
   const ModernLegendItem({
     super.key,
     required this.color,
     required this.title,
-    required this.percent,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.start ,
       children: [
         Container(
           width: responsiveSize(context, 0.012, min: 12, max: 18),
           height: responsiveSize(context, 0.012, min: 12, max: 18),
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        SizedBox(width: responsiveSize(context, 0.01, min: 10, max: 14)),
-        Expanded(
-          child: customText(
-            text: title,
-            size: responsiveSize(context, 0.01, min: 12, max: 16),
-            color: const Color(0xFF272044),
-            bold: true,
-            isEnglish: true,
-            isCenter: false,
-            maxLines: 1,
-          ),
-        ),
+      SizedBox(width: responsiveSize(context, 0.008, min: 8, max: 14)),
         customText(
-          text: percent,
-          size: responsiveSize(context, 0.009, min: 11, max: 14),
-          color: Colors.grey,
+          text: title,
+          size: responsiveSize(context, 0.01, min: 12, max: 16),
+          color: const Color(0xFF272044),
           bold: true,
           isEnglish: true,
+          isCenter: false,
+          maxLines: 1,
         ),
       ],
     );

@@ -3,15 +3,13 @@ import 'package:bahya_website/data/api/repo/repo.dart';
 import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-
-
 class SettingsCubit extends Cubit<SettingsState> {
   SettingsCubit(this.repo) : super(const SettingsState());
 
   final AppRepository repo;
   final WebService web = WebService();
 
- Future<void> loadData({int page = 1}) async {
+  Future<void> loadData({int page = 1}) async {
     emit(state.copyWith(isLoading: true, errorMessage: null));
 
     try {
@@ -43,8 +41,8 @@ class SettingsCubit extends Cubit<SettingsState> {
       emit(state.copyWith(isLoading: false, errorMessage: e.toString()));
     }
   }
-  
-Future<Map<String, String>> _loadUserNamesFromLogs(
+
+  Future<Map<String, String>> _loadUserNamesFromLogs(
     List<Map<String, dynamic>> logs,
   ) async {
     final ids = logs

@@ -28,7 +28,7 @@ class ReportMobileCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFFFC6DD)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.045),
+            color: Colors.black.withValues(alpha: 0.045),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -83,7 +83,7 @@ class ReportStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     Color color;
 
-  switch (status.toUpperCase()) {
+    switch (status.toUpperCase()) {
       case "PENDING":
       case "Pending":
         color = Colors.purple;
@@ -106,7 +106,7 @@ class ReportStatusBadge extends StatelessWidget {
         vertical: responsiveHeight(context, 0.006, min: 4, max: 6),
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: customText(

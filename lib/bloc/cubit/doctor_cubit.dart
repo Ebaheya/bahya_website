@@ -325,11 +325,11 @@ class DoctorFormsCubit extends Cubit<DoctorFormsState> {
     final ranges = state.selectedForm?.currentVersion?.scoreRanges ?? [];
 
     for (final range in ranges) {
-      final min = range.minScore ?? 0;
-      final max = range.maxScore ?? 0;
+      final min = range.minScore;
+      final max = range.maxScore;
 
       if (score >= min && score <= max) {
-        return range.label ?? "غير محدد";
+        return range.label;
       }
     }
 
