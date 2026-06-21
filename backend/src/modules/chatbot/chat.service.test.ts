@@ -18,6 +18,7 @@ jest.mock('../../config/logger', () => ({
 }));
 
 jest.mock('./chat.model', () => ({
+  CHAT_RISK_LEVELS: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
   ChatSessionModel: {
     findOne: mockSessionFindOne,
     updateOne: mockSessionUpdateOne,
@@ -312,15 +313,14 @@ describe('chat service US1', () => {
         phq9Score: null,
       })
     );
-    expect(mockSessionUpdateOne).toHaveBeenLastCalledWith(
+    expect(mockSessionUpdateOne).toHaveBeenCalledWith(
       { _id: sessionId },
-      expect.objectContaining({
-        $set: expect.objectContaining({
-          maxRiskLevel: 'MEDIUM',
-          lastEmotion: 'sadness',
-          lastActivityAt: new Date('2026-06-20T12:00:00.000Z'),
-        }),
-      })
+      { $set: { lastEmotion: 'sadness', lastActivityAt: new Date('2026-06-20T12:00:00.000Z') } }
+    );
+    // Max risk is raised atomically and only over null/lower values (monotonic).
+    expect(mockSessionUpdateOne).toHaveBeenCalledWith(
+      { _id: sessionId, maxRiskLevel: { $in: [null, 'LOW'] } },
+      { $set: { maxRiskLevel: 'MEDIUM' } }
     );
     expect(result).toEqual({
       sessionId: sessionId.toString(),

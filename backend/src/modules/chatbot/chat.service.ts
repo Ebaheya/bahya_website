@@ -9,6 +9,7 @@ import {
 } from '../notifications/notification.service';
 import { chatErrors } from './chat.errors';
 import {
+  CHAT_RISK_LEVELS,
   ChatMessageModel,
   ChatSessionModel,
   type ChatMessageDoc,
@@ -162,12 +163,23 @@ function isStale(lastActivityAt: Date, at: Date): boolean {
   return at.getTime() - lastActivityAt.getTime() > SESSION_INACTIVITY_MS;
 }
 
-function pickMaxRisk(
-  current: ChatRiskLevel | null,
-  nextRisk: ChatRiskLevel
-): ChatRiskLevel {
-  if (!current) return nextRisk;
-  return riskRank[nextRisk] > riskRank[current] ? nextRisk : current;
+// Atomically raise a session's max risk, never lowering it. Concurrent turns
+// read the same maxRiskLevel snapshot before their AI calls, so a JS-side
+// `$set` could overwrite a CRITICAL rollup with a later LOW one. The conditional
+// filter (only overwrite when the stored value is null or strictly lower) makes
+// the rollup monotonic regardless of commit order.
+async function raiseSessionMaxRisk(
+  sessionId: Types.ObjectId,
+  riskLevel: ChatRiskLevel
+): Promise<void> {
+  const lowerOrNull: (ChatRiskLevel | null)[] = [
+    null,
+    ...CHAT_RISK_LEVELS.filter((level) => riskRank[level] < riskRank[riskLevel]),
+  ];
+  await ChatSessionModel.updateOne(
+    { _id: sessionId, maxRiskLevel: { $in: lowerOrNull } },
+    { $set: { maxRiskLevel: riskLevel } }
+  );
 }
 
 function isDuplicateKeyError(err: unknown): boolean {
@@ -416,7 +428,15 @@ function isUrgentSignal(inf: AiInferResponse): boolean {
 
 export async function escalateIfNeeded(input: EscalationInput): Promise<void> {
   const riskLevel = input.inf.riskLevel;
-  if (riskLevel === 'LOW') return;
+  const urgent = isUrgentSignal(input.inf);
+  // A direct crisis must escalate even if the AI also (contradictorily) labelled
+  // the turn LOW — never silently drop it.
+  if (riskLevel === 'LOW' && !urgent) return;
+
+  // For that contradictory LOW + direct-crisis case, treat the crisis as
+  // authoritative and escalate at the highest severity.
+  const severity: Extract<ChatRiskLevel, 'MEDIUM' | 'HIGH' | 'CRITICAL'> =
+    riskLevel === 'LOW' ? 'CRITICAL' : riskLevel;
 
   const flaggedPhrases = input.inf.flaggedPhrases ?? [];
   const failed: string[] = [];
@@ -445,16 +465,16 @@ export async function escalateIfNeeded(input: EscalationInput): Promise<void> {
   //    safety event, surfaced below rather than swallowed.
   const doctorOk = await emitHighRiskAlert({
     patientId: input.patientId,
-    severity: riskLevel,
+    severity,
     reason: `AI risk level ${riskLevel}`,
     flaggedPhrases,
   }).catch(() => false);
   if (!doctorOk) failed.push('doctor');
 
-  if (isUrgentSignal(input.inf)) {
+  if (urgent) {
     const callCenterOk = await emitCallCenterAlert({
       patientId: input.patientId,
-      severity: riskLevel,
+      severity,
       reason: 'AI urgent crisis signal',
       flaggedPhrases,
     }).catch(() => false);
@@ -516,14 +536,10 @@ export async function handlePatientMessage(
 
   await ChatSessionModel.updateOne(
     { _id: sessionObjectId },
-    {
-      $set: {
-        maxRiskLevel: pickMaxRisk(session.maxRiskLevel, inf.riskLevel),
-        lastEmotion: inf.emotion?.label ?? null,
-        lastActivityAt: botTurnAt,
-      },
-    }
+    { $set: { lastEmotion: inf.emotion?.label ?? null, lastActivityAt: botTurnAt } }
   );
+  // Raise (never lower) the session's max risk atomically — see raiseSessionMaxRisk.
+  await raiseSessionMaxRisk(sessionObjectId, inf.riskLevel);
 
   const sessionIdString = sessionObjectId.toString();
   void escalateIfNeeded({

@@ -19,6 +19,7 @@ jest.mock('../../config/logger', () => ({
 }));
 
 jest.mock('./chat.model', () => ({
+  CHAT_RISK_LEVELS: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
   ChatSessionModel: {
     findOne: mockSessionFindOne,
     updateOne: mockSessionUpdateOne,
@@ -110,6 +111,34 @@ describe('chat escalation US2', () => {
 
     expect(mockEmitHighRiskAlert).not.toHaveBeenCalled();
     expect(mockWriteAudit).not.toHaveBeenCalled();
+  });
+
+  it('escalates a direct crisis even when the AI contradictorily labels the turn LOW', async () => {
+    await escalateIfNeeded({
+      patientId,
+      sessionId: sessionId.toString(),
+      inf: {
+        ...mediumInference,
+        riskLevel: 'LOW',
+        crisis: true,
+        crisisSignalType: 'direct',
+        flaggedPhrases: ['I will end it'],
+      },
+    });
+
+    // Audit records the true AI riskLevel; alerts go out at the highest severity.
+    expect(mockWriteAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'HIGH_RISK_ALERT_CREATED',
+        newValues: expect.objectContaining({ riskLevel: 'LOW', crisis: true }),
+      })
+    );
+    expect(mockEmitHighRiskAlert).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId, severity: 'CRITICAL' })
+    );
+    expect(mockEmitCallCenterAlert).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId, severity: 'CRITICAL', flaggedPhrases: ['I will end it'] })
+    );
   });
 
   it('raises a doctor alert and strict audit for MEDIUM risk with flagged phrases', async () => {
