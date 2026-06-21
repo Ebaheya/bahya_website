@@ -492,8 +492,7 @@ last 10 turns, calls `POST {BAHYA_AI_BASE_URL}/infer`, persists the bot reply wi
 every signal the AI returns (language, emotion, intent, `riskLevel`,
 `crisisProbability`, `crisis`, flagged phrases), and returns the reply. Chat lives
 in MongoDB (`chat_sessions`, `chat_messages`); the AI models are external — this is
-the connecting gateway only. The wire format is frozen in
-[`doocs/CHATBOT_CONTRACT.md`](../doocs/CHATBOT_CONTRACT.md).
+the connecting gateway only.
 
 Key behaviors:
 
@@ -2699,9 +2698,8 @@ Admin-only read access to the append-only MongoDB audit log. No write/update/del
 ### Chatbot
 
 Patient-facing chat plus role-projected conversation reads. Mounted at `/chatbot`.
-The backend calls the in-house AI service per turn (`POST {BAHYA_AI_BASE_URL}/infer`)
-— see [`doocs/CHATBOT_CONTRACT.md`](../doocs/CHATBOT_CONTRACT.md). **Patients never
-receive risk/emotion/crisis signals** (FR-019).
+The backend calls the in-house AI service per turn (`POST {BAHYA_AI_BASE_URL}/infer`).
+**Patients never receive risk/emotion/crisis signals** (FR-019).
 
 #### `POST /chatbot/message`
 
