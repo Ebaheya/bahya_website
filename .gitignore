@@ -23,3 +23,6 @@ Thumbs.db
 .idea/
 .claude/
 CLAUDE.md
+
+# Flutter frontend build scaffold — generated, not source. Not tracked.
+frontend_app/
