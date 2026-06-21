@@ -8,7 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 const String baseUrl = 'http://10.0.2.2:3000/api/v1';
-const String localBaseUrl = 'http://192.168.100.28:3000/api/v1';
+const String localBaseUrl = 'http://10.5.203.183:3000/api/v1';
 
 class ApiException implements Exception {
   final String message;
@@ -23,7 +23,7 @@ class ApiException implements Exception {
 
 class WebService {
   late final Dio dio;
-static bool _isOpeningNoInternet = false;
+  static bool _isOpeningNoInternet = false;
 
   void _openNoInternetScreen() {
     if (_isOpeningNoInternet) return;
@@ -41,13 +41,14 @@ static bool _isOpeningNoInternet = false;
           _isOpeningNoInternet = false;
         });
   }
+
   WebService() {
     dio = Dio(
       BaseOptions(
-        baseUrl: baseUrl,
+        baseUrl: localBaseUrl,
         connectTimeout: const Duration(seconds: 6),
         receiveTimeout: const Duration(seconds: 8),
-          sendTimeout: const Duration(seconds: 6),
+        sendTimeout: const Duration(seconds: 6),
         headers: {'Content-Type': 'application/json'},
       ),
     );
@@ -55,7 +56,7 @@ static bool _isOpeningNoInternet = false;
     setupInterceptors(dio);
   }
 
-String _handleDioError(DioException e) {
+  String _handleDioError(DioException e) {
     final data = e.response?.data;
     final statusCode = e.response?.statusCode;
 
@@ -195,7 +196,7 @@ String _handleDioError(DioException e) {
 
             final refreshDio = Dio(
               BaseOptions(
-                baseUrl: baseUrl,
+                baseUrl: localBaseUrl,
                 connectTimeout: const Duration(seconds: 6),
                 receiveTimeout: const Duration(seconds: 8),
                 sendTimeout: const Duration(seconds: 6),
@@ -295,7 +296,10 @@ String _handleDioError(DioException e) {
     }
   }
 
-  Future<String?> login({required String email, required String password}) async {
+  Future<String?> login({
+    required String email,
+    required String password,
+  }) async {
     try {
       final response = await post(
         '/auth/login',
@@ -439,14 +443,10 @@ String _handleDioError(DioException e) {
     );
   }
 
-  Future<List<dynamic>> getServiceCategories({
-    bool? isActive,
-  }) async {
+  Future<List<dynamic>> getServiceCategories({bool? isActive}) async {
     final response = await get(
       '/service-categories',
-      queryParameters: {
-        if (isActive != null) 'isActive': isActive,
-      },
+      queryParameters: {if (isActive != null) 'isActive': isActive},
     );
     return _listFromResponse(response.data);
   }
@@ -459,12 +459,7 @@ String _handleDioError(DioException e) {
   }) async {
     final response = await post(
       '/service-categories',
-      data: {
-        'name': name,
-        'kind': kind,
-        'iconKey': iconKey,
-        'color': color,
-      },
+      data: {'name': name, 'kind': kind, 'iconKey': iconKey, 'color': color},
     );
     return _mapFromResponse(response.data);
   }
@@ -560,7 +555,10 @@ String _handleDioError(DioException e) {
     await patch('/service-requests/$requestId/approve');
   }
 
-  Future<void> rejectServiceRequest(String requestId, {String? decisionNote}) async {
+  Future<void> rejectServiceRequest(
+    String requestId, {
+    String? decisionNote,
+  }) async {
     await patch(
       '/service-requests/$requestId/reject',
       data: {if (decisionNote != null) 'decisionNote': decisionNote},
@@ -606,4 +604,47 @@ String _handleDioError(DioException e) {
     }
     return Map<String, dynamic>.from(data as Map);
   }
+  
+  Future<Map<String, dynamic>> sendChatbotMessage({
+    String? sessionId,
+    required String message,
+  }) async {
+    final response = await post(
+      '/chatbot/message',
+      data: {'sessionId': sessionId, 'message': message},
+    );
+
+    return _mapFromResponse(response.data);
+  }
+
+  Future<List<dynamic>> getChatbotSessions({
+    String? patientId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await get(
+      '/chatbot/sessions',
+      queryParameters: {
+        if (patientId != null && patientId.isNotEmpty) 'patientId': patientId,
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+
+    return _listFromResponse(response.data);
+  }
+
+  Future<List<dynamic>> getChatbotSessionMessages({
+    required String sessionId,
+    int page = 1,
+    int pageSize = 100,
+  }) async {
+    final response = await get(
+      '/chatbot/sessions/$sessionId/messages',
+      queryParameters: {'page': page, 'pageSize': pageSize},
+    );
+
+    return _listFromResponse(response.data);
+  }
+
 }

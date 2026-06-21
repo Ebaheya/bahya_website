@@ -1,4 +1,19 @@
 <resources>
+    <string name="NOTIFICATION_FORM_ASSIGNED_TITLE">استبيان جديد</string>
+    <string name="NOTIFICATION_FORM_ASSIGNED_BODY">تم إرسال استبيان جديد لك</string>
+
+    <string name="NOTIFICATION_HIGH_RISK_TITLE">تنبيه حالة خطرة</string>
+    <string name="NOTIFICATION_HIGH_RISK_BODY">هناك حالة تحتاج إلى اهتمام فوري</string>
+
+    <string name="NOTIFICATION_BOOKING_REQUIRED_TITLE">مطلوب حجز موعد</string>
+    <string name="NOTIFICATION_BOOKING_REQUIRED_BODY">هناك حالة بحاجة إلى حجز موعد</string>
+
+    <string name="NOTIFICATION_DOCTOR_REVIEW_TITLE">مطلوب مراجعة الطبيب</string>
+    <string name="NOTIFICATION_DOCTOR_REVIEW_BODY">هناك حالة بانتظار مراجعتك</string>
+
+    <string name="NOTIFICATION_FOLLOW_UP_REQUIRED_TITLE">مطلوب متابعة</string>
+    <string name="NOTIFICATION_FOLLOW_UP_REQUIRED_BODY">هناك حالة بحاجة إلى متابعة</string>
+
     <string name="NOTIFICATION_SERVICE_REQUEST_SUBMITTED_TITLE">طلب خدمة جديد</string>
     <string name="NOTIFICATION_SERVICE_REQUEST_SUBMITTED_BODY">تم إرسال طلب خدمة جديد من بطلة</string>
 

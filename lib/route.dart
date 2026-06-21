@@ -12,6 +12,7 @@ import 'package:bahya_app/screens/admin/admin_home.dart';
 import 'package:bahya_app/screens/admin/all_service.dart';
 import 'package:bahya_app/screens/admin/patient_requests_details.dart';
 import 'package:bahya_app/screens/admin/patients_search.dart';
+import 'package:bahya_app/screens/doctor/doctor_home.dart';
 import 'package:bahya_app/screens/login.dart';
 import 'package:bahya_app/screens/no_internet_screen.dart';
 import 'package:bahya_app/screens/patients/artical_screen.dart';
@@ -37,10 +38,12 @@ class AuthNotifier extends ChangeNotifier {
   String? get userRole => _userRole;
   bool get isAdmin => _userRole == 'ADMIN';
   bool get isPatient => _userRole == 'PATIENT';
+  bool get isDoctor => _userRole == 'DOCTOR';
 
-  String get homeRoute {
+ String get homeRoute {
     if (isAdmin) return '/adminHome';
-    if (isPatient) return '/formGate';
+    if (isDoctor) return '/doctorHome';
+    if (isPatient) return '/patientsHome';
     return '/unauthorized';
   }
 
@@ -295,27 +298,32 @@ class AppRoute {
           ),
         );
 
-      case '/formGate':
-        if (!authNotifier.isPatient) {
-          return MaterialPageRoute(builder: (_) => _screenForHomeRoute());
-        }
-
-        return MaterialPageRoute(builder: (_) => const FormGateScreen());
+    case '/doctorHome':
+        return MaterialPageRoute(builder: (_) => const DoctorDashboardScreen());
 
       default:
         return MaterialPageRoute(builder: (_) => const LoginPage());
     }
   }
 
-  Widget _screenForHomeRoute() {
+Widget _screenForHomeRoute() {
     switch (authNotifier.homeRoute) {
       case '/adminHome':
         return BlocProvider(
           create: (_) => ServiceAdminCubit(AppRepository())..loadDashboard(),
           child: AdminHome(),
         );
-      case '/formGate':
-        return const FormGateScreen();
+
+      case '/doctorHome':
+        return const DoctorDashboardScreen();
+
+      case '/patientsHome':
+        return BlocProvider(
+          create: (_) =>
+              ServiceAdminCubit(AppRepository())..loadPatientHomeData(),
+          child: const PatientsHome(),
+        );
+
       default:
         return const UnauthorizedScreen();
     }

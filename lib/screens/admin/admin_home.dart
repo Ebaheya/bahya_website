@@ -4,14 +4,11 @@ import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/helper/custom_app_bar.dart';
 import 'package:bahya_app/helper/heart_pull_refresh.dart';
 
-
 import 'package:bahya_app/l10n/app_localizations.dart';
 import 'package:bahya_app/logic/cubit/service_admin_cubit.dart';
 import 'package:bahya_app/logic/state/service_admin_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-
 
 class AdminHome extends StatelessWidget {
   AdminHome({super.key});
@@ -69,8 +66,7 @@ class AdminHome extends StatelessWidget {
                         subTitle: isArabic
                             ? 'مساعدة المحاربات في رحلتهن'
                             : 'Supporting patients in their journey',
-                        isHome: false,
-                        isAdmin: true,
+                        isHome: true,
                         icon: Icons.logout_outlined,
                         onIconPressed: () async {
                           await webService.logout();

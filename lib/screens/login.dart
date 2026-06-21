@@ -94,9 +94,14 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       if (roleUpper == 'PATIENT') {
+        Navigator.pushNamedAndRemoveUntil(context, '/splash', (route) => false);
+        return;
+      }
+
+      if (roleUpper == 'DOCTOR') {
         Navigator.pushNamedAndRemoveUntil(
           context,
-          '/formGate',
+          '/doctorHome',
           (route) => false,
         );
         return;

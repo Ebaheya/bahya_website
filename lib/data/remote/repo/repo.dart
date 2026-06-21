@@ -1,3 +1,6 @@
+import 'package:bahya_app/data/models/chat_message_model.dart';
+import 'package:bahya_app/data/models/chat_session_model.dart';
+import 'package:bahya_app/data/models/chatbot_send_response_model.dart';
 import 'package:bahya_app/data/models/patient_forms_models.dart';
 import 'package:bahya_app/data/models/service_models.dart';
 import 'package:bahya_app/data/remote/web/web_service.dart';
@@ -189,5 +192,56 @@ class AppRepository {
 
   Future<void> cancelServiceRequest(String requestId) {
     return webService.cancelServiceRequest(requestId);
+  }
+   
+  Future<ChatbotSendResponseModel> sendMessage({
+    String? sessionId,
+    required String message,
+  }) async {
+    final data = await webService.sendChatbotMessage(
+      sessionId: sessionId,
+      message: message,
+    );
+    return ChatbotSendResponseModel.fromJson(data);
+  }
+
+  Future<List<ChatSessionModel>> getSessions({
+    String? patientId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final data = await webService.getChatbotSessions(
+      patientId: patientId,
+      page: page,
+      pageSize: pageSize,
+    );
+
+    return data
+        .whereType<Map>()
+        .map(
+          (item) => ChatSessionModel.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .where((session) => session.id.isNotEmpty)
+        .toList();
+  }
+
+  Future<List<ChatMessageModel>> getMessages({
+    required String sessionId,
+    int page = 1,
+    int pageSize = 100,
+  }) async {
+    final data = await webService.getChatbotSessionMessages(
+      sessionId: sessionId,
+      page: page,
+      pageSize: pageSize,
+    );
+
+    return data
+        .whereType<Map>()
+        .map(
+          (item) => ChatMessageModel.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .where((message) => message.message.trim().isNotEmpty)
+        .toList();
   }
 }

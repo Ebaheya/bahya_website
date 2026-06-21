@@ -214,7 +214,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
-    final h = getScreenHeight(context);
     final isArabic = context.l10n.isArabic;
 
     return BlocConsumer<PatientFormsCubit, PatientFormsState>(
@@ -238,7 +237,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               context: context,
               title: isArabic ? 'النموذج' : 'Questionnaire',
               subTitle: isArabic ? 'جار تحميل الأسئلة' : 'Loading questions',
-              isHome: false,
+              isHome: true,
             ),
             body: Center(child: customLoading()),
           );
@@ -253,7 +252,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               context: context,
               title: isArabic ? 'النموذج' : 'Questionnaire',
               subTitle: isArabic ? 'لا يوجد نموذج متاح' : 'No form available',
-              isHome: false,
+              isHome: true,
             ),
             body: Center(
               child: customText(
@@ -281,7 +280,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               subTitle: isArabic
                   ? 'أجيبي على الأسئلة لإكمال التقييم'
                   : 'Answer the questions to complete the form',
-              isHome: false,
+              isHome: true,
               preferredSize: Size.fromHeight(
                 responsiveHeight(context, 0.13, min: 105, max: 135),
               ),

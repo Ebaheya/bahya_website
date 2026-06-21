@@ -108,6 +108,11 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
+    if (authNotifier.isDoctor) {
+      _reverseAnimation().then((_) => _goTo('/doctorHome'));
+      return;
+    }
+    
     if (authNotifier.isPatient) {
       await _handlePatientGate();
       return;
