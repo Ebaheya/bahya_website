@@ -158,14 +158,14 @@ class _MoreButton extends StatelessWidget {
               ? Icons.person_add_alt_1_rounded
               : Icons.person_off_rounded,
           title: newStatus
-              ? localizedText(context, "Activate User")
-              : localizedText(context, "Deactivate User"),
+              ? localizedText(context, "تفعيل المستخدم")
+              : localizedText(context, "تعطيل المستخدم"),
           message: newStatus
-              ? "${localizedText(context, "Do you want to activate")} ${user.name}?"
-              : "${localizedText(context, "Do you want to deactivate")} ${user.name}?",
+              ? "${localizedText(context, "هل تريد تفعيل")} ${user.name}?"
+              : "${localizedText(context, "هل تريد تعطيل")} ${user.name}?",
           actionText: newStatus
-              ? localizedText(context, "Activate")
-              : localizedText(context, "Deactivate"),
+              ? localizedText(context, "تفعيل")
+              : localizedText(context, "تعطيل"),
           actionColor: newStatus ? Colors.green : Colors.red,
           onConfirm: () async {
             await userCubit.changeStatus(userId: user.id, isActive: newStatus);
@@ -176,10 +176,10 @@ class _MoreButton extends StatelessWidget {
 
             customDialog(
               context: dialogContext,
-              title: localizedText(context, "Success"),
+              title: localizedText(context, "تم"),
               message: newStatus
-                  ? localizedText(context, "User activated successfully.")
-                  : localizedText(context, "User deactivated successfully."),
+                  ? localizedText(context, "تم تفعيل المستخدم بنجاح.")
+                  : localizedText(context, "تم تعطيل المستخدم بنجاح."),
               isSuccess: true,
               onClose: () {
                 Navigator.pop(dialogContext);
@@ -208,14 +208,14 @@ class _MoreButton extends StatelessWidget {
               width: 430,
               icon: Icons.lock_reset_rounded,
               iconColor: Colors.deepPurple,
-              title: localizedText(context, "Send Reset Link"),
+              title: localizedText(context, "إرسال رابط إعادة التعيين"),
               subtitle:
-                  "${localizedText(context, "Send password reset link to")} ${user.email}?",
+                  "${localizedText(context, "إرسال رابط إعادة التعيين إلى ")} ${user.email}?",
               child: Row(
                 children: [
                   Expanded(
                     child: _DialogSecondaryButton(
-                      text: localizedText(context, "Cancel"),
+                      text: localizedText(context, "الغاء"),
                       onTap: isLoading
                           ? null
                           : () => Navigator.pop(dialogContext),
@@ -224,7 +224,7 @@ class _MoreButton extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _DialogPrimaryButton(
-                      text: localizedText(context, "Send"),
+                      text: localizedText(context, "ارسال"),
                       color: Colors.deepPurple,
                       isLoading: isLoading,
                       onTap: isLoading
@@ -241,10 +241,10 @@ class _MoreButton extends StatelessWidget {
                                 if (!context.mounted) return;
                                 customDialog(
                                   context: context,
-                                  title: localizedText(context, "Done"),
+                                  title: localizedText(context, "تم"),
                                   message: localizedText(
                                     context,
-                                    "Password reset link sent successfully.",
+                                    "تم إرسال رابط إعادة تعيين كلمة المرور إلى البريد الإلكتروني للمستخدم.",
                                   ),
                                   isSuccess: true,
                                 );
@@ -256,7 +256,7 @@ class _MoreButton extends StatelessWidget {
                                 if (!context.mounted) return;
                                 customDialog(
                                   context: context,
-                                  title: localizedText(context, "Error"),
+                                  title: localizedText(context, "خطأ"),
                                   message: e.toString(),
                                   isError: true,
                                 );

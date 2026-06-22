@@ -638,7 +638,6 @@
   "deactivate": "تعطيل",
   "activate": "تفعيل",
   "sendPasswordResetLink": "إرسال رابط إعادة التعيين إلى {email}؟",
-  "sendResetLink": "إرسال",
   "passwordResetLinkSentSuccessfully": "تم إرسال رابط إعادة تعيين كلمة المرور بنجاح.",
   "success": "تم",
   "ok": "حسناً",

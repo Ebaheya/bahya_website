@@ -4,7 +4,7 @@ import 'package:bahya_website/helper/widgets/home_feature_grid.dart';
 import 'package:bahya_website/helper/widgets/state_card.dart';
 import 'package:flutter/material.dart';
 
-const String baseUrl = "http://127.0.0.1:3000/api/v1";
+const String baseUrl = "https://api.refk.tech/api/v1";
 get getScreenWidth =>
     (BuildContext context) => MediaQuery.of(context).size.width;
 

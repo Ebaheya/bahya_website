@@ -1809,7 +1809,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get selectRole => 'اختر الدور';
 
   @override
-  String get sendResetLink => 'إرسال';
+  String get sendResetLink => 'إرسال رابط إعادة التعيين';
 
   @override
   String get sendPasswordResetEmail =>
