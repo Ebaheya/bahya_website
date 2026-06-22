@@ -103,7 +103,7 @@ Widget buildTextField({
         child: CustomFormTextField(
           controller: controller,
           keyboardType: keyboardType,
-          autovalidateMode: AutovalidateMode.disabled,
+        
           hintText: localizedHint,
           labelText: localizedLabel,
           obscureText: obscureText,

@@ -536,4 +536,8 @@ class AppRepository {
   Future<Map<String, dynamic>> getUserById(String id) {
     return WebService().getUserById(id);
   }
+
+  Future<void> cancelFormAssignment({required String assignmentId}) {
+    return webService.cancelFormAssignment(assignmentId: assignmentId);
+  }
 }

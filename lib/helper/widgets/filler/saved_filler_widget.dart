@@ -4,9 +4,9 @@ import 'package:bahya_website/data/api/models/options_model.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
 import 'package:bahya_website/helper/custom_glow_buttom.dart';
+import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/l10n/app_localizations.dart';
-import 'package:bahya_website/helper/widgets/filler/form_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -33,19 +33,164 @@ class DynamicFormFillerWidget extends StatefulWidget {
       _DynamicFormFillerWidgetState();
 }
 
-class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
-  void _updateState(VoidCallback callback) => setState(callback);
-
+class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget>
+    with SingleTickerProviderStateMixin {
   final TextEditingController patientSearchController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
 
+  late final AnimationController _controller;
+
+  int _step = 0;
+  int _questionIndex = 0;
+  String? _lastFormId;
+
   bool get _isMobile => MediaQuery.sizeOf(context).width < 700;
+
+  int get _questionsCount => widget.form?.currentVersion?.questions.length ?? 0;
+
+  double get _progress {
+    if (widget.form == null) return 0;
+    if (_step == 0) return 0.20;
+    if (_step == 2) return 1;
+    if (_questionsCount == 0) return 0.70;
+    return 0.35 + ((_questionIndex + 1) / _questionsCount) * 0.45;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    )..forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant DynamicFormFillerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final currentId = widget.form?.id;
+
+    if (_lastFormId != currentId) {
+      _lastFormId = currentId;
+      _step = 0;
+      _questionIndex = 0;
+      noteController.clear();
+      patientSearchController.clear();
+      _restartAnimation();
+    }
+  }
 
   @override
   void dispose() {
+    _controller.dispose();
     patientSearchController.dispose();
     noteController.dispose();
     super.dispose();
+  }
+
+  void _updateState(VoidCallback callback) => setState(callback);
+
+  void _restartAnimation() {
+    _controller.reset();
+    _controller.forward();
+  }
+
+  void _showRequiredMessage(String message) {
+    customDialog(
+      context: context,
+      title: 'تنبيه',
+      message: message,
+      isInfo: true,
+    );
+  }
+
+  void _next() {
+    if (widget.form == null) return;
+
+    if (_step == 0) {
+      if (widget.selectedPatient == null) {
+        _showRequiredMessage('من فضلك اختر المريض أولاً');
+        return;
+      }
+
+      setState(() {
+        _step = _questionsCount == 0 ? 2 : 1;
+        _questionIndex = 0;
+      });
+
+      _restartAnimation();
+      return;
+    }
+
+    if (_step == 1) {
+      final question = widget.form!.currentVersion!.questions[_questionIndex];
+
+      if (!_isQuestionAnswered(question)) {
+        _showRequiredMessage(
+          'لازم تجاوب السؤال الحالي قبل الانتقال للسؤال التالي',
+        );
+        return;
+      }
+
+      if (_questionIndex < _questionsCount - 1) {
+        setState(() => _questionIndex++);
+      } else {
+        setState(() => _step = 2);
+      }
+
+      _restartAnimation();
+      return;
+    }
+  }
+
+  void _previous() {
+    if (_step == 0) return;
+
+    if (_step == 2) {
+      setState(() {
+        _step = _questionsCount == 0 ? 0 : 1;
+        _questionIndex = _questionsCount == 0 ? 0 : _questionsCount - 1;
+      });
+
+      _restartAnimation();
+      return;
+    }
+
+    if (_step == 1 && _questionIndex > 0) {
+      setState(() => _questionIndex--);
+      _restartAnimation();
+      return;
+    }
+
+    setState(() => _step = 0);
+    _restartAnimation();
+  }
+
+  bool _isQuestionAnswered(dynamic question) {
+    final cubit = context.read<DoctorFormsCubit>();
+
+    if (question.type == 'SCALE') {
+      return cubit.getScaleAnswer(question.id) != null;
+    }
+
+    if (question.type == 'MULTI_SELECT') {
+      final choices = question.choices ?? [];
+
+      for (final choice in choices) {
+        if (cubit.isChoiceSelected(
+          questionId: question.id,
+          choiceId: choice.id,
+        )) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    return cubit.getSingleChoiceAnswer(question.id) != null;
   }
 
   @override
@@ -53,355 +198,487 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget> {
     final state = context.watch<DoctorFormsCubit>().state;
     final cubit = context.read<DoctorFormsCubit>();
 
+    if (widget.form == null) {
+      return _emptySelectFormState();
+    }
+
+    final form = widget.form!;
     final score = cubit.calculateScore();
     final diagnosis = cubit.calculateDiagnosis();
     final patientStatus = cubit.getArabicStatus(state.selectedStatus);
 
-    if (widget.form == null) {
-      return Center(
-        child: customText(
-          text: "اختر نموذجًا لبدء ملء الاستبيان",
-          size: responsiveHeight(context, 0.025, min: 16, max: 24),
-          bold: true,
-          color: const Color(0xFF7A004C),
-        ),
-      );
-    }
-
-    final form = widget.form!;
-    final questions = form.currentVersion?.questions ?? [];
-
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.all(
-          responsiveSize(context, 0.02, min: 10, max: 16),
+          responsiveSize(context, 0.018, min: 12, max: 22),
         ),
         child: Column(
           children: [
-            AnimatedPatientHeader(
+            _FlowHeroHeader(
               form: form,
-              score: score,
-              diagnosis: diagnosis,
-              patientStatus: patientStatus,
+              currentStep: _step,
+              questionIndex: _questionIndex,
+              questionsCount: _questionsCount,
+              progress: _progress,
             ),
-            _gap(24),
-            _patientSearch(),
-            _gap(24),
-            _statusDropdown(),
-            _gap(24),
-            ...questions.asMap().entries.map((entry) {
-              return _questionCard(index: entry.key, question: entry.value);
-            }),
-            _gap(20),
-            _notesField(),
-            _gap(30),
             SizedBox(
-              width: _isMobile ? double.infinity : 330,
-              child: CustomGlowButton(
-                isGradient: true,
-                textSize: responsiveHeight(context, 0.02, min: 14, max: 18),
-                glowColor: const Color(0xFFE40070),
-                title: widget.isSubmitting ? "جاري الحفظ..." : "حفظ التقييم",
-                onPressed: () {
-                  if (widget.isSubmitting) return;
+              height: responsiveHeight(context, 0.024, min: 18, max: 28),
+            ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 320),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) {
+                final slide = Tween<Offset>(
+                  begin: const Offset(0, 0.06),
+                  end: Offset.zero,
+                ).animate(animation);
 
-                  context.read<DoctorFormsCubit>().submitManualAssessment(
-                    doctorNote: noteController.text.trim(),
-                  );
-                },
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(position: slide, child: child),
+                );
+              },
+              child: _stepBody(
+                key: ValueKey('${form.id}_${_step}_$_questionIndex'),
+                score: score,
+                diagnosis: diagnosis,
+                patientStatus: patientStatus,
               ),
             ),
-            _gap(40),
+            SizedBox(
+              height: responsiveHeight(context, 0.026, min: 20, max: 32),
+            ),
+            _navigationBar(),
+            SizedBox(
+              height: responsiveHeight(context, 0.030, min: 22, max: 36),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _gap(double max) {
-    return SizedBox(
-      height: responsiveHeight(context, max / 1000, min: max * 0.55, max: max),
+  Widget _stepBody({
+    required Key key,
+    required int score,
+    required String diagnosis,
+    required String patientStatus,
+  }) {
+    if (_step == 0) {
+      return _StepShell(
+        key: key,
+        icon: Icons.person_search_rounded,
+        title: 'اختيار المريض',
+        subtitle: 'اختر المريض الذي تريد تعبئة النموذج له',
+        child: _patientSearch(),
+      );
+    }
+
+    if (_step == 1) {
+      final question = widget.form!.currentVersion!.questions[_questionIndex];
+
+      return _StepShell(
+        key: key,
+        icon: Icons.quiz_rounded,
+        title: 'السؤال ${_questionIndex + 1} من $_questionsCount',
+        subtitle: 'يجب الإجابة على السؤال قبل الانتقال للتالي',
+        child: _questionCard(index: _questionIndex, question: question),
+      );
+    }
+
+    return _StepShell(
+      key: key,
+      icon: Icons.analytics_rounded,
+      title: 'النتيجة والتشخيص',
+      subtitle: 'راجع التشخيص وحالة المريض ثم احفظ التقييم',
+      child: _resultStep(
+        score: score,
+        diagnosis: diagnosis,
+        patientStatus: patientStatus,
+      ),
     );
   }
 
-  Widget _patientSearch() {
-    final state = context.watch<DoctorFormsCubit>().state;
+  Widget _navigationBar() {
+    final isFirst = _step == 0;
+    final isLast = _step == 2;
 
-    return Container(
-      padding: EdgeInsets.all(responsiveSize(context, 0.02, min: 14, max: 18)),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFBFD),
-        borderRadius: BorderRadius.circular(
-          responsiveSize(context, 0.022, min: 16, max: 22),
+    return Row(
+      children: [
+        if (!isFirst)
+          Expanded(
+            child: _FlowButton(
+              title: 'السابق',
+              icon: Icons.arrow_back_rounded,
+              filled: false,
+              onTap: _previous,
+            ),
+          ),
+        if (!isFirst) const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: _FlowButton(
+            title: isLast
+                ? widget.isSubmitting
+                      ? 'جاري الحفظ...'
+                      : 'حفظ التقييم'
+                : 'التالي',
+            icon: isLast ? Icons.save_rounded : Icons.arrow_forward_rounded,
+            filled: true,
+            onTap: () {
+              if (isLast) {
+                if (widget.isSubmitting) return;
+
+                context.read<DoctorFormsCubit>().submitManualAssessment(
+                  doctorNote: noteController.text.trim(),
+                );
+              } else {
+                _next();
+              }
+            },
+          ),
         ),
-        border: Border.all(color: const Color(0xFFFFB6D9)),
+      ],
+    );
+  }
+
+  Widget _emptySelectFormState() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.024, min: 18, max: 30),
+        vertical: responsiveHeight(context, 0.055, min: 42, max: 70),
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEFBFD),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.024, min: 24, max: 34),
+        ),
+        border: Border.all(
+          color: const Color(0xFFE7549B).withValues(alpha: 0.12),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF831843).withValues(alpha: 0.07),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            width: responsiveSize(context, 0.070, min: 64, max: 84),
+            height: responsiveSize(context, 0.070, min: 64, max: 84),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFE7549B), Color(0xFF8A2BE2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: const Icon(
+              Icons.library_books_rounded,
+              color: Colors.white,
+              size: 34,
+            ),
+          ),
+          const SizedBox(height: 18),
+          customText(
+            text: 'اختر نموذجًا لبدء ملء الاستبيان',
+            size: responsiveSize(context, 0.016, min: 18, max: 24),
+            bold: true,
+            color: const Color(0xFF831843),
+          ),
+          const SizedBox(height: 8),
+          customText(
+            text: 'بعد اختيار النموذج ستبدأ خطوات التقييم',
+            size: responsiveSize(context, 0.010, min: 12, max: 15),
+            color: Colors.grey.shade600,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlowHeroHeader extends StatelessWidget {
+  final FormModel form;
+  final int currentStep;
+  final int questionIndex;
+  final int questionsCount;
+  final double progress;
+
+  const _FlowHeroHeader({
+    required this.form,
+    required this.currentStep,
+    required this.questionIndex,
+    required this.questionsCount,
+    required this.progress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final stepLabel = currentStep == 0
+        ? 'اختيار المريض'
+        : currentStep == 1
+        ? 'سؤال ${questionIndex + 1} من $questionsCount'
+        : 'النتيجة النهائية';
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(responsiveSize(context, 0.020, min: 18, max: 26)),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE7549B), Color(0xFF8A2BE2)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.024, min: 24, max: 34),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE7549B).withValues(alpha: 0.22),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              customText(
-                text: localizedText(context, 'اختيار المريض'),
-                size: responsiveHeight(context, 0.02, min: 14, max: 19),
-                bold: true,
-                color: const Color(0xFF7A004C),
+              Container(
+                width: responsiveSize(context, 0.052, min: 52, max: 66),
+                height: responsiveSize(context, 0.052, min: 52, max: 66),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.fact_check_rounded,
+                  color: Colors.white,
+                  size: 30,
+                ),
               ),
-              SizedBox(width: responsiveSize(context, 0.01, min: 6, max: 8)),
-              Icon(
-                Icons.person_search_rounded,
-                color: const Color(0xFFE40070),
-                size: responsiveSize(context, 0.024, min: 20, max: 24),
+              SizedBox(width: responsiveSize(context, 0.016, min: 12, max: 18)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    customText(
+                      text: form.name,
+                      size: responsiveSize(context, 0.017, min: 18, max: 26),
+                      bold: true,
+                      color: Colors.white,
+                      isCenter: false,
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 6),
+                    customText(
+                      text: stepLabel,
+                      size: responsiveSize(context, 0.010, min: 12, max: 15),
+                      color: Colors.white.withValues(alpha: 0.78),
+                      isCenter: false,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          SizedBox(height: responsiveHeight(context, 0.014, min: 10, max: 14)),
-          Directionality(
-            textDirection: TextDirection.rtl,
-            child: CustomFormTextField(
-              controller: patientSearchController,
-              labelText: localizedText(context, 'اختيار المريض'),
-              hintText: localizedText(context, 'ابحث باسم المريض'),
-              autovalidateMode: AutovalidateMode.disabled,
-              keyboardType: CustomTextFieldType.text,
-              onChange: (value) {
-                context.read<DoctorFormsCubit>().searchPatients(value);
-                setState(() {});
-              },
+          SizedBox(height: responsiveHeight(context, 0.022, min: 16, max: 24)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0, 1),
+              minHeight: 10,
+              backgroundColor: Colors.white.withValues(alpha: 0.22),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
-          if (state.patientAlreadyFilledMessage != null)
-            Padding(
-              padding: EdgeInsets.only(
-                top: responsiveHeight(context, 0.01, min: 8, max: 10),
+          SizedBox(height: responsiveHeight(context, 0.016, min: 12, max: 18)),
+          Row(
+            children: const [
+              Expanded(
+                child: _StepChip(
+                  title: '1',
+                  label: 'المريض',
+                  icon: Icons.person_rounded,
+                ),
               ),
-              child: customText(
-                text: state.patientAlreadyFilledMessage!,
-                size: responsiveHeight(context, 0.016, min: 12, max: 15),
-                bold: true,
-                color: Colors.red,
+              SizedBox(width: 8),
+              Expanded(
+                child: _StepChip(
+                  title: '2',
+                  label: 'الأسئلة',
+                  icon: Icons.quiz_rounded,
+                ),
               ),
-            ),
-          SizedBox(height: responsiveHeight(context, 0.012, min: 8, max: 12)),
-          if (widget.selectedPatient != null) _selectedPatientCard(),
-          if (widget.isSearchingPatients)
-            Padding(
-              padding: EdgeInsets.all(
-                responsiveSize(context, 0.012, min: 8, max: 10),
+              SizedBox(width: 8),
+              Expanded(
+                child: _StepChip(
+                  title: '3',
+                  label: 'النتيجة',
+                  icon: Icons.analytics_rounded,
+                ),
               ),
-              child: const CircularProgressIndicator(),
-            ),
-          if (widget.patients.isNotEmpty) _patientsList(),
+            ],
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _selectedPatientCard() {
+class _StepChip extends StatelessWidget {
+  final String title;
+  final String label;
+  final IconData icon;
+
+  const _StepChip({
+    required this.title,
+    required this.label,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(responsiveSize(context, 0.016, min: 10, max: 14)),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.010, min: 8, max: 12),
+        vertical: responsiveHeight(context, 0.010, min: 8, max: 10),
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF0F8),
-        borderRadius: BorderRadius.circular(
-          responsiveSize(context, 0.018, min: 12, max: 16),
-        ),
-        border: Border.all(color: const Color(0xFFFF8FC5)),
+        color: Colors.white.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          IconButton(
-            onPressed: () {
-              context.read<DoctorFormsCubit>().clearSelectedPatient();
-              patientSearchController.clear();
-            },
-            icon: const Icon(Icons.close_rounded, color: Color(0xFFE40070)),
-          ),
-          Flexible(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Flexible(
-                  child: customText(
-                    text: widget.selectedPatient!.fullName,
-                    size: responsiveHeight(context, 0.018, min: 13, max: 17),
-                    bold: true,
-                    color: const Color(0xFF7A004C),
-                  ),
-                ),
-                SizedBox(width: responsiveSize(context, 0.01, min: 6, max: 8)),
-                Icon(
-                  Icons.person_rounded,
-                  color: const Color(0xFFE40070),
-                  size: responsiveSize(context, 0.024, min: 20, max: 24),
-                ),
-              ],
-            ),
+          Icon(icon, color: Colors.white, size: 16),
+          const SizedBox(width: 6),
+          customText(
+            text: '$title $label',
+            size: responsiveSize(context, 0.0085, min: 11, max: 13),
+            color: Colors.white,
+            bold: true,
+            maxLines: 1,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _patientsList() {
+class _StepShell extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Widget child;
+
+  const _StepShell({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(
-        top: responsiveHeight(context, 0.01, min: 8, max: 10),
-      ),
+      width: double.infinity,
+      padding: EdgeInsets.all(responsiveSize(context, 0.020, min: 18, max: 26)),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFFFD6E9)),
+        color: Colors.white.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(
-          responsiveSize(context, 0.016, min: 12, max: 14),
+          responsiveSize(context, 0.024, min: 24, max: 34),
         ),
+        border: Border.all(
+          color: const Color(0xFFE7549B).withValues(alpha: 0.12),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF831843).withValues(alpha: 0.07),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       child: Column(
-        children: widget.patients.map((patient) {
-          return ListTile(
-            title: Text(
-              patient.fullName,
-              textDirection: TextDirection.rtl,
-              style: TextStyle(
-                color: const Color(0xFF7A004C),
-                fontWeight: FontWeight.bold,
-                fontSize: responsiveHeight(context, 0.017, min: 13, max: 16),
+        children: [
+          Row(
+            children: [
+              Container(
+                width: responsiveSize(context, 0.046, min: 46, max: 58),
+                height: responsiveSize(context, 0.046, min: 46, max: 58),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF4FA),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(icon, color: const Color(0xFFE7549B), size: 28),
               ),
-            ),
-            trailing: const Icon(Icons.person, color: Color(0xFFE40070)),
-            onTap: () async {
-              await context.read<DoctorFormsCubit>().selectPatient(patient);
-              if (!mounted) return;
-              patientSearchController.clear();
-              setState(() {});
-            },
-          );
-        }).toList(),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    customText(
+                      text: title,
+                      size: responsiveSize(context, 0.015, min: 17, max: 22),
+                      bold: true,
+                      color: const Color(0xFF831843),
+                      isCenter: false,
+                    ),
+                    const SizedBox(height: 5),
+                    customText(
+                      text: subtitle,
+                      size: responsiveSize(context, 0.010, min: 12, max: 15),
+                      color: Colors.grey.shade600,
+                      isCenter: false,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: responsiveHeight(context, 0.024, min: 18, max: 26)),
+          child,
+        ],
       ),
     );
   }
+}
 
-  Widget _statusDropdown() {
-    final state = context.watch<DoctorFormsCubit>().state;
+class _FlowButton extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final bool filled;
+  final VoidCallback onTap;
 
-    final statuses = [
-      {"value": "NORMAL", "label": "طبيعي", "icon": Icons.check_circle_outline},
-      {"value": "MILD", "label": "بسيط", "icon": Icons.info_outline},
-      {
-        "value": "MODERATE",
-        "label": "متوسط",
-        "icon": Icons.warning_amber_rounded,
-      },
-      {"value": "SEVERE", "label": "شديد", "icon": Icons.priority_high_rounded},
-      {"value": "CRITICAL", "label": "حرج", "icon": Icons.dangerous_outlined},
-    ];
+  const _FlowButton({
+    required this.title,
+    required this.icon,
+    required this.filled,
+    required this.onTap,
+  });
 
-    final statusValues = statuses
-        .map((item) => item["value"])
-        .whereType<String>()
-        .toSet();
-    final safeSelectedStatus = statusValues.contains(state.selectedStatus)
-        ? state.selectedStatus
-        : null;
-
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(
-          horizontal: responsiveSize(context, 0.02, min: 14, max: 18),
-          vertical: responsiveHeight(context, 0.01, min: 8, max: 10),
-        ),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF6FB),
-          borderRadius: BorderRadius.circular(
-            responsiveSize(context, 0.02, min: 16, max: 20),
-          ),
-          border: Border.all(color: const Color(0xFFFF8FC5)),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFE40070).withValues(alpha: 0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: safeSelectedStatus,
-            isExpanded: true,
-            icon: const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: Color(0xFFE40070),
-            ),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(
-              responsiveSize(context, 0.018, min: 14, max: 18),
-            ),
-            selectedItemBuilder: (context) {
-              return statuses.map((item) {
-                return Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      customText(
-                        text: item["label"] as String,
-                        size: responsiveHeight(
-                          context,
-                          0.018,
-                          min: 13,
-                          max: 17,
-                        ),
-                        bold: true,
-                        color: const Color(0xFF7A004C),
-                      ),
-                      SizedBox(
-                        width: responsiveSize(context, 0.012, min: 8, max: 10),
-                      ),
-                      Icon(
-                        item["icon"] as IconData,
-                        color: const Color(0xFFE40070),
-                        size: responsiveSize(context, 0.024, min: 20, max: 22),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList();
-            },
-            items: statuses.map((item) {
-              return DropdownMenuItem<String>(
-                value: item["value"] as String,
-                child: _statusItem(item),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value == null) return;
-              context.read<DoctorFormsCubit>().changeStatus(value);
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _statusItem(Map<String, Object> item) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        customText(
-          text: item["label"] as String,
-          size: responsiveHeight(context, 0.018, min: 13, max: 17),
-          bold: true,
-          color: const Color(0xFF7A004C),
-        ),
-        SizedBox(width: responsiveSize(context, 0.012, min: 8, max: 10)),
-        Icon(
-          item["icon"] as IconData,
-          color: const Color(0xFFE40070),
-          size: responsiveSize(context, 0.024, min: 20, max: 22),
-        ),
-      ],
+  @override
+  Widget build(BuildContext context) {
+    return CustomGlowButton(
+      title: title,
+      icon: icon,
+      isGradient: filled,
+      onPressed: onTap,
+      height: responsiveHeight(context, 0.052, min: 46, max: 56),
+      textSize: responsiveSize(context, 0.010, min: 13, max: 16),
     );
   }
 }

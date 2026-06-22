@@ -248,23 +248,6 @@ void forgetPasswordDialog(BuildContext context) {
                       SizedBox(
                         height: responsiveHeight(
                           context,
-                          0.012,
-                          min: 10,
-                          max: 12,
-                        ),
-                      ),
-                      _contactOption(
-                        title: 'الهاتف',
-                        subtitle: 'التواصل معك عبر رقم الهاتف',
-                        icon: Icons.phone_rounded,
-                        value: ContactMethod.phone,
-                        groupValue: method,
-                        onChanged: (v) => setState(() => method = v!),
-                        context: context,
-                      ),
-                      SizedBox(
-                        height: responsiveHeight(
-                          context,
                           0.03,
                           min: 22,
                           max: 30,

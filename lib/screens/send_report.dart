@@ -324,7 +324,7 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                             context,
                             'مثال: مشكلة في تسجيل الدخول',
                           ),
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                       
                           keyboardType: CustomTextFieldType.text,
                           textDirection: TextDirection.rtl,
                         ),
@@ -354,7 +354,7 @@ class _ReportProblemDialogState extends State<ReportProblemDialog> {
                             context,
                             'اكتب تفاصيل المشكلة هنا...',
                           ),
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                       
                           keyboardType: CustomTextFieldType.text,
                           textDirection: TextDirection.rtl,
                           maxLines: 6,

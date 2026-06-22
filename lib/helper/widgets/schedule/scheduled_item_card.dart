@@ -84,7 +84,7 @@ class ScheduledItemCard extends StatelessWidget {
       children: [
         _SideLine(),
         SizedBox(width: responsiveSize(context, 0.018, min: 14, max: 26)),
-        _StatusBadge(showDelete: showDelete),
+        _StatusBadge(showDelete: showDelete, status: repeat),
         SizedBox(width: responsiveSize(context, 0.026, min: 18, max: 36)),
         Expanded(flex: 4, child: _mainInfo()),
         SizedBox(width: responsiveSize(context, 0.02, min: 14, max: 26)),
@@ -107,7 +107,7 @@ class ScheduledItemCard extends StatelessWidget {
               height: responsiveHeight(context, 0.055, min: 42, max: 56),
             ),
             SizedBox(width: responsiveSize(context, 0.012, min: 10, max: 14)),
-            _StatusBadge(showDelete: showDelete),
+            _StatusBadge(showDelete: showDelete, status: repeat),
             const Spacer(),
             if (showDelete) _CancelButton(onDelete: onDelete),
           ],
@@ -191,7 +191,7 @@ class ScheduledItemCard extends StatelessWidget {
                 child: ScheduleInfoBlock(
                   title: showDelete ? "الموعد القادم" : "تاريخ النشر",
                   value: date,
-                  subValue: showDelete ? "($repeat)" : null,
+                  subValue: repeat.trim().isEmpty ? null : "($repeat)",
                 ),
               ),
               Container(

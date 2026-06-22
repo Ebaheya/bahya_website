@@ -1,4 +1,4 @@
-part of '../../../screens/patient_clinical_details.dart';
+part of '../../../screens/doctor/patient_clinical_details.dart';
 
 class _InfoBadge extends StatelessWidget {
   const _InfoBadge({required this.title, required this.value});

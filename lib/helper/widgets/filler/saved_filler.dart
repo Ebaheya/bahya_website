@@ -23,10 +23,12 @@ class SavedFormsWidget extends StatefulWidget {
   State<SavedFormsWidget> createState() => _SavedFormsWidgetState();
 }
 
-class _SavedFormsWidgetState extends State<SavedFormsWidget> {
-  int currentPage = 0;
+class _SavedFormsWidgetState extends State<SavedFormsWidget>
+    with SingleTickerProviderStateMixin {
+  static const int itemsPerPage = 10;
 
-  int get itemsPerPage => widget.isMobileLayout ? 6 : 12;
+  late final AnimationController _controller;
+  int currentPage = 0;
 
   int get totalPages {
     if (widget.forms.isEmpty) return 1;
@@ -42,283 +44,469 @@ class _SavedFormsWidgetState extends State<SavedFormsWidget> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    )..forward();
+  }
+
+  @override
   void didUpdateWidget(covariant SavedFormsWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.isMobileLayout != widget.isMobileLayout ||
-        oldWidget.forms.length != widget.forms.length) {
+    if (oldWidget.forms.length != widget.forms.length) {
       currentPage = 0;
+      _restartAnimation();
       return;
     }
 
     if (currentPage >= totalPages) {
       currentPage = totalPages - 1;
+      _restartAnimation();
     }
   }
 
-  void _goToPage(int page) {
-    if (page < 0 || page >= totalPages) return;
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
-    setState(() {
-      currentPage = page;
-    });
+  void _restartAnimation() {
+    _controller.reset();
+    _controller.forward();
+  }
+
+  void _goToPage(int page) {
+    if (page < 0 || page >= totalPages || page == currentPage) return;
+
+    setState(() => currentPage = page);
+    _restartAnimation();
   }
 
   @override
   Widget build(BuildContext context) {
-    final titleSize = responsiveHeight(context, 0.022, min: 15, max: 22);
-    final textSize = responsiveHeight(context, 0.017, min: 12, max: 16);
-    final paginationTextSize = responsiveHeight(
-      context,
-      0.014,
-      min: 11,
-      max: 13,
-    );
+    final isMobile = getScreenWidth(context) < 700;
 
-    final padding = responsiveSize(context, 0.02, min: 12, max: 20);
-    final radius = responsiveSize(context, 0.022, min: 16, max: 24);
-    final gap = responsiveSize(context, 0.01, min: 8, max: 12);
-
-    final listHeight = widget.isMobileLayout
-        ? responsiveHeight(context, 0.37, min: 260, max: 420)
-        : responsiveHeight(context, 1, min: 420, max: 580);
-
-    return SizedBox(
-      width: widget.isMobileLayout ? double.infinity : 340,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(radius),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 18,
-              offset: Offset(0, 6),
-            ),
-          ],
-        ),
-        padding: EdgeInsets.all(padding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: customText(
-                    text: "النماذج المحفوظة",
-                    size: titleSize,
-                    bold: true,
-                    color: const Color(0xFF7A004C),
-                    isCenter: false,
-                  ),
-                ),
-                SizedBox(width: gap),
-                const Icon(Icons.folder_open, color: Color(0xFF7A004C)),
-              ],
-            ),
-            SizedBox(
-              height: responsiveHeight(context, 0.015, min: 10, max: 16),
-            ),
-            SizedBox(
-              height: listHeight,
-              child: widget.forms.isEmpty
-                  ? Center(
-                      child: customText(
-                        text: "لا توجد نماذج",
-                        size: textSize,
-                        color: Colors.grey,
-                        bold: true,
-                      ),
-                    )
-                  : ListView.separated(
-                      scrollDirection: Axis.vertical,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: visibleForms.length,
-                      separatorBuilder: (_, __) => SizedBox(
-                        height: widget.isMobileLayout
-                            ? responsiveHeight(context, 0.01, min: 8, max: 10)
-                            : responsiveHeight(context, 0.006, min: 5, max: 7),
-                      ),
-                      itemBuilder: (context, index) {
-                        return _formItem(
-                          context: context,
-                          form: visibleForms[index],
-                          width: double.infinity,
-                          textSize: textSize,
-                          gap: gap,
-                        );
-                      },
-                    ),
-            ),
-            if (widget.forms.length > itemsPerPage) ...[
-              SizedBox(
-                height: responsiveHeight(context, 0.012, min: 8, max: 12),
-              ),
-              _pagination(
-                context: context,
-                textSize: paginationTextSize,
-                gap: gap,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _pagination({
-    required BuildContext context,
-    required double textSize,
-    required double gap,
-  }) {
-    final buttonSize = responsiveSize(context, 0.028, min: 26, max: 34);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       children: [
-        _paginationArrow(
-          context: context,
-          icon: Icons.keyboard_arrow_left_rounded,
-          size: buttonSize,
-          enabled: currentPage > 0,
-          onTap: () => _goToPage(currentPage - 1),
+        _SavedFormsCounter(
+          total: widget.forms.length,
+          from: widget.forms.isEmpty ? 0 : currentPage * itemsPerPage + 1,
+          to: currentPage * itemsPerPage + visibleForms.length,
         ),
-        SizedBox(width: gap),
-        ...List.generate(totalPages, (index) {
-          final active = index == currentPage;
-
-          return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: responsiveSize(context, 0.004, min: 3, max: 5),
-            ),
-            child: GestureDetector(
-              onTap: () => _goToPage(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: buttonSize,
-                height: buttonSize,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: active
-                      ? const LinearGradient(
-                          colors: [Color(0xFFFF80C5), Color(0xFFC38CFF)],
-                        )
-                      : null,
-                  color: active ? null : const Color(0xFFF8ECF7),
-                  border: Border.all(
-                    color: active
-                        ? Colors.transparent
-                        : const Color(0xFFFFC7DF),
-                  ),
-                ),
-                child: customText(
-                  text: "${index + 1}",
-                  size: textSize,
-                  bold: true,
-                  color: active ? Colors.white : const Color(0xFF7A004C),
-                ),
+        SizedBox(height: responsiveHeight(context, 0.018, min: 14, max: 20)),
+        if (widget.forms.isEmpty)
+          const _EmptySavedForms()
+        else
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: ListView.separated(
+              key: ValueKey(currentPage),
+              itemCount: visibleForms.length,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              separatorBuilder: (_, __) => SizedBox(
+                height: responsiveHeight(context, 0.012, min: 10, max: 14),
               ),
+              itemBuilder: (context, index) {
+                final animation = CurvedAnimation(
+                  parent: _controller,
+                  curve: Interval(
+                    (index * 0.06).clamp(0.0, 0.70),
+                    1,
+                    curve: Curves.easeOutCubic,
+                  ),
+                );
+
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.12),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: _SavedFormCard(
+                      index: currentPage * itemsPerPage + index + 1,
+                      form: visibleForms[index],
+                      active: widget.selectedFormId == visibleForms[index].id,
+                      onTap: () => widget.onSelect(visibleForms[index].id),
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        }),
-        SizedBox(width: gap),
-        _paginationArrow(
-          context: context,
-          icon: Icons.keyboard_arrow_right_rounded,
-          size: buttonSize,
-          enabled: currentPage < totalPages - 1,
-          onTap: () => _goToPage(currentPage + 1),
-        ),
+          ),
+        if (widget.forms.length > itemsPerPage) ...[
+          SizedBox(height: responsiveHeight(context, 0.022, min: 18, max: 26)),
+          _SavedFormsPagination(
+            currentPage: currentPage,
+            totalPages: totalPages,
+            onPageChanged: _goToPage,
+          ),
+        ],
       ],
     );
   }
+}
 
-  Widget _paginationArrow({
-    required BuildContext context,
-    required IconData icon,
-    required double size,
-    required bool enabled,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 180),
-        opacity: enabled ? 1 : 0.35,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF0F8),
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFFFC7DF)),
+class _SavedFormsCounter extends StatelessWidget {
+  final int total;
+  final int from;
+  final int to;
+
+  const _SavedFormsCounter({
+    required this.total,
+    required this.from,
+    required this.to,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: responsiveSize(context, 0.018, min: 16, max: 22),
+        vertical: responsiveHeight(context, 0.014, min: 12, max: 16),
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF4FA),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.018, min: 20, max: 26),
+        ),
+        border: Border.all(
+          color: const Color(0xFFE7549B).withValues(alpha: 0.12),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: responsiveSize(context, 0.040, min: 42, max: 52),
+            height: responsiveSize(context, 0.040, min: 42, max: 52),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFE7549B), Color(0xFF8A2BE2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.library_books_rounded,
+              color: Colors.white,
+              size: responsiveSize(context, 0.020, min: 22, max: 28),
+            ),
           ),
-          child: Icon(icon, size: size * 0.75, color: const Color(0xFFE40070)),
+          SizedBox(width: responsiveSize(context, 0.014, min: 12, max: 16)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                customText(
+                  text: 'النماذج المعروضة',
+                  size: responsiveSize(context, 0.012, min: 14, max: 17),
+                  color: const Color(0xFF831843),
+                  bold: true,
+                  isCenter: false,
+                ),
+                const SizedBox(height: 4),
+                customText(
+                  text: total == 0 ? 'لا توجد نماذج' : 'من $from إلى $to',
+                  size: responsiveSize(context, 0.009, min: 11, max: 13),
+                  color: Colors.grey.shade600,
+                  isCenter: false,
+                ),
+              ],
+            ),
+          ),
+          customText(
+            text: '$to / $total',
+            size: responsiveSize(context, 0.012, min: 14, max: 17),
+            color: const Color(0xFFE7549B),
+            bold: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavedFormCard extends StatefulWidget {
+  final int index;
+  final FormModel form;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _SavedFormCard({
+    required this.index,
+    required this.form,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  State<_SavedFormCard> createState() => _SavedFormCardState();
+}
+
+class _SavedFormCardState extends State<_SavedFormCard> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = getScreenWidth(context) < 700;
+
+    return MouseRegion(
+      onEnter: (_) {
+        if (!isMobile) setState(() => _hover = true);
+      },
+      onExit: (_) {
+        if (!isMobile) setState(() => _hover = false);
+      },
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.018, min: 20, max: 26),
+        ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+          transform: Matrix4.identity()
+            ..translate(0.0, _hover && !isMobile ? -4.0 : 0.0),
+          padding: EdgeInsets.symmetric(
+            horizontal: responsiveSize(context, 0.016, min: 14, max: 20),
+            vertical: responsiveHeight(context, 0.014, min: 12, max: 16),
+          ),
+          decoration: BoxDecoration(
+            gradient: widget.active
+                ? const LinearGradient(
+                    colors: [Color(0xFFE7549B), Color(0xFF8A2BE2)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: widget.active ? null : const Color(0xFFFEFBFD),
+            borderRadius: BorderRadius.circular(
+              responsiveSize(context, 0.018, min: 20, max: 26),
+            ),
+            border: Border.all(
+              color: widget.active
+                  ? Colors.transparent
+                  : _hover
+                  ? const Color(0xFFE7549B).withValues(alpha: 0.35)
+                  : const Color(0xFFE7549B).withValues(alpha: 0.10),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.active
+                    ? const Color(0xFFE7549B).withValues(alpha: 0.18)
+                    : const Color(
+                        0xFF831843,
+                      ).withValues(alpha: _hover ? 0.13 : 0.06),
+                blurRadius: _hover || widget.active ? 22 : 14,
+                offset: Offset(0, _hover || widget.active ? 12 : 7),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              customText(
+                text: widget.index.toString().padLeft(2, '0'),
+                size: responsiveSize(context, 0.012, min: 14, max: 17),
+                bold: true,
+                color: widget.active ? Colors.white : const Color(0xFFE7549B),
+              ),
+              SizedBox(width: responsiveSize(context, 0.012, min: 10, max: 14)),
+              Container(
+                width: responsiveSize(context, 0.040, min: 42, max: 52),
+                height: responsiveSize(context, 0.040, min: 42, max: 52),
+                decoration: BoxDecoration(
+                  color: widget.active
+                      ? Colors.white.withValues(alpha: 0.18)
+                      : const Color(0xFFFFF4FA),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: widget.active
+                        ? Colors.white.withValues(alpha: 0.20)
+                        : const Color(0xFFE7549B).withValues(alpha: 0.12),
+                  ),
+                ),
+                child: Icon(
+                  widget.active
+                      ? Icons.check_circle_rounded
+                      : Icons.description_rounded,
+                  color: widget.active ? Colors.white : const Color(0xFFE7549B),
+                  size: responsiveSize(context, 0.020, min: 22, max: 28),
+                ),
+              ),
+              SizedBox(width: responsiveSize(context, 0.012, min: 10, max: 14)),
+              Expanded(
+                child: customText(
+                  text: widget.form.name,
+                  size: responsiveSize(context, 0.011, min: 13, max: 16),
+                  bold: true,
+                  color: widget.active ? Colors.white : const Color(0xFF831843),
+                  isCenter: false,
+                  maxLines: 1,
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: widget.active ? Colors.white : const Color(0xFFE7549B),
+                size: responsiveSize(context, 0.014, min: 14, max: 18),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _formItem({
-    required BuildContext context,
-    required FormModel form,
-    required double width,
-    required double textSize,
-    required double gap,
-  }) {
-    final active = widget.selectedFormId == form.id;
+class _SavedFormsPagination extends StatelessWidget {
+  final int currentPage;
+  final int totalPages;
+  final ValueChanged<int> onPageChanged;
 
-    return GestureDetector(
-      onTap: () => widget.onSelect(form.id),
-      child: AnimatedContainer(
-        width: width,
-        duration: const Duration(milliseconds: 220),
-        padding: EdgeInsets.symmetric(
-          horizontal: responsiveSize(context, 0.014, min: 10, max: 14),
-          vertical: responsiveHeight(context, 0.012, min: 9, max: 12),
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(
-            responsiveSize(context, 0.014, min: 12, max: 14),
+  const _SavedFormsPagination({
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          _SavedPageButton(
+            icon: Icons.chevron_right_rounded,
+            enabled: currentPage > 0,
+            onTap: () => onPageChanged(currentPage - 1),
           ),
-          gradient: active
-              ? const LinearGradient(
-                  colors: [Color(0xFFFF80C5), Color(0xFFC38CFF)],
-                )
-              : null,
-          color: active ? null : const Color(0xFFF8ECF7),
-          boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFE40070).withValues(alpha: 0.18),
-                    blurRadius: 12,
-                    offset: const Offset(0, 5),
+          ...List.generate(totalPages, (index) {
+            final selected = index == currentPage;
+
+            return InkWell(
+              onTap: () => onPageChanged(index),
+              borderRadius: BorderRadius.circular(14),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                width: selected ? 42 : 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  gradient: selected
+                      ? const LinearGradient(
+                          colors: [Color(0xFFE7549B), Color(0xFF8A2BE2)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: selected ? null : const Color(0xFFF8EEF6),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected
+                        ? Colors.transparent
+                        : const Color(0xFFE7549B).withValues(alpha: 0.12),
                   ),
-                ]
-              : [],
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.description_rounded,
-              size: responsiveSize(context, 0.024, min: 18, max: 22),
-              color: active ? Colors.white : const Color(0xFF7A004C),
-            ),
-            SizedBox(width: gap),
-            Expanded(
-              child: customText(
-                text: form.name,
-                size: textSize,
-                bold: true,
-                color: active ? Colors.white : const Color(0xFF7A004C),
-                isCenter: true,
-                maxLines: widget.isMobileLayout ? 2 : 1,
+                ),
+                child: customText(
+                  text: '${index + 1}',
+                  size: 14,
+                  color: selected ? Colors.white : const Color(0xFF831843),
+                  bold: true,
+                ),
               ),
-            ),
-          ],
+            );
+          }),
+          _SavedPageButton(
+            icon: Icons.chevron_left_rounded,
+            enabled: currentPage < totalPages - 1,
+            onTap: () => onPageChanged(currentPage + 1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavedPageButton extends StatelessWidget {
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _SavedPageButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: enabled
+              ? const Color(0xFFE7549B).withValues(alpha: 0.10)
+              : Colors.grey.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
         ),
+        child: Icon(
+          icon,
+          color: enabled ? const Color(0xFFE7549B) : Colors.grey,
+          size: 24,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptySavedForms extends StatelessWidget {
+  const _EmptySavedForms();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(responsiveSize(context, 0.018, min: 16, max: 24)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF4FA),
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.018, min: 20, max: 26),
+        ),
+        border: Border.all(
+          color: const Color(0xFFE7549B).withValues(alpha: 0.12),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.inbox_rounded,
+            color: const Color(0xFFE7549B),
+            size: responsiveSize(context, 0.040, min: 42, max: 58),
+          ),
+          SizedBox(height: responsiveHeight(context, 0.012, min: 10, max: 14)),
+          customText(
+            text: 'لا توجد نماذج محفوظة',
+            size: responsiveSize(context, 0.012, min: 14, max: 18),
+            color: Colors.grey.shade700,
+            bold: true,
+          ),
+        ],
       ),
     );
   }

@@ -128,7 +128,7 @@ void showChangePasswordDialog(BuildContext context) {
                         const SizedBox(height: 24),
                         CustomFormTextField(
                           hintText: "Current Password",
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                       
                           keyboardType: CustomTextFieldType.password,
                           controller: currentController,
                           textDirection: TextDirection.ltr,
@@ -143,7 +143,7 @@ void showChangePasswordDialog(BuildContext context) {
                         const SizedBox(height: 16),
                         CustomFormTextField(
                           hintText: "New Password",
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                       
                           keyboardType: CustomTextFieldType.password,
                           controller: newController,
                           textDirection: TextDirection.ltr,
@@ -158,7 +158,7 @@ void showChangePasswordDialog(BuildContext context) {
                         const SizedBox(height: 16),
                         CustomFormTextField(
                           hintText: "Confirm Password",
-                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                       
                           keyboardType: CustomTextFieldType.password,
                           controller: confirmController,
                           textDirection: TextDirection.ltr,

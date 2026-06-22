@@ -53,7 +53,7 @@ extension _PatientsListContent on _PatientsListWidgetState {
       onChange: (_) {
         _updateState(() => currentPage = 0);
       },
-      autovalidateMode: AutovalidateMode.disabled,
+     
     );
   }
 

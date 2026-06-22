@@ -174,6 +174,17 @@ class HomeDrawer extends StatelessWidget {
                                     showReportProblemDialog(context);
                                   },
                                 ),
+                                 _drawerItem(
+                                  context,
+                                  index: 1,
+                                  icon: Icons.report_problem_rounded,
+                                  title: 'شات بوت الدعم',
+                                  onTap: () {
+                                       Navigator.pop(context);
+                                    context.go('/doctor_dashboard');
+                                 
+                                  },
+                                ),
                               ],
                             ),
                           ),

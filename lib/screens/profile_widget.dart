@@ -911,7 +911,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog>
                     CustomFormTextField(
                       controller: currentPasswordController,
                       hintText: "Current password",
-                      autovalidateMode: AutovalidateMode.disabled,
+                   
                       keyboardType: CustomTextFieldType.password,
                       obscureText: true,
 
@@ -932,7 +932,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog>
                     CustomFormTextField(
                       controller: newPasswordController,
                       hintText: "New password",
-                      autovalidateMode: AutovalidateMode.disabled,
+                   
                       keyboardType: CustomTextFieldType.password,
                       obscureText: true,
 
@@ -953,7 +953,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog>
                     CustomFormTextField(
                       controller: confirmPasswordController,
                       hintText: "Confirm new password",
-                      autovalidateMode: AutovalidateMode.disabled,
+                   
                       keyboardType: CustomTextFieldType.password,
                       obscureText: true,
 

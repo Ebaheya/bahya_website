@@ -1,4 +1,4 @@
-part of '../../../screens/patients_info.dart';
+part of '../../../screens/doctor/patients_info.dart';
 
 class _PatientPreview extends StatelessWidget {
   final TextEditingController nameController;
@@ -255,7 +255,7 @@ class _TextDialogField extends StatelessWidget {
         child: CustomFormTextField(
           controller: controller,
           hintText: localizedText(context, hint),
-          autovalidateMode: AutovalidateMode.onUserInteraction,
+          
           keyboardType: type,
           obscureText: obscure,
           isRequired: requiredField,

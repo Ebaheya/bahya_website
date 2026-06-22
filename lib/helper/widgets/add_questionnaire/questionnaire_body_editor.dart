@@ -301,7 +301,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
           const SizedBox(height: 14),
           if (isMobile) ...[
             CustomFormTextField(
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+
               keyboardType: CustomTextFieldType.score,
               labelText: context.l10n.minimumValue,
               hintText: '0',
@@ -310,7 +310,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
             ),
             const SizedBox(height: 12),
             CustomFormTextField(
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+
               keyboardType: CustomTextFieldType.score,
               labelText: context.l10n.maximumValue,
               hintText: '10',
@@ -319,7 +319,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
             ),
             const SizedBox(height: 12),
             CustomFormTextField(
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+
               keyboardType: CustomTextFieldType.text,
               labelText: context.l10n.minimumLabel,
               hintText: context.l10n.none,
@@ -329,7 +329,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
             ),
             const SizedBox(height: 12),
             CustomFormTextField(
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+
               keyboardType: CustomTextFieldType.text,
               labelText: context.l10n.maximumLabel,
               hintText: context.l10n.verySevere,
@@ -342,7 +342,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
               children: [
                 Expanded(
                   child: CustomFormTextField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                  
                     keyboardType: CustomTextFieldType.score,
                     labelText: context.l10n.minimumValue,
                     hintText: '0',
@@ -353,7 +353,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: CustomFormTextField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                  
                     keyboardType: CustomTextFieldType.score,
                     labelText: context.l10n.maximumValue,
                     hintText: '10',
@@ -368,7 +368,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
               children: [
                 Expanded(
                   child: CustomFormTextField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                 
                     keyboardType: CustomTextFieldType.text,
                     labelText: context.l10n.minimumLabel,
                     hintText: context.l10n.none,
@@ -380,7 +380,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: CustomFormTextField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                 
                     keyboardType: CustomTextFieldType.text,
                     labelText: context.l10n.maximumLabel,
                     hintText: context.l10n.verySevere,

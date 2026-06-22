@@ -1,4 +1,4 @@
-part of '../../../screens/patients_info.dart';
+part of '../../../screens/doctor/patients_info.dart';
 
 class _EditPatientClinicalDialog extends StatefulWidget {
   final PatientModel patient;
@@ -254,7 +254,7 @@ class _EditPatientClinicalDialogState
                               textDirection: TextDirection.ltr,
                               isRequired: false,
                               bordered: true,
-                              autovalidateMode: AutovalidateMode.disabled,
+                           
                             ),
                           ),
                           _EditFieldWrapper(
@@ -379,7 +379,7 @@ class _EditPatientClinicalDialogState
                               textDirection: Directionality.of(context),
                               isRequired: false,
                               bordered: true,
-                              autovalidateMode: AutovalidateMode.disabled,
+                            
                             ),
                           ),
                           _EditFieldWrapper(
@@ -393,7 +393,7 @@ class _EditPatientClinicalDialogState
                               textDirection: Directionality.of(context),
                               isRequired: false,
                               bordered: true,
-                              autovalidateMode: AutovalidateMode.disabled,
+                            
                             ),
                           ),
                           _EditFieldWrapper(
@@ -407,7 +407,7 @@ class _EditPatientClinicalDialogState
                               isRequired: false,
                               bordered: true,
                               maxLines: 3,
-                              autovalidateMode: AutovalidateMode.disabled,
+                     
                             ),
                           ),
                         ],

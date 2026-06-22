@@ -292,7 +292,7 @@ class LabeledInput extends StatelessWidget {
             Directionality(
               textDirection: appTextDirection(isEnglish),
               child: CustomFormTextField(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
+             
                 keyboardType: CustomTextFieldType.text,
                 hintText: localizedText(context, hint),
                 controller: controller,
@@ -363,7 +363,7 @@ class ScoreInput extends StatelessWidget {
     return SizedBox(
       width: width,
       child: CustomFormTextField(
-        autovalidateMode: AutovalidateMode.onUserInteraction,
+     
         keyboardType: CustomTextFieldType.score,
         controller: controller,
         hintText: localizedText(context, '0'),

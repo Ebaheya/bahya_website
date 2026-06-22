@@ -1,4 +1,4 @@
-part of '../../../screens/patient_clinical_details.dart';
+part of '../../../screens/doctor/patient_clinical_details.dart';
 
 class _ReviewAnswersTable extends StatelessWidget {
   const _ReviewAnswersTable({required this.answers});

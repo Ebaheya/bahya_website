@@ -1,4 +1,4 @@
-part of '../../../screens/patient_clinical_details.dart';
+part of '../../../screens/doctor/patient_clinical_details.dart';
 
 class _PendingReviewTab extends StatelessWidget {
   const _PendingReviewTab({super.key, required this.patientId});

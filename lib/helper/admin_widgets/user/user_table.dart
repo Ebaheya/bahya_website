@@ -112,7 +112,7 @@ class _UsersTableState extends State<UsersTable> {
               isRequired: false,
               bordered: false,
               textDirection: TextDirection.ltr,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+              
               keyboardType: CustomTextFieldType.text,
               controller: searchController,
               onChange: (_) => applyFilters(),
@@ -138,7 +138,7 @@ class _UsersTableState extends State<UsersTable> {
             isRequired: false,
             bordered: false,
             textDirection: TextDirection.ltr,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
+            
             keyboardType: CustomTextFieldType.text,
             controller: searchController,
             onChange: (_) => applyFilters(),

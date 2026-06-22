@@ -1,4 +1,4 @@
-part of '../../../screens/patients_info.dart';
+part of '../../../screens/doctor/patients_info.dart';
 
 class _PatientReadonlySummary extends StatelessWidget {
   final PatientModel patient;

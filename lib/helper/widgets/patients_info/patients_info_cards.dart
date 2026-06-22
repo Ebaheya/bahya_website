@@ -1,4 +1,4 @@
-part of '../../../screens/patients_info.dart';
+part of '../../../screens/doctor/patients_info.dart';
 
 class _PatientsGrid extends StatelessWidget {
   final List<PatientModel> patientsList;
@@ -20,15 +20,20 @@ class _PatientsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = getScreenWidth(context);
+
+    final effectiveCrossAxisCount = w < 900 ? 1 : 2;
+
     return GridView.builder(
       itemCount: patientsList.length,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        mainAxisExtent: mainAxisExtent,
-        crossAxisSpacing: responsiveSize(context, 0.01, min: 12, max: 18),
-        mainAxisSpacing: responsiveHeight(context, 0.02, min: 14, max: 20),
+        crossAxisCount: effectiveCrossAxisCount,
+        mainAxisExtent:
+            mainAxisExtent + responsiveHeight(context, 0.04, min: 34, max: 56),
+        crossAxisSpacing: responsiveSize(context, 0.018, min: 20, max: 30),
+        mainAxisSpacing: responsiveHeight(context, 0.030, min: 22, max: 34),
       ),
       itemBuilder: (context, index) {
         final patient = patientsList[index];

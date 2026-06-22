@@ -1,4 +1,5 @@
 import 'package:bahya_website/helper/strings.dart';
+import 'package:bahya_website/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class CustomDatePickerField extends StatefulWidget {
@@ -9,6 +10,7 @@ class CustomDatePickerField extends StatefulWidget {
   final Function(DateTime date)? onDateSelected;
   final bool showCalendarIcon;
   final bool bordered;
+
   const CustomDatePickerField({
     super.key,
     this.labelText,
@@ -25,47 +27,17 @@ class CustomDatePickerField extends StatefulWidget {
 }
 
 class _CustomDatePickerFieldState extends State<CustomDatePickerField> {
-  double responsiveSize(
-    BuildContext context,
-    double factor, {
-    double min = 10,
-    double max = 24,
-  }) {
-    final width = getScreenWidth(context);
-    final shortestSide = MediaQuery.sizeOf(context).shortestSide;
+  bool _focused = false;
 
-    final value = width * factor;
-
-    if (shortestSide < 600) {
-      return value.clamp(min, max * 0.9);
-    }
-
-    return value.clamp(min, max);
-  }
-
-  double responsiveHeight(
-    BuildContext context,
-    double factor, {
-    double min = 8,
-    double max = 80,
-  }) {
-    final height = getScreenHeight(context);
-    final shortestSide = MediaQuery.sizeOf(context).shortestSide;
-
-    final value = height * factor;
-
-    if (shortestSide < 600) {
-      return value.clamp(min, max * 0.85);
-    }
-
-    return value.clamp(min, max);
+  String _localized(String text) {
+    return localizedTextByLocaleCode(
+      Localizations.localeOf(context).languageCode,
+      text,
+    );
   }
 
   Future<void> pickDate() async {
-    final titleSize = responsiveSize(context, 0.025, min: 18, max: 24);
-    final bodySize = responsiveSize(context, 0.018, min: 13, max: 16);
-    final buttonSize = responsiveSize(context, 0.018, min: 13, max: 16);
-    final radius = responsiveSize(context, 0.03, min: 18, max: 24);
+    final isMobile = getScreenWidth(context) < 650;
 
     final pickedDate = await showDatePicker(
       context: context,
@@ -73,138 +45,308 @@ class _CustomDatePickerFieldState extends State<CustomDatePickerField> {
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
       builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFFEA4C89),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF7A004C),
-              surface: Colors.white,
-            ),
-            dialogTheme: DialogThemeData(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(radius),
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              textTheme: Theme.of(
+                context,
+              ).textTheme.apply(fontFamily: "ArabicCustomFont"),
+              colorScheme: const ColorScheme.light(
+                primary: Color(0xFFE7549B),
+                onPrimary: Colors.white,
+                surface: Color(0xFFFEFBFD),
+                onSurface: Color(0xFF272044),
               ),
-            ),
-            textTheme: TextTheme(
-              headlineLarge: TextStyle(
-                fontSize: titleSize,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF7A004C),
-                fontFamily: 'ArabicCustomFont',
+              dialogTheme: DialogThemeData(
+                backgroundColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    responsiveSize(context, 0.024, min: 20, max: 28),
+                  ),
+                ),
               ),
-              headlineMedium: TextStyle(
-                fontSize: bodySize,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF7A004C),
-                fontFamily: 'ArabicCustomFont',
-              ),
-              bodyLarge: TextStyle(
-                fontSize: bodySize,
-                color: const Color(0xFF7A004C),
-                fontFamily: 'ArabicCustomFont',
-              ),
-              bodyMedium: TextStyle(
-                fontSize: bodySize,
-                color: const Color(0xFF7A004C),
-                fontFamily: 'ArabicCustomFont',
-              ),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFEA298C),
-                textStyle: TextStyle(
-                  fontFamily: 'ArabicCustomFont',
-                  fontSize: buttonSize,
+              datePickerTheme: DatePickerThemeData(
+                backgroundColor: const Color(0xFFFEFBFD),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    responsiveSize(context, 0.024, min: 20, max: 28),
+                  ),
+                  side: BorderSide(
+                    color: const Color(0xFFE7549B).withValues(alpha: 0.12),
+                  ),
+                ),
+                headerBackgroundColor: const Color(0xFFE7549B),
+                headerForegroundColor: Colors.white,
+                headerHeadlineStyle: TextStyle(
+                  fontFamily: "ArabicCustomFont",
+                  fontSize: responsiveSize(
+                    context,
+                    isMobile ? 0.06 : 0.028,
+                    min: 24,
+                    max: 34,
+                  ),
                   fontWeight: FontWeight.bold,
+                ),
+                headerHelpStyle: TextStyle(
+                  fontFamily: "ArabicCustomFont",
+                  fontSize: responsiveSize(context, 0.012, min: 13, max: 16),
+                  fontWeight: FontWeight.bold,
+                ),
+                weekdayStyle: TextStyle(
+                  fontFamily: "ArabicCustomFont",
+                  fontSize: responsiveSize(context, 0.011, min: 12, max: 14),
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF8A0057),
+                ),
+                dayStyle: TextStyle(
+                  fontFamily: "ArabicCustomFont",
+                  fontSize: responsiveSize(context, 0.011, min: 12, max: 15),
+                  fontWeight: FontWeight.w600,
+                ),
+                yearStyle: TextStyle(
+                  fontFamily: "ArabicCustomFont",
+                  fontSize: responsiveSize(context, 0.012, min: 13, max: 16),
+                  fontWeight: FontWeight.bold,
+                ),
+                todayForegroundColor: WidgetStateProperty.all(
+                  const Color(0xFFE7549B),
+                ),
+                todayBackgroundColor: WidgetStateProperty.all(
+                  const Color(0xFFFFE4F0),
+                ),
+                todayBorder: BorderSide(
+                  color: const Color(0xFFE7549B).withValues(alpha: 0.45),
+                ),
+                dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return Colors.white;
+                  }
+
+                  if (states.contains(WidgetState.disabled)) {
+                    return Colors.grey.shade400;
+                  }
+
+                  return const Color(0xFF272044);
+                }),
+                dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return const Color(0xFFE7549B);
+                  }
+
+                  if (states.contains(WidgetState.hovered)) {
+                    return const Color(0xFFFFEEF4);
+                  }
+
+                  return Colors.transparent;
+                }),
+                yearForegroundColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return Colors.white;
+                  }
+
+                  if (states.contains(WidgetState.disabled)) {
+                    return Colors.grey.shade400;
+                  }
+
+                  return const Color(0xFF272044);
+                }),
+                yearBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return const Color(0xFFE7549B);
+                  }
+
+                  if (states.contains(WidgetState.hovered)) {
+                    return const Color(0xFFFFEEF4);
+                  }
+
+                  return Colors.transparent;
+                }),
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFE7549B),
+                  backgroundColor: const Color(0xFFFFEEF4),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: responsiveSize(
+                      context,
+                      0.018,
+                      min: 18,
+                      max: 24,
+                    ),
+                    vertical: responsiveHeight(
+                      context,
+                      0.012,
+                      min: 10,
+                      max: 13,
+                    ),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      responsiveSize(context, 0.012, min: 12, max: 16),
+                    ),
+                  ),
+                  textStyle: TextStyle(
+                    fontFamily: "ArabicCustomFont",
+                    fontWeight: FontWeight.bold,
+                    fontSize: responsiveSize(context, 0.011, min: 13, max: 16),
+                  ),
                 ),
               ),
             ),
-            iconTheme: const IconThemeData(color: Color(0xFFEA298C)),
-            dividerTheme: const DividerThemeData(
-              color: Color(0xFFE9B4CB),
-              thickness: 1,
+            child: MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(isMobile ? 0.92 : 1)),
+              child: child!,
             ),
           ),
-          child: child!,
         );
       },
     );
 
-    if (pickedDate != null) {
-      widget.controller.text =
-          "${pickedDate.month}/${pickedDate.day}/${pickedDate.year}";
+    if (pickedDate == null) return;
 
-      widget.onDateSelected?.call(pickedDate);
-      setState(() {});
-    }
+    widget.controller.text =
+        "${pickedDate.month}/${pickedDate.day}/${pickedDate.year}";
+
+    widget.onDateSelected?.call(pickedDate);
+
+    if (mounted) setState(() {});
+  }
+
+  Widget? _calendarIcon(BuildContext context) {
+    if (!widget.showCalendarIcon) return null;
+
+    return Padding(
+      padding: EdgeInsets.all(responsiveSize(context, 0.005, min: 6, max: 8)),
+      child: Container(
+        width: responsiveSize(context, 0.02, min: 28, max: 34),
+        height: responsiveSize(context, 0.02, min: 28, max: 34),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.pink.shade100.withValues(alpha: 0.5),
+        ),
+        child: Icon(
+          Icons.calendar_month_rounded,
+          color: const Color(0xFFE7549B),
+          size: responsiveSize(context, 0.014, min: 18, max: 24),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final textSize = responsiveSize(context, 0.018, min: 13, max: 16);
-    final hintSize = responsiveSize(context, 0.017, min: 12, max: 15);
-    final radius = responsiveSize(context, 0.018, min: 10, max: 14);
-    final iconSize = responsiveSize(context, 0.024, min: 20, max: 24);
+    final isEnglishLocale =
+        Localizations.localeOf(context).languageCode == 'en';
+    final effectiveDirection = isEnglishLocale
+        ? TextDirection.ltr
+        : TextDirection.rtl;
 
-    return TextFormField(
-      controller: widget.controller,
-      readOnly: true,
-      onTap: pickDate,
-      keyboardType: TextInputType.datetime,
-      style: TextStyle(
-        color: Colors.black,
-        fontSize: textSize,
-        fontFamily: 'ArabicCustomFont',
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.all(
+        widget.bordered ? responsiveSize(context, 0.004, min: 4, max: 6) : 0,
       ),
-      decoration: InputDecoration(
-        alignLabelWithHint: true,
-        hintText: widget.hintText,
-        labelText: widget.labelText,
-        suffixIcon: widget.showCalendarIcon
-            ? Icon(Icons.calendar_today, color: Colors.grey, size: iconSize)
-            : null,
-        labelStyle: TextStyle(
-          color: Colors.black,
-          fontSize: textSize,
-          fontFamily: 'ArabicCustomFont',
+      decoration: BoxDecoration(
+        color: widget.bordered ? const Color(0xFFFEFBFD) : Colors.transparent,
+        borderRadius: BorderRadius.circular(
+          responsiveSize(context, 0.014, min: 16, max: 22),
         ),
-        hintStyle: TextStyle(
-          color: Colors.grey,
-          fontSize: hintSize,
-          fontFamily: 'ArabicCustomFont',
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          vertical: responsiveHeight(context, 0.016, min: 12, max: 16),
-          horizontal: responsiveSize(context, 0.018, min: 12, max: 16),
-        ),
-        // filled: true,
-        fillColor: Colors.white,
         border: widget.bordered
-            ? OutlineInputBorder(
-                borderRadius: BorderRadius.circular(radius),
-                borderSide: const BorderSide(color: Colors.grey, width: 1.2),
+            ? Border.all(
+                color: _focused
+                    ? const Color(0xFFE7549B).withValues(alpha: 0.42)
+                    : const Color(0xFFE7549B).withValues(alpha: 0.12),
+                width: _focused ? 1.4 : 1,
               )
-            : InputBorder.none,
-
-        enabledBorder: widget.bordered
-            ? OutlineInputBorder(
-                borderRadius: BorderRadius.circular(radius),
-                borderSide: BorderSide(color: Colors.pink[300]!, width: 1.2),
-              )
-            : InputBorder.none,
-
-        focusedBorder: widget.bordered
-            ? OutlineInputBorder(
-                borderRadius: BorderRadius.circular(radius),
-                borderSide: const BorderSide(color: Colors.pink, width: 1.5),
-              )
-            : InputBorder.none,
-
-        disabledBorder: InputBorder.none,
-        errorBorder: InputBorder.none,
-        focusedErrorBorder: InputBorder.none,
+            : null,
+      ),
+      child: Focus(
+        onFocusChange: (value) => setState(() => _focused = value),
+        child: TextFormField(
+          controller: widget.controller,
+          readOnly: true,
+          onTap: pickDate,
+          keyboardType: TextInputType.datetime,
+          textDirection: effectiveDirection,
+          textAlign: effectiveDirection == TextDirection.ltr
+              ? TextAlign.left
+              : TextAlign.right,
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: responsiveSize(context, 0.0075, min: 12, max: 15),
+            fontFamily: 'ArabicCustomFont',
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: widget.bordered
+                ? Colors.white.withValues(alpha: 0.82)
+                : Colors.transparent,
+            alignLabelWithHint: true,
+            counterText: '',
+            suffixIcon: _calendarIcon(context),
+            suffixIconConstraints: BoxConstraints(
+              maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
+              maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
+            ),
+            hintText: _localized(widget.hintText),
+            labelText: widget.labelText == null
+                ? null
+                : _localized(widget.labelText!),
+            hintTextDirection: effectiveDirection,
+            labelStyle: TextStyle(
+              color: _focused ? const Color(0xFFE7549B) : Colors.black87,
+              fontSize: responsiveSize(context, 0.008, min: 12, max: 16),
+              fontFamily: 'ArabicCustomFont',
+              fontWeight: FontWeight.w600,
+            ),
+            hintStyle: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: responsiveSize(context, 0.008, min: 12, max: 16),
+              fontFamily: 'ArabicCustomFont',
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              vertical: responsiveHeight(context, 0.015, min: 12, max: 16),
+              horizontal: responsiveSize(context, 0.010, min: 12, max: 16),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.010, min: 12, max: 16),
+              ),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.010, min: 12, max: 16),
+              ),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.010, min: 12, max: 16),
+              ),
+              borderSide: BorderSide.none,
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.010, min: 12, max: 16),
+              ),
+              borderSide: BorderSide.none,
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                responsiveSize(context, 0.010, min: 12, max: 16),
+              ),
+              borderSide: BorderSide.none,
+            ),
+            errorStyle: const TextStyle(fontSize: 0, height: 0),
+            errorMaxLines: 1,
+          ),
+        ),
       ),
     );
   }

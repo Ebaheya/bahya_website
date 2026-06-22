@@ -1,4 +1,4 @@
-part of '../../../screens/patients_info.dart';
+part of '../../../screens/doctor/patients_info.dart';
 
 int activePatientFiltersCount(
   String? selectedDiseaseStatus,

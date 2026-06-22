@@ -27,6 +27,7 @@ class FilterDropdown extends StatefulWidget {
 class _FilterDropdownState extends State<FilterDropdown> {
   String? selectedValue;
   bool isHover = false;
+  bool isFocused = false;
 
   IconData getItemIcon(String item) {
     if (item == "All") return Icons.grid_view_rounded;
@@ -63,10 +64,12 @@ class _FilterDropdownState extends State<FilterDropdown> {
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
     final isMobile = w < 650;
+
     final dropdownItems = widget.items
         .where((item) => item.trim().isNotEmpty)
         .toSet()
         .toList();
+
     final safeSelectedValue =
         dropdownItems.where((item) => item == selectedValue).length == 1
         ? selectedValue
@@ -74,126 +77,147 @@ class _FilterDropdownState extends State<FilterDropdown> {
 
     final currentText = safeSelectedValue ?? widget.hint;
     final currentColor = getItemColor(safeSelectedValue ?? "All");
+    final active = isHover || isFocused;
 
     return MouseRegion(
       onEnter: (_) => setState(() => isHover = true),
       onExit: (_) => setState(() => isHover = false),
       cursor: SystemMouseCursors.click,
-      child: AnimatedScale(
-        scale: isHover ? 1.01 : 1,
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        child: AnimatedContainer(
+      child: Focus(
+        onFocusChange: (value) => setState(() => isFocused = value),
+        child: AnimatedScale(
+          scale: isHover ? 1.01 : 1,
           duration: const Duration(milliseconds: 180),
-          height: responsiveHeight(context, 0.06, min: 46, max: 54),
-          padding: EdgeInsets.symmetric(
-            horizontal: responsiveSize(context, 0.011, min: 12, max: 14),
-          ),
-          decoration: BoxDecoration(
-            color: isHover ? const Color(0xFFFFF3FA) : Colors.white,
-            borderRadius:
-                widget.borderRadius ??
-                BorderRadius.circular(
-                  responsiveSize(context, 0.014, min: 14, max: 18),
-                ),
-            border: Border.all(
-              color: isHover
-                  ? buttonColor.withValues(alpha: 0.45)
-                  : Colors.grey.withValues(alpha: 0.16),
-              width: 1.2,
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.004, min: 4, max: 6),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isHover ? 0.07 : 0.035),
-                blurRadius: responsiveSize(
-                  context,
-                  isHover ? 0.014 : 0.01,
-                  min: 10,
-                  max: 18,
-                ),
-                offset: Offset(
-                  0,
-                  responsiveHeight(
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEFBFD),
+              borderRadius:
+                  widget.borderRadius ??
+                  BorderRadius.circular(
+                    responsiveSize(context, 0.014, min: 16, max: 22),
+                  ),
+              border: Border.all(
+                color: active
+                    ? const Color(0xFFE7549B).withValues(alpha: 0.42)
+                    : const Color(0xFFE7549B).withValues(alpha: 0.12),
+                width: active ? 1.4 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(
+                    0xFFE7549B,
+                  ).withValues(alpha: active ? 0.08 : 0.035),
+                  blurRadius: responsiveSize(
                     context,
-                    isHover ? 0.009 : 0.005,
-                    min: 4,
-                    max: 8,
+                    active ? 0.015 : 0.01,
+                    min: 10,
+                    max: 18,
+                  ),
+                  offset: Offset(
+                    0,
+                    responsiveHeight(
+                      context,
+                      active ? 0.009 : 0.005,
+                      min: 4,
+                      max: 8,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              hoverColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              splashColor: Colors.transparent,
-              focusColor: Colors.transparent,
+              ],
             ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                menuWidth: isMobile
-                    ? (w * 0.78).clamp(240.0, 330.0)
-                    : (w * 0.16).clamp(180.0, 260.0),
-                value: safeSelectedValue,
-                isExpanded: true,
-                dropdownColor: Colors.white,
+            child: Container(
+              height: responsiveHeight(context, 0.055, min: 44, max: 52),
+              padding: EdgeInsets.symmetric(
+                horizontal: responsiveSize(context, 0.010, min: 10, max: 14),
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.82),
                 borderRadius:
                     widget.borderRadius ??
                     BorderRadius.circular(
-                      responsiveSize(context, 0.016, min: 18, max: 22),
+                      responsiveSize(context, 0.010, min: 12, max: 16),
                     ),
-                menuMaxHeight: responsiveHeight(
-                  context,
-                  0.42,
-                  min: 260,
-                  max: 360,
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  hoverColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  splashColor: Colors.transparent,
+                  focusColor: Colors.transparent,
                 ),
-                icon: _DropdownArrow(color: currentColor),
-                hint: _DropdownSelectedContent(
-                  text: currentText,
-                  color: currentColor,
-                  icon: Icons.filter_alt_outlined,
-                  showIcon: widget.showFilterIcon != false,
-                  showDefaultIcon: false,
-                ),
-                selectedItemBuilder: (context) {
-                  return dropdownItems.map((item) {
-                    final color = getItemColor(item);
-
-                    return _DropdownSelectedContent(
-                      text: item,
-                      color: color,
-                      icon: getItemIcon(item),
-                      showIcon: widget.showDefaultIcon,
-                      showDefaultIcon: widget.showDefaultIcon,
-                    );
-                  }).toList();
-                },
-                items: dropdownItems.map((item) {
-                  final isSelected = safeSelectedValue == item;
-                  final color = getItemColor(item);
-
-                  return DropdownMenuItem(
-                    value: item,
-                    child: _DropdownMenuItemContent(
-                      item: item,
-                      color: color,
-                      icon: getItemIcon(item),
-                      isSelected: isSelected,
-                      showDefaultIcon: widget.showDefaultIcon,
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    menuWidth: isMobile
+                        ? (w * 0.82).clamp(240.0, 340.0)
+                        : (w * 0.18).clamp(190.0, 280.0),
+                    value: safeSelectedValue,
+                    isExpanded: true,
+                    dropdownColor: Colors.white,
+                    borderRadius:
+                        widget.borderRadius ??
+                        BorderRadius.circular(
+                          responsiveSize(context, 0.016, min: 18, max: 22),
+                        ),
+                    menuMaxHeight: responsiveHeight(
+                      context,
+                      0.42,
+                      min: 260,
+                      max: 360,
                     ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value == null) return;
+                    icon: _DropdownArrow(color: currentColor),
+                    hint: _DropdownSelectedContent(
+                      text: currentText,
+                      color: currentColor,
+                      icon: Icons.filter_alt_outlined,
+                      showIcon: widget.showFilterIcon != false,
+                      showDefaultIcon: false,
+                    ),
+                    selectedItemBuilder: (context) {
+                      return dropdownItems.map((item) {
+                        final color = getItemColor(item);
 
-                  setState(() {
-                    selectedValue = value;
-                  });
+                        return _DropdownSelectedContent(
+                          text: item,
+                          color: color,
+                          icon: getItemIcon(item),
+                          showIcon: widget.showDefaultIcon,
+                          showDefaultIcon: widget.showDefaultIcon,
+                        );
+                      }).toList();
+                    },
+                    items: dropdownItems.map((item) {
+                      final isSelected = safeSelectedValue == item;
+                      final color = getItemColor(item);
 
-                  widget.onChanged(value);
-                },
+                      return DropdownMenuItem(
+                        value: item,
+                        child: _DropdownMenuItemContent(
+                          item: item,
+                          color: color,
+                          icon: getItemIcon(item),
+                          isSelected: isSelected,
+                          showDefaultIcon: widget.showDefaultIcon,
+                        ),
+                      );
+                    }).toList(),
+                    onTap: () => setState(() => isFocused = true),
+                    onChanged: (value) {
+                      setState(() => isFocused = false);
+
+                      if (value == null) return;
+
+                      setState(() => selectedValue = value);
+
+                      widget.onChanged(value);
+                    },
+                  ),
+                ),
               ),
             ),
           ),
@@ -210,9 +234,10 @@ class _DropdownArrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = responsiveSize(context, 0.024, min: 28, max: 32);
+    final size = responsiveSize(context, 0.022, min: 28, max: 34);
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       width: size,
       height: size,
       decoration: BoxDecoration(
@@ -264,6 +289,7 @@ class _DropdownSelectedContent extends StatelessWidget {
             color: const Color(0xFF272044),
             bold: true,
             maxLines: 1,
+            isCenter: false,
           ),
         ),
       ],
@@ -288,14 +314,15 @@ class _DropdownMenuItemContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
       width: double.infinity,
       height: responsiveHeight(context, 0.058, min: 46, max: 52),
       padding: EdgeInsets.symmetric(
         horizontal: responsiveSize(context, 0.011, min: 12, max: 14),
       ),
       decoration: BoxDecoration(
-        color: isSelected ? color.withValues(alpha: 0.06) : Colors.transparent,
+        color: isSelected ? color.withValues(alpha: 0.07) : Colors.transparent,
         borderRadius: BorderRadius.circular(
           responsiveSize(context, 0.012, min: 12, max: 14),
         ),

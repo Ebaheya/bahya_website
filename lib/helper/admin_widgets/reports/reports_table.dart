@@ -164,7 +164,7 @@ class _ReportsTableState extends State<ReportsTable> {
                       isRequired: false,
                       bordered: false,
                       textDirection: TextDirection.ltr,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                   
                       keyboardType: CustomTextFieldType.text,
                       controller: searchController,
                       onChange: (v) {

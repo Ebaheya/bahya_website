@@ -94,8 +94,21 @@ class _SideLine extends StatelessWidget {
 
 class _StatusBadge extends StatelessWidget {
   final bool showDelete;
+  final String status;
 
-  const _StatusBadge({required this.showDelete});
+  const _StatusBadge({required this.showDelete, required this.status});
+
+  String get text {
+    final upperStatus = status.trim().toUpperCase();
+
+    if (upperStatus == "SCHEDULED") return "مجدول";
+    if (upperStatus == "PUBLISHED") return "منشور";
+    if (upperStatus == "CANCELLED") return "ملغي";
+    if (upperStatus == "SUBMITTED") return "تم الإرسال";
+    if (upperStatus == "REVIEWED") return "تمت المراجعة";
+
+    return showDelete ? "قابل للإلغاء" : "منشور";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +124,7 @@ class _StatusBadge extends StatelessWidget {
         ),
       ),
       child: customText(
-        text: showDelete ? "مجدول" : "منشور",
+        text: text,
         size: responsiveSize(context, 0.009, min: 12, max: 16),
         bold: true,
         color: const Color(0xFFE5005F),
@@ -129,26 +142,40 @@ class _CancelButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onDelete,
-      borderRadius: BorderRadius.circular(
-        responsiveSize(context, 0.012, min: 12, max: 14),
-      ),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: responsiveSize(context, 0.012, min: 12, max: 16),
-          vertical: responsiveHeight(context, 0.01, min: 8, max: 10),
+          horizontal: responsiveSize(context, 0.013, min: 13, max: 17),
+          vertical: responsiveHeight(context, 0.011, min: 9, max: 12),
         ),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFEEF4),
-          borderRadius: BorderRadius.circular(
-            responsiveSize(context, 0.012, min: 12, max: 14),
-          ),
-          border: Border.all(color: const Color(0xFFFFBCD4)),
+          color: const Color(0xFFFFEEF3),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFFFB3C7)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFD32F5F).withValues(alpha: .08),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
-        child: customText(
-          text: "إلغاء",
-          size: responsiveSize(context, 0.0085, min: 12, max: 15),
-          bold: true,
-          color: const Color(0xFFE5005F),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cancel_schedule_send_rounded,
+              size: 18,
+              color: Color(0xFFD32F5F),
+            ),
+            const SizedBox(width: 6),
+            customText(
+              text: "إلغاء النشر",
+              size: responsiveSize(context, 0.0085, min: 12, max: 15),
+              bold: true,
+              color: const Color(0xFFD32F5F),
+            ),
+          ],
         ),
       ),
     );

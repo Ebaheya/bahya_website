@@ -41,7 +41,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
                 bordered: false,
                 controller: widget.fullNameController,
                 hintText: localizedText(context, 'Full Name'),
-                autovalidateMode: AutovalidateMode.onUserInteraction,
+                
                 keyboardType: CustomTextFieldType.text,
                 textDirection: TextDirection.ltr,
                 isRequired: true,
@@ -54,7 +54,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
                 bordered: false,
                 controller: widget.emailController,
                 hintText: localizedText(context, 'Email'),
-                autovalidateMode: AutovalidateMode.onUserInteraction,
+                
                 keyboardType: CustomTextFieldType.email,
                 textDirection: TextDirection.ltr,
                 isRequired: true,
@@ -73,7 +73,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
                 bordered: false,
                 controller: widget.passwordController,
                 hintText: localizedText(context, 'Password'),
-                autovalidateMode: AutovalidateMode.onUserInteraction,
+                
                 keyboardType: CustomTextFieldType.password,
                 obscureText: true,
                 textDirection: TextDirection.ltr,

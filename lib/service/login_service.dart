@@ -64,16 +64,15 @@ Future<void> login({required String email, required String password}) async {
 
     final response = await dio.post(
       '/auth/login',
-
       data: {"email": email.trim().toLowerCase(), "password": password.trim()},
-
       options: Options(contentType: Headers.jsonContentType),
     );
 
     debugPrint('Login successful');
+    debugPrint('LOGIN STATUS: ${response.statusCode}');
+    debugPrint('LOGIN DATA: ${response.data}');
 
     final accessToken = response.data['accessToken'];
-
     final refreshToken = response.data['refreshToken'];
 
     if (accessToken == null || refreshToken == null) {
@@ -82,24 +81,44 @@ Future<void> login({required String email, required String password}) async {
 
     await storage.saveTokens(
       accessToken: accessToken,
-
       refreshToken: refreshToken,
     );
 
     try {
       await _validateStoredLoginSession();
-    } catch (_) {
+    } catch (e) {
       await storage.clearTokens();
+      debugPrint('LOGIN SESSION VALIDATION FAILED: $e');
       rethrow;
     }
   } on DioException catch (e) {
     await storage.clearTokens();
-    debugPrint('Login failed');
 
-    final errorMessage =
-        e.response?.data?['error']?['message'] ??
-        e.response?.data?['message'] ??
-        'Login failed';
+    debugPrint('LOGIN FAILED');
+    debugPrint('DIO TYPE: ${e.type}');
+    debugPrint('DIO STATUS: ${e.response?.statusCode}');
+    debugPrint('DIO DATA: ${e.response?.data}');
+    debugPrint('DIO MESSAGE: ${e.message}');
+    debugPrint('DIO ERROR: ${e.error}');
+
+    final responseData = e.response?.data;
+
+    String errorMessage = 'Login failed';
+
+    if (responseData is Map<String, dynamic>) {
+      errorMessage =
+          responseData['error']?['message'] ??
+          responseData['message'] ??
+          errorMessage;
+    } else if (responseData is String && responseData.trim().isNotEmpty) {
+      errorMessage = responseData;
+    } else if (e.type == DioExceptionType.connectionError) {
+      errorMessage = 'Connection error. Check API URL or CORS.';
+    } else if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      errorMessage = 'Connection timeout. Try again.';
+    }
 
     throw Exception(errorMessage);
   } catch (e) {
@@ -110,7 +129,7 @@ Future<void> login({required String email, required String password}) async {
       throw Exception(e.message);
     }
 
-    debugPrint('Unexpected error: $e');
+    debugPrint('Unexpected login error: $e');
 
     throw Exception('Something went wrong');
   }

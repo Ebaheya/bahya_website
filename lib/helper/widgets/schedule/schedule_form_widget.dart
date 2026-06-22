@@ -145,7 +145,7 @@ Widget scheduleSingleLineInput({
               bordered: false,
               isRequired: false,
               showInlineError: false,
-              autovalidateMode: AutovalidateMode.disabled,
+             
               keyboardType: CustomTextFieldType.number,
               controller: controller,
               hintText: hint,

@@ -1,4 +1,4 @@
-part of '../../../screens/patient_clinical_details.dart';
+part of '../../../screens/doctor/patient_clinical_details.dart';
 
 enum BadgeType { success, warning, danger, info, status, neutral }
 

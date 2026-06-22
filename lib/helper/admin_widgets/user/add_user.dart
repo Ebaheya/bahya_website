@@ -1,16 +1,19 @@
 import 'dart:developer';
 
 import 'package:bahya_website/data/api/web/web_service.dart';
+import 'package:bahya_website/helper/admin_widgets/page_header.dart';
 import 'package:bahya_website/helper/admin_widgets/user/add_patient.dart';
 import 'package:bahya_website/helper/admin_widgets/user/add_staff_dialog.dart';
 import 'package:bahya_website/helper/admin_widgets/user/add_user_widgets.dart';
-import 'package:bahya_website/helper/admin_widgets/page_header.dart';
+import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
 
 class AddUserDialog extends StatefulWidget {
-  const AddUserDialog({super.key});
+  final VoidCallback? onUserCreated;
+
+  const AddUserDialog({super.key, this.onUserCreated});
 
   @override
   State<AddUserDialog> createState() => _AddUserDialogState();
@@ -30,6 +33,7 @@ class _AddUserDialogState extends State<AddUserDialog>
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController crnController = TextEditingController();
+
   final TextEditingController patientFullNameController =
       TextEditingController();
   final TextEditingController patientEmailController = TextEditingController();
@@ -50,7 +54,6 @@ class _AddUserDialogState extends State<AddUserDialog>
     passwordController.dispose();
     fullNameController.dispose();
     crnController.dispose();
-
     patientFullNameController.dispose();
     patientEmailController.dispose();
     patientPasswordController.dispose();
@@ -59,17 +62,26 @@ class _AddUserDialogState extends State<AddUserDialog>
     patientAddressController.dispose();
     emergencyNameController.dispose();
     emergencyPhoneController.dispose();
-
     super.dispose();
   }
 
   Future<void> createUser() async {
     if (isStaff) {
+      if (selectedRole == null || selectedRole!.trim().isEmpty) {
+        customDialog(
+          context: context,
+          title: "Error",
+          message: "Please select staff role",
+          isError: true,
+        );
+        return;
+      }
+
       try {
         await webService.createStaff(
-          email: emailController.text,
-          password: passwordController.text,
-          fullName: fullNameController.text,
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+          fullName: fullNameController.text.trim(),
           role: selectedRole!,
         );
 
@@ -79,7 +91,9 @@ class _AddUserDialogState extends State<AddUserDialog>
           context: context,
           title: "Done",
           message: "Staff created successfully",
+          isSuccess: true,
           onClose: () {
+            widget.onUserCreated?.call();
             Navigator.pop(context);
             Navigator.pop(context);
           },
@@ -91,52 +105,60 @@ class _AddUserDialogState extends State<AddUserDialog>
           context: context,
           title: "Error",
           message: "Failed to create staff: $e",
-          onClose: () {
-            Navigator.pop(context);
-            Navigator.pop(context);
-          },
+          isError: true,
         );
       }
-    } else {
-      try {
-        await webService.createPatient(
-          crn: crnController.text,
-          fullName: patientFullNameController.text,
-          email: patientEmailController.text,
-          password: patientPasswordController.text,
-          phone: patientPhoneController.text,
-          dateOfBirth:
-              "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}",
-          gender: selectedGender ?? '',
-          address: patientAddressController.text,
-          emergencyContactName: emergencyNameController.text,
-          emergencyContactPhone: emergencyPhoneController.text,
-        );
 
-        if (!mounted) return;
+      return;
+    }
 
-        customDialog(
-          context: context,
-          title: "Done",
-          message: "Patient created successfully",
-          onClose: () {
-            Navigator.pop(context);
-            Navigator.pop(context);
-          },
-        );
-      } catch (e) {
-        if (!mounted) return;
+    if (selectedDate == null) {
+      customDialog(
+        context: context,
+        title: "Error",
+        message: "Please select patient birth date",
+        isError: true,
+      );
+      return;
+    }
 
-        customDialog(
-          context: context,
-          title: "Error",
-          message: "Failed to create patient: $e",
-          onClose: () {
-            Navigator.pop(context);
-            Navigator.pop(context);
-          },
-        );
-      }
+    try {
+      await webService.createPatient(
+        crn: crnController.text.trim(),
+        fullName: patientFullNameController.text.trim(),
+        email: patientEmailController.text.trim(),
+        password: patientPasswordController.text.trim(),
+        phone: patientPhoneController.text.trim(),
+        dateOfBirth:
+            "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}",
+        gender: selectedGender ?? '',
+        address: patientAddressController.text.trim(),
+        emergencyContactName: emergencyNameController.text.trim(),
+        emergencyContactPhone: emergencyPhoneController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      customDialog(
+        context: context,
+        title: "Done",
+        message: "Patient created successfully",
+        isSuccess: true,
+        onClose: () {
+          widget.onUserCreated?.call();
+          Navigator.pop(context);
+          Navigator.pop(context);
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      customDialog(
+        context: context,
+        title: "Error",
+        message: "Failed to create patient: $e",
+        isError: true,
+      );
     }
   }
 
@@ -182,11 +204,8 @@ class _AddUserDialogState extends State<AddUserDialog>
                 ),
               ],
             ),
-
             SizedBox(height: responsiveHeight(context, 0.012, min: 8, max: 12)),
-
             Divider(color: Colors.grey.shade300, height: 1),
-
             Flexible(
               child: SingleChildScrollView(
                 padding: EdgeInsets.all(
@@ -197,17 +216,12 @@ class _AddUserDialogState extends State<AddUserDialog>
                     AddUserTabs(
                       isStaff: isStaff,
                       onStaffTap: () {
-                        setState(() {
-                          isStaff = true;
-                        });
+                        setState(() => isStaff = true);
                       },
                       onPatientTap: () {
-                        setState(() {
-                          isStaff = false;
-                        });
+                        setState(() => isStaff = false);
                       },
                     ),
-
                     SizedBox(
                       height: responsiveHeight(
                         context,
@@ -216,7 +230,6 @@ class _AddUserDialogState extends State<AddUserDialog>
                         max: 24,
                       ),
                     ),
-
                     AnimatedSize(
                       duration: const Duration(milliseconds: 350),
                       curve: Curves.easeInOut,
@@ -243,10 +256,7 @@ class _AddUserDialogState extends State<AddUserDialog>
                                 passwordController: passwordController,
                                 fullNameController: fullNameController,
                                 onChanged: (v) {
-                                  setState(() {
-                                    selectedRole = v;
-                                  });
-
+                                  setState(() => selectedRole = v);
                                   log("Selected role: $v");
                                 },
                               )
@@ -265,9 +275,7 @@ class _AddUserDialogState extends State<AddUserDialog>
                                     emergencyPhoneController,
                                 selectedGender: selectedGender,
                                 onGenderChanged: (v) {
-                                  setState(() {
-                                    selectedGender = v;
-                                  });
+                                  setState(() => selectedGender = v);
                                 },
                                 onDateSelected: (date) {
                                   selectedDate = date;
@@ -275,13 +283,10 @@ class _AddUserDialogState extends State<AddUserDialog>
                               ),
                       ),
                     ),
-
                     SizedBox(
                       height: responsiveHeight(context, 0.02, min: 14, max: 20),
                     ),
-
                     Divider(color: Colors.grey.shade300),
-
                     SizedBox(
                       height: responsiveHeight(
                         context,
@@ -290,7 +295,6 @@ class _AddUserDialogState extends State<AddUserDialog>
                         max: 18,
                       ),
                     ),
-
                     AddUserActions(
                       isStaff: isStaff,
                       onCancel: () => Navigator.pop(context),

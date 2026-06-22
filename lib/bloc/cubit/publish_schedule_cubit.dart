@@ -2,6 +2,7 @@ import 'package:bahya_website/bloc/states/publish_schedule_state.dart';
 import 'package:bahya_website/data/api/models/form_model.dart';
 import 'package:bahya_website/data/api/repo/repo.dart';
 import 'package:bahya_website/helper/widgets/schedule/scheduled_list_widget.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PublishScheduleCubit extends Cubit<PublishScheduleState> {
@@ -12,7 +13,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
   static const Duration republishDelay = Duration(hours: 6);
 
   Future<void> loadForms() async {
-    emit(state.copyWith(isLoading: true, error: null));
+    emit(state.copyWith(isLoading: true, clearError: true));
 
     try {
       final response = await repo.getForms();
@@ -39,12 +40,13 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
           activeForms: activeForms,
           draftForms: draftForms,
           publishedForms: publishedForms,
-          error: null,
+          clearError: true,
         ),
       );
 
       await loadPublishedAssignments();
     } catch (e) {
+      debugPrint("Load forms failed: $e");
       emit(
         state.copyWith(isLoading: false, error: "حدث خطأ أثناء تحميل النماذج."),
       );
@@ -57,7 +59,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
       return;
     }
 
-    emit(state.copyWith(isSearchingPatients: true, error: null));
+    emit(state.copyWith(isSearchingPatients: true, clearError: true));
 
     try {
       final response = await repo.getPatient(search: search);
@@ -69,6 +71,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
         ),
       );
     } catch (e) {
+      debugPrint("Search patients failed: $e");
       emit(
         state.copyWith(
           isSearchingPatients: false,
@@ -84,7 +87,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
       return;
     }
 
-    emit(state.copyWith(isSearchingVolunteers: true, error: null));
+    emit(state.copyWith(isSearchingVolunteers: true, clearError: true));
 
     try {
       final response = await repo.getVolunteer(search: search);
@@ -96,6 +99,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
         ),
       );
     } catch (e) {
+      debugPrint("Search volunteers failed: $e");
       emit(
         state.copyWith(
           isSearchingVolunteers: false,
@@ -116,6 +120,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
         state.copyWith(
           isPublishing: false,
           error: "هذا النموذج غير مفعّل. فعّله أولاً قبل النشر.",
+          clearSuccessMessage: true,
         ),
       );
       return false;
@@ -137,6 +142,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
             isPublishing: false,
             error:
                 "لا يمكن إعادة نشر نفس النموذج الآن. انتظر $hours ساعة و $minutes دقيقة.",
+            clearSuccessMessage: true,
           ),
         );
 
@@ -144,7 +150,13 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
       }
     }
 
-    emit(state.copyWith(isPublishing: true, error: null));
+    emit(
+      state.copyWith(
+        isPublishing: true,
+        clearError: true,
+        clearSuccessMessage: true,
+      ),
+    );
 
     try {
       final status = form.currentVersion?.status.trim().toUpperCase();
@@ -170,8 +182,9 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
       emit(
         state.copyWith(
           isPublishing: false,
-          error: null,
           lastPublishedAtByFormId: updatedLastPublished,
+          successMessage: "تم نشر النموذج بنجاح.",
+          clearError: true,
         ),
       );
 
@@ -180,6 +193,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
 
       return true;
     } catch (e) {
+      debugPrint("Publish form failed: $e");
       emit(
         state.copyWith(
           isPublishing: false,
@@ -190,9 +204,55 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
     }
   }
 
+  Future<bool> cancelPublishedAssignment(String assignmentId) async {
+    if (state.isCancellingAssignment) return false;
+
+    emit(
+      state.copyWith(
+        isCancellingAssignment: true,
+        clearError: true,
+        clearSuccessMessage: true,
+      ),
+    );
+
+    try {
+      await repo.cancelFormAssignment(assignmentId: assignmentId);
+
+      debugPrint("Assignment cancelled successfully: $assignmentId");
+
+      final updatedItems = state.publishedAssignments
+          .where((item) => item.id != assignmentId)
+          .toList();
+
+      emit(
+        state.copyWith(
+          isCancellingAssignment: false,
+          publishedAssignments: updatedItems,
+          successMessage: "تم إلغاء النشر بنجاح.",
+          clearError: true,
+        ),
+      );
+
+      await loadPublishedAssignments();
+
+      return true;
+    } catch (e) {
+      debugPrint("Cancel assignment failed: $e");
+
+      emit(
+        state.copyWith(
+          isCancellingAssignment: false,
+          error: "حدث خطأ أثناء إلغاء النشر.",
+        ),
+      );
+
+      return false;
+    }
+  }
+
   Future<void> loadPublishedAssignments() async {
     try {
-      emit(state.copyWith(isLoadingAssignments: true, error: null));
+      emit(state.copyWith(isLoadingAssignments: true, clearError: true));
 
       final List<ScheduledItemModel> items = [];
       final Map<String, DateTime> lastPublishedMap = {};
@@ -218,6 +278,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
 
           items.add(
             ScheduledItemModel(
+              id: assignment.id.toString(),
               form: form.name,
               date: assignment.publishAt == null
                   ? "فوري"
@@ -246,6 +307,7 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
         ),
       );
     } catch (e) {
+      debugPrint("Load published assignments failed: $e");
       emit(
         state.copyWith(
           isLoadingAssignments: false,
@@ -308,10 +370,6 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
     }
   }
 
-  void emitPublishing(bool value) {
-    emit(state.copyWith(isPublishing: value));
-  }
-
   List<String> _buildVolunteerNames(dynamic assignment) {
     final name = assignment.volunteer?.fullName;
 
@@ -320,6 +378,10 @@ class PublishScheduleCubit extends Cubit<PublishScheduleState> {
     }
 
     return [];
+  }
+
+  void emitPublishing(bool value) {
+    emit(state.copyWith(isPublishing: value));
   }
 
   String _formatIsoDate(String? value) {

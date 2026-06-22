@@ -1,4 +1,4 @@
-part of '../../../screens/patients_info.dart';
+part of '../../../screens/doctor/patients_info.dart';
 
 class _PatientCardProfile extends StatelessWidget {
   final String patientName;
@@ -181,9 +181,10 @@ class _StatusBadge extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: responsiveSize(context, 0.009, min: 12, max: 14),
+        horizontal: responsiveSize(context, 0.009, min: 2, max: 14),
         vertical: responsiveHeight(context, 0.008, min: 6, max: 8),
       ),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFFFFEAF4),
         borderRadius: BorderRadius.circular(22),

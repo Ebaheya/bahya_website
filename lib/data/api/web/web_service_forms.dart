@@ -429,4 +429,28 @@ extension WebServiceForms on WebService {
       throw Exception('Unexpected error : $e');
     }
   }
+
+  Future<void> cancelFormAssignment({required String assignmentId}) async {
+    try {
+      final response = await dio.patch(
+        '/form-assignments/$assignmentId/cancel',
+      );
+
+      debugPrint("Cancel assignment success: ${response.data}");
+    } on DioException catch (e) {
+      debugPrint(
+        "Cancel assignment DioException: ${e.response?.data ?? e.message}",
+      );
+
+      throw Exception(
+        _apiErrorMessage(
+          e.response?.data ?? e.message,
+          'Failed to cancel assignment',
+        ),
+      );
+    } catch (e) {
+      debugPrint("Cancel assignment unexpected error: $e");
+      throw Exception('Unexpected error : $e');
+    }
+  }
 }

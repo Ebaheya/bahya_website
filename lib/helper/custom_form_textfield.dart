@@ -19,7 +19,6 @@ enum CustomTextFieldType {
 class CustomFormTextField extends StatefulWidget {
   final String? labelText;
   final String? hintText;
-  final AutovalidateMode autovalidateMode;
   final bool obscureText;
   final bool readOnly;
   final CustomTextFieldType keyboardType;
@@ -41,7 +40,6 @@ class CustomFormTextField extends StatefulWidget {
     super.key,
     this.labelText,
     this.hintText,
-    required this.autovalidateMode,
     required this.keyboardType,
     this.obscureText = false,
     this.readOnly = false,
@@ -67,6 +65,7 @@ class CustomFormTextField extends StatefulWidget {
 class _CustomFormTextFieldState extends State<CustomFormTextField> {
   late bool _obscureText;
   String? floatingError;
+  bool _focused = false;
 
   @override
   void initState() {
@@ -249,6 +248,7 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
           onTap: () {
             setState(() => _obscureText = !_obscureText);
           },
+          borderRadius: BorderRadius.circular(50),
           child: Icon(
             _obscureText ? Icons.visibility : Icons.visibility_off,
             color: Colors.pink,
@@ -270,147 +270,161 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        TextFormField(
-          onChanged: (value) {
-            widget.onChange?.call(value);
-
-            if (widget.showInlineError) {
-              setState(() {
-                _validate(value);
-              });
-            }
-          },
-          keyboardType: _mapKeyboardType(widget.keyboardType),
-          textAlign: widget.centerHint
-              ? TextAlign.center
-              : effectiveDirection == TextDirection.ltr
-              ? TextAlign.left
-              : TextAlign.right,
-          controller: widget.controller,
-          obscureText: _obscureText,
-          validator: (value) {
-            final result = _validate(value);
-
-            if (widget.showInlineError) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) setState(() {});
-              });
-            }
-
-            return result;
-          },
-          onTap: widget.onTap,
-          readOnly: widget.readOnly,
-          inputFormatters: _inputFormatters(),
-          obscuringCharacter: '•',
-          autovalidateMode: AutovalidateMode.disabled,
-          textDirection: effectiveDirection,
-          maxLines: widget.maxLines,
-          minLines: widget.minLines,
-          expands: false,
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: responsiveSize(context, 0.0075, min: 12, max: 15),
-            fontFamily: 'ArabicCustomFont',
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.all(
+            widget.bordered
+                ? responsiveSize(context, 0.004, min: 4, max: 6)
+                : 0,
           ),
-          decoration: InputDecoration(
-            alignLabelWithHint: true,
-            counterText: '',
-            suffixIcon: widget.obscureText
-                ? _passwordToggle(context)
-                : _iconWithPadding(context, widget.suffixIcon, false),
-            suffixIconConstraints: BoxConstraints(
-              maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
-              maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
-            ),
-            prefixIcon: _iconWithPadding(context, widget.prefixIcon, true),
-            prefixIconConstraints: BoxConstraints(
-              maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
-              maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
-            ),
-            hintText: widget.hintText == null
-                ? null
-                : localizedTextByLocaleCode(
-                    Localizations.localeOf(context).languageCode,
-                    widget.hintText!,
-                  ),
-            labelText: widget.labelText == null
-                ? null
-                : localizedTextByLocaleCode(
-                    Localizations.localeOf(context).languageCode,
-                    widget.labelText!,
-                  ),
-            hintTextDirection: widget.centerHint
-                ? TextDirection.ltr
-                : effectiveDirection,
-            labelStyle: TextStyle(
-              color: Colors.black,
-              fontSize: responsiveSize(context, 0.008, min: 12, max: 16),
-              fontFamily: 'ArabicCustomFont',
-            ),
-            hintStyle: TextStyle(
-              color: Colors.grey,
-              fontSize: responsiveSize(context, 0.008, min: 12, max: 16),
-              fontFamily: 'ArabicCustomFont',
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              vertical: responsiveHeight(context, 0.015, min: 12, max: 16),
-              horizontal: responsiveSize(context, 0.008, min: 10, max: 14),
+          decoration: BoxDecoration(
+            color: widget.bordered
+                ? const Color(0xFFFEFBFD)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(
+              responsiveSize(context, 0.014, min: 16, max: 22),
             ),
             border: widget.bordered
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      responsiveSize(context, 0.006, min: 8, max: 12),
-                    ),
-                    borderSide: BorderSide.none,
+                ? Border.all(
+                    color: _focused
+                        ? const Color(0xFFE7549B).withValues(alpha: 0.42)
+                        : const Color(0xFFE7549B).withValues(alpha: 0.12),
+                    width: _focused ? 1.4 : 1,
                   )
-                : InputBorder.none,
-            enabledBorder: widget.bordered
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      responsiveSize(context, 0.006, min: 8, max: 12),
-                    ),
-                    borderSide: BorderSide(
-                      color: Colors.pink.shade300,
-                      width: 1.2,
-                    ),
-                  )
-                : InputBorder.none,
-            focusedBorder: widget.bordered
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      responsiveSize(context, 0.006, min: 8, max: 12),
-                    ),
-                    borderSide: const BorderSide(
-                      color: Colors.pink,
-                      width: 1.5,
-                    ),
-                  )
-                : InputBorder.none,
-            errorBorder: widget.bordered
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      responsiveSize(context, 0.006, min: 8, max: 12),
-                    ),
-                    borderSide: BorderSide(
-                      color: Colors.red.shade400,
-                      width: 1.2,
-                    ),
-                  )
-                : InputBorder.none,
-            focusedErrorBorder: widget.bordered
-                ? OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      responsiveSize(context, 0.006, min: 8, max: 12),
-                    ),
-                    borderSide: BorderSide(
-                      color: Colors.red.shade500,
-                      width: 1.5,
-                    ),
-                  )
-                : InputBorder.none,
-            errorStyle: const TextStyle(fontSize: 0, height: 0),
-            errorMaxLines: 1,
+                : null,
+           
+          ),
+          child: Focus(
+            onFocusChange: (value) {
+              setState(() => _focused = value);
+            },
+            child: TextFormField(
+              onChanged: (value) {
+                widget.onChange?.call(value);
+
+                if (widget.showInlineError) {
+                  setState(() {
+                    _validate(value);
+                  });
+                }
+              },
+              keyboardType: _mapKeyboardType(widget.keyboardType),
+              textAlign: widget.centerHint
+                  ? TextAlign.center
+                  : effectiveDirection == TextDirection.ltr
+                  ? TextAlign.left
+                  : TextAlign.right,
+              controller: widget.controller,
+              obscureText: _obscureText,
+              validator: (value) {
+                final result = _validate(value);
+
+                if (widget.showInlineError) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() {});
+                  });
+                }
+
+                return result;
+              },
+              onTap: widget.onTap,
+              readOnly: widget.readOnly,
+              inputFormatters: _inputFormatters(),
+              obscuringCharacter: '•',
+              autovalidateMode: AutovalidateMode.disabled,
+              textDirection: effectiveDirection,
+              maxLines: widget.maxLines,
+              minLines: widget.minLines,
+              expands: false,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: responsiveSize(context, 0.0075, min: 12, max: 15),
+                fontFamily: 'ArabicCustomFont',
+              ),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: widget.bordered
+                    ? Colors.white.withValues(alpha: 0.82)
+                    : Colors.transparent,
+                alignLabelWithHint: true,
+                counterText: '',
+                suffixIcon: widget.obscureText
+                    ? _passwordToggle(context)
+                    : _iconWithPadding(context, widget.suffixIcon, false),
+                suffixIconConstraints: BoxConstraints(
+                  maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
+                  maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
+                ),
+                prefixIcon: _iconWithPadding(context, widget.prefixIcon, true),
+                prefixIconConstraints: BoxConstraints(
+                  maxHeight: responsiveHeight(context, 0.08, min: 50, max: 100),
+                  maxWidth: responsiveSize(context, 0.06, min: 50, max: 100),
+                ),
+                hintText: widget.hintText == null
+                    ? null
+                    : localizedTextByLocaleCode(
+                        Localizations.localeOf(context).languageCode,
+                        widget.hintText!,
+                      ),
+                labelText: widget.labelText == null
+                    ? null
+                    : localizedTextByLocaleCode(
+                        Localizations.localeOf(context).languageCode,
+                        widget.labelText!,
+                      ),
+                hintTextDirection: widget.centerHint
+                    ? TextDirection.ltr
+                    : effectiveDirection,
+                labelStyle: TextStyle(
+                  color: _focused ? const Color(0xFFE7549B) : Colors.black87,
+                  fontSize: responsiveSize(context, 0.008, min: 12, max: 16),
+                  fontFamily: 'ArabicCustomFont',
+                  fontWeight: FontWeight.w600,
+                ),
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: responsiveSize(context, 0.008, min: 12, max: 16),
+                  fontFamily: 'ArabicCustomFont',
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: responsiveHeight(context, 0.015, min: 12, max: 16),
+                  horizontal: responsiveSize(context, 0.010, min: 12, max: 16),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    responsiveSize(context, 0.010, min: 12, max: 16),
+                  ),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    responsiveSize(context, 0.010, min: 12, max: 16),
+                  ),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    responsiveSize(context, 0.010, min: 12, max: 16),
+                  ),
+                  borderSide: BorderSide.none,
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    responsiveSize(context, 0.010, min: 12, max: 16),
+                  ),
+                  borderSide: BorderSide.none,
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    responsiveSize(context, 0.010, min: 12, max: 16),
+                  ),
+                  borderSide: BorderSide.none,
+                ),
+                errorStyle: const TextStyle(fontSize: 0, height: 0),
+                errorMaxLines: 1,
+              ),
+            ),
           ),
         ),
         if (widget.showInlineError && floatingError != null)

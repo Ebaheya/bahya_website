@@ -1,4 +1,4 @@
-part of '../../../screens/patient_clinical_details.dart';
+part of '../../../screens/doctor/patient_clinical_details.dart';
 
 bool get _isEnglishLocale =>
     AppLanguageController.localeNotifier.value.languageCode == 'en';

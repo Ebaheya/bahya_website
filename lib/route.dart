@@ -1,13 +1,14 @@
 import 'package:bahya_website/data/api/web/web_service.dart';
 import 'package:bahya_website/data/local/data_secure.dart';
 import 'package:bahya_website/helper/base.dart';
-import 'package:bahya_website/screens/add_questionnaire.dart';
+import 'package:bahya_website/screens/doctor/add_questionnaire.dart';
 import 'package:bahya_website/screens/admin/admin_panal.dart';
-import 'package:bahya_website/screens/home.dart';
+import 'package:bahya_website/screens/doctor/doctor_home.dart';
+import 'package:bahya_website/screens/doctor/home.dart';
 import 'package:bahya_website/screens/login.dart';
-import 'package:bahya_website/screens/patients_info.dart';
-import 'package:bahya_website/screens/publish_schedule_screen.dart';
-import 'package:bahya_website/screens/questionnaire_filler.dart';
+import 'package:bahya_website/screens/doctor/patients_info.dart';
+import 'package:bahya_website/screens/doctor/publish_schedule_screen.dart';
+import 'package:bahya_website/screens/doctor/questionnaire_filler.dart';
 import 'package:bahya_website/screens/reset_password.dart';
 import 'package:bahya_website/screens/volunteer_survey_screen.dart';
 import 'package:flutter/material.dart';
@@ -167,12 +168,13 @@ class AppRouter {
 
       final adminRoutes = <String>{'/admin'};
 
-      final doctorRoutes = <String>{
+final doctorRoutes = <String>{
         '/home',
         '/patient_info',
         '/add_questionnaire',
         '/publish_schedule',
         '/questionnaire_filler',
+        '/doctor_dashboard',
       };
 
       final volunteerRoutes = <String>{
@@ -269,6 +271,10 @@ class AppRouter {
       GoRoute(
         path: '/questionnaire_filler',
         builder: (context, state) => FormsScreen(),
+      ),
+       GoRoute(
+        path: '/doctor_dashboard',
+        builder: (context, state) => DoctorDashboardScreen(),
       ),
       GoRoute(
         path: '/volunteer_survey',

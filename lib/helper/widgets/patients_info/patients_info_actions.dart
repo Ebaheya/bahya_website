@@ -1,4 +1,4 @@
-part of '../../../screens/patients_info.dart';
+part of '../../../screens/doctor/patients_info.dart';
 
 bool get _isEnglishLocale =>
     AppLanguageController.localeNotifier.value.languageCode == 'en';
@@ -33,7 +33,7 @@ class _TopActionsBar extends StatelessWidget {
           CustomFormTextField(
             controller: searchController,
             hintText: localizedText(context, 'ابحث بالاسم أو رقم الملف...'),
-            autovalidateMode: AutovalidateMode.disabled,
+           
             keyboardType: CustomTextFieldType.text,
             textDirection: _activeTextDirection,
             suffixIcon: const Icon(Icons.search, color: Color(0xFF7A7890)),
@@ -117,7 +117,6 @@ class _TopActionsBar extends StatelessWidget {
             child: CustomFormTextField(
               controller: searchController,
               hintText: localizedText(context, 'ابحث بالاسم أو رقم الملف...'),
-              autovalidateMode: AutovalidateMode.disabled,
               keyboardType: CustomTextFieldType.text,
               textDirection: _activeTextDirection,
               suffixIcon: const Icon(Icons.search, color: Color(0xFF7A7890)),

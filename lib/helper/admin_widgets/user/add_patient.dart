@@ -55,7 +55,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
             controller: widget.crnController,
             hintText: localizedText(context, 'CRN'),
             bordered: false,
-            autovalidateMode: AutovalidateMode.disabled,
+           
             keyboardType: CustomTextFieldType.text,
             textDirection: TextDirection.ltr,
           ),
@@ -71,7 +71,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 controller: widget.fullNameController,
                 hintText: localizedText(context, 'Full Name'),
                 bordered: false,
-                autovalidateMode: AutovalidateMode.disabled,
+               
                 keyboardType: CustomTextFieldType.text,
                 textDirection: TextDirection.ltr,
               ),
@@ -83,7 +83,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 controller: widget.emailController,
                 hintText: localizedText(context, 'Email'),
                 bordered: false,
-                autovalidateMode: AutovalidateMode.disabled,
+               
                 keyboardType: CustomTextFieldType.email,
                 textDirection: TextDirection.ltr,
               ),
@@ -101,7 +101,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 controller: widget.passwordController,
                 hintText: localizedText(context, 'Password'),
                 bordered: false,
-                autovalidateMode: AutovalidateMode.disabled,
+               
                 keyboardType: CustomTextFieldType.password,
                 obscureText: true,
                 textDirection: TextDirection.ltr,
@@ -114,7 +114,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 bordered: false,
                 controller: widget.phoneController,
                 hintText: localizedText(context, 'Phone Number'),
-                autovalidateMode: AutovalidateMode.disabled,
+               
                 keyboardType: CustomTextFieldType.phone,
                 textDirection: TextDirection.ltr,
               ),
@@ -164,7 +164,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               controller: widget.addressController,
               hintText: localizedText(context, 'Address'),
               bordered: false,
-              autovalidateMode: AutovalidateMode.disabled,
+             
               keyboardType: CustomTextFieldType.text,
               textDirection: TextDirection.ltr,
               maxLines: 1,
@@ -182,7 +182,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
               child: CustomFormTextField(
                 controller: widget.emergencyNameController,
                 hintText: localizedText(context, 'Emergency Contact Name'),
-                autovalidateMode: AutovalidateMode.disabled,
+               
                 keyboardType: CustomTextFieldType.text,
                 textDirection: TextDirection.ltr,
                 bordered: false,
@@ -195,7 +195,7 @@ class _AddPatientDialogState extends State<AddPatientDialog> {
                 bordered: false,
                 controller: widget.emergencyPhoneController,
                 hintText: localizedText(context, 'Emergency Contact Phone'),
-                autovalidateMode: AutovalidateMode.disabled,
+               
                 keyboardType: CustomTextFieldType.phone,
                 textDirection: TextDirection.ltr,
               ),

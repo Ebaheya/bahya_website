@@ -97,7 +97,7 @@ class _EditUserDialogState extends State<_EditUserDialog> {
               textDirection: TextDirection.ltr,
               isRequired: true,
               bordered: true,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+              
             ),
             const SizedBox(height: 14),
             CustomFormTextField(
@@ -109,7 +109,7 @@ class _EditUserDialogState extends State<_EditUserDialog> {
               readOnly: true,
               isRequired: false,
               bordered: true,
-              autovalidateMode: AutovalidateMode.disabled,
+           
             ),
             const SizedBox(height: 14),
             CustomFormTextField(
@@ -121,7 +121,7 @@ class _EditUserDialogState extends State<_EditUserDialog> {
               readOnly: true,
               isRequired: false,
               bordered: true,
-              autovalidateMode: AutovalidateMode.disabled,
+            
             ),
             const SizedBox(height: 24),
             Row(

@@ -1,8 +1,11 @@
+import 'package:bahya_website/bloc/cubit/publish_schedule_cubit.dart';
 import 'package:bahya_website/data/api/models/form_model.dart';
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 part 'scheduled_item_card.dart';
 part 'scheduled_item_components.dart';
 
@@ -25,7 +28,7 @@ class ScheduledListWidget extends StatefulWidget {
 }
 
 class _ScheduledListWidgetState extends State<ScheduledListWidget> {
-  void removeScheduled(int index) {
+  void removeScheduled(ScheduledItemModel item, int index) {
     setState(() => widget.scheduled[index].isDeleting = true);
   }
 
@@ -44,6 +47,14 @@ class _ScheduledListWidgetState extends State<ScheduledListWidget> {
     );
   }
 
+  bool _canCancelAssignment(ScheduledItemModel item) {
+    final status = item.repeat.trim().toUpperCase();
+
+    return status != "CANCELLED" &&
+        status != "SUBMITTED" &&
+        status != "REVIEWED";
+  }
+
   List<ScheduledItemModel> _groupPublishedAssignments(
     List<ScheduledItemModel> items,
   ) {
@@ -60,6 +71,7 @@ class _ScheduledListWidgetState extends State<ScheduledListWidget> {
 
       if (!grouped.containsKey(key)) {
         grouped[key] = ScheduledItemModel(
+          id: item.id,
           form: item.form,
           date: item.date,
           repeat: item.repeat,
@@ -73,6 +85,7 @@ class _ScheduledListWidgetState extends State<ScheduledListWidget> {
         final old = grouped[key]!;
 
         grouped[key] = ScheduledItemModel(
+          id: old.id,
           form: old.form,
           date: old.date,
           repeat: old.repeat,
@@ -122,7 +135,7 @@ class _ScheduledListWidgetState extends State<ScheduledListWidget> {
         child: Column(
           children: [
             if (widget.scheduled.isNotEmpty) ...[
-              _SectionTitle(title: "النماذج المجدولة"),
+              const _SectionTitle(title: "النماذج المجدولة"),
               SizedBox(
                 height: responsiveHeight(context, 0.04, min: 22, max: 40),
               ),
@@ -150,8 +163,13 @@ class _ScheduledListWidgetState extends State<ScheduledListWidget> {
             else
               _CardsList(
                 items: groupedPublishedAssignments,
-                showDelete: false,
-                onDelete: (_) {},
+                showDelete: true,
+                canShowDelete: _canCancelAssignment,
+                onDelete: (item, _) {
+                  context
+                      .read<PublishScheduleCubit>()
+                      .cancelPublishedAssignment(item.id);
+                },
                 onAnimationEnd: (_) {},
               ),
           ],
@@ -190,10 +208,11 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _CardsList extends StatelessWidget {
+class _CardsList extends StatefulWidget {
   final List<ScheduledItemModel> items;
   final bool showDelete;
-  final void Function(int index) onDelete;
+  final bool Function(ScheduledItemModel item)? canShowDelete;
+  final void Function(ScheduledItemModel item, int index) onDelete;
   final void Function(int index) onAnimationEnd;
 
   const _CardsList({
@@ -201,43 +220,288 @@ class _CardsList extends StatelessWidget {
     required this.showDelete,
     required this.onDelete,
     required this.onAnimationEnd,
+    this.canShowDelete,
+  });
+
+  @override
+  State<_CardsList> createState() => _CardsListState();
+}
+
+class _CardsListState extends State<_CardsList>
+    with SingleTickerProviderStateMixin {
+  static const int _itemsPerPage = 2;
+
+  late final AnimationController _controller;
+  int _currentPage = 0;
+
+  int get _totalPages {
+    if (widget.items.isEmpty) return 1;
+    return (widget.items.length / _itemsPerPage).ceil();
+  }
+
+  List<ScheduledItemModel> get _currentItems {
+    final start = _currentPage * _itemsPerPage;
+    final end = (start + _itemsPerPage).clamp(0, widget.items.length);
+    return widget.items.sublist(start, end);
+  }
+
+  int get _startIndex => _currentPage * _itemsPerPage;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    )..forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CardsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final lastValidPage = (_totalPages - 1).clamp(0, _totalPages);
+
+    if (_currentPage > lastValidPage) {
+      _currentPage = lastValidPage;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _changePage(int page) {
+    if (page < 0 || page >= _totalPages || page == _currentPage) return;
+
+    setState(() => _currentPage = page);
+
+    _controller.reset();
+    _controller.forward();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentItems = _currentItems;
+
+    return Column(
+      children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: Column(
+            key: ValueKey(_currentPage),
+            children: List.generate(currentItems.length, (index) {
+              final item = currentItems[index];
+              final originalIndex = _startIndex + index;
+
+              final shouldShowDelete =
+                  widget.showDelete &&
+                  (widget.canShowDelete == null || widget.canShowDelete!(item));
+
+              final animation = CurvedAnimation(
+                parent: _controller,
+                curve: Interval(
+                  (index * 0.20).clamp(0.0, 0.70),
+                  1,
+                  curve: Curves.easeOutCubic,
+                ),
+              );
+
+              final card = FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.16),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == currentItems.length - 1
+                          ? 0
+                          : responsiveHeight(context, 0.018, min: 14, max: 20),
+                    ),
+                    child: ScheduledItemCard(
+                      formName: item.form,
+                      date: item.date,
+                      repeat: item.repeat,
+                      hour: item.hour,
+                      publishType: item.publishType,
+                      patientNames: item.patientNames,
+                      volunteerNames: item.volunteerNames,
+                      onDelete: () => widget.onDelete(item, originalIndex),
+                      showDelete: shouldShowDelete,
+                    ),
+                  ),
+                ),
+              );
+
+              if (!widget.showDelete || !item.isDeleting) return card;
+
+              return AnimatedScheduleRemove(
+                onAnimationEnd: () => widget.onAnimationEnd(originalIndex),
+                child: card,
+              );
+            }),
+          ),
+        ),
+        if (_totalPages > 1) ...[
+          SizedBox(height: responsiveHeight(context, 0.028, min: 18, max: 28)),
+          _SchedulePaginationBar(
+            currentPage: _currentPage,
+            totalPages: _totalPages,
+            onPageChanged: _changePage,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SchedulePaginationBar extends StatelessWidget {
+  final int currentPage;
+  final int totalPages;
+  final ValueChanged<int> onPageChanged;
+
+  const _SchedulePaginationBar({
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: items.length,
-      separatorBuilder: (_, __) =>
-          SizedBox(height: responsiveHeight(context, 0.018, min: 14, max: 20)),
-      itemBuilder: (context, index) {
-        final item = items[index];
+    final isMobile = getScreenWidth(context) < 650;
 
-        final card = ScheduledItemCard(
-          formName: item.form,
-          date: item.date,
-          repeat: item.repeat,
-          hour: item.hour,
-          publishType: item.publishType,
-          patientNames: item.patientNames,
-          volunteerNames: item.volunteerNames,
-          onDelete: () => onDelete(index),
-          showDelete: showDelete,
-        );
+    return Center(
+      child: Container(
+        padding: EdgeInsets.all(responsiveSize(context, 0.006, min: 6, max: 9)),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEFBFD),
+          borderRadius: BorderRadius.circular(
+            responsiveSize(context, 0.018, min: 20, max: 24),
+          ),
+          border: Border.all(
+            color: const Color(0xFFE7549B).withValues(alpha: 0.12),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF831843).withValues(alpha: 0.07),
+              blurRadius: 16,
+              offset: const Offset(0, 7),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _PageIconButton(
+              icon: Icons.chevron_left_rounded,
+              enabled: currentPage > 0,
+              onTap: () => onPageChanged(currentPage - 1),
+            ),
+            SizedBox(width: isMobile ? 4 : 6),
+            ...List.generate(totalPages, (index) {
+              final selected = index == currentPage;
 
-        if (!showDelete || !item.isDeleting) return card;
+              return InkWell(
+                onTap: () => onPageChanged(index),
+                borderRadius: BorderRadius.circular(14),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  margin: EdgeInsets.symmetric(horizontal: isMobile ? 3 : 4),
+                  width: selected
+                      ? responsiveSize(context, 0.038, min: 38, max: 44)
+                      : responsiveSize(context, 0.034, min: 34, max: 38),
+                  height: responsiveSize(context, 0.034, min: 34, max: 38),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: selected
+                        ? const LinearGradient(
+                            colors: [Color(0xFFE7549B), Color(0xFF8A2BE2)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    color: selected ? null : const Color(0xFFF8EEF6),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: const Color(
+                                0xFFE7549B,
+                              ).withValues(alpha: 0.24),
+                              blurRadius: 12,
+                              offset: const Offset(0, 5),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: customText(
+                    text: '${index + 1}',
+                    size: responsiveSize(context, 0.010, min: 13, max: 15),
+                    color: selected ? Colors.white : const Color(0xFF831843),
+                    bold: true,
+                  ),
+                ),
+              );
+            }),
+            SizedBox(width: isMobile ? 4 : 6),
+            _PageIconButton(
+              icon: Icons.chevron_right_rounded,
+              enabled: currentPage < totalPages - 1,
+              onTap: () => onPageChanged(currentPage + 1),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-        return AnimatedScheduleRemove(
-          onAnimationEnd: () => onAnimationEnd(index),
-          child: card,
-        );
-      },
+class _PageIconButton extends StatelessWidget {
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _PageIconButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: responsiveSize(context, 0.034, min: 34, max: 38),
+        height: responsiveSize(context, 0.034, min: 34, max: 38),
+        decoration: BoxDecoration(
+          color: enabled
+              ? const Color(0xFFE7549B).withValues(alpha: 0.10)
+              : Colors.grey.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Icon(
+          icon,
+          color: enabled ? const Color(0xFFE7549B) : Colors.grey,
+          size: responsiveSize(context, 0.018, min: 20, max: 24),
+        ),
+      ),
     );
   }
 }
 
 class ScheduledItemModel {
+  final String id;
   final String form;
   final String date;
   final String repeat;
@@ -248,13 +512,14 @@ class ScheduledItemModel {
   bool isDeleting;
 
   ScheduledItemModel({
+    required this.id,
     required this.form,
     required this.date,
     required this.repeat,
     required this.hour,
     required this.publishType,
-    this.patientNames = const [],
-    this.volunteerNames = const [],
+    required this.patientNames,
+    required this.volunteerNames,
     this.isDeleting = false,
   });
 }

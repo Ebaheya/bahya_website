@@ -5,11 +5,13 @@ import 'package:bahya_website/helper/widgets/schedule/scheduled_list_widget.dart
 class PublishScheduleState {
   final bool isLoading;
   final bool isPublishing;
+  final bool isLoadingAssignments;
   final bool isSearchingPatients;
   final bool isSearchingVolunteers;
-  final bool isLoadingAssignments;
+  final bool isCancellingAssignment;
 
   final String? error;
+  final String? successMessage;
 
   final List<FormModel> activeForms;
   final List<FormModel> draftForms;
@@ -19,16 +21,17 @@ class PublishScheduleState {
   final List<OptionUserModel> volunteerOptions;
 
   final List<ScheduledItemModel> publishedAssignments;
-
   final Map<String, DateTime> lastPublishedAtByFormId;
 
   const PublishScheduleState({
     this.isLoading = false,
     this.isPublishing = false,
+    this.isLoadingAssignments = false,
     this.isSearchingPatients = false,
     this.isSearchingVolunteers = false,
-    this.isLoadingAssignments = false,
+    this.isCancellingAssignment = false,
     this.error,
+    this.successMessage,
     this.activeForms = const [],
     this.draftForms = const [],
     this.publishedForms = const [],
@@ -41,10 +44,14 @@ class PublishScheduleState {
   PublishScheduleState copyWith({
     bool? isLoading,
     bool? isPublishing,
+    bool? isLoadingAssignments,
     bool? isSearchingPatients,
     bool? isSearchingVolunteers,
-    bool? isLoadingAssignments,
+    bool? isCancellingAssignment,
     String? error,
+    String? successMessage,
+    bool clearError = false,
+    bool clearSuccessMessage = false,
     List<FormModel>? activeForms,
     List<FormModel>? draftForms,
     List<FormModel>? publishedForms,
@@ -56,11 +63,16 @@ class PublishScheduleState {
     return PublishScheduleState(
       isLoading: isLoading ?? this.isLoading,
       isPublishing: isPublishing ?? this.isPublishing,
+      isLoadingAssignments: isLoadingAssignments ?? this.isLoadingAssignments,
       isSearchingPatients: isSearchingPatients ?? this.isSearchingPatients,
       isSearchingVolunteers:
           isSearchingVolunteers ?? this.isSearchingVolunteers,
-      isLoadingAssignments: isLoadingAssignments ?? this.isLoadingAssignments,
-      error: error,
+      isCancellingAssignment:
+          isCancellingAssignment ?? this.isCancellingAssignment,
+      error: clearError ? null : error ?? this.error,
+      successMessage: clearSuccessMessage
+          ? null
+          : successMessage ?? this.successMessage,
       activeForms: activeForms ?? this.activeForms,
       draftForms: draftForms ?? this.draftForms,
       publishedForms: publishedForms ?? this.publishedForms,
