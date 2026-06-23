@@ -19,7 +19,11 @@ coverage/
 Thumbs.db
 *.tmp
 *.swp
+.handoff_import*/
 .vscode/
 .idea/
 .claude/
 CLAUDE.md
+.impeccable/
+ai/
+frontend_react/
