@@ -9173,7 +9173,7 @@ au9:function au9(){},
 aua:function aua(){},
 au2:function au2(){},
 au3:function au3(){},
-ei(){var s=A.bsp(A.av7("http://127.0.0.1:3000/api/v1",null,null,B.hC))
+ei(){var s=A.bsp(A.av7(" https://api.refk.tech/api/v1",null,null,B.hC))
 A.bq6(s)
 return new A.abq(s)},
 aUq(a,b,c){var s=0,r=A.B(t.P),q,p,o,n
@@ -65376,7 +65376,7 @@ case 3:if(!f.u()){s=4
 break}i=f.d
 m=i==null?j.a(i):i
 p=6
-i=A.av7("http://127.0.0.1:3000/api/v1",null,null,B.hC)
+i=A.av7(" https://api.refk.tech/api/v1",null,null,B.hC)
 h=new A.CD(A.b([B.pk],k))
 h.R(h,B.rJ)
 h=new A.Jt($,h,$,new A.Kt(51200),!1)
@@ -78511,7 +78511,7 @@ case 10:a=a2.ll(0,a1)
 q=a
 s=1
 break
-case 9:l=A.bsp(A.av7("http://127.0.0.1:3000/api/v1",null,null,B.hC))
+case 9:l=A.bsp(A.av7(" https://api.refk.tech/api/v1",null,null,B.hC))
 a=t.N
 f=t.z
 s=11
@@ -156239,7 +156239,7 @@ s($,"bVo","bH",()=>A.bLP(B.rV,t.da))
 s($,"c_M","m_",()=>new A.Z1($.ao()))
 s($,"bVp","bqe",()=>{var q="/loading",p=null,o=$.m_(),n=A.b([A.np(new A.aub(),q),A.np(new A.auc(),"/login"),A.np(new A.aud(),"/reset-password"),A.np(new A.auf(),"/admin"),A.np(new A.aug(),"/home"),A.np(new A.auh(),"/patient_info"),A.np(new A.aui(),"/add_questionnaire"),A.np(new A.auj(),"/publish_schedule"),A.np(new A.auk(),"/questionnaire_filler"),A.np(new A.aul(),"/doctor_dashboard"),A.np(new A.aum(),"/volunteer_survey")],t.yo)
 return A.bHc(!1,p,p,p,p,q,p,p,p,!1,o,!0,p,!1,new A.afr(new A.aO2(n,new A.aue(),5,p)))})
-s($,"c03","dc",()=>A.bFV(A.av7("http://127.0.0.1:3000/api/v1",null,null,B.hC)))
+s($,"c03","dc",()=>A.bFV(A.av7(" https://api.refk.tech/api/v1",null,null,B.hC)))
 s($,"bZq","bCk",()=>new A.J())
 s($,"bWj","blT",()=>B.hO.Yr(B.rw,t.X))
 s($,"bYM","bBP",()=>A.bIC(B.a72))
