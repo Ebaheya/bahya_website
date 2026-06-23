@@ -34,6 +34,7 @@ class _ServiceListBodyState extends State<ServiceListBody> {
     if (!mounted) return;
 
     final state = cubit.state;
+
     if (state.error != null) {
       customDialog(
         context: context,
@@ -60,6 +61,7 @@ class _ServiceListBodyState extends State<ServiceListBody> {
     if (!mounted) return;
 
     final state = cubit.state;
+
     if (state.error != null) {
       customDialog(
         context: context,
@@ -99,6 +101,11 @@ class _ServiceListBodyState extends State<ServiceListBody> {
         (categoryId == selectedId || nestedId == selectedId);
   }
 
+  bool _isTripCategory(ServiceCategoryModel? category) {
+    final kind = category?.kind.trim().toUpperCase() ?? '';
+    return kind == 'TRIP' || kind == 'TOUR';
+  }
+
   ServiceCategoryModel? _categoryForService(
     PatientServiceModel service,
     List<ServiceCategoryModel> categories,
@@ -133,7 +140,6 @@ class _ServiceListBodyState extends State<ServiceListBody> {
             textDirection: context.appTextDirection,
             child: Column(
               children: [
-                // SizedBox(height: h * 0.15),
                 if (widget.showCategoryChips)
                   _CategoryChips(
                     categories: state.categories.where((c) {
@@ -141,7 +147,6 @@ class _ServiceListBodyState extends State<ServiceListBody> {
                     }).toList(),
                     selectedCategoryId: widget.categoryId,
                   ),
-
                 if (services.isEmpty)
                   Padding(
                     padding: EdgeInsets.only(top: h * 0.2),
@@ -158,7 +163,10 @@ class _ServiceListBodyState extends State<ServiceListBody> {
                       state.categories,
                     );
 
+                    final isTrip = _isTripCategory(category);
+
                     final request = _requestForService(service, state.requests);
+
                     final requestStatus =
                         request?.status.trim().toUpperCase() ?? '';
 
@@ -175,11 +183,22 @@ class _ServiceListBodyState extends State<ServiceListBody> {
                       h: h,
                       title: service.title,
                       date: formatServiceDate(context, service.date),
-                      time: service.departureTime == null
-                          ? formatServiceTime(context, service.time)
-                          : '${formatServiceTime(context, service.time)} - ${formatServiceTime(context, service.departureTime!)}',
+                      time: formatServiceTime(context, service.time),
                       location: service.location,
-                      meetingPlace: service.meetingPlace,
+                      endDate:
+                          isTrip &&
+                              service.endDate != null &&
+                              service.endDate!.trim().isNotEmpty
+                          ? formatServiceDate(context, service.endDate!)
+                          : null,
+                      departureTime:
+                          isTrip &&
+                              service.departureTime != null &&
+                              service.departureTime!.trim().isNotEmpty
+                          ? formatServiceTime(context, service.departureTime!)
+                          : null,
+                      meetingPlace: isTrip ? service.meetingPlace : null,
+                      isTravel: isTrip,
                       availableSeats: service.remainingSeats.toDouble(),
                       isRequested: hasActiveRequest,
                       isUnderReview: isPending,
@@ -200,7 +219,6 @@ class _ServiceListBodyState extends State<ServiceListBody> {
                           : () => _cancelRequest(request.id),
                     );
                   }),
-
                 SizedBox(height: responsiveHeight(context, 0.04, min: 24)),
               ],
             ),

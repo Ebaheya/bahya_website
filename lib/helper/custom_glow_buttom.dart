@@ -32,6 +32,7 @@ class CustomGlowButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizedTitle = title;
     final radiusValue =
         borderRadius ?? responsiveSize(context, 0.018, min: 14, max: 30);
 
@@ -55,7 +56,7 @@ class CustomGlowButton extends StatelessWidget {
         borderRadius: radius,
         boxShadow: [
           BoxShadow(
-            color: glowColor ?? const Color(0xFFFF7BB0).withOpacity(0.35),
+            color: glowColor ?? const Color(0xFFFF7BB0).withValues(alpha: 0.35),
             blurRadius: responsiveSize(context, 0.008, min: 8, max: 14),
             offset: Offset(0, responsiveHeight(context, 0.006, min: 3, max: 5)),
           ),
@@ -78,7 +79,7 @@ class CustomGlowButton extends StatelessWidget {
                     borderRadius: radius,
                     onTap: onPressed,
                     child: _ButtonContent(
-                      title: title,
+                      title: localizedTitle,
                       icon: icon,
                       textColor: textColor ?? Colors.white,
                       textSize: buttonTextSize,
@@ -101,7 +102,7 @@ class CustomGlowButton extends StatelessWidget {
               ),
               onPressed: onPressed,
               child: _ButtonContent(
-                title: title,
+                title: localizedTitle,
                 icon: icon,
                 textColor: textColor ?? const Color(0xFFFF7BB0),
                 textSize: buttonTextSize,

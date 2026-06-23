@@ -22,6 +22,7 @@ import 'package:bahya_app/screens/patients/patients_home.dart';
 import 'package:bahya_app/screens/patients/services_screen.dart';
 import 'package:bahya_app/screens/patients/questionnair_screen.dart';
 import 'package:bahya_app/screens/patients/requested_service.dart';
+import 'package:bahya_app/screens/splash_route_gate.dart';
 import 'package:bahya_app/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -297,7 +298,8 @@ class AppRoute {
             child: const CreateCategoryScreen(),
           ),
         );
-
+    case '/authCheck':
+        return MaterialPageRoute(builder: (_) => AuthCheckScreen());
     case '/doctorHome':
         return MaterialPageRoute(builder: (_) => const DoctorDashboardScreen());
 

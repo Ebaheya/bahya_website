@@ -309,7 +309,7 @@ Widget serviceInfo({
             SizedBox(height: h * 0.018),
             infoRow(
               icon: Icons.calendar_month_rounded,
-              label: isTravel ? 'تاريخ الرحلة: ' : 'التاريخ: ',
+              label: isTravel ? 'تاريخ البداية: ' : 'التاريخ: ',
               value: date,
             ),
             if (isTravel && endDate != null && endDate.trim().isNotEmpty)
@@ -320,22 +320,29 @@ Widget serviceInfo({
               ),
             infoRow(
               icon: Icons.access_time_rounded,
-              label: isTravel ? 'وقت الانطلاق: ' : 'الوقت: ',
-              value:
-                  isTravel && departureTime != null && departureTime.isNotEmpty
-                  ? departureTime
-                  : time,
+              label: isTravel ? 'وقت البداية: ' : 'الوقت: ',
+              value: time,
             ),
-            infoRow(
-              icon: Icons.location_on_rounded,
-              label: isTravel ? 'الموقع أو الفرع: ' : 'الفرع: ',
-              value: location,
-            ),
-            if (isTravel)
+            if (isTravel &&
+                departureTime != null &&
+                departureTime.trim().isNotEmpty)
               infoRow(
                 icon: Icons.directions_bus_rounded,
+                label: 'وقت الانطلاق: ',
+                value: departureTime,
+              ),
+            infoRow(
+              icon: Icons.location_on_rounded,
+              label: 'الفرع: ',
+              value: location,
+            ),
+            if (isTravel &&
+                meetingPlace != null &&
+                meetingPlace.trim().isNotEmpty)
+              infoRow(
+                icon: Icons.pin_drop_rounded,
                 label: 'مكان التجمع: ',
-                value: meetingPlace ?? '',
+                value: meetingPlace,
               ),
             if (!forAdmin) ...[
               Padding(

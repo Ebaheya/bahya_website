@@ -7,7 +7,7 @@ import 'package:bahya_app/services/internet_connection_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
-const String baseUrl = 'http://10.0.2.2:3000/api/v1';
+const String baseUrl = 'https://api.refk.tech/api/v1';
 const String localBaseUrl = 'http://10.5.203.183:3000/api/v1';
 
 class ApiException implements Exception {
@@ -45,7 +45,7 @@ class WebService {
   WebService() {
     dio = Dio(
       BaseOptions(
-        baseUrl: localBaseUrl,
+        baseUrl: baseUrl,
         connectTimeout: const Duration(seconds: 6),
         receiveTimeout: const Duration(seconds: 8),
         sendTimeout: const Duration(seconds: 6),
@@ -196,7 +196,7 @@ class WebService {
 
             final refreshDio = Dio(
               BaseOptions(
-                baseUrl: localBaseUrl,
+                baseUrl: baseUrl,
                 connectTimeout: const Duration(seconds: 6),
                 receiveTimeout: const Duration(seconds: 8),
                 sendTimeout: const Duration(seconds: 6),

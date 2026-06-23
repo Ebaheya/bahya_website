@@ -1,10 +1,7 @@
 import 'dart:async';
 
-import 'package:bahya_app/data/remote/repo/repo.dart';
 import 'package:bahya_app/helper/constant.dart';
-import 'package:bahya_app/logic/cubit/patient_forms_cubit.dart';
 import 'package:bahya_app/route.dart';
-import 'package:bahya_app/services/internet_connection_service.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -69,8 +66,10 @@ class _SplashScreenState extends State<SplashScreen>
   void _startAnimationAndLogic() {
     _lineController.forward().then((_) {
       if (!mounted) return;
+
       _splitController.forward().then((_) {
         if (!mounted) return;
+
         _pulseController.repeat(reverse: true);
         _decideNextScreen();
       });
@@ -78,102 +77,41 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _decideNextScreen() async {
-    final hasInternet = await InternetConnectionService.instance.hasInternet();
+    await Future.delayed(const Duration(milliseconds: 500));
 
     if (!mounted) return;
-
-    if (!hasInternet) {
-      _reverseAnimation().then((_) {
-        if (!mounted) return;
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/noInternet',
-          (route) => false,
-        );
-      });
-      return;
-    }
 
     await authNotifier.checkLogin();
 
     if (!mounted) return;
 
+    await _reverseAnimation();
+
+    if (!mounted) return;
+
     if (!authNotifier.isLoggedIn) {
-      _reverseAnimation().then((_) => _goTo('/login'));
+      _goTo('/login');
       return;
     }
 
-    if (authNotifier.isAdmin) {
-      _reverseAnimation().then((_) => _goTo('/adminHome'));
-      return;
-    }
-
-    if (authNotifier.isDoctor) {
-      _reverseAnimation().then((_) => _goTo('/doctorHome'));
-      return;
-    }
-    
-    if (authNotifier.isPatient) {
-      await _handlePatientGate();
-      return;
-    }
-
-    _reverseAnimation().then((_) => _goTo('/unauthorized'));
+    _goTo('/authCheck');
   }
 
   Future<void> _reverseAnimation() async {
     _pulseController.stop();
-    await _splitController.reverse();
-    await _lineController.reverse();
-  }
 
-  Future<void> _handlePatientGate() async {
-    try {
-      final cubit = PatientFormsCubit(AppRepository());
-      await cubit.loadMyAssignments();
+    if (_splitController.status != AnimationStatus.dismissed) {
+      await _splitController.reverse();
+    }
 
-      if (!mounted) {
-        await cubit.close();
-        return;
-      }
-
-      final state = cubit.state;
-
-      if (state.error != null) {
-        await cubit.close();
-        await _reverseAnimation();
-        _goTo('/patientsHome');
-        return;
-      }
-
-      if (state.assignments.isNotEmpty) {
-        final assignmentId = state.assignments.first.id;
-        await cubit.close();
-
-        await _reverseAnimation();
-        if (!mounted) return;
-
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/questionnaire_screen',
-          (route) => false,
-          arguments: assignmentId,
-        );
-        return;
-      }
-
-      await cubit.close();
-      await _reverseAnimation();
-      _goTo('/patientsHome');
-    } catch (_) {
-      await _reverseAnimation();
-      if (!mounted) return;
-      _goTo('/patientsHome');
+    if (_lineController.status != AnimationStatus.dismissed) {
+      await _lineController.reverse();
     }
   }
 
   void _goTo(String routeName) {
     if (!mounted) return;
+
     Navigator.pushNamedAndRemoveUntil(context, routeName, (route) => false);
   }
 

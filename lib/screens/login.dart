@@ -24,15 +24,46 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _passwordFocusNode = FocusNode();
+
   final WebService web = WebService();
 
   bool isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+
+    _passwordFocusNode.addListener(() {
+      if (_passwordFocusNode.hasFocus) {
+        _scrollToPassword();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
+    _scrollController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
+  }
+
+  void _scrollToPassword() {
+    Future.delayed(const Duration(milliseconds: 280), () {
+      if (!_scrollController.hasClients) return;
+
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final target = (maxScroll * 0.62).clamp(0.0, maxScroll);
+
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   String _cleanError(Object error) {
@@ -84,32 +115,9 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!mounted) return;
 
-      if (roleUpper == 'ADMIN') {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/adminHome',
-          (route) => false,
-        );
-        return;
-      }
-
-      if (roleUpper == 'PATIENT') {
-        Navigator.pushNamedAndRemoveUntil(context, '/splash', (route) => false);
-        return;
-      }
-
-      if (roleUpper == 'DOCTOR') {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/doctorHome',
-          (route) => false,
-        );
-        return;
-      }
-
       Navigator.pushNamedAndRemoveUntil(
         context,
-        '/unauthorized',
+        '/authCheck',
         (route) => false,
       );
     } on ApiException catch (e) {
@@ -182,6 +190,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final width = getScreenWidth(context);
+    final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
 
     final horizontalPadding = responsiveSize(context, 0.055, min: 18, max: 24);
     final cardPadding = responsiveSize(context, 0.055, min: 20, max: 26);
@@ -191,7 +200,7 @@ class _LoginPageState extends State<LoginPage> {
     return Directionality(
       textDirection: context.appTextDirection,
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         body: AnimatedBackground(
           child: SafeArea(
             child: Stack(
@@ -231,16 +240,24 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-
                 Center(
                   child: SingleChildScrollView(
+                    controller: _scrollController,
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: EdgeInsets.fromLTRB(
                       horizontalPadding,
                       responsiveHeight(context, 0.11, min: 86, max: 106),
                       horizontalPadding,
-                      responsiveHeight(context, 0.04, min: 26, max: 38),
+                      keyboardHeight > 0
+                          ? keyboardHeight +
+                                responsiveHeight(
+                                  context,
+                                  0.035,
+                                  min: 22,
+                                  max: 34,
+                                )
+                          : responsiveHeight(context, 0.04, min: 26, max: 38),
                     ),
                     child: Container(
                       width: width,
@@ -308,7 +325,6 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                             ),
-
                             Transform.translate(
                               offset: Offset(
                                 0,
@@ -333,7 +349,6 @@ class _LoginPageState extends State<LoginPage> {
                                     bold: true,
                                     maxLines: 2,
                                   ),
-
                                   SizedBox(
                                     height: responsiveHeight(
                                       context,
@@ -342,7 +357,6 @@ class _LoginPageState extends State<LoginPage> {
                                       max: 10,
                                     ),
                                   ),
-
                                   customText(
                                     text: context.tr(
                                       'نأمل ان تكون صحتكم النفسية بخير',
@@ -356,7 +370,6 @@ class _LoginPageState extends State<LoginPage> {
                                     color: Colors.pink,
                                     maxLines: 2,
                                   ),
-
                                   SizedBox(
                                     height: responsiveHeight(
                                       context,
@@ -365,7 +378,6 @@ class _LoginPageState extends State<LoginPage> {
                                       max: 26,
                                     ),
                                   ),
-
                                   CustomFormTextField(
                                     controller: emailController,
                                     keyboardType: CustomTextFieldType.email,
@@ -382,7 +394,6 @@ class _LoginPageState extends State<LoginPage> {
                                     centerHint: false,
                                     isRequired: true,
                                   ),
-
                                   SizedBox(
                                     height: responsiveHeight(
                                       context,
@@ -391,25 +402,29 @@ class _LoginPageState extends State<LoginPage> {
                                       max: 16,
                                     ),
                                   ),
-
-                                  CustomFormTextField(
-                                    controller: passwordController,
-                                    keyboardType: CustomTextFieldType.password,
-                                    obscureText: true,
-                                    hintText: context.tr('كلمة المرور'),
-                                    labelText: context.tr('كلمة المرور'),
-                                    textDirection: TextDirection.rtl,
-                                    autovalidateMode: AutovalidateMode.disabled,
-                                    prefixIcon: const Icon(
-                                      Icons.lock_outline_rounded,
-                                      color: Color(0xFFE7549B),
+                                  Focus(
+                                    focusNode: _passwordFocusNode,
+                                    child: CustomFormTextField(
+                                      controller: passwordController,
+                                      keyboardType:
+                                          CustomTextFieldType.password,
+                                      obscureText: true,
+                                      hintText: context.tr('كلمة المرور'),
+                                      labelText: context.tr('كلمة المرور'),
+                                      textDirection: TextDirection.rtl,
+                                      autovalidateMode:
+                                          AutovalidateMode.disabled,
+                                      prefixIcon: const Icon(
+                                        Icons.lock_outline_rounded,
+                                        color: Color(0xFFE7549B),
+                                      ),
+                                      bordered: true,
+                                      borderRadius: 18,
+                                      centerHint: false,
+                                      isRequired: true,
+                                      onTap: _scrollToPassword,
                                     ),
-                                    bordered: true,
-                                    borderRadius: 18,
-                                    centerHint: false,
-                                    isRequired: true,
                                   ),
-
                                   SizedBox(
                                     height: responsiveHeight(
                                       context,
@@ -418,7 +433,6 @@ class _LoginPageState extends State<LoginPage> {
                                       max: 20,
                                     ),
                                   ),
-
                                   isLoading
                                       ? SizedBox(
                                           height: responsiveHeight(
@@ -451,7 +465,6 @@ class _LoginPageState extends State<LoginPage> {
                                           ),
                                           onPressed: _login,
                                         ),
-
                                   SizedBox(
                                     height: responsiveHeight(
                                       context,
@@ -460,7 +473,6 @@ class _LoginPageState extends State<LoginPage> {
                                       max: 18,
                                     ),
                                   ),
-
                                   Row(
                                     children: [
                                       Expanded(
@@ -492,7 +504,6 @@ class _LoginPageState extends State<LoginPage> {
                                       ),
                                     ],
                                   ),
-
                                   SizedBox(
                                     height: responsiveHeight(
                                       context,
@@ -501,7 +512,6 @@ class _LoginPageState extends State<LoginPage> {
                                       max: 20,
                                     ),
                                   ),
-
                                   GestureDetector(
                                     onTap: isLoading
                                         ? null

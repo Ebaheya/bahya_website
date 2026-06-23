@@ -44,7 +44,6 @@ class _PatientsSearchState extends State<PatientsSearch> {
           ? 'ابحث عن المحاربات في رحلتهن'
           : 'Find warriors in their journey',
       isHome: false,
-      icon: Icons.arrow_back_ios_new_outlined,
       onIconPressed: () => Navigator.pop(context),
       widgets: [
         Padding(
@@ -99,7 +98,8 @@ class _PatientsSearchState extends State<PatientsSearch> {
                           padding: EdgeInsets.symmetric(horizontal: w * 0.025),
                           child: Column(
                             children: [
-                              if (state.error != null && state.error!.isNotEmpty)
+                              if (state.error != null &&
+                                  state.error!.isNotEmpty)
                                 Padding(
                                   padding: EdgeInsets.only(
                                     top: responsiveHeight(
@@ -173,7 +173,8 @@ class _PatientsSearchState extends State<PatientsSearch> {
                                           '/patientRequestsDetails',
                                           arguments: {
                                             'patientName': patient.patientName,
-                                            'medicalNumber': patient.medicalNumber,
+                                            'medicalNumber':
+                                                patient.medicalNumber,
                                             'requestIds': patientRequests
                                                 .map((e) => e.id)
                                                 .toList(),

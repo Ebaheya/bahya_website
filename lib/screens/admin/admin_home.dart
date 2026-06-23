@@ -162,7 +162,7 @@ class AdminHome extends StatelessWidget {
 
                             _AdminActionCard(
                               title: isArabic
-                                  ? 'إنشاء كاتيجوري جديدة'
+                                  ? 'إنشاء فئة جديدة'
                                   : 'Create new category',
                               subtitle: isArabic
                                   ? 'تنظيم الخدمات داخل أقسام واضحة'

@@ -54,7 +54,7 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
       customDialog(
         context: context,
         title: 'خطأ',
-        message: 'يرجى إدخال اسم الكاتيجوري.',
+        message: 'يرجى إدخال اسم الفئة.',
         isError: true,
       );
       return;
@@ -74,7 +74,7 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
     customDialog(
       context: context,
       title: state.error == null ? 'تم الحفظ' : 'خطأ',
-      message: state.error ?? 'تم حفظ الكاتيجوري بنجاح.',
+      message: state.error ?? 'تم حفظ الفئة بنجاح.',
       isSuccess: state.error == null,
       isError: state.error != null,
     );
@@ -109,7 +109,7 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
                 children: [
                   customAppBar(
                     context: context,
-                    title: 'إضافة كاتيجوري جديد',
+                    title: 'إضافة فئة جديدة',
                     subTitle: 'اختار الاسم والنوع والأيقونة',
                     isHome: false,
                   ),
@@ -138,7 +138,7 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     customText(
-                      text: 'اسم الكاتيجوري',
+                      text: 'اسم الفئة',
                       size: w * 0.05,
                       color: Colors.black,
                     ),
@@ -176,7 +176,7 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     customText(
-                      text: 'نوع الكاتيجوري',
+                      text: 'نوع الفئة',
                       size: w * 0.05,
                       color: Colors.black,
                       bold: true,
@@ -305,7 +305,7 @@ class _CreateCategoryScreenState extends State<CreateCategoryScreen> {
               BlocBuilder<ServiceAdminCubit, ServiceAdminState>(
                 builder: (context, state) {
                   return CustomGlowButton(
-                    title: state.isSaving ? 'جاري الحفظ...' : 'حفظ الكاتيجوري',
+                    title: state.isSaving ? 'جاري الحفظ...' : 'حفظ الفئة',
                     onPressed: state.isSaving ? () {} : _saveCategory,
                     isGradient: true,
                     width: double.infinity,
