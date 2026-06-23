@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 enum ContactMethod { email, phone }
 
 void forgetPasswordDialog(BuildContext context) {
+  final BuildContext parentContext = context;
   final TextEditingController emailController = TextEditingController();
 
   showDialog(
@@ -259,7 +260,8 @@ void forgetPasswordDialog(BuildContext context) {
                                 SizedBox(
                                   width: double.infinity,
                                   child: _confirmButton(
-                                    context,
+                                    parentContext,
+                                    dialogContext,
                                     emailController,
                                   ),
                                 ),
@@ -281,7 +283,8 @@ void forgetPasswordDialog(BuildContext context) {
                               children: [
                                 Expanded(
                                   child: _confirmButton(
-                                    context,
+                                    parentContext,
+                                    dialogContext,
                                     emailController,
                                   ),
                                 ),
@@ -302,7 +305,8 @@ void forgetPasswordDialog(BuildContext context) {
 }
 
 Widget _confirmButton(
-  BuildContext context,
+  BuildContext parentContext,
+  BuildContext dialogContext,
   TextEditingController emailController,
 ) {
   return CustomGlowButton(
@@ -311,37 +315,42 @@ Widget _confirmButton(
     glowColor: const Color(0xFFFF6AAE),
     textColor: Colors.white,
     onPressed: () async {
-      if (emailController.text.trim().isEmpty) {
+      final email = emailController.text.trim();
+
+      if (email.isEmpty) {
         customDialog(
-          context: context,
+          context: parentContext,
           title: 'خطأ',
+          isError: true,
           message: 'يرجى إدخال البريد الإلكتروني',
         );
         return;
       }
 
       try {
-        await WebService().forgetPassword(email: emailController.text.trim());
+        await WebService().forgetPassword(email: email);
 
-        if (!context.mounted) return;
+        if (!parentContext.mounted) return;
+        if (Navigator.of(dialogContext, rootNavigator: true).canPop()) {
+          Navigator.of(dialogContext, rootNavigator: true).pop();
+        }
+
+        await Future<void>.delayed(const Duration(milliseconds: 120));
+
+        if (!parentContext.mounted) return;
         customDialog(
-          context: context,
+          context: parentContext,
           isSuccess: true,
           title: 'نجاح',
           message: 'تم إرسال تعليمات استرجاع كلمة المرور إلى بريدك الإلكتروني',
-          onClose: () {
-            Navigator.of(context, rootNavigator: true).pop();
-            Navigator.of(context, rootNavigator: true).pop();
-          },
         );
       } catch (error) {
-        if (!context.mounted) return;
+        if (!parentContext.mounted) return;
         customDialog(
-          context: context,
+          context: parentContext,
           title: 'خطأ',
           isError: true,
-          message:
-              'حدث خطأ أثناء محاولة استرجاع كلمة المرور. يرجى المحاولة مرة أخرى.',
+          message: error.toString().replaceFirst('Exception: ', ''),
         );
       }
     },
