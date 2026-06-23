@@ -61,7 +61,53 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       log('loadUser error: $e');
     }
   }
+void _showAnimatedReportDialog(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Report Problem',
+      barrierColor: Colors.black.withValues(alpha: 0.28),
+      transitionDuration: const Duration(milliseconds: 380),
+      pageBuilder: (_, __, ___) {
+        return const SizedBox.shrink();
+      },
+      transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeInCubic,
+        );
 
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.86, end: 1).animate(curvedAnimation),
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.08),
+                end: Offset.zero,
+              ).animate(curvedAnimation),
+              child: Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: Builder(
+                    builder: (context) {
+                      Future.microtask(() {
+                        Navigator.of(dialogContext).pop();
+                        showReportProblemDialog(context);
+                      });
+
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
   @override
   void dispose() {
     _pageController.dispose();
@@ -135,7 +181,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         _animatedItem(
                           index: 1,
                           child: _QuickActionsSection(
-                            onReportTap: () => showReportProblemDialog(context),
+                          onReportTap: () =>
+                                _showAnimatedReportDialog(context),
                             onChatBotTap: () => context.go('/doctor_dashboard'),
                           ),
                         ),

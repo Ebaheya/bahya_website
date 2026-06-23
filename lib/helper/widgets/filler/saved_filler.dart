@@ -25,7 +25,7 @@ class SavedFormsWidget extends StatefulWidget {
 
 class _SavedFormsWidgetState extends State<SavedFormsWidget>
     with SingleTickerProviderStateMixin {
-  static const int itemsPerPage = 10;
+  static const int itemsPerPage = 5;
 
   late final AnimationController _controller;
   int currentPage = 0;

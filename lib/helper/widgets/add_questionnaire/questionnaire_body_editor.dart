@@ -7,12 +7,14 @@ class QuestionnaireBody extends StatefulWidget {
     required this.canDeleteQuestion,
     required this.onDeleteQuestion,
     this.initialData,
+    this.onScoreStructureChanged,
   });
 
   final int questionIndex;
   final bool canDeleteQuestion;
   final VoidCallback onDeleteQuestion;
   final Map<String, dynamic>? initialData;
+  final VoidCallback? onScoreStructureChanged;
 
   @override
   State<QuestionnaireBody> createState() => QuestionnaireBodyState();
@@ -114,8 +116,15 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
     super.dispose();
   }
 
+  void _notifyScoreStructureChanged() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onScoreStructureChanged?.call();
+    });
+  }
+
   void addAnswer() {
     setState(() => answers.add(AnswerItemModel()));
+    _notifyScoreStructureChanged();
   }
 
   void removeAnswer(int index) {
@@ -136,6 +145,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
     });
 
     removedAnswer.dispose();
+    _notifyScoreStructureChanged();
   }
 
   @override
@@ -198,7 +208,10 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                 SizedBox(height: isMobile ? 18 : 24),
                 QuestionTypeSelector(
                   selectedType: questionType,
-                  onChanged: (value) => setState(() => questionType = value),
+                  onChanged: (value) {
+                    setState(() => questionType = value);
+                    _notifyScoreStructureChanged();
+                  },
                 ),
                 SizedBox(height: isMobile ? 18 : 24),
                 if (questionType != QuestionType.scale) ...[
@@ -220,6 +233,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                                 answer: answers[index],
                                 canDelete: false,
                                 onDelete: () {},
+                                onScoreChanged: _notifyScoreStructureChanged,
                               ),
                             )
                           : AnimatedAdd(
@@ -228,6 +242,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                                 answer: answers[index],
                                 canDelete: answers.length > 2,
                                 onDelete: () => removeAnswer(index),
+                                onScoreChanged: _notifyScoreStructureChanged,
                               ),
                             ),
                     ),
@@ -307,6 +322,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
               hintText: '0',
               controller: minValueController,
               centerHint: true,
+              onChange: (_) => _notifyScoreStructureChanged(),
             ),
             const SizedBox(height: 12),
             CustomFormTextField(
@@ -316,6 +332,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
               hintText: '10',
               controller: maxValueController,
               centerHint: true,
+              onChange: (_) => _notifyScoreStructureChanged(),
             ),
             const SizedBox(height: 12),
             CustomFormTextField(
@@ -348,6 +365,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                     hintText: '0',
                     controller: minValueController,
                     centerHint: true,
+                    onChange: (_) => _notifyScoreStructureChanged(),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -359,6 +377,7 @@ class QuestionnaireBodyState extends State<QuestionnaireBody> {
                     hintText: '10',
                     controller: maxValueController,
                     centerHint: true,
+                    onChange: (_) => _notifyScoreStructureChanged(),
                   ),
                 ),
               ],

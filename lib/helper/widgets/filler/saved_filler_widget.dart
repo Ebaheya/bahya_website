@@ -219,6 +219,7 @@ class _DynamicFormFillerWidgetState extends State<DynamicFormFillerWidget>
               currentStep: _step,
               questionIndex: _questionIndex,
               questionsCount: _questionsCount,
+              diagnosisCount: form.currentVersion?.scoreRanges.length ?? 0,
               progress: _progress,
             ),
             SizedBox(
@@ -409,6 +410,7 @@ class _FlowHeroHeader extends StatelessWidget {
   final int currentStep;
   final int questionIndex;
   final int questionsCount;
+  final int diagnosisCount;
   final double progress;
 
   const _FlowHeroHeader({
@@ -416,6 +418,7 @@ class _FlowHeroHeader extends StatelessWidget {
     required this.currentStep,
     required this.questionIndex,
     required this.questionsCount,
+    required this.diagnosisCount,
     required this.progress,
   });
 
@@ -504,28 +507,20 @@ class _FlowHeroHeader extends StatelessWidget {
           ),
           SizedBox(height: responsiveHeight(context, 0.016, min: 12, max: 18)),
           Row(
-            children: const [
+            children: [
               Expanded(
                 child: _StepChip(
-                  title: '1',
-                  label: 'المريض',
-                  icon: Icons.person_rounded,
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: _StepChip(
-                  title: '2',
+                  title: '$questionsCount',
                   label: 'الأسئلة',
                   icon: Icons.quiz_rounded,
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: _StepChip(
-                  title: '3',
-                  label: 'النتيجة',
-                  icon: Icons.analytics_rounded,
+                  title: '$diagnosisCount',
+                  label: 'التشخيص',
+                  icon: Icons.psychology_rounded,
                 ),
               ),
             ],

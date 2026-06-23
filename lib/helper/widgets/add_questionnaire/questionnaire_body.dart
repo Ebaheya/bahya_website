@@ -95,6 +95,16 @@ class DiagnosisRangeValidationData {
   });
 }
 
+
+class ScoreBounds {
+  final int minScore;
+  final int maxScore;
+
+  const ScoreBounds({required this.minScore, required this.maxScore});
+
+  int get totalValues => maxScore - minScore + 1;
+}
+
 class DiagnosisItemModel {
   final TextEditingController fromController;
   final TextEditingController toController;

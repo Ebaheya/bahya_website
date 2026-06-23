@@ -180,10 +180,10 @@ class _DiagnosisNumberField extends StatelessWidget {
           controller: controller,
           textAlign: TextAlign.center,
           keyboardType: TextInputType.number,
-          maxLength: 3,
+          maxLength: 5,
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(3),
+            LengthLimitingTextInputFormatter(5),
           ],
           decoration: InputDecoration(
             counterText: '',
@@ -253,7 +253,13 @@ class _DiagnosisTextField extends StatelessWidget {
           controller: controller,
           textDirection: appTextDirection(isEnglish),
           textAlign: isEnglish ? TextAlign.start : TextAlign.right,
-          maxLength: 50,
+          maxLength: 60,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(
+              RegExp(r'[a-zA-Z؀-ۿ0-9\s.,،()\-/]'),
+            ),
+            LengthLimitingTextInputFormatter(60),
+          ],
           decoration: InputDecoration(
             counterText: '',
             hintText: localizedText(context, 'اكتب التشخيص'),

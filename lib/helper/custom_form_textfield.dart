@@ -102,6 +102,18 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
     }
   }
 
+  bool _hasLetters(String text) {
+    return RegExp(r'[A-Za-z\u0600-\u06FF]').hasMatch(text);
+  }
+
+  bool _hasTooManyRepeatedCharacters(String text) {
+    return RegExp(r'(.)\1{4,}').hasMatch(text);
+  }
+
+  String _removeSpaces(String text) {
+    return text.replaceAll(RegExp(r'\s+'), '');
+  }
+
   String? _validate(String? value) {
     final text = value?.trim() ?? '';
     String? errorKey;
@@ -118,21 +130,33 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
             errorKey = 'Enter a valid email address';
           }
           break;
+
         case CustomTextFieldType.name:
-          if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(text)) {
+          final cleanText = _removeSpaces(text);
+
+          if (cleanText.length < 3) {
+            errorKey = 'Name is too short';
+          } else if (!_hasLetters(text)) {
+            errorKey = 'Name must contain letters';
+          } else if (!RegExp(r'^[a-zA-Z\u0600-\u06FF\s]+$').hasMatch(text)) {
             errorKey = 'Enter a valid name';
+          } else if (_hasTooManyRepeatedCharacters(text)) {
+            errorKey = 'Too many repeated characters';
           }
           break;
+
         case CustomTextFieldType.number:
           if (!RegExp(r'^\d+$').hasMatch(text)) {
             errorKey = 'Enter numbers only';
           }
           break;
+
         case CustomTextFieldType.phone:
           if (!RegExp(r'^\d{11}$').hasMatch(text)) {
             errorKey = 'Enter an 11-digit phone number';
           }
           break;
+
         case CustomTextFieldType.password:
           final passwordRegex = RegExp(
             r'^[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_+=/\\[\];`~\-]+$',
@@ -145,16 +169,27 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                 'Password can contain only English letters, numbers, and special characters';
           }
           break;
+
         case CustomTextFieldType.date:
           if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(text)) {
             errorKey = 'Enter a valid date (mm/dd/yyyy)';
           }
           break;
+
         case CustomTextFieldType.title:
-          if (text.length > 25) {
+          final cleanText = _removeSpaces(text);
+
+          if (cleanText.length < 3) {
+            errorKey = 'Title is too short';
+          } else if (!_hasLetters(text)) {
+            errorKey = 'Title must contain letters';
+          } else if (text.length > 25) {
             errorKey = 'The title cannot exceed 25 characters';
+          } else if (_hasTooManyRepeatedCharacters(text)) {
+            errorKey = 'Too many repeated characters';
           }
           break;
+
         case CustomTextFieldType.score:
           final score = int.tryParse(text);
 
@@ -164,12 +199,31 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
             errorKey = 'The score must be between 0 and 100';
           }
           break;
+
         case CustomTextFieldType.diagnose:
-          if (text.length > 50) {
+          final cleanText = _removeSpaces(text);
+
+          if (cleanText.length < 5) {
+            errorKey = 'Diagnosis is too short';
+          } else if (!_hasLetters(text)) {
+            errorKey = 'Diagnosis must contain letters';
+          } else if (text.length > 50) {
             errorKey = 'The diagnosis cannot exceed 50 characters';
+          } else if (_hasTooManyRepeatedCharacters(text)) {
+            errorKey = 'Too many repeated characters';
           }
           break;
+
         case CustomTextFieldType.text:
+          final cleanText = _removeSpaces(text);
+
+          if (cleanText.length < 3) {
+            errorKey = 'Text must contain at least 3 characters';
+          } else if (!_hasLetters(text)) {
+            errorKey = 'Text must contain letters';
+          } else if (_hasTooManyRepeatedCharacters(text)) {
+            errorKey = 'Too many repeated characters';
+          }
           break;
       }
     }
@@ -208,6 +262,12 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
         FilteringTextInputFormatter.allow(
           RegExp(r'[A-Za-z0-9!@#\$%^&*(),.?":{}|<>_+=/\[\];`~\\-]'),
         ),
+      ];
+    }
+
+    if (widget.keyboardType == CustomTextFieldType.name) {
+      return [
+        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\u0600-\u06FF\s]')),
       ];
     }
 
@@ -293,7 +353,6 @@ class _CustomFormTextFieldState extends State<CustomFormTextField> {
                     width: _focused ? 1.4 : 1,
                   )
                 : null,
-           
           ),
           child: Focus(
             onFocusChange: (value) {

@@ -174,6 +174,8 @@ class _AddQuestionnaireState extends State<AddQuestionnaire>
                                               canDeleteQuestion: false,
                                               onDeleteQuestion: () {},
                                               initialData: question.initialData,
+                                              onScoreStructureChanged: controller
+                                                  .syncDiagnosisRangesWithAnswerScores,
                                             ),
                                           )
                                         : AnimatedAdd(
@@ -190,6 +192,8 @@ class _AddQuestionnaireState extends State<AddQuestionnaire>
                                                     index,
                                                   ),
                                               initialData: question.initialData,
+                                              onScoreStructureChanged: controller
+                                                  .syncDiagnosisRangesWithAnswerScores,
                                             ),
                                           ),
                                   );
@@ -209,7 +213,11 @@ class _AddQuestionnaireState extends State<AddQuestionnaire>
                                     max: 32,
                                   ),
                                 ),
-                                DiagnosisSection(key: controller.diagnosisKey),
+                                DiagnosisSection(
+                                  key: controller.diagnosisKey,
+                                  scoreBoundsBuilder: controller
+                                      .getCurrentScoreBoundsForAutoRanges,
+                                ),
                                 SizedBox(
                                   height: responsiveHeight(
                                     context,
@@ -1041,7 +1049,7 @@ class _FormsPaginationBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _PageIconButton(
-              icon: Icons.chevron_right_rounded,
+              icon: Icons.chevron_left_rounded,
               enabled: currentPage > 0,
               onTap: () => onPageChanged(currentPage - 1),
             ),
@@ -1083,7 +1091,7 @@ class _FormsPaginationBar extends StatelessWidget {
             }),
             SizedBox(width: isMobile ? 4 : 6),
             _PageIconButton(
-              icon: Icons.chevron_left_rounded,
+              icon: Icons.chevron_right_rounded,
               enabled: currentPage < totalPages - 1,
               onTap: () => onPageChanged(currentPage + 1),
             ),

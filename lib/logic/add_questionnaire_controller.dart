@@ -107,6 +107,7 @@ class AddQuestionnaireController extends ChangeNotifier {
     );
 
     notifyListeners();
+    syncDiagnosisRangesWithAnswerScores();
   }
 
   void removeQuestion(BuildContext context, int index) {
@@ -129,6 +130,13 @@ class AddQuestionnaireController extends ChangeNotifier {
 
     questions.removeAt(index);
     notifyListeners();
+    syncDiagnosisRangesWithAnswerScores();
+  }
+
+  void syncDiagnosisRangesWithAnswerScores() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      diagnosisKey.currentState?.syncRangesWithAnswerScores();
+    });
   }
 
   Future<void> saveSurvey(BuildContext context) async {

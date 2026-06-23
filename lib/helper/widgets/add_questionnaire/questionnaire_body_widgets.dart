@@ -1,5 +1,6 @@
 import 'package:bahya_website/helper/base.dart';
 import 'package:bahya_website/helper/custom_form_textfield.dart';
+import 'package:bahya_website/helper/massage_dialog.dart';
 import 'package:bahya_website/helper/strings.dart';
 import 'package:bahya_website/helper/widgets/add_questionnaire/questionnaire_body.dart';
 import 'package:bahya_website/l10n/app_localizations.dart';
@@ -267,24 +268,27 @@ class AnswerOptionTile extends StatelessWidget {
     required this.answer,
     required this.canDelete,
     required this.onDelete,
+    required this.onScoreChanged,
   });
 
   final AnswerItemModel answer;
   final bool canDelete;
   final VoidCallback onDelete;
+  final VoidCallback onScoreChanged;
 
-  void _limitScoreTo100(String value) {
-    if (value.trim().isEmpty) return;
+  void _handleScoreChanged(String value) {
+    if (value.trim().isNotEmpty) {
+      final number = int.tryParse(value);
 
-    final number = int.tryParse(value);
-    if (number == null) return;
-
-    if (number > 100) {
-      answer.scoreController.text = '100';
-      answer.scoreController.selection = TextSelection.fromPosition(
-        TextPosition(offset: answer.scoreController.text.length),
-      );
+      if (number != null && number > 100) {
+        answer.scoreController.text = '100';
+        answer.scoreController.selection = TextSelection.fromPosition(
+          TextPosition(offset: answer.scoreController.text.length),
+        );
+      }
     }
+
+    onScoreChanged();
   }
 
   @override
@@ -301,7 +305,7 @@ class AnswerOptionTile extends StatelessWidget {
         final scoreField = _ScoreField(
           answer: answer,
           isEnglish: isEnglish,
-          onChanged: _limitScoreTo100,
+          onChanged: _handleScoreChanged,
         );
 
         final deleteButton = _DeleteAnswerButton(

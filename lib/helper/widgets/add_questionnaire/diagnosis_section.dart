@@ -1,14 +1,26 @@
 part of 'questionnaire_body_widgets.dart';
 
 class DiagnosisSection extends StatefulWidget {
-  const DiagnosisSection({super.key});
+  final ScoreBounds Function()? scoreBoundsBuilder;
+
+  const DiagnosisSection({super.key, this.scoreBoundsBuilder});
 
   @override
   State<DiagnosisSection> createState() => DiagnosisSectionState();
 }
 
 class DiagnosisSectionState extends State<DiagnosisSection> {
-  final List<DiagnosisItemModel> diagnosisItems = [DiagnosisItemModel()];
+  static const int minimumDiagnosisRangeSize = 5;
+
+  final List<DiagnosisItemModel> diagnosisItems = [
+    DiagnosisItemModel(from: '0', to: '50'),
+    DiagnosisItemModel(from: '51', to: '100'),
+  ];
+
+  ScoreBounds _currentBounds() {
+    return widget.scoreBoundsBuilder?.call() ??
+        const ScoreBounds(minScore: 0, maxScore: 100);
+  }
 
   List<DiagnosisRangeValidationData> getDiagnosisRanges() {
     return diagnosisItems.map((item) {
@@ -37,8 +49,8 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
       );
     }
 
-    if (diagnosisItems.isEmpty) {
-      diagnosisItems.add(DiagnosisItemModel());
+    if (diagnosisItems.length < 2) {
+      _resetItemsWithAutoRanges(diagnosisCount: 2);
     }
 
     setState(() {});
@@ -50,7 +62,7 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
     }
 
     diagnosisItems.clear();
-    diagnosisItems.add(DiagnosisItemModel());
+    _resetItemsWithAutoRanges(diagnosisCount: 2);
 
     setState(() {});
   }
@@ -64,12 +76,117 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
     super.dispose();
   }
 
+  bool _canSplitIntoCount(int diagnosisCount) {
+    final bounds = _currentBounds();
+
+    if (bounds.maxScore < bounds.minScore) return false;
+
+    return bounds.totalValues >= diagnosisCount * minimumDiagnosisRangeSize;
+  }
+
+  List<DiagnosisRangeValidationData> _generateAutoRanges({
+    required int diagnosisCount,
+  }) {
+    final bounds = _currentBounds();
+    final totalValues = bounds.totalValues;
+    final baseSize = totalValues ~/ diagnosisCount;
+    final remainder = totalValues % diagnosisCount;
+    final ranges = <DiagnosisRangeValidationData>[];
+
+    int start = bounds.minScore;
+
+    for (int i = 0; i < diagnosisCount; i++) {
+      final currentSize = baseSize + (i < remainder ? 1 : 0);
+      final end = start + currentSize - 1;
+
+      ranges.add(
+        DiagnosisRangeValidationData(
+          from: start,
+          to: end,
+          diagnosis: i < diagnosisItems.length
+              ? diagnosisItems[i].diagnosisController.text.trim()
+              : '',
+        ),
+      );
+
+      start = end + 1;
+    }
+
+    return ranges;
+  }
+
+  void _resetItemsWithAutoRanges({required int diagnosisCount}) {
+    final ranges = _generateAutoRanges(diagnosisCount: diagnosisCount);
+
+    diagnosisItems.clear();
+
+    for (final range in ranges) {
+      diagnosisItems.add(
+        DiagnosisItemModel(
+          from: range.from.toString(),
+          to: range.to.toString(),
+          diagnosis: range.diagnosis,
+        ),
+      );
+    }
+  }
+
+  void _applyAutoRanges({required int diagnosisCount}) {
+    final ranges = _generateAutoRanges(diagnosisCount: diagnosisCount);
+
+    while (diagnosisItems.length < diagnosisCount) {
+      diagnosisItems.add(DiagnosisItemModel());
+    }
+
+    while (diagnosisItems.length > diagnosisCount) {
+      final removed = diagnosisItems.removeLast();
+      removed.dispose();
+    }
+
+    for (int i = 0; i < ranges.length; i++) {
+      diagnosisItems[i].isDeleting = false;
+      diagnosisItems[i].fromController.text = ranges[i].from.toString();
+      diagnosisItems[i].toController.text = ranges[i].to.toString();
+    }
+  }
+
+  void syncRangesWithAnswerScores() {
+    if (!mounted) return;
+
+    final currentCount = diagnosisItems.length < 2 ? 2 : diagnosisItems.length;
+    var targetCount = currentCount;
+
+    while (targetCount > 2 && !_canSplitIntoCount(targetCount)) {
+      targetCount--;
+    }
+
+    setState(() {
+      _applyAutoRanges(diagnosisCount: targetCount);
+    });
+  }
+
   void addDiagnosis() {
-    setState(() => diagnosisItems.add(DiagnosisItemModel()));
+    final nextCount = diagnosisItems.length + 1;
+
+    if (!_canSplitIntoCount(nextCount)) {
+         final bounds = _currentBounds();
+      final maxCount = bounds.totalValues ~/ minimumDiagnosisRangeSize;
+      customDialog(
+        title: 'لا يمكن إضافة تشخيص جديد',
+        message:    'لا يمكن إضافة تشخيص جديد. أقل مدى لكل تشخيص هو $minimumDiagnosisRangeSize درجات، وأقصى عدد مناسب حالياً هو ${maxCount < 2 ? 2 : maxCount}.',
+        isInfo: true,
+        context: context,
+      );
+      return;
+    }
+
+    setState(() {
+      _applyAutoRanges(diagnosisCount: nextCount);
+    });
   }
 
   void removeDiagnosis(int index) {
-    if (diagnosisItems.length == 1) return;
+    if (diagnosisItems.length <= 2) return;
 
     setState(() {
       diagnosisItems[index].isDeleting = true;
@@ -83,15 +200,19 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
 
     setState(() {
       diagnosisItems.removeAt(index);
-    });
+      removedItem.dispose();
 
-    removedItem.dispose();
+      if (_canSplitIntoCount(diagnosisItems.length)) {
+        _applyAutoRanges(diagnosisCount: diagnosisItems.length);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final w = getScreenWidth(context);
     final isMobile = w < 700;
+    final bounds = _currentBounds();
 
     return ValueListenableBuilder<Locale>(
       valueListenable: AppLanguageController.localeNotifier,
@@ -133,9 +254,21 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
                 const SizedBox(height: 6),
                 Center(
                   child: customText(
-                    text: 'يمكنك تحديد تشخيص لكل نطاق من السكور الكلي',
+                    text:
+                        'يتم تقسيم السكور تلقائياً ويمكن للطبيب تعديل الرينجات يدوياً',
                     color: Colors.deepPurple[300],
                     size: responsiveSize(context, 0.009, min: 12, max: 16),
+                    isEnglish: isEnglish,
+                    maxLines: 2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: customText(
+                    text:
+                        'أقل score: ${bounds.minScore}  |  أكبر score: ${bounds.maxScore}  |  أقل مدى للتشخيص: $minimumDiagnosisRangeSize',
+                    color: surveyDark.withValues(alpha: .72),
+                    size: responsiveSize(context, 0.008, min: 11, max: 13),
                     isEnglish: isEnglish,
                     maxLines: 2,
                   ),
@@ -159,7 +292,7 @@ class DiagnosisSectionState extends State<DiagnosisSection> {
                             key: ValueKey(diagnosisItems[index]),
                             child: DiagnosisMiniCard(
                               item: diagnosisItems[index],
-                              canDelete: diagnosisItems.length > 1,
+                              canDelete: diagnosisItems.length > 2,
                               onDelete: () => removeDiagnosis(index),
                             ),
                           ),
