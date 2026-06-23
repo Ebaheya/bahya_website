@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/constant.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
-import 'package:bahya_app/screens/patients/profile.dart';
+import 'package:bahya_app/screens/profile.dart';
 import 'package:flutter/material.dart';
 
 PreferredSizeWidget customAppBar({

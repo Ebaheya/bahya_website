@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'package:bahya_app/data/remote/web/web_service.dart';
 import 'package:bahya_app/helper/base.dart';
 import 'package:bahya_app/helper/constant.dart';
+import 'package:bahya_app/helper/custom_form_textfield.dart';
 import 'package:bahya_app/helper/custom_glow_buttom.dart';
 import 'package:bahya_app/helper/custom_loading.dart';
-import 'package:bahya_app/helper/custom_form_textfield.dart';
 import 'package:bahya_app/helper/massage_dialog.dart';
 import 'package:bahya_app/helper/widgets/animated_service_card.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
@@ -96,6 +96,14 @@ class _ProfileBodyState extends State<_ProfileBody>
       context: context,
       barrierDismissible: false,
       builder: (_) => const _ChangePasswordDialog(),
+    );
+  }
+
+  Future<void> _openReportDialog() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _ReportDialog(),
     );
   }
 
@@ -313,6 +321,15 @@ class _ProfileBodyState extends State<_ProfileBody>
                                       max: 14,
                                     ),
                                   ),
+                                  _ReportAction(onTap: _openReportDialog),
+                                  SizedBox(
+                                    height: responsiveHeight(
+                                      context,
+                                      0.014,
+                                      min: 10,
+                                      max: 14,
+                                    ),
+                                  ),
                                   CustomGlowButton(
                                     width: double.infinity,
                                     title: isArabic ? 'تسجيل الخروج' : 'Logout',
@@ -320,6 +337,7 @@ class _ProfileBodyState extends State<_ProfileBody>
                                       if (mounted) {
                                         await closeDialog();
                                       }
+
                                       await context
                                           .read<PatientProfileCubit>()
                                           .logout();
@@ -505,6 +523,7 @@ class _ChangePasswordActionState extends State<_ChangePasswordAction>
   @override
   void initState() {
     super.initState();
+
     controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1300),
@@ -624,6 +643,509 @@ class _ChangePasswordActionState extends State<_ChangePasswordAction>
   }
 }
 
+class _ReportAction extends StatefulWidget {
+  const _ReportAction({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_ReportAction> createState() => _ReportActionState();
+}
+
+class _ReportActionState extends State<_ReportAction>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isArabic = context.l10n.isArabic;
+
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        final glow = 0.10 + (controller.value * 0.18);
+
+        return InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 260),
+            width: double.infinity,
+            padding: EdgeInsets.all(
+              responsiveSize(context, 0.038, min: 14, max: 18),
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7FB),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: const Color(0xFFE7549B).withOpacity(0.20),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFE7549B).withOpacity(glow),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: responsiveHeight(context, 0.05, min: 38, max: 48),
+                  height: responsiveHeight(context, 0.05, min: 38, max: 48),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: gradientColors),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.report_problem_rounded,
+                    color: Colors.white,
+                    size: responsiveSize(context, 0.06, min: 22, max: 28),
+                  ),
+                ),
+                SizedBox(
+                  width: responsiveSize(context, 0.03, min: 10, max: 14),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: isArabic
+                        ? CrossAxisAlignment.start
+                        : CrossAxisAlignment.end,
+                    children: [
+                      customText(
+                        text: isArabic ? 'إرسال بلاغ' : 'Send Report',
+                        size: responsiveSize(context, 0.038, min: 15, max: 18),
+                        color: const Color(0xff14213D),
+                        bold: true,
+                        isCenter: false,
+                      ),
+                      customText(
+                        text: isArabic
+                            ? 'اكتبي المشكلة وسيتم مراجعتها من الإدارة'
+                            : 'Describe the issue for admin review',
+                        size: responsiveSize(context, 0.028, min: 11, max: 13),
+                        color: Colors.grey[600],
+                        isCenter: false,
+                        maxLines: 1,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  isArabic
+                      ? Icons.arrow_forward_ios_rounded
+                      : Icons.arrow_back_ios_new_rounded,
+                  color: const Color(0xFFE7549B),
+                  size: responsiveSize(context, 0.04, min: 16, max: 20),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ReportDialog extends StatefulWidget {
+  const _ReportDialog();
+
+  @override
+  State<_ReportDialog> createState() => _ReportDialogState();
+}
+
+class _ReportDialogState extends State<_ReportDialog>
+    with SingleTickerProviderStateMixin {
+  final titleController = TextEditingController();
+  final bodyController = TextEditingController();
+
+  late final AnimationController controller;
+  late final Animation<double> fadeAnimation;
+  late final Animation<double> scaleAnimation;
+
+  bool isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
+
+    fadeAnimation = CurvedAnimation(parent: controller, curve: Curves.easeOut);
+
+    scaleAnimation = Tween<double>(
+      begin: 0.88,
+      end: 1,
+    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOutBack));
+
+    controller.forward();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    titleController.dispose();
+    bodyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _close() async {
+    await controller.reverse();
+
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _submit() async {
+    final isArabic = context.l10n.isArabic;
+    final title = titleController.text.trim();
+    final body = bodyController.text.trim();
+
+    if (title.isEmpty || body.isEmpty) {
+      customDialog(
+        context: context,
+        title: isArabic ? 'خطأ' : 'Error',
+        message: isArabic
+            ? 'يرجى كتابة عنوان البلاغ وتفاصيل المشكلة.'
+            : 'Please enter report title and details.',
+        isError: true,
+      );
+      return;
+    }
+
+    if (title.length > 200) {
+      customDialog(
+        context: context,
+        title: isArabic ? 'خطأ' : 'Error',
+        message: isArabic
+            ? 'عنوان البلاغ لا يمكن أن يتجاوز 200 حرف.'
+            : 'Report title cannot exceed 200 characters.',
+        isError: true,
+      );
+      return;
+    }
+
+    if (body.length > 5000) {
+      customDialog(
+        context: context,
+        title: isArabic ? 'خطأ' : 'Error',
+        message: isArabic
+            ? 'تفاصيل البلاغ طويلة جداً.'
+            : 'Report details are too long.',
+        isError: true,
+      );
+      return;
+    }
+
+    setState(() => isSending = true);
+
+    try {
+      await WebService().createReport(title: title, body: body);
+
+      if (!mounted) return;
+
+      await _close();
+
+      customDialog(
+        context: context,
+        title: isArabic ? 'تم إرسال البلاغ' : 'Report Sent',
+        message: isArabic
+            ? 'تم إرسال البلاغ بنجاح وسيتم مراجعته من الإدارة.'
+            : 'Your report has been sent successfully.',
+        isSuccess: true,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+
+      customDialog(
+        context: context,
+        title: isArabic ? 'خطأ' : 'Error',
+        message: e.message,
+        isError: true,
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      customDialog(
+        context: context,
+        title: isArabic ? 'خطأ' : 'Error',
+        message: isArabic
+            ? 'حدث خطأ أثناء إرسال البلاغ.'
+            : 'Failed to send report.',
+        isError: true,
+      );
+    } finally {
+      if (mounted) setState(() => isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isArabic = context.l10n.isArabic;
+
+    return Directionality(
+      textDirection: context.appTextDirection,
+      child: FadeTransition(
+        opacity: fadeAnimation,
+        child: ScaleTransition(
+          scale: scaleAnimation,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: EdgeInsets.symmetric(
+              horizontal: responsiveSize(context, 0.045, min: 16, max: 22),
+            ),
+            child: AnimatedServiceCard(
+              borderRadius: 30,
+              strokeWidth: 3.5,
+              strokeColor: const Color(0xFFE7549B),
+              duration: const Duration(seconds: 3),
+              child: Container(
+                padding: EdgeInsets.all(
+                  responsiveSize(context, 0.045, min: 16, max: 22),
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          InkWell(
+                            onTap: isSending ? null : _close,
+                            borderRadius: BorderRadius.circular(40),
+                            child: Container(
+                              width: responsiveHeight(
+                                context,
+                                0.042,
+                                min: 36,
+                                max: 44,
+                              ),
+                              height: responsiveHeight(
+                                context,
+                                0.042,
+                                min: 36,
+                                max: 44,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.close_rounded,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                      Container(
+                        width: responsiveHeight(
+                          context,
+                          0.095,
+                          min: 72,
+                          max: 90,
+                        ),
+                        height: responsiveHeight(
+                          context,
+                          0.095,
+                          min: 72,
+                          max: 90,
+                        ),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(colors: gradientColors),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFE7549B).withOpacity(0.22),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.report_rounded,
+                          color: Colors.white,
+                          size: 42,
+                        ),
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.02,
+                          min: 14,
+                          max: 20,
+                        ),
+                      ),
+                      customText(
+                        text: isArabic ? 'إرسال بلاغ' : 'Send Report',
+                        size: responsiveSize(context, 0.05, min: 18, max: 23),
+                        color: const Color(0xff14213D),
+                        bold: true,
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.008,
+                          min: 5,
+                          max: 8,
+                        ),
+                      ),
+                      customText(
+                        text: isArabic
+                            ? 'اكتبي تفاصيل المشكلة وسيتم إرسالها للإدارة'
+                            : 'Write the issue details and send it to admin',
+                        size: responsiveSize(context, 0.032, min: 12, max: 15),
+                        color: Colors.grey[600],
+                        maxLines: 2,
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.025,
+                          min: 18,
+                          max: 26,
+                        ),
+                      ),
+                      CustomFormTextField(
+                        controller: titleController,
+                        hintText: isArabic ? 'عنوان البلاغ' : 'Report title',
+                        autovalidateMode: AutovalidateMode.disabled,
+                        keyboardType: CustomTextFieldType.text,
+                        borderRadius: 18,
+                        prefixIcon: const Icon(
+                          Icons.title_rounded,
+                          color: Color(0xFFE7549B),
+                        ),
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.016,
+                          min: 12,
+                          max: 16,
+                        ),
+                      ),
+                      CustomFormTextField(
+                        controller: bodyController,
+                        hintText: isArabic
+                            ? 'اكتبي تفاصيل المشكلة هنا'
+                            : 'Write issue details here',
+                        autovalidateMode: AutovalidateMode.disabled,
+                        keyboardType: CustomTextFieldType.text,
+                        maxLines: 5,
+                        borderRadius: 18,
+                        prefixIcon: const Icon(
+                          Icons.notes_rounded,
+                          color: Color(0xFFE7549B),
+                        ),
+                      ),
+                      SizedBox(
+                        height: responsiveHeight(
+                          context,
+                          0.028,
+                          min: 20,
+                          max: 28,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: isSending ? null : _submit,
+                        borderRadius: BorderRadius.circular(18),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: double.infinity,
+                          height: responsiveHeight(
+                            context,
+                            0.06,
+                            min: 48,
+                            max: 58,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: gradientColors),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          alignment: Alignment.center,
+                          child: isSending
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.4,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    customText(
+                                      text: isArabic
+                                          ? 'جاري إرسال البلاغ...'
+                                          : 'Sending report...',
+                                      color: Colors.white,
+                                      bold: true,
+                                      size: responsiveSize(
+                                        context,
+                                        0.038,
+                                        min: 15,
+                                        max: 18,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : customText(
+                                  text: isArabic
+                                      ? 'إرسال البلاغ'
+                                      : 'Submit Report',
+                                  color: Colors.white,
+                                  bold: true,
+                                  size: responsiveSize(
+                                    context,
+                                    0.038,
+                                    min: 15,
+                                    max: 18,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ChangePasswordDialog extends StatefulWidget {
   const _ChangePasswordDialog();
 
@@ -646,15 +1168,19 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog>
   @override
   void initState() {
     super.initState();
+
     controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 360),
     );
+
     scaleAnimation = Tween<double>(
       begin: 0.88,
       end: 1,
     ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOutBack));
+
     fadeAnimation = CurvedAnimation(parent: controller, curve: Curves.easeOut);
+
     controller.forward();
   }
 
@@ -711,9 +1237,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog>
       return;
     }
 
-    setState(() {
-      isSaving = true;
-    });
+    setState(() => isSaving = true);
 
     try {
       final webService = WebService();
@@ -726,6 +1250,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog>
       if (!mounted) return;
 
       await controller.reverse();
+
       if (!mounted) return;
 
       Navigator.pop(context);
@@ -743,6 +1268,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog>
       );
     } on ApiException catch (e) {
       if (!mounted) return;
+
       customDialog(
         context: context,
         title: isArabic ? 'خطأ' : 'Error',
@@ -751,6 +1277,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog>
       );
     } catch (_) {
       if (!mounted) return;
+
       customDialog(
         context: context,
         title: isArabic ? 'خطأ' : 'Error',
@@ -760,11 +1287,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog>
         isError: true,
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          isSaving = false;
-        });
-      }
+      if (mounted) setState(() => isSaving = false);
     }
   }
 
@@ -772,7 +1295,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog>
   Widget build(BuildContext context) {
     final isArabic = context.l10n.isArabic;
 
-    Widget dialogCardContent = Container(
+    final dialogCardContent = Container(
       padding: EdgeInsets.all(responsiveSize(context, 0.045, min: 16, max: 22)),
       decoration: BoxDecoration(
         color: Colors.white,

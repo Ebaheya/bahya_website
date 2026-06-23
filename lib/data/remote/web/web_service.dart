@@ -647,4 +647,16 @@ class WebService {
     return _listFromResponse(response.data);
   }
 
+Future<Map<String, dynamic>> createReport({
+    required String title,
+    required String body,
+  }) async {
+    final response = await post(
+      '/reports',
+      data: {'title': title.trim(), 'body': body.trim()},
+    );
+
+    return _mapFromResponse(response.data);
+  }
+  
 }
