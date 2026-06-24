@@ -30,6 +30,10 @@ export interface HighRiskAlertInput {
   templateKey?: string;
   reason?: string;
   flaggedPhrases?: string[];
+  // Chat alert context (chatbot crisis): session id + a short excerpt of the
+  // patient's triggering message, so the doctor sees the chat and can open it.
+  sessionId?: string;
+  triggerExcerpt?: string;
 }
 
 export interface CallCenterAlertInput {
@@ -37,6 +41,8 @@ export interface CallCenterAlertInput {
   severity: Extract<NotificationSeverity, 'MEDIUM' | 'HIGH' | 'CRITICAL'>;
   reason?: string;
   flaggedPhrases?: string[];
+  sessionId?: string;
+  triggerExcerpt?: string;
 }
 
 export interface ServiceRequestSubmittedInput {
@@ -129,6 +135,8 @@ export async function emitHighRiskAlert(input: HighRiskAlertInput): Promise<bool
       severity: input.severity,
       reason: input.reason ?? input.submissionId ?? null,
       flaggedPhrases: input.flaggedPhrases ?? null,
+      sessionId: input.sessionId ?? null,
+      triggerExcerpt: input.triggerExcerpt ?? null,
       doctorNote: null,
       status: 'UNREAD',
       claimedAt: null,
@@ -168,6 +176,8 @@ export async function emitCallCenterAlert(input: CallCenterAlertInput): Promise<
       severity: input.severity,
       reason: input.reason ?? null,
       flaggedPhrases: input.flaggedPhrases ?? null,
+      sessionId: input.sessionId ?? null,
+      triggerExcerpt: input.triggerExcerpt ?? null,
       doctorNote: null,
       status: 'UNREAD',
       claimedAt: null,
@@ -312,7 +322,13 @@ function toNotificationCore(doc: LeanNotification, includeStaffFields = false) {
   // Crisis context (AI-flagged phrases + trigger reason) is required by staff for
   // follow-up — e.g. a CALL_CENTER user acting on an urgent chatbot crisis — but
   // MUST never be exposed to patients.
-  return { ...core, reason: doc.reason ?? null, flaggedPhrases: doc.flaggedPhrases ?? null };
+  return {
+    ...core,
+    reason: doc.reason ?? null,
+    flaggedPhrases: doc.flaggedPhrases ?? null,
+    sessionId: doc.sessionId ?? null,
+    triggerExcerpt: doc.triggerExcerpt ?? null,
+  };
 }
 
 function toListItem(

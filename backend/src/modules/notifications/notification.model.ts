@@ -27,6 +27,11 @@ export interface NotificationDoc {
   severity: NotificationSeverity;
   reason: string | null;
   flaggedPhrases?: string[] | null;
+  // Chat context for HIGH_RISK alerts: the chat session and a short excerpt of the
+  // patient's triggering message, so a doctor can see what happened and open the
+  // conversation. PHI — staff-only, never projected to patients.
+  sessionId?: string | null;
+  triggerExcerpt?: string | null;
   doctorNote: string | null;
   status: NotificationStatus;
   claimedAt: Date | null;
@@ -63,6 +68,8 @@ const NotificationSchema = new Schema<NotificationDoc>(
     severity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], required: true },
     reason: { type: String, default: null },
     flaggedPhrases: { type: [String], default: null },
+    sessionId: { type: String, default: null },
+    triggerExcerpt: { type: String, default: null },
     doctorNote: { type: String, default: null },
     status: { type: String, enum: ['UNREAD', 'READ', 'DONE'], default: 'UNREAD', required: true },
     claimedAt: { type: Date, default: null },

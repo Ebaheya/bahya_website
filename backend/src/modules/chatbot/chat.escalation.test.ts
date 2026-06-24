@@ -106,6 +106,7 @@ describe('chat escalation US2', () => {
     await escalateIfNeeded({
       patientId,
       sessionId: sessionId.toString(),
+      triggerMessage: 'I feel hopeless',
       inf: { ...mediumInference, riskLevel: 'LOW', flaggedPhrases: [] },
     });
 
@@ -117,6 +118,7 @@ describe('chat escalation US2', () => {
     await escalateIfNeeded({
       patientId,
       sessionId: sessionId.toString(),
+      triggerMessage: 'I feel hopeless',
       inf: {
         ...mediumInference,
         riskLevel: 'LOW',
@@ -186,6 +188,7 @@ describe('chat escalation US2', () => {
     await escalateIfNeeded({
       patientId,
       sessionId: sessionId.toString(),
+      triggerMessage: 'I feel hopeless',
       inf: mediumInference,
     });
 
@@ -194,6 +197,8 @@ describe('chat escalation US2', () => {
       severity: 'MEDIUM',
       reason: 'AI risk level MEDIUM',
       flaggedPhrases: ['cannot sleep'],
+      sessionId: sessionId.toString(),
+      triggerExcerpt: 'I feel hopeless',
     });
     expect(mockWriteAudit).toHaveBeenCalledWith({
       actorId: null,
@@ -259,6 +264,7 @@ describe('chat escalation US2', () => {
     await escalateIfNeeded({
       patientId,
       sessionId: sessionId.toString(),
+      triggerMessage: 'I feel hopeless',
       inf: {
         ...mediumInference,
         riskLevel: 'CRITICAL',
@@ -275,6 +281,8 @@ describe('chat escalation US2', () => {
       severity: 'CRITICAL',
       reason: 'AI urgent crisis signal',
       flaggedPhrases: ['TEST_CRISIS'],
+      sessionId: sessionId.toString(),
+      triggerExcerpt: 'I feel hopeless',
     });
   });
 
@@ -282,6 +290,7 @@ describe('chat escalation US2', () => {
     await escalateIfNeeded({
       patientId,
       sessionId: sessionId.toString(),
+      triggerMessage: 'I feel hopeless',
       inf: {
         ...mediumInference,
         riskLevel: 'HIGH',
@@ -299,6 +308,8 @@ describe('chat escalation US2', () => {
       severity: 'HIGH',
       reason: 'AI urgent crisis signal',
       flaggedPhrases: ['I will hurt myself'],
+      sessionId: sessionId.toString(),
+      triggerExcerpt: 'I feel hopeless',
     });
   });
 
@@ -306,11 +317,13 @@ describe('chat escalation US2', () => {
     await escalateIfNeeded({
       patientId,
       sessionId: sessionId.toString(),
+      triggerMessage: 'I feel hopeless',
       inf: { ...mediumInference, riskLevel: 'HIGH', crisis: false },
     });
     await escalateIfNeeded({
       patientId,
       sessionId: sessionId.toString(),
+      triggerMessage: 'I feel hopeless',
       inf: {
         ...mediumInference,
         riskLevel: 'HIGH',

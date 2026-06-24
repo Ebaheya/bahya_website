@@ -64,7 +64,14 @@ export interface EscalationInput {
   patientId: string;
   sessionId: string;
   inf: AiInferResponse;
+  // The patient's triggering message — a short excerpt is attached to the doctor
+  // / call-center alert so they see the chat context (PHI, staff-only).
+  triggerMessage: string;
 }
+
+// Cap the excerpt carried on the alert; the full conversation is always available
+// via the chat read endpoints. Keep it short — it's a glance, not the record.
+const ALERT_EXCERPT_MAX = 200;
 
 export interface ChatReadActor {
   id: string;
@@ -464,6 +471,7 @@ export async function escalateIfNeeded(input: EscalationInput): Promise<void> {
   >;
 
   const flaggedPhrases = input.inf.flaggedPhrases ?? [];
+  const triggerExcerpt = input.triggerMessage.slice(0, ALERT_EXCERPT_MAX);
   const failed: string[] = [];
 
   // 1) Write the durable safety record FIRST, so a notification-store outage can
@@ -493,6 +501,8 @@ export async function escalateIfNeeded(input: EscalationInput): Promise<void> {
     severity,
     reason: `AI risk level ${riskLevel}`,
     flaggedPhrases,
+    sessionId: input.sessionId,
+    triggerExcerpt,
   }).catch(() => false);
   if (!doctorOk) failed.push('doctor');
 
@@ -502,6 +512,8 @@ export async function escalateIfNeeded(input: EscalationInput): Promise<void> {
       severity,
       reason: 'AI urgent crisis signal',
       flaggedPhrases,
+      sessionId: input.sessionId,
+      triggerExcerpt,
     }).catch(() => false);
     if (!callCenterOk) failed.push('callCenter');
   }
@@ -572,6 +584,7 @@ export async function handlePatientMessage(
     patientId: input.patientId,
     sessionId: sessionIdString,
     inf,
+    triggerMessage: input.message,
   }).catch((err) => {
     logger.error(
       {
