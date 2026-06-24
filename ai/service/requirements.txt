@@ -1,0 +1,18 @@
+# Full (real) pipeline dependencies — BAHYA_AI_MODE=real.
+# Install torch matching your CUDA build separately if the default wheel does
+# not match the host (see https://pytorch.org). On a CUDA base image torch is
+# usually preinstalled, so pin loosely here.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+
+torch>=2.2
+transformers>=4.44
+peft>=0.11
+accelerate>=0.30
+bitsandbytes>=0.43            # GPU 4-bit quantization (Fanar / tanusrich)
+sentence-transformers>=3.0    # RAG embeddings
+chromadb>=0.5                 # RAG vector store
+fasttext-wheel>=0.9.2         # language / dialect id
+huggingface_hub>=0.24
+numpy>=1.26

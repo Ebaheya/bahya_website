@@ -30,8 +30,54 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
+      ai:
+        condition: service_healthy
     networks:
       - bahya
+
+  # In-house AI chatbot service. Answers POST /infer with the frozen contract
+  # shape (doocs/CHATBOT_CONTRACT.md); the backend reaches it at http://ai:8000
+  # on the private network.
+  #   BAHYA_AI_MODE=real (default) — full ML pipeline; needs a GPU + the model
+  #     assets mounted at /models (uncomment the volume + `deploy` GPU block).
+  #   BAHYA_AI_MODE=mock — canned responses; no GPU/weights. To use the mock
+  #     image set `dockerfile: Dockerfile.mock`.
+  ai:
+    build:
+      context: ./ai
+      # MOCK until the real AI is ready. When ready: switch to `Dockerfile`,
+      # set BAHYA_AI_MODE=real, mount ai_models, and uncomment the GPU block.
+      dockerfile: Dockerfile.mock
+    image: bahya-ai:latest
+    container_name: bahya-ai
+    restart: unless-stopped
+    environment:
+      BAHYA_AI_MODE: ${BAHYA_AI_MODE:-mock}   # mock until the real AI is ready
+      BAHYA_AI_API_KEY: ${BAHYA_AI_API_KEY:?BAHYA_AI_API_KEY is required}
+      # Real mode: point the pipeline at the mounted model assets.
+      AR_DIAGNOSIS_MODEL: /models/final_marbert_model
+      EN_SUPPORT_FINETUNE: /models/english_support_finetuned/best_checkpoint
+      RAG_STORE_PATH: /models/rag_store
+    expose:
+      - "8000"
+    # volumes:
+    #   - ai_models:/models          # populate with the model weights + rag_store
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 120s   # real mode loads large models at startup
+    networks:
+      - bahya
+    # Real mode — uncomment to reserve a GPU (needs the NVIDIA Container Toolkit):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
   postgres:
     image: postgres:16
@@ -107,6 +153,7 @@ volumes:
   mongo_data:
   certbot_conf:
   certbot_www:
+  # ai_models:   # uncomment with the `ai` service volume mount (real mode weights)
 
 networks:
   bahya:

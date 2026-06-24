@@ -1,0 +1,17 @@
+# Lightweight MOCK image (BAHYA_AI_MODE=mock) — no torch, no GPU.
+# Build:  docker build -f Dockerfile.mock -t bahya-ai:mock ai
+# Run:    docker run --rm -e BAHYA_AI_API_KEY=dev -p 8000:8000 bahya-ai:mock
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY service/requirements-mock.txt ./service/requirements-mock.txt
+RUN pip install --no-cache-dir -r service/requirements-mock.txt
+
+COPY service ./service
+
+ENV BAHYA_AI_MODE=mock
+
+EXPOSE 8000
+
+CMD ["uvicorn", "service.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

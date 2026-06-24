@@ -25,5 +25,12 @@ Thumbs.db
 .claude/
 CLAUDE.md
 .impeccable/
-ai/
+# AI folder: ignore heavy model assets & datasets, but keep the service code.
+ai/*
+!ai/service/
+!ai/Dockerfile
+!ai/Dockerfile.mock
+ai/service/__pycache__/
+ai/service/__pycache__/**
+ai/service/.pytest_cache/
 frontend_react/
