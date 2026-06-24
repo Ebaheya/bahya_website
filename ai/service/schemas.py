@@ -41,9 +41,15 @@ class PatientProfile(BaseModel):
     riskFlagFromHistory: Optional[RiskLevel] = None
 
 
+# Bounds mirror the backend's Zod caps: untrusted text is length-limited and the
+# history window is capped so a caller can't push a huge prompt / OOM the service.
+MAX_MESSAGE_CHARS = 4000
+MAX_HISTORY_TURNS = 20
+
+
 class HistoryTurn(BaseModel):
     sender: Literal["PATIENT", "BOT"]
-    text: str
+    text: str = Field(max_length=MAX_MESSAGE_CHARS)
     emotion: Optional[str] = None
     riskLevel: Optional[RiskLevel] = None
     createdAt: str
@@ -52,10 +58,10 @@ class HistoryTurn(BaseModel):
 class InferRequest(BaseModel):
     version: int
     sessionId: str
-    message: str
+    message: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
     langHint: Optional[Lang] = None
     patient: PatientProfile
-    history: list[HistoryTurn] = Field(default_factory=list)
+    history: list[HistoryTurn] = Field(default_factory=list, max_length=MAX_HISTORY_TURNS)
 
 
 # --- Response (AI -> Backend), contract section 5 --------------------------

@@ -17,12 +17,13 @@ Run real:  BAHYA_AI_API_KEY=dev uvicorn service.main:app --port 8000
 
 from __future__ import annotations
 
+import hmac
 import logging
 import os
 from contextlib import asynccontextmanager
 from typing import Callable
 
-from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
 
 from .schemas import InferRequest, InferResponse
 
@@ -58,21 +59,26 @@ app = FastAPI(title="Bahya AI Service", version="1.0.0", lifespan=lifespan)
 
 
 def require_bearer(authorization: str | None = Header(default=None)) -> None:
-    """Enforce `Authorization: Bearer ${BAHYA_AI_API_KEY}` (contract section 3)."""
+    """Enforce `Authorization: Bearer ${BAHYA_AI_API_KEY}` (contract section 3).
+
+    The token is compared with hmac.compare_digest so the check is constant-time
+    and can't be used as a byte-by-byte timing oracle to recover the key.
+    """
     expected = os.environ.get("BAHYA_AI_API_KEY")
     if not expected:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="server_misconfigured",
         )
-    if authorization != f"Bearer {expected}":
+    scheme, _, token = (authorization or "").partition(" ")
+    if scheme.lower() != "bearer" or not hmac.compare_digest(token, expected):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized"
         )
 
 
 @app.get("/health")
-def health() -> dict[str, object]:
+def health(response: Response) -> dict[str, object]:
     # Ready once the inference function is wired (models loaded in real mode).
     ready = _infer is not None
     if MODE != "mock":
@@ -81,7 +87,13 @@ def health() -> dict[str, object]:
 
             ready = ready and pipeline.is_ready()
         except Exception:  # noqa: BLE001
+            log.exception("readiness check failed")
             ready = False
+    # Return 503 while loading so the container healthcheck (and the backend's
+    # `depends_on: service_healthy`) only see the service as healthy once it can
+    # actually serve /infer — otherwise real-mode model loading is masked as 200.
+    if not ready:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return {"status": "ok" if ready else "loading", "mode": MODE}
 
 

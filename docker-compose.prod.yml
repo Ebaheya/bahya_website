@@ -58,10 +58,15 @@ services:
       AR_DIAGNOSIS_MODEL: /models/final_marbert_model
       EN_SUPPORT_FINETUNE: /models/english_support_finetuned/best_checkpoint
       RAG_STORE_PATH: /models/rag_store
+    # Hardening: this container processes PHI and holds the API key.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     expose:
       - "8000"
     # volumes:
-    #   - ai_models:/models          # populate with the model weights + rag_store
+    #   - ai_models:/models:ro       # populate with the model weights + rag_store (read-only)
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
       interval: 10s

@@ -22,6 +22,12 @@ COPY service ./service
 # pipeline at them via env (see service/pipeline.py): AR_DIAGNOSIS_MODEL,
 # EN_SUPPORT_FINETUNE, RAG_STORE_PATH, ...  e.g. -v /srv/bahya/models:/models
 ENV BAHYA_AI_MODE=real
+# HF caches under HOME; give the non-root user a writable home.
+ENV HF_HOME=/home/appuser/.cache/huggingface
+
+# Run as a non-root user — this container processes PHI and holds the API key.
+RUN useradd --uid 10001 --create-home appuser && chown -R appuser /app
+USER 10001
 
 EXPOSE 8000
 

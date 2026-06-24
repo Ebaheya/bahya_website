@@ -30,7 +30,23 @@ ai/*
 !ai/service/
 !ai/Dockerfile
 !ai/Dockerfile.mock
+# The ai/service/ whitelist above re-includes the whole subtree, so explicitly
+# re-ignore anything heavy or secret that gets created there at runtime
+# (RAG store, model weights, ad-hoc config/secrets, caches).
 ai/service/__pycache__/
-ai/service/__pycache__/**
 ai/service/.pytest_cache/
+ai/service/rag_store/
+ai/service/**/final_marbert_model/
+ai/service/**/*_finetuned/
+ai/service/**/models/
+ai/service/**/*.bin
+ai/service/**/*.safetensors
+ai/service/**/*.pt
+ai/service/**/*.onnx
+ai/service/**/*.gguf
+ai/service/**/*.sqlite3
+ai/service/**/*.env
+ai/service/**/*.pem
+ai/service/**/secrets*.json
+ai/service/**/*.key
 frontend_react/
