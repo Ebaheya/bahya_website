@@ -79,6 +79,16 @@ const envSchema = z.object({
     .default('8000')
     .transform((v) => parseInt(v, 10))
     .pipe(z.number().int().positive()),
+  // Escape hatch: allow a plain-http BAHYA_AI_BASE_URL to a non-loopback host in
+  // production (e.g. the internal `ai` service on a same-host Docker bridge).
+  // Opt-in ONLY — keep false unless the AI link stays on a trusted private
+  // network. Set to true for the mock deploy; use https:// once real PHI models
+  // are live.
+  BAHYA_AI_ALLOW_INSECURE_URL: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true' || v === '1')
+    .pipe(z.boolean()),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -114,11 +124,19 @@ if (env.NODE_ENV === 'production' && !/^https:\/\//i.test(env.BAHYA_AI_BASE_URL)
     }
   })();
   const isLoopback = host === 'localhost' || host === '127.0.0.1' || host === '::1';
-  if (!isLoopback) {
+  if (!isLoopback && !env.BAHYA_AI_ALLOW_INSECURE_URL) {
     console.error(
-      'BAHYA_AI_BASE_URL must use https:// in production (PHI + bearer key are sent to it).'
+      'BAHYA_AI_BASE_URL must use https:// in production (PHI + bearer key are sent to it). ' +
+        'For an internal same-host link (e.g. the mock `ai` service on the Docker bridge) ' +
+        'you may set BAHYA_AI_ALLOW_INSECURE_URL=true to opt out — use https:// once real models are live.'
     );
     process.exit(1);
+  }
+  if (!isLoopback && env.BAHYA_AI_ALLOW_INSECURE_URL) {
+    console.warn(
+      `[security] BAHYA_AI_BASE_URL is plain http to "${host}" with BAHYA_AI_ALLOW_INSECURE_URL=true. ` +
+        'PHI + the AI key are unencrypted on this link — only acceptable on a trusted private network.'
+    );
   }
 }
 
