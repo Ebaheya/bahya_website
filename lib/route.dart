@@ -4,6 +4,7 @@ import 'package:bahya_app/data/local/data_secure.dart';
 import 'package:bahya_app/data/remote/repo/repo.dart';
 import 'package:bahya_app/helper/custom_loading.dart';
 import 'package:bahya_app/l10n/app_localizations.dart';
+import 'package:bahya_app/logic/cubit/notifications_cubit.dart';
 import 'package:bahya_app/logic/cubit/patient_forms_cubit.dart';
 import 'package:bahya_app/logic/cubit/service_admin_cubit.dart';
 import 'package:bahya_app/screens/admin/add_category.dart';
@@ -13,6 +14,8 @@ import 'package:bahya_app/screens/admin/all_service.dart';
 import 'package:bahya_app/screens/admin/patient_requests_details.dart';
 import 'package:bahya_app/screens/admin/patients_search.dart';
 import 'package:bahya_app/screens/doctor/doctor_home.dart';
+import 'package:bahya_app/screens/doctor/doctor_notifications_screen.dart';
+import 'package:bahya_app/screens/doctor/chat_transcript_screen.dart';
 import 'package:bahya_app/screens/login.dart';
 import 'package:bahya_app/screens/no_internet_screen.dart';
 import 'package:bahya_app/screens/patients/artical_screen.dart';
@@ -302,6 +305,30 @@ class AppRoute {
         return MaterialPageRoute(builder: (_) => AuthCheckScreen());
     case '/doctorHome':
         return MaterialPageRoute(builder: (_) => const DoctorDashboardScreen());
+
+      case '/doctorNotifications':
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) =>
+                NotificationsCubit(repository: AppRepository())..load(),
+            child: const DoctorNotificationsScreen(),
+          ),
+        );
+
+      case '/chatTranscript':
+        final sessionId = settings.arguments as String?;
+        if (sessionId == null || sessionId.isEmpty) {
+          return MaterialPageRoute(
+            builder: (_) => BlocProvider(
+              create: (_) =>
+                  NotificationsCubit(repository: AppRepository())..load(),
+              child: const DoctorNotificationsScreen(),
+            ),
+          );
+        }
+        return MaterialPageRoute(
+          builder: (_) => ChatTranscriptScreen(sessionId: sessionId),
+        );
 
       default:
         return MaterialPageRoute(builder: (_) => const LoginPage());

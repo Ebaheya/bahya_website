@@ -428,7 +428,11 @@ class PushNotificationService {
       // PATIENT has a new form to fill.
       case 'FORM_ASSIGNED':
         return '/formGate';
-      // Staff broadcasts (HIGH_RISK, BOOKING_REQUIRED, DOCTOR_REVIEW,
+      // Crisis alert for staff → open the alerts feed (the doctor then taps
+      // through to the specific conversation).
+      case 'HIGH_RISK':
+        return '/doctorNotifications';
+      // Other staff broadcasts (BOOKING_REQUIRED, DOCTOR_REVIEW,
       // FOLLOW_UP_REQUIRED) carry no patientId in the push, so land on the
       // role's home dashboard rather than a wrong deep link.
       default:

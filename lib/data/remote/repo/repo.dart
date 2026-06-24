@@ -1,6 +1,7 @@
 import 'package:bahya_app/data/models/chat_message_model.dart';
 import 'package:bahya_app/data/models/chat_session_model.dart';
 import 'package:bahya_app/data/models/chatbot_send_response_model.dart';
+import 'package:bahya_app/data/models/notification_model.dart';
 import 'package:bahya_app/data/models/patient_forms_models.dart';
 import 'package:bahya_app/data/models/service_models.dart';
 import 'package:bahya_app/data/remote/web/web_service.dart';
@@ -244,4 +245,35 @@ class AppRepository {
         .where((message) => message.message.trim().isNotEmpty)
         .toList();
   }
+
+  Future<List<NotificationModel>> getMyNotifications({
+    String? status,
+    String? severity,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final data = await webService.getMyNotifications(
+      status: status,
+      severity: severity,
+      page: page,
+      pageSize: pageSize,
+    );
+
+    return data
+        .whereType<Map>()
+        .map(
+          (item) => NotificationModel.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .where((n) => n.id.isNotEmpty)
+        .toList();
+  }
+
+  Future<void> claimNotification(String id) =>
+      webService.claimNotification(id);
+
+  Future<void> markNotificationRead(String id) =>
+      webService.markNotificationRead(id);
+
+  Future<void> markNotificationDone(String id) =>
+      webService.markNotificationDone(id);
 }

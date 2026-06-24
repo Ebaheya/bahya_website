@@ -208,6 +208,19 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen>
                       'مراجعة الحالات المحولة من الذكاء الاصطناعي',
                     ),
                     isHome: true,
+                    widgets: [
+                      IconButton(
+                        tooltip: context.tr('التنبيهات'),
+                        icon: const Icon(
+                          Icons.notifications_outlined,
+                          color: Colors.white,
+                        ),
+                        onPressed: () => Navigator.pushNamed(
+                          context,
+                          '/doctorNotifications',
+                        ),
+                      ),
+                    ],
                   ),
                   if (_isLoading)
                     SizedBox(

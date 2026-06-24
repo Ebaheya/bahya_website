@@ -367,6 +367,37 @@ class WebService {
     );
   }
 
+  Future<List<dynamic>> getMyNotifications({
+    String? status,
+    String? severity,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await get(
+      '/notifications/my',
+      queryParameters: {
+        if (status != null && status.isNotEmpty) 'status': status,
+        if (severity != null && severity.isNotEmpty) 'severity': severity,
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+
+    return _listFromResponse(response.data);
+  }
+
+  Future<void> claimNotification(String id) async {
+    await patch('/notifications/$id/claim');
+  }
+
+  Future<void> markNotificationRead(String id) async {
+    await patch('/notifications/$id/read');
+  }
+
+  Future<void> markNotificationDone(String id) async {
+    await patch('/notifications/$id/done');
+  }
+
   Future<void> unregisterDeviceToken({required String token}) async {
     await delete('/notifications/devices', data: {'token': token});
   }
